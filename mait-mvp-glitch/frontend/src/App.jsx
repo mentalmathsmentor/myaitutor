@@ -3,19 +3,16 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity } from 'lucide-react'
-import { scanForPII } from './utils/privacy'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ExternalLink, ArrowLeft, Play } from 'lucide-react'
 import { modelService } from './features/slm/services/ModelService'
 import LandingPage from './LandingPage'
+import AIResources from './AIResources'
 import ChatInterface from './features/slm/components/ChatInterface'
-import Avatar from './components/Avatar'
-import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
-// Digital Passport Helper
 const getStudentId = () => {
     let id = localStorage.getItem('mait_student_id');
     if (!id) {
@@ -25,16 +22,16 @@ const getStudentId = () => {
     return id;
 };
 
+// page: 'landing' | 'resources' | 'app' | 'demo'
 function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false)
-    console.log("App Mounting... Auth State:", isAuthenticated);
+    const [page, setPage] = useState('landing')
     const [showLocalChat, setShowLocalChat] = useState(false)
 
     const [studentId] = useState(getStudentId);
 
     const [context, setContext] = useState(null)
     const [messages, setMessages] = useState([
-        { role: 'bot', text: "G'day! I'm ready to crunch some NSW Maths Extension 1. What's on your mind?" }
+        { role: 'bot', text: "G'day! I'm ready to crunch some NSW Maths. What's on your mind?" }
     ])
 
     const [input, setInput] = useState('')
@@ -46,31 +43,29 @@ function App() {
     const [messageQueue, setMessageQueue] = useState([])
     const [userProfile, setUserProfile] = useState({ nickname: 'Mate', subject: 'Mathematics Advanced' })
     const [currentTime, setCurrentTime] = useState(new Date())
-
     const [showKeystrokePanel, setShowKeystrokePanel] = useState(false)
     const endOfMsgRef = useRef(null)
 
-    // Keystroke Psychometric Tracking - DISABLED FOR DEBUGGING
+    const isDemoMode = page === 'demo'
+
+    // Keystroke tracking stubs (feature built but disabled for now)
     const keystrokeMetrics = { realtimeWPM: 0 };
     const historicalMetrics = {};
     const behaviorAnalysis = {};
-    const keystrokeHandlers = { onKeyDown: () => { }, onKeyUp: () => { }, onFocus: () => { }, onBlur: () => { } };
-    const recordMessage = () => { };
-    const getFullReport = () => { };
 
     const fetchContext = async () => {
+        if (isDemoMode) {
+            setContext({ fatigue_metric: { current_score: 0, status: 'FRESH' } });
+            return;
+        }
         try {
             const res = await fetch(`${API_URL}/context/${studentId}`);
-            if (!res.ok) {
-                throw new Error("Backend unreachable");
-            }
+            if (!res.ok) throw new Error("Backend unreachable");
             const data = await res.json();
             setContext(data);
         } catch (e) {
             console.error("Sync error", e);
-            setContext({
-                fatigue_metric: { current_score: 0, status: 'FRESH' }
-            });
+            setContext({ fatigue_metric: { current_score: 0, status: 'FRESH' } });
         }
     }
 
@@ -82,21 +77,15 @@ function App() {
         setShowOverlay(true);
 
         modelService.initialize((progress) => {
-            console.log(`[Local Brain] ${progress}`);
             const percentMatch = progress.match(/(\d+(?:\.\d+)?)\s*%/);
             let progressNum = null;
-            if (percentMatch) {
-                progressNum = parseFloat(percentMatch[1]);
-            }
+            if (percentMatch) progressNum = parseFloat(percentMatch[1]);
             setDownloadProgress({ text: progress, progress: progressNum });
             setModelLoading(progress);
         }).then(() => {
             setModelLoading(null);
             setDownloadProgress({ text: "Local Brain Ready", progress: 100 });
-            setTimeout(() => {
-                setDownloadProgress(null);
-                setShowOverlay(false);
-            }, 2000);
+            setTimeout(() => { setDownloadProgress(null); setShowOverlay(false); }, 2000);
             setIsModelReady(true);
         }).catch(err => {
             console.error("Local Brain Init Error", err);
@@ -105,22 +94,22 @@ function App() {
         });
     };
 
-    useEffect(() => { fetchContext(); }, [studentId])
+    useEffect(() => {
+        if (page === 'app' || page === 'demo') fetchContext();
+    }, [page, studentId])
 
-    // Smart auto-scroll: only scroll if user is near the bottom
+    // Auto-scroll logic
     const isNearBottom = useRef(true);
     const chatContainerRef = useRef(null);
 
     const handleScroll = () => {
         if (chatContainerRef.current) {
             const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
-            // Consider "near bottom" if within 150px of the bottom
             isNearBottom.current = scrollHeight - scrollTop - clientHeight < 150;
         }
     };
 
     useEffect(() => {
-        // Only auto-scroll if user was already near the bottom
         if (isNearBottom.current) {
             endOfMsgRef.current?.scrollIntoView({ behavior: "smooth" });
         }
@@ -139,13 +128,16 @@ function App() {
         }
     }, [isModelReady, messageQueue, loading]);
 
+    // Auto-start local brain when entering demo mode
+    useEffect(() => {
+        if (isDemoMode && !isModelReady && !downloadProgress) {
+            startLocalBrain();
+        }
+    }, [isDemoMode]);
+
     const processUserMessage = async (userText) => {
         if (!isModelReady && downloadProgress) {
-            setMessages(prev => [...prev, {
-                role: 'user',
-                text: userText,
-                source: 'queued'
-            }]);
+            setMessages(prev => [...prev, { role: 'user', text: userText, source: 'queued' }]);
             setMessageQueue(prev => [...prev, userText]);
             return;
         }
@@ -153,14 +145,16 @@ function App() {
         if (!isModelReady) {
             setMessages(prev => [...prev, {
                 role: 'bot',
-                text: "Local Brain is not active. Click 'LOCAL CORE' to start.",
+                text: isDemoMode
+                    ? "Local model is loading... hang tight! It'll be ready in a moment."
+                    : "Local Brain is not active. Click 'LOCAL CORE' to start.",
                 source: 'local'
             }]);
             return;
         }
 
         setLoading(true);
-        const needsAPI = shouldQueryAPI(userText);
+        const needsAPI = !isDemoMode && shouldQueryAPI(userText);
 
         const splitIntoChunks = (text) => {
             const isInsideLatex = (str) => {
@@ -169,7 +163,6 @@ function App() {
             };
 
             let rawChunks = text.split(/\n\n+/).filter(c => c.trim());
-
             const finalChunks = [];
             let currentBuilder = "";
 
@@ -182,16 +175,8 @@ function App() {
                     }
                     return;
                 }
-
-                if (isInsideLatex(chunk)) {
-                    currentBuilder = chunk;
-                    return;
-                }
-
-                if (chunk.includes('$$')) {
-                    finalChunks.push(chunk.trim());
-                    return;
-                }
+                if (isInsideLatex(chunk)) { currentBuilder = chunk; return; }
+                if (chunk.includes('$$')) { finalChunks.push(chunk.trim()); return; }
 
                 const sentences = chunk.split(/(?<=[.!?])\s+(?=[A-Z])/);
                 let currentSubChunk = '';
@@ -201,7 +186,6 @@ function App() {
                         currentSubChunk += (currentSubChunk ? ' ' : '') + sentence;
                         return;
                     }
-
                     if (currentSubChunk && (currentSubChunk.split(/[.!?]/).length > 2 || currentSubChunk.length > 150)) {
                         finalChunks.push(currentSubChunk.trim());
                         currentSubChunk = sentence;
@@ -209,24 +193,15 @@ function App() {
                         currentSubChunk += (currentSubChunk ? ' ' : '') + sentence;
                     }
                 });
-                if (currentSubChunk.trim()) {
-                    finalChunks.push(currentSubChunk.trim());
-                }
+                if (currentSubChunk.trim()) finalChunks.push(currentSubChunk.trim());
             });
 
-            if (currentBuilder) {
-                finalChunks.push(currentBuilder);
-            }
-
+            if (currentBuilder) finalChunks.push(currentBuilder);
             return finalChunks.filter(c => c.trim());
         };
 
         try {
-            setMessages(prev => [...prev, {
-                role: 'bot',
-                text: 'typing',
-                source: 'typing'
-            }]);
+            setMessages(prev => [...prev, { role: 'bot', text: 'typing', source: 'typing' }]);
 
             let fullResponse = "";
 
@@ -276,11 +251,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         const newHistory = [...prev];
                         const lastIdx = newHistory.length - 1;
                         if (lastIdx >= 0 && newHistory[lastIdx].source === 'typing') {
-                            newHistory[lastIdx] = {
-                                ...newHistory[lastIdx],
-                                text: 'typing',
-                                source: 'typing'
-                            };
+                            newHistory[lastIdx] = { ...newHistory[lastIdx], text: 'typing', source: 'typing' };
                         }
                         return newHistory;
                     });
@@ -294,52 +265,31 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 const chunks = splitIntoChunks(fullResponse);
                 chunks.forEach((chunk, i) => {
                     setTimeout(() => {
-                        setMessages(prev => [...prev, {
-                            role: 'bot',
-                            text: chunk,
-                            source: 'local'
-                        }]);
+                        setMessages(prev => [...prev, { role: 'bot', text: chunk, source: 'local' }]);
                     }, i * 100);
                 });
             }
 
+            // Only query cloud API in full mode, never in demo
             if (needsAPI) {
                 try {
-                    setMessages(prev => [...prev, {
-                        role: 'bot',
-                        text: "Fetching detailed info from the cloud...",
-                        source: 'loading'
-                    }]);
+                    setMessages(prev => [...prev, { role: 'bot', text: "Fetching detailed info from the cloud...", source: 'loading' }]);
 
                     const apiResponse = await fetch(`${API_URL}/query`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            student_id: studentId,
-                            query: userText,
-                            complexity: 5
-                        })
+                        body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
                     });
 
                     if (apiResponse.ok) {
                         const data = await apiResponse.json();
-
                         setMessages(prev => prev.filter(m => m.source !== 'loading'));
-
                         if (data.sections && data.sections.length > 0) {
                             data.sections.forEach((section, i) => {
-                                setMessages(prev => [...prev, {
-                                    role: 'bot',
-                                    text: section,
-                                    source: 'api',
-                                    sectionIndex: i
-                                }]);
+                                setMessages(prev => [...prev, { role: 'bot', text: section, source: 'api', sectionIndex: i }]);
                             });
                         }
-
-                        if (data.context) {
-                            setContext(data.context);
-                        }
+                        if (data.context) setContext(data.context);
                     } else {
                         setMessages(prev => prev.filter(m => m.source !== 'loading'));
                     }
@@ -352,11 +302,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             setLoading(false);
         } catch (err) {
             console.warn("Chat error", err);
-            setMessages(prev => [...prev, {
-                role: 'bot',
-                text: "Something went wrong. Try again?",
-                source: 'error'
-            }]);
+            setMessages(prev => [...prev, { role: 'bot', text: "Something went wrong. Try again?", source: 'error' }]);
             setLoading(false);
         }
     };
@@ -389,8 +335,19 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return "LOW";
     }
 
-    if (!isAuthenticated) {
-        return <LandingPage onLogin={() => setIsAuthenticated(true)} />
+    // Page routing
+    if (page === 'landing') {
+        return (
+            <LandingPage
+                onLogin={() => setPage('app')}
+                onDemo={() => setPage('demo')}
+                onResources={() => setPage('resources')}
+            />
+        )
+    }
+
+    if (page === 'resources') {
+        return <AIResources onBack={() => setPage('landing')} />
     }
 
     if (showLocalChat) {
@@ -421,6 +378,14 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             {/* HUD HEADER */}
             <header className="fixed top-0 left-0 right-0 glass-card backdrop-blur-xl border-b border-surface-2 p-4 flex justify-between items-center z-50">
                 <div className="flex items-center gap-3">
+                    {/* Back button */}
+                    <button
+                        onClick={() => setPage('landing')}
+                        className="text-muted-foreground hover:text-foreground transition-colors mr-1"
+                        title="Back to home"
+                    >
+                        <ArrowLeft size={18} />
+                    </button>
                     <div className="relative">
                         <BrainCircuit className="text-primary" size={22} />
                         {isModelReady && (
@@ -428,15 +393,27 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         )}
                     </div>
                     <h1 className="font-display font-bold tracking-tight text-sm">
-                        MAIT <span className="text-muted-foreground font-normal">MVP</span>
+                        MAIT
+                        {isDemoMode && <span className="text-accent font-normal ml-1.5">DEMO</span>}
+                        {!isDemoMode && <span className="text-muted-foreground font-normal ml-1.5">MVP</span>}
                     </h1>
                 </div>
 
-                {/* MIDDLE: Clock & User Profile */}
+                {/* MIDDLE: Clock, Profile, mentalmaths.au link */}
                 <div className="hidden md:flex items-center gap-4">
                     <div className="text-muted-foreground font-mono text-xs">
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
+
+                    <a
+                        href="https://mentalmaths.au"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-display text-primary hover:text-accent transition-colors flex items-center gap-1"
+                    >
+                        mentalmaths.au
+                        <ExternalLink size={10} />
+                    </a>
 
                     <div className="flex items-center gap-2 bg-surface-1 rounded-lg p-1.5 border border-surface-3">
                         <input
@@ -461,30 +438,29 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
                 <div className="flex items-center gap-3">
                     {/* Keystroke Analytics Toggle */}
-                    <button
-                        onClick={() => setShowKeystrokePanel(!showKeystrokePanel)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-display tracking-wide border ${showKeystrokePanel
-                            ? 'bg-secondary/20 border-secondary/50 text-secondary'
-                            : 'bg-surface-1 border-surface-3 hover:border-secondary/30 text-muted-foreground hover:text-secondary'
-                            }`}
-                    >
-                        <Activity size={14} />
-                        <span className="hidden sm:inline">
-                            {keystrokeMetrics?.realtimeWPM > 0 ? `${keystrokeMetrics?.realtimeWPM} WPM` : 'METRICS'}
-                        </span>
-                    </button>
+                    {!isDemoMode && (
+                        <button
+                            onClick={() => setShowKeystrokePanel(!showKeystrokePanel)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-display tracking-wide border ${showKeystrokePanel
+                                ? 'bg-secondary/20 border-secondary/50 text-secondary'
+                                : 'bg-surface-1 border-surface-3 hover:border-secondary/30 text-muted-foreground hover:text-secondary'
+                                }`}
+                        >
+                            <Activity size={14} />
+                            <span className="hidden sm:inline">METRICS</span>
+                        </button>
+                    )}
 
-                    {/* Local SLM Toggle */}
-                    <button
-                        onClick={() => {
-                            setShowLocalChat(true);
-                            startLocalBrain();
-                        }}
-                        className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
-                    >
-                        <Cpu size={14} />
-                        <span className="hidden sm:inline">LOCAL CORE</span>
-                    </button>
+                    {/* Local SLM Toggle - only in full mode (demo auto-starts it) */}
+                    {!isDemoMode && (
+                        <button
+                            onClick={() => { setShowLocalChat(true); startLocalBrain(); }}
+                            className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
+                        >
+                            <Cpu size={14} />
+                            <span className="hidden sm:inline">LOCAL CORE</span>
+                        </button>
+                    )}
 
                     {/* Download Progress */}
                     {downloadProgress && (
@@ -521,11 +497,21 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 </div>
             </header>
 
+            {/* Demo mode banner */}
+            {isDemoMode && (
+                <div className="fixed top-[73px] left-0 right-0 z-40 bg-accent/10 border-b border-accent/20 px-4 py-2 text-center">
+                    <p className="text-xs font-display text-accent">
+                        <Play size={12} className="inline mr-1.5" />
+                        Free Demo — Running locally in your browser. No data sent to any server.
+                    </p>
+                </div>
+            )}
+
             {/* CHAT AREA */}
             <div
                 ref={chatContainerRef}
                 onScroll={handleScroll}
-                className="pt-24 pb-32 max-w-2xl mx-auto px-4 min-h-screen"
+                className={`${isDemoMode ? 'pt-[120px]' : 'pt-24'} pb-32 max-w-2xl mx-auto px-4 min-h-screen`}
             >
                 <div className="space-y-4">
                     {messages.map((msg, idx) => (
@@ -570,12 +556,18 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         disabled={context?.fatigue_metric?.status === 'LOCKOUT'}
-                        placeholder={context?.fatigue_metric?.status === 'LOCKOUT' ? "Rest period active..." : "Ask about calculus, trigonometry, statistics..."}
+                        placeholder={
+                            !isModelReady && isDemoMode
+                                ? "Model is downloading... please wait"
+                                : context?.fatigue_metric?.status === 'LOCKOUT'
+                                    ? "Rest period active..."
+                                    : "Ask about calculus, trigonometry, statistics..."
+                        }
                         className="input-base flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                     <button
                         type="submit"
-                        disabled={!input.trim() || loading || context?.fatigue_metric?.status === 'LOCKOUT'}
+                        disabled={!input.trim() || loading || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
                         className="btn-primary p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
                     >
                         <Send size={18} />
