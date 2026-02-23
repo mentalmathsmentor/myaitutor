@@ -1,0 +1,346 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* RETRO-FUTURISTIC COSMIC PALETTE */
+    --background: 225 25% 4%;
+    --foreground: 60 10% 95%;
+
+    /* Primary: Electric Teal - not generic purple */
+    --primary: 172 80% 45%;
+    --primary-foreground: 225 25% 4%;
+
+    /* Accent: Hot Coral - sharp contrast */
+    --accent: 12 90% 62%;
+    --accent-foreground: 225 25% 4%;
+
+    /* Secondary: Soft Lavender */
+    --secondary: 260 30% 65%;
+    --secondary-foreground: 225 25% 4%;
+
+    /* Muted: Deep Space */
+    --muted: 225 20% 12%;
+    --muted-foreground: 220 15% 55%;
+
+    /* Surface layers for depth */
+    --surface-1: 225 22% 8%;
+    --surface-2: 225 20% 12%;
+    --surface-3: 225 18% 16%;
+
+    /* Destructive */
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 60 10% 95%;
+
+    --radius: 0.75rem;
+
+    /* Glow effects */
+    --glow-primary: 172 80% 45%;
+    --glow-accent: 12 90% 62%;
+  }
+}
+
+/* Typography System */
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  overflow-x: hidden;
+}
+
+/* Display/Heading Font */
+.font-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Mono for code/data */
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ATMOSPHERIC BACKGROUND */
+.bg-cosmic {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, hsla(172, 80%, 45%, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, hsla(12, 90%, 62%, 0.08), transparent),
+    radial-gradient(ellipse 40% 60% at 0% 80%, hsla(260, 30%, 65%, 0.06), transparent),
+    hsl(var(--background));
+}
+
+/* Noise texture overlay */
+.noise-overlay {
+  position: relative;
+}
+
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow:
+    0 0 20px -5px hsla(var(--glow-primary), 0.4),
+    0 0 40px -10px hsla(var(--glow-primary), 0.2);
+}
+
+.glow-accent {
+  box-shadow:
+    0 0 20px -5px hsla(var(--glow-accent), 0.4),
+    0 0 40px -10px hsla(var(--glow-accent), 0.2);
+}
+
+.text-glow-primary {
+  text-shadow: 0 0 20px hsla(var(--glow-primary), 0.5);
+}
+
+.text-glow-accent {
+  text-shadow: 0 0 20px hsla(var(--glow-accent), 0.5);
+}
+
+/* Gradient text */
+.gradient-text-primary {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+}
+
+.gradient-text-warm {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(60, 90%, 65%) 100%);
+}
+
+/* Border glow */
+.border-glow {
+  position: relative;
+}
+
+.border-glow::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, hsla(var(--primary), 0.5), hsla(var(--accent), 0.3));
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.6;
+}
+
+/* ANIMATIONS */
+
+/* Staggered reveal animation */
+@keyframes reveal-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-reveal {
+  animation: reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+.animate-reveal-1 { animation-delay: 0ms; }
+.animate-reveal-2 { animation-delay: 80ms; }
+.animate-reveal-3 { animation-delay: 160ms; }
+.animate-reveal-4 { animation-delay: 240ms; }
+.animate-reveal-5 { animation-delay: 320ms; }
+.animate-reveal-6 { animation-delay: 400ms; }
+
+/* Float animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px -5px hsla(var(--glow-primary), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px -5px hsla(var(--glow-primary), 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Glitch effect - refined */
+@keyframes glitch {
+  0%, 90%, 100% {
+    transform: translate(0);
+    text-shadow: none;
+  }
+  92% {
+    transform: translate(-2px, 1px);
+    text-shadow: 2px 0 hsl(var(--accent)), -2px 0 hsl(var(--primary));
+  }
+  94% {
+    transform: translate(2px, -1px);
+    text-shadow: -2px 0 hsl(var(--accent)), 2px 0 hsl(var(--primary));
+  }
+  96% {
+    transform: translate(-1px, 2px);
+    text-shadow: 1px 0 hsl(var(--accent)), -1px 0 hsl(var(--primary));
+  }
+}
+
+.animate-glitch {
+  animation: glitch 3s ease-in-out infinite;
+}
+
+/* Shimmer effect */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsla(var(--primary), 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--surface-1));
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--secondary)));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--primary)), hsl(var(--accent)));
+}
+
+/* Selection */
+::selection {
+  background: hsla(var(--primary), 0.3);
+  color: hsl(var(--foreground));
+}
+
+/* Focus states */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* COMPONENT STYLES */
+
+/* Glass morphism card */
+.glass-card {
+  @apply relative overflow-hidden;
+  background: hsla(var(--surface-2), 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsla(var(--primary), 0.1);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    hsla(var(--primary), 0.05) 0%,
+    transparent 50%,
+    hsla(var(--accent), 0.02) 100%
+  );
+  pointer-events: none;
+}
+
+/* Button base */
+.btn-primary {
+  @apply relative overflow-hidden font-display text-sm tracking-wide;
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(172, 70%, 35%) 100%);
+  color: hsl(var(--primary-foreground));
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 30px -10px hsla(var(--primary), 0.5),
+    0 0 20px -5px hsla(var(--primary), 0.3);
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, hsla(255, 100%, 100%, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-primary:hover::after {
+  opacity: 1;
+}
+
+/* Input base */
+.input-base {
+  @apply w-full rounded-xl px-4 py-3 transition-all duration-300;
+  background: hsl(var(--surface-1));
+  border: 1px solid hsla(var(--primary), 0.2);
+  color: hsl(var(--foreground));
+}
+
+.input-base:focus {
+  border-color: hsl(var(--primary));
+  box-shadow:
+    0 0 0 3px hsla(var(--primary), 0.1),
+    0 0 20px -5px hsla(var(--primary), 0.3);
+  outline: none;
+}
+
+.input-base::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Tag/Badge */
+.tag {
+  @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-display uppercase tracking-wider;
+  background: hsla(var(--primary), 0.15);
+  border: 1px solid hsla(var(--primary), 0.3);
+  color: hsl(var(--primary));
+}
+
+/* Divider with glow */
+.divider-glow {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsla(var(--primary), 0.5) 50%,
+    transparent 100%
+  );
+}

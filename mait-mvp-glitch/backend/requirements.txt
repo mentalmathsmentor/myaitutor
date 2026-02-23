@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+chromadb
+pydantic
+python-multipart
+requests
+google-genai
+python-dotenv
+# RAG dependencies
+sentence-transformers
+pypdf
+python-docx
