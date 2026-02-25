@@ -17,14 +17,17 @@ const ChatInterface = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const modelName = await modelService.initialize((progress) => {
-                    setStatusMsg(progress);
-                });
+                // ChatInterface is used for LOCAL CORE (full app mode) - always use 'large' model
+                const modelName = await modelService.initialize((report) => {
+                    // Handle both old string format and new object format
+                    const text = typeof report === 'string' ? report : (report.text || "Loading...");
+                    setStatusMsg(text);
+                }, 'large');
                 setStatus("ready");
                 setStatusMsg(`Active: ${modelName}`);
             } catch (e) {
                 setStatus("error");
-                setStatusMsg("Failed to load local model.");
+                setStatusMsg(e.message || "Failed to load local model.");
             }
         };
         init();
