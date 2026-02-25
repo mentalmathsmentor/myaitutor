@@ -50,6 +50,9 @@ Brief notes on where students usually make mistakes.
 
 **FATIGUE CONSTRAINT FOR DATA COMPLEXITY:**
 {fatigue_instruction}
+
+**BLOOM'S TAXONOMY PEDAGOGICAL INSTRUCTION:**
+{bloom_instruction}
 """
 
 FATIGUE_INSTRUCTIONS = {
@@ -63,7 +66,8 @@ async def get_gemini_response(
     question: str,
     syllabus_context: str = "",
     fatigue_state: FatigueStatus = FatigueStatus.FRESH,
-    current_topic: str = "Mathematics Advanced"
+    current_topic: str = "Mathematics Advanced",
+    bloom_instruction: str = ""
 ) -> Dict[str, Any]:
     """
     Async client for Gemini 2.0 Flash (Preview) integration.
@@ -73,12 +77,13 @@ async def get_gemini_response(
         syllabus_context: Relevant NSW syllabus content (from RAG)
         fatigue_state: Current fatigue status (FRESH, WEARY, LOCKOUT)
         current_topic: The current topic being studied
+        bloom_instruction: Bloom's Taxonomy teaching strategy instruction
 
     Returns:
         Dict with keys: core_truth, explanation, hints
     """
     import asyncio
-    
+
     # Handle LOCKOUT state immediately
     if fatigue_state == FatigueStatus.LOCKOUT:
         return {
@@ -87,13 +92,19 @@ async def get_gemini_response(
             "hints": "Take a 15-minute break and come back refreshed!"
         }
 
-    # Build the system prompt with fatigue instruction
+    # Build the system prompt with fatigue instruction and bloom instruction
     fatigue_instruction = FATIGUE_INSTRUCTIONS.get(fatigue_state, FATIGUE_INSTRUCTIONS[FatigueStatus.FRESH])
-    
+
     # Add override for simple greetings
     greeting_override = "However, if the student input is a simple greeting (e.g. 'hi', 'hello'), IGNORE the fatigue constraint and just reply naturally and briefly."
-    
-    system_prompt = SYSTEM_PROMPT_BASE.format(fatigue_instruction=fatigue_instruction + "\n" + greeting_override)
+
+    # Use provided bloom instruction or a sensible default
+    effective_bloom = bloom_instruction if bloom_instruction else "No specific Bloom's level instruction. Respond at a general level."
+
+    system_prompt = SYSTEM_PROMPT_BASE.format(
+        fatigue_instruction=fatigue_instruction + "\n" + greeting_override,
+        bloom_instruction=effective_bloom
+    )
 
     # Build the user prompt with context
     user_prompt = f"""

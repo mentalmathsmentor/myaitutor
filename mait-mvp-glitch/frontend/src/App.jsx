@@ -3,12 +3,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ExternalLink, ArrowLeft, Play } from 'lucide-react'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ExternalLink, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical } from 'lucide-react'
 import { modelService } from './features/slm/services/ModelService'
 import LandingPage from './LandingPage'
 import AIResources from './AIResources'
+import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
+import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -22,7 +24,7 @@ const getStudentId = () => {
     return id;
 };
 
-// page: 'landing' | 'resources' | 'app' | 'demo'
+// page: 'landing' | 'resources' | 'worksheets' | 'app' | 'demo'
 function App() {
     const [page, setPage] = useState('landing')
     const [showLocalChat, setShowLocalChat] = useState(false)
@@ -46,12 +48,26 @@ function App() {
     const [showKeystrokePanel, setShowKeystrokePanel] = useState(false)
     const endOfMsgRef = useRef(null)
 
+    // New state for polished demo experience
+    const [demoModelSize, setDemoModelSize] = useState('small') // 'small' | 'large'
+    const [downloadError, setDownloadError] = useState(null) // error message string or null
+    const [webGPUError, setWebGPUError] = useState(null) // WebGPU not available error
+    const [showModelSwitchConfirm, setShowModelSwitchConfirm] = useState(null) // 'small' | 'large' | null
+    const [loadedModelName, setLoadedModelName] = useState(null) // actual model name once loaded
+
     const isDemoMode = page === 'demo'
 
-    // Keystroke tracking stubs (feature built but disabled for now)
-    const keystrokeMetrics = { realtimeWPM: 0 };
-    const historicalMetrics = {};
-    const behaviorAnalysis = {};
+    // Keystroke psychometric tracking (wired to backend in full mode, local-only in demo)
+    const {
+        metrics: keystrokeMetrics,
+        historicalMetrics,
+        behaviorAnalysis,
+        attachToInput: keystrokeAttachToInput,
+        recordMessage: keystrokeRecordMessage,
+    } = useKeystrokeTracker({
+        studentId,
+        isDemoMode,
+    });
 
     const fetchContext = async () => {
         if (isDemoMode) {
@@ -69,29 +85,106 @@ function App() {
         }
     }
 
-    const startLocalBrain = () => {
-        if (isModelReady || downloadProgress) return;
+    const startLocalBrain = (modelSize = null) => {
+        // Determine which model size to use
+        const effectiveModelSize = modelSize || (isDemoMode ? demoModelSize : 'large');
+
+        // If already ready with same model, skip
+        if (isModelReady && modelService.getModelInfo().size === effectiveModelSize) return;
+        // If currently downloading (no error), skip
+        if (downloadProgress && !downloadError) return;
+
+        // Check WebGPU availability first
+        const gpuCheck = modelService.constructor.checkWebGPU();
+        if (!gpuCheck.available) {
+            setWebGPUError(gpuCheck.reason);
+            setShowOverlay(true);
+            return;
+        }
+
+        // Clear any previous errors
+        setDownloadError(null);
+        setWebGPUError(null);
+        setIsModelReady(false);
+
+        const modelInfo = modelService.constructor.getAvailableModels()[effectiveModelSize];
+        const estimatedMB = modelInfo?.estimatedSizeMB || 200;
 
         setModelLoading("Mate is waking up...");
-        setDownloadProgress({ text: "Starting download...", progress: 0 });
+        setDownloadProgress({
+            text: `Starting download (~${estimatedMB} MB)...`,
+            progress: 0,
+            estimatedMB,
+            speedMBps: null,
+            fetchedMB: null,
+        });
         setShowOverlay(true);
 
-        modelService.initialize((progress) => {
-            const percentMatch = progress.match(/(\d+(?:\.\d+)?)\s*%/);
-            let progressNum = null;
-            if (percentMatch) progressNum = parseFloat(percentMatch[1]);
-            setDownloadProgress({ text: progress, progress: progressNum });
-            setModelLoading(progress);
-        }).then(() => {
+        modelService.initialize((report) => {
+            setDownloadProgress({
+                text: report.text,
+                progress: report.progress || null,
+                estimatedMB: report.estimatedMB || estimatedMB,
+                speedMBps: report.speedMBps || null,
+                fetchedMB: report.fetchedMB || null,
+            });
+            setModelLoading(report.text);
+        }, effectiveModelSize).then((modelName) => {
             setModelLoading(null);
-            setDownloadProgress({ text: "Local Brain Ready", progress: 100 });
-            setTimeout(() => { setDownloadProgress(null); setShowOverlay(false); }, 2000);
+            setLoadedModelName(modelName);
+            setDownloadProgress({ text: "Ready!", progress: 100, estimatedMB, speedMBps: null, fetchedMB: estimatedMB });
+            setTimeout(() => {
+                setDownloadProgress(null);
+                setShowOverlay(false);
+            }, 2000);
             setIsModelReady(true);
+            setDownloadError(null);
         }).catch(err => {
             console.error("Local Brain Init Error", err);
             setModelLoading("Local connection failed.");
-            setDownloadProgress({ text: "Download failed", progress: null });
+            const errMsg = err.message || "Download failed. Please check your connection and try again.";
+            setDownloadError(errMsg);
+            setDownloadProgress({ text: errMsg, progress: null, estimatedMB, speedMBps: null, fetchedMB: null });
         });
+    };
+
+    const retryDownload = () => {
+        setDownloadError(null);
+        setDownloadProgress(null);
+        setShowOverlay(false);
+        // Small delay to let state reset before retrying
+        setTimeout(() => {
+            startLocalBrain(isDemoMode ? demoModelSize : 'large');
+        }, 100);
+    };
+
+    const handleModelSizeSwitch = (newSize) => {
+        if (newSize === demoModelSize) return;
+        // If model is already loaded or downloading, warn user
+        if (isModelReady || (downloadProgress && !downloadError)) {
+            setShowModelSwitchConfirm(newSize);
+        } else {
+            setDemoModelSize(newSize);
+            // If there was a previous error, clear it and start fresh with new size
+            if (downloadError) {
+                setDownloadError(null);
+                setDownloadProgress(null);
+                setTimeout(() => startLocalBrain(newSize), 100);
+            }
+        }
+    };
+
+    const confirmModelSwitch = async () => {
+        const newSize = showModelSwitchConfirm;
+        setShowModelSwitchConfirm(null);
+        setDemoModelSize(newSize);
+        setIsModelReady(false);
+        setDownloadProgress(null);
+        setDownloadError(null);
+        setLoadedModelName(null);
+        await modelService.reset();
+        // Start download with the new model
+        setTimeout(() => startLocalBrain(newSize), 100);
     };
 
     useEffect(() => {
@@ -131,7 +224,7 @@ function App() {
     // Auto-start local brain when entering demo mode
     useEffect(() => {
         if (isDemoMode && !isModelReady && !downloadProgress) {
-            startLocalBrain();
+            startLocalBrain(demoModelSize);
         }
     }, [isDemoMode]);
 
@@ -313,6 +406,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         const userText = input.trim();
         setInput('');
         setMessages(prev => [...prev, { role: 'user', text: userText }]);
+        // Record keystroke metrics for this message and submit to backend
+        keystrokeRecordMessage();
         processUserMessage(userText);
     };
 
@@ -342,12 +437,17 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 onLogin={() => setPage('app')}
                 onDemo={() => setPage('demo')}
                 onResources={() => setPage('resources')}
+                onWorksheets={() => setPage('worksheets')}
             />
         )
     }
 
     if (page === 'resources') {
         return <AIResources onBack={() => setPage('landing')} />
+    }
+
+    if (page === 'worksheets') {
+        return <WorksheetGenerator onBack={() => setPage('landing')} />
     }
 
     if (showLocalChat) {
@@ -438,23 +538,21 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
                 <div className="flex items-center gap-3">
                     {/* Keystroke Analytics Toggle */}
-                    {!isDemoMode && (
-                        <button
-                            onClick={() => setShowKeystrokePanel(!showKeystrokePanel)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-display tracking-wide border ${showKeystrokePanel
-                                ? 'bg-secondary/20 border-secondary/50 text-secondary'
-                                : 'bg-surface-1 border-surface-3 hover:border-secondary/30 text-muted-foreground hover:text-secondary'
-                                }`}
-                        >
-                            <Activity size={14} />
-                            <span className="hidden sm:inline">METRICS</span>
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setShowKeystrokePanel(!showKeystrokePanel)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-display tracking-wide border ${showKeystrokePanel
+                            ? 'bg-secondary/20 border-secondary/50 text-secondary'
+                            : 'bg-surface-1 border-surface-3 hover:border-secondary/30 text-muted-foreground hover:text-secondary'
+                            }`}
+                    >
+                        <Activity size={14} />
+                        <span className="hidden sm:inline">METRICS</span>
+                    </button>
 
                     {/* Local SLM Toggle - only in full mode (demo auto-starts it) */}
                     {!isDemoMode && (
                         <button
-                            onClick={() => { setShowLocalChat(true); startLocalBrain(); }}
+                            onClick={() => { setShowLocalChat(true); startLocalBrain('large'); }}
                             className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
                         >
                             <Cpu size={14} />
@@ -462,28 +560,75 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         </button>
                     )}
 
-                    {/* Download Progress */}
-                    {downloadProgress && (
-                        <div className="flex flex-col gap-1.5 glass-card px-4 py-2.5 rounded-xl border-primary/20 min-w-[180px]">
+                    {/* Download Progress - Enhanced */}
+                    {downloadProgress && !webGPUError && (
+                        <div className="flex flex-col gap-1.5 glass-card px-4 py-2.5 rounded-xl border-primary/20 min-w-[220px]">
                             <div className="flex items-center gap-2">
-                                <Download size={14} className="text-primary animate-bounce" />
-                                <span className="text-[10px] text-primary font-display uppercase tracking-wider">
-                                    {downloadProgress.progress !== null ? 'Downloading' : 'Initializing'}
+                                {downloadError ? (
+                                    <AlertTriangle size={14} className="text-destructive" />
+                                ) : downloadProgress.progress === 100 ? (
+                                    <BrainCircuit size={14} className="text-primary" />
+                                ) : (
+                                    <Download size={14} className="text-primary animate-bounce" />
+                                )}
+                                <span className="text-[10px] font-display uppercase tracking-wider"
+                                    style={{ color: downloadError ? 'hsl(var(--destructive))' : 'hsl(var(--primary))' }}>
+                                    {downloadError
+                                        ? 'Failed'
+                                        : downloadProgress.progress === 100
+                                            ? 'Ready!'
+                                            : downloadProgress.progress !== null
+                                                ? 'Downloading'
+                                                : 'Initializing'}
                                 </span>
+                                {/* Download size estimate */}
+                                {!downloadError && downloadProgress.progress !== 100 && downloadProgress.estimatedMB && (
+                                    <span className="text-[9px] text-muted-foreground font-mono ml-auto">
+                                        ~{downloadProgress.estimatedMB >= 1000
+                                            ? `${(downloadProgress.estimatedMB / 1000).toFixed(1)} GB`
+                                            : `${downloadProgress.estimatedMB} MB`}
+                                    </span>
+                                )}
                             </div>
-                            {downloadProgress.progress !== null && (
+                            {/* Progress bar */}
+                            {downloadProgress.progress !== null && !downloadError && (
                                 <div className="w-full bg-surface-1 rounded-full h-1.5 overflow-hidden">
                                     <div
-                                        className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 ease-out"
+                                        className={`h-full transition-all duration-300 ease-out ${
+                                            downloadProgress.progress === 100
+                                                ? 'bg-gradient-to-r from-primary to-accent'
+                                                : 'bg-gradient-to-r from-primary to-secondary'
+                                        }`}
                                         style={{ width: `${Math.min(downloadProgress.progress, 100)}%` }}
                                     />
                                 </div>
                             )}
-                            <span className="text-[9px] text-muted-foreground font-mono truncate">
-                                {downloadProgress.progress !== null
-                                    ? `${downloadProgress.progress.toFixed(1)}%`
-                                    : downloadProgress.text}
-                            </span>
+                            {/* Status text */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-muted-foreground font-mono truncate max-w-[160px]">
+                                    {downloadError
+                                        ? (downloadError.length > 50 ? downloadError.substring(0, 50) + '...' : downloadError)
+                                        : downloadProgress.text}
+                                </span>
+                                {/* Download speed */}
+                                {!downloadError && downloadProgress.speedMBps && downloadProgress.progress !== null && downloadProgress.progress !== 100 && (
+                                    <span className="text-[9px] text-primary/70 font-mono ml-2 whitespace-nowrap">
+                                        {downloadProgress.speedMBps >= 1
+                                            ? `${downloadProgress.speedMBps.toFixed(1)} MB/s`
+                                            : `${(downloadProgress.speedMBps * 1024).toFixed(0)} KB/s`}
+                                    </span>
+                                )}
+                            </div>
+                            {/* Retry button on error */}
+                            {downloadError && (
+                                <button
+                                    onClick={retryDownload}
+                                    className="flex items-center justify-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-[10px] font-display uppercase tracking-wider hover:bg-primary/20 transition-all"
+                                >
+                                    <RefreshCw size={10} />
+                                    Retry Download
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -497,13 +642,105 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 </div>
             </header>
 
-            {/* Demo mode banner */}
+            {/* WebGPU Error Overlay */}
+            {webGPUError && showOverlay && (
+                <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="glass-card border border-destructive/30 rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+                        <AlertTriangle className="mx-auto text-destructive" size={48} />
+                        <h2 className="text-lg font-display font-bold text-foreground">WebGPU Not Available</h2>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            {webGPUError}
+                        </p>
+                        <div className="bg-surface-1 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                            <p className="font-semibold text-foreground">Supported browsers:</p>
+                            <p>Google Chrome 113+ (recommended)</p>
+                            <p>Microsoft Edge 113+</p>
+                            <p>Chrome on Android 113+</p>
+                        </div>
+                        <button
+                            onClick={() => { setWebGPUError(null); setShowOverlay(false); setPage('landing'); }}
+                            className="btn-primary px-6 py-2.5 rounded-xl text-sm font-display"
+                        >
+                            Back to Home
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Model Switch Confirmation Dialog */}
+            {showModelSwitchConfirm && (
+                <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="glass-card border border-accent/30 rounded-2xl p-6 max-w-sm w-full text-center space-y-4">
+                        <AlertTriangle className="mx-auto text-accent" size={36} />
+                        <h3 className="text-sm font-display font-bold text-foreground">Switch Model?</h3>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Switching to{' '}
+                            <span className="text-foreground font-medium">
+                                {showModelSwitchConfirm === 'small' ? 'Fast (SmolLM 360M)' : 'Quality (Llama 3.2 3B)'}
+                            </span>
+                            {' '}requires downloading a new model
+                            (~{showModelSwitchConfirm === 'small' ? '200' : '1,500'} MB).
+                            The current model will be unloaded.
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => setShowModelSwitchConfirm(null)}
+                                className="px-4 py-2 rounded-lg text-xs font-display bg-surface-1 border border-surface-3 text-muted-foreground hover:text-foreground transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmModelSwitch}
+                                className="btn-primary px-4 py-2 rounded-lg text-xs font-display"
+                            >
+                                Switch Model
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Demo mode banner with model quality toggle */}
             {isDemoMode && (
-                <div className="fixed top-[73px] left-0 right-0 z-40 bg-accent/10 border-b border-accent/20 px-4 py-2 text-center">
-                    <p className="text-xs font-display text-accent">
-                        <Play size={12} className="inline mr-1.5" />
-                        Free Demo — Running locally in your browser. No data sent to any server.
-                    </p>
+                <div className="fixed top-[73px] left-0 right-0 z-40 bg-accent/10 border-b border-accent/20 px-4 py-2">
+                    <div className="max-w-2xl mx-auto flex items-center justify-between">
+                        <p className="text-xs font-display text-accent flex items-center flex-wrap gap-x-1">
+                            <Play size={12} className="inline mr-0.5" />
+                            <span>Free Demo — Running locally in your browser. No data sent to any server.</span>
+                            {loadedModelName && isModelReady && (
+                                <span className="text-muted-foreground">
+                                    Model: {loadedModelName}
+                                </span>
+                            )}
+                        </p>
+                        {/* Model quality toggle */}
+                        <div className="flex items-center gap-1 ml-3 shrink-0">
+                            <button
+                                onClick={() => handleModelSizeSwitch('small')}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${
+                                    demoModelSize === 'small'
+                                        ? 'bg-primary/15 border-primary/40 text-primary'
+                                        : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
+                                }`}
+                                title="SmolLM 360M - Faster download (~200 MB), quicker responses"
+                            >
+                                <Zap size={10} />
+                                <span className="hidden sm:inline">Fast</span>
+                            </button>
+                            <button
+                                onClick={() => handleModelSizeSwitch('large')}
+                                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${
+                                    demoModelSize === 'large'
+                                        ? 'bg-secondary/15 border-secondary/40 text-secondary'
+                                        : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
+                                }`}
+                                title="Llama 3.2 3B - Higher quality (~1.5 GB download)"
+                            >
+                                <FlaskConical size={10} />
+                                <span className="hidden sm:inline">Quality</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -564,6 +801,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     : "Ask about calculus, trigonometry, statistics..."
                         }
                         className="input-base flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                        {...keystrokeAttachToInput()}
                     />
                     <button
                         type="submit"

@@ -8,7 +8,7 @@ from .rag import retrieval_service, FatigueLevel
 
 class SyllabusService:
     """
-    Syllabus service using semantic search via ChromaDB.
+    Syllabus service using semantic search via FAISS.
     Replaces the old in-memory text loading approach.
     """
 

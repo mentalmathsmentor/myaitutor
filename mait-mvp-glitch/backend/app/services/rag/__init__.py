@@ -1,4 +1,4 @@
-"""RAG module for MAIT - Semantic search over NSW HSC Mathematics syllabus."""
+"""RAG module for MAIT - Semantic search over NSW HSC Mathematics syllabus using FAISS."""
 from .retrieval_service import retrieval_service, RetrievalService, FatigueLevel
 from .vector_store import vector_store, VectorStore
 from .document_processor import DocumentProcessor, SyllabusChunk

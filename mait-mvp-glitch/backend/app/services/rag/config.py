@@ -4,7 +4,7 @@ from pathlib import Path
 # Paths
 BACKEND_ROOT = Path(__file__).parent.parent.parent.parent
 DATA_DIR = BACKEND_ROOT / "data"
-CHROMA_PERSIST_DIR = DATA_DIR / "chroma_db"
+FAISS_INDEX_DIR = DATA_DIR / "faiss_index"
 
 # Syllabus source files
 SYLLABUS_SOURCES = [
@@ -15,11 +15,12 @@ SYLLABUS_SOURCES = [
 ]
 
 # Embedding Model
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 EMBEDDING_DIMENSIONS = 384
 
-# ChromaDB
-COLLECTION_NAME = "mait_syllabus"
+# FAISS
+FAISS_INDEX_FILE = "index.faiss"
+FAISS_METADATA_FILE = "metadata.json"
 
 # Chunking
 MAX_CHUNK_SIZE = 1000  # tokens

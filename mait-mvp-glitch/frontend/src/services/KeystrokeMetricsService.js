@@ -429,6 +429,70 @@ class KeystrokeMetricsService {
 
         return analysis;
     }
+
+    // =============================================
+    // BACKEND API METHODS
+    // =============================================
+
+    /**
+     * Submit current session metrics to the backend
+     * POST /keystroke-metrics
+     * @param {string} studentId
+     * @param {object} metrics - session metrics object from getSessionMetrics()
+     * @returns {Promise<object>} response with updated profile
+     */
+    async submitMetrics(studentId, metrics) {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        try {
+            const response = await fetch(`${API_URL}/keystroke-metrics`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_id: studentId,
+                    metrics: {
+                        wpm: metrics.wpm || 0,
+                        avg_dwell_time_ms: metrics.avgDwellTime || 0,
+                        avg_flight_time_ms: metrics.avgFlightTime || 0,
+                        avg_thinking_time_ms: metrics.avgThinkingTime || 0,
+                        total_thinking_time_ms: metrics.totalThinkingTime || 0,
+                        error_corrections: metrics.errorCorrections || 0,
+                        error_rate: parseFloat(metrics.errorRate) || 0,
+                        characters_typed: metrics.charactersTyped || 0,
+                        session_duration_ms: metrics.sessionDuration || 0,
+                        rhythm_variance: metrics.rhythmVariance || 0,
+                        keystroke_count: metrics.keystrokeCount || 0
+                    }
+                })
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.warn('Failed to submit keystroke metrics:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Fetch the historical keystroke profile from the backend
+     * GET /keystroke-profile/{student_id}
+     * @param {string} studentId
+     * @returns {Promise<object|null>} profile data or null on error
+     */
+    async getProfile(studentId) {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+        try {
+            const response = await fetch(`${API_URL}/keystroke-profile/${studentId}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.warn('Failed to fetch keystroke profile:', error);
+            return null;
+        }
+    }
 }
 
 // Singleton instance

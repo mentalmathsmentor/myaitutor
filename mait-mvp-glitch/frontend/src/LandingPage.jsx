@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, ExternalLink } from 'lucide-react'
 
-export default function LandingPage({ onLogin, onDemo, onResources }) {
+export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets }) {
     const [code, setCode] = useState('')
     const [error, setError] = useState(false)
     const [showModal, setShowModal] = useState(false)
@@ -55,6 +55,12 @@ export default function LandingPage({ onLogin, onDemo, onResources }) {
                         className="font-display text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                     >
                         AI Resources
+                    </button>
+                    <button
+                        onClick={onWorksheets}
+                        className="font-display text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+                    >
+                        Worksheets
                     </button>
                     <button
                         onClick={() => setShowModal(true)}
