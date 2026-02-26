@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, ExternalLink, FileText, Sparkles, Download, AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
+import { FileText, Sparkles, Download, AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
@@ -26,7 +26,7 @@ const DIFFICULTIES = [
     { label: 'Exam-level', value: 'hard' },
 ]
 
-export default function WorksheetGenerator({ onBack }) {
+export default function WorksheetGenerator() {
     const [topic, setTopic] = useState(TOPICS[0])
     const [yearLevel, setYearLevel] = useState(YEAR_LEVELS[1].label)
     const [numQuestions, setNumQuestions] = useState(10)
@@ -113,25 +113,6 @@ export default function WorksheetGenerator({ onBack }) {
                     backgroundSize: '60px 60px'
                 }}
             />
-
-            {/* Header */}
-            <header className="relative z-10 p-6 flex justify-between items-center animate-reveal animate-reveal-1">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-display text-sm"
-                >
-                    <ArrowLeft size={18} />
-                    Back
-                </button>
-                <a
-                    href="https://mentalmaths.au"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-display text-sm font-medium text-primary hover:text-accent transition-colors duration-300 hover:text-glow-primary"
-                >
-                    mentalmaths.au
-                </a>
-            </header>
 
             {/* Title */}
             <div className="relative z-10 text-center px-6 pt-4 pb-8">

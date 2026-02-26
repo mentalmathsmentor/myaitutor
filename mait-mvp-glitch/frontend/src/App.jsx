@@ -5,12 +5,24 @@ import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff } from 'lucide-react'
 import { modelService } from './features/slm/services/ModelService'
+import NavBar from './components/NavBar'
 import LandingPage from './LandingPage'
 import AIResources from './AIResources'
 import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
+
+const VALID_PAGES = ['landing', 'resources', 'worksheets', 'app', 'demo'];
+
+function getPageFromHash() {
+    const hash = window.location.hash.replace(/^#\/?/, '') || 'landing';
+    return VALID_PAGES.includes(hash) ? hash : 'landing';
+}
+
+function navigateTo(page) {
+    window.location.hash = page === 'landing' ? '/' : `/${page}`;
+}
 
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -26,8 +38,16 @@ const getStudentId = () => {
 
 // page: 'landing' | 'resources' | 'worksheets' | 'app' | 'demo'
 function App() {
-    const [page, setPage] = useState('landing')
+    const [page, setPage] = useState(getPageFromHash)
     const [showLocalChat, setShowLocalChat] = useState(false)
+    const [showLoginModal, setShowLoginModal] = useState(false)
+
+    // Hash-based routing — browser back/forward support
+    useEffect(() => {
+        const onHashChange = () => setPage(getPageFromHash());
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+    }, []);
 
     const [studentId] = useState(getStudentId);
 
@@ -447,26 +467,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return "LOW";
     }
 
-    // Page routing
-    if (page === 'landing') {
-        return (
-            <LandingPage
-                onLogin={() => setPage('app')}
-                onDemo={() => setPage('demo')}
-                onResources={() => setPage('resources')}
-                onWorksheets={() => setPage('worksheets')}
-            />
-        )
-    }
-
-    if (page === 'resources') {
-        return <AIResources onBack={() => setPage('landing')} />
-    }
-
-    if (page === 'worksheets') {
-        return <WorksheetGenerator onBack={() => setPage('landing')} />
-    }
-
+    // Local Core full-screen view — bypasses NavBar
     if (showLocalChat) {
         return (
             <div className="relative z-50 min-h-screen bg-cosmic noise-overlay">
@@ -475,8 +476,63 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         );
     }
 
+    // Login modal handler
+    const handleLoginClick = () => {
+        if (page === 'app') return; // already logged in
+        setShowLoginModal(true);
+    };
+
+    // Login modal submit
+    const handleLoginSubmit = (code) => {
+        if (code === 'HSCMATE2026') {
+            setShowLoginModal(false);
+            navigateTo('app');
+            return true;
+        }
+        return false;
+    };
+
+    // Non-chat pages: NavBar + page content
+    if (page === 'landing') {
+        return (
+            <>
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <div className="pt-14">
+                    <LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} />
+                </div>
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+            </>
+        )
+    }
+
+    if (page === 'resources') {
+        return (
+            <>
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <div className="pt-14">
+                    <AIResources />
+                </div>
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+            </>
+        )
+    }
+
+    if (page === 'worksheets') {
+        return (
+            <>
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <div className="pt-14">
+                    <WorksheetGenerator />
+                </div>
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+            </>
+        )
+    }
+
+    // Chat pages (app / demo) — NavBar + HUD toolbar + chat
     return (
     <>
+        <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
         <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30">
             {/* Decorative grid overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.015]"
@@ -487,46 +543,30 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 }}
             />
 
-            {/* HUD HEADER */}
-            <header className="fixed top-0 left-0 right-0 glass-card backdrop-blur-xl border-b border-surface-2 p-4 flex justify-between items-center z-50">
+            {/* HUD TOOLBAR — below NavBar */}
+            <div className="fixed top-14 left-0 right-0 z-40 glass-card backdrop-blur-xl border-b border-surface-2 px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    {/* Back button */}
-                    <button
-                        onClick={() => setPage('landing')}
-                        className="text-muted-foreground hover:text-foreground transition-colors mr-1"
-                        title="Back to home"
-                    >
-                        <ArrowLeft size={18} />
-                    </button>
                     <div className="relative">
-                        <BrainCircuit className="text-primary" size={22} />
+                        <BrainCircuit className="text-primary" size={18} />
                         {isModelReady && (
                             <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
                         )}
                     </div>
-                    <h1 className="font-display font-bold tracking-tight text-sm">
-                        MAIT
-                        {isDemoMode && <span className="text-accent font-normal ml-1.5">DEMO</span>}
-                        {!isDemoMode && <span className="text-muted-foreground font-normal ml-1.5">MVP</span>}
-                    </h1>
+                    <span className="font-display font-bold tracking-tight text-xs">
+                        {isDemoMode ? <span className="text-accent">DEMO</span> : <span className="text-muted-foreground">MVP</span>}
+                    </span>
                 </div>
 
                 {/* MIDDLE: Clock, Study Timer, Profile */}
-                <div className="hidden md:flex items-center gap-4">
+                <div className="hidden md:flex items-center gap-3">
                     <div className="text-muted-foreground font-mono text-xs">
                         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
 
                     {/* Study Timer */}
                     <button
-                        onClick={() => {
-                            if (studyTimerRunning) {
-                                setStudyTimerRunning(false);
-                            } else {
-                                setStudyTimerRunning(true);
-                            }
-                        }}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all border ${
+                        onClick={() => setStudyTimerRunning(r => !r)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-mono transition-all border ${
                             studyTimerRunning
                                 ? 'bg-primary/10 border-primary/30 text-primary'
                                 : studyTimerSeconds > 0
@@ -535,7 +575,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         }`}
                         title={studyTimerRunning ? 'Pause study timer' : 'Start study timer'}
                     >
-                        {studyTimerRunning ? <TimerOff size={12} /> : <Timer size={12} />}
+                        {studyTimerRunning ? <TimerOff size={11} /> : <Timer size={11} />}
                         <span>{formatStudyTimer(studyTimerSeconds)}</span>
                     </button>
                     {studyTimerSeconds > 0 && !studyTimerRunning && (
@@ -548,7 +588,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         </button>
                     )}
 
-                    <div className="flex items-center gap-2 bg-surface-1 rounded-lg p-1.5 border border-surface-3">
+                    <div className="flex items-center gap-2 bg-surface-1 rounded-lg p-1 border border-surface-3">
                         <input
                             className="bg-transparent border-none text-xs font-display font-medium text-foreground w-20 text-center focus:outline-none placeholder:text-muted-foreground"
                             value={userProfile.nickname}
@@ -569,16 +609,16 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     {/* Keystroke Analytics Toggle */}
                     <button
                         onClick={() => setShowKeystrokePanel(!showKeystrokePanel)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-xs font-display tracking-wide border ${showKeystrokePanel
+                        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all text-xs font-display tracking-wide border ${showKeystrokePanel
                             ? 'bg-secondary/20 border-secondary/50 text-secondary'
                             : 'bg-surface-1 border-surface-3 hover:border-secondary/30 text-muted-foreground hover:text-secondary'
                             }`}
                     >
-                        <Activity size={14} />
+                        <Activity size={13} />
                         <span className="hidden sm:inline">METRICS</span>
                     </button>
 
@@ -586,23 +626,23 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     {!isDemoMode && (
                         <button
                             onClick={() => { setShowLocalChat(true); startLocalBrain('large'); }}
-                            className="flex items-center gap-2 px-3 py-2 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
+                            className="flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
                         >
-                            <Cpu size={14} />
+                            <Cpu size={13} />
                             <span className="hidden sm:inline">LOCAL CORE</span>
                         </button>
                     )}
 
                     {/* Download Progress - Enhanced */}
                     {downloadProgress && !webGPUError && (
-                        <div className="flex flex-col gap-1.5 glass-card px-4 py-2.5 rounded-xl border-primary/20 min-w-[220px]">
+                        <div className="flex flex-col gap-1 glass-card px-3 py-1.5 rounded-xl border-primary/20 min-w-[180px]">
                             <div className="flex items-center gap-2">
                                 {downloadError ? (
-                                    <AlertTriangle size={14} className="text-destructive" />
+                                    <AlertTriangle size={12} className="text-destructive" />
                                 ) : downloadProgress.progress === 100 ? (
-                                    <BrainCircuit size={14} className="text-primary" />
+                                    <BrainCircuit size={12} className="text-primary" />
                                 ) : (
-                                    <Download size={14} className="text-primary animate-bounce" />
+                                    <Download size={12} className="text-primary animate-bounce" />
                                 )}
                                 <span className="text-[10px] font-display uppercase tracking-wider"
                                     style={{ color: downloadError ? 'hsl(var(--destructive))' : 'hsl(var(--primary))' }}>
@@ -614,7 +654,6 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                                 ? 'Downloading'
                                                 : 'Initializing'}
                                 </span>
-                                {/* Download size estimate */}
                                 {!downloadError && downloadProgress.progress !== 100 && downloadProgress.estimatedMB && (
                                     <span className="text-[9px] text-muted-foreground font-mono ml-auto">
                                         ~{downloadProgress.estimatedMB >= 1000
@@ -623,9 +662,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     </span>
                                 )}
                             </div>
-                            {/* Progress bar */}
                             {downloadProgress.progress !== null && !downloadError && (
-                                <div className="w-full bg-surface-1 rounded-full h-1.5 overflow-hidden">
+                                <div className="w-full bg-surface-1 rounded-full h-1 overflow-hidden">
                                     <div
                                         className={`h-full transition-all duration-300 ease-out ${
                                             downloadProgress.progress === 100
@@ -636,44 +674,27 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     />
                                 </div>
                             )}
-                            {/* Status text */}
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] text-muted-foreground font-mono truncate max-w-[160px]">
-                                    {downloadError
-                                        ? (downloadError.length > 50 ? downloadError.substring(0, 50) + '...' : downloadError)
-                                        : downloadProgress.text}
-                                </span>
-                                {/* Download speed */}
-                                {!downloadError && downloadProgress.speedMBps && downloadProgress.progress !== null && downloadProgress.progress !== 100 && (
-                                    <span className="text-[9px] text-primary/70 font-mono ml-2 whitespace-nowrap">
-                                        {downloadProgress.speedMBps >= 1
-                                            ? `${downloadProgress.speedMBps.toFixed(1)} MB/s`
-                                            : `${(downloadProgress.speedMBps * 1024).toFixed(0)} KB/s`}
-                                    </span>
-                                )}
-                            </div>
-                            {/* Retry button on error */}
                             {downloadError && (
                                 <button
                                     onClick={retryDownload}
-                                    className="flex items-center justify-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-primary text-[10px] font-display uppercase tracking-wider hover:bg-primary/20 transition-all"
+                                    className="flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-primary/10 border border-primary/30 text-primary text-[10px] font-display uppercase tracking-wider hover:bg-primary/20 transition-all"
                                 >
                                     <RefreshCw size={10} />
-                                    Retry Download
+                                    Retry
                                 </button>
                             )}
                         </div>
                     )}
 
                     {/* WELLNESS GAUGE */}
-                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border glass-card ${getFatigueColor()}`}>
-                        {context?.fatigue_metric?.status === 'LOCKOUT' ? <BatteryWarning size={16} /> : <Battery size={16} />}
+                    <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border glass-card ${getFatigueColor()}`}>
+                        {context?.fatigue_metric?.status === 'LOCKOUT' ? <BatteryWarning size={14} /> : <Battery size={14} />}
                         <span className="text-xs font-mono font-bold">
                             {getFatigueLevel()}
                         </span>
                     </div>
                 </div>
-            </header>
+            </div>
 
             {/* WebGPU Error Overlay */}
             {webGPUError && showOverlay && (
@@ -735,7 +756,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
             {/* Demo mode banner with model quality toggle */}
             {isDemoMode && (
-                <div className="fixed top-[73px] left-0 right-0 z-40 bg-accent/10 border-b border-accent/20 px-4 py-2">
+                <div className="fixed top-[100px] left-0 right-0 z-30 bg-accent/10 border-b border-accent/20 px-4 py-2">
                     <div className="max-w-2xl mx-auto flex items-center justify-between">
                         <p className="text-xs font-display text-accent flex items-center flex-wrap gap-x-1">
                             <Play size={12} className="inline mr-0.5" />
@@ -781,7 +802,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <div
                 ref={chatContainerRef}
                 onScroll={handleScroll}
-                className={`${isDemoMode ? 'pt-[120px]' : 'pt-24'} pb-32 max-w-2xl mx-auto px-4 min-h-screen`}
+                className={`${isDemoMode ? 'pt-[145px]' : 'pt-[110px]'} pb-32 max-w-2xl mx-auto px-4 min-h-screen`}
             >
                 <div className="space-y-4">
                     {messages.map((msg, idx) => (
@@ -860,6 +881,71 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             />
         )}
     </>
+    )
+}
+
+function LoginModal({ show, onClose, onSubmit, onDemo }) {
+    const [code, setCode] = useState('')
+    const [error, setError] = useState(false)
+
+    if (!show) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        const success = onSubmit(code)
+        if (!success) {
+            setError(true)
+            setTimeout(() => setError(false), 2000)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/90 backdrop-blur-md">
+            <div className="glass-card p-8 rounded-2xl w-full max-w-sm border-glow animate-reveal">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="font-display text-lg font-bold flex items-center gap-2">
+                        Private Access
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-surface-2"
+                    >
+                        <XCircle size={18} />
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <input
+                            autoFocus
+                            type="text"
+                            placeholder="Enter Access Code"
+                            value={code}
+                            onChange={(e) => { setCode(e.target.value); setError(false); }}
+                            className={`input-base text-center font-display text-xl tracking-[0.2em] uppercase py-5 ${error ? 'border-destructive focus:border-destructive' : ''}`}
+                        />
+                        {error && (
+                            <p className="text-destructive text-xs mt-3 text-center font-display">
+                                Invalid Access Code
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        type="submit"
+                        className="w-full btn-primary py-4 rounded-xl font-display text-lg"
+                    >
+                        Unlock App
+                    </button>
+                </form>
+                <div className="mt-4 text-center">
+                    <button
+                        onClick={onDemo}
+                        className="text-muted-foreground text-xs font-display hover:text-primary transition-colors"
+                    >
+                        Or try the free demo instead
+                    </button>
+                </div>
+            </div>
+        </div>
     )
 }
 
