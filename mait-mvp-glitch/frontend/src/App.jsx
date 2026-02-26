@@ -533,9 +533,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     return (
     <>
         <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
-        <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30">
+        <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30">
             {/* Decorative grid overlay */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.015]"
+            <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0"
                 style={{
                     backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
                                      linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
@@ -544,7 +544,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             />
 
             {/* HUD TOOLBAR — below NavBar */}
-            <div className="fixed top-14 left-0 right-0 z-40 glass-card backdrop-blur-xl border-b border-surface-2 px-4 py-2 flex justify-between items-center">
+            <div className="flex-none z-40 glass-card backdrop-blur-xl border-b border-surface-2 px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <BrainCircuit className="text-primary" size={18} />
@@ -756,7 +756,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
             {/* Demo mode banner with model quality toggle */}
             {isDemoMode && (
-                <div className="fixed top-[100px] left-0 right-0 z-30 bg-accent/10 border-b border-accent/20 px-4 py-2">
+                <div className="flex-none z-30 bg-accent/10 border-b border-accent/20 px-4 py-2">
                     <div className="max-w-2xl mx-auto flex items-center justify-between">
                         <p className="text-xs font-display text-accent flex items-center flex-wrap gap-x-1">
                             <Play size={12} className="inline mr-0.5" />
@@ -802,8 +802,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <div
                 ref={chatContainerRef}
                 onScroll={handleScroll}
-                className={`${isDemoMode ? 'pt-[170px]' : 'pt-[120px]'} pb-36 max-w-2xl mx-auto px-4 min-h-screen`}
+                className="flex-1 overflow-y-auto"
             >
+            <div className="max-w-2xl mx-auto px-4 py-6">
                 <div className="space-y-5">
                     {messages.map((msg, idx) => (
                         <div
@@ -841,9 +842,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     <div ref={endOfMsgRef} />
                 </div>
             </div>
+            </div>
 
             {/* INPUT FOOTER */}
-            <footer className="fixed bottom-0 w-full glass-card backdrop-blur-xl border-t border-surface-2 p-4">
+            <footer className="flex-none glass-card backdrop-blur-xl border-t border-surface-2 p-4">
                 <form onSubmit={handleStudy} className="max-w-2xl mx-auto relative flex gap-3">
                     <input
                         autoFocus
