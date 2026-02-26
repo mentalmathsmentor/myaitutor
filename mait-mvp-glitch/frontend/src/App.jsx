@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ExternalLink, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical } from 'lucide-react'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff } from 'lucide-react'
 import { modelService } from './features/slm/services/ModelService'
 import LandingPage from './LandingPage'
 import AIResources from './AIResources'
@@ -46,6 +46,8 @@ function App() {
     const [userProfile, setUserProfile] = useState({ nickname: 'Mate', subject: 'Mathematics Advanced' })
     const [currentTime, setCurrentTime] = useState(new Date())
     const [showKeystrokePanel, setShowKeystrokePanel] = useState(false)
+    const [studyTimerRunning, setStudyTimerRunning] = useState(false)
+    const [studyTimerSeconds, setStudyTimerSeconds] = useState(0)
     const endOfMsgRef = useRef(null)
 
     // New state for polished demo experience
@@ -212,6 +214,21 @@ function App() {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    // Study timer
+    useEffect(() => {
+        if (!studyTimerRunning) return;
+        const id = setInterval(() => setStudyTimerSeconds(s => s + 1), 1000);
+        return () => clearInterval(id);
+    }, [studyTimerRunning]);
+
+    const formatStudyTimer = (totalSec) => {
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const pad = (n) => String(n).padStart(2, '0');
+        return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    };
 
     useEffect(() => {
         if (isModelReady && messageQueue.length > 0 && !loading) {
@@ -453,18 +470,13 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (showLocalChat) {
         return (
             <div className="relative z-50 min-h-screen bg-cosmic noise-overlay">
-                <button
-                    onClick={() => setShowLocalChat(false)}
-                    className="fixed top-4 right-4 z-[60] p-2.5 glass-card text-muted-foreground hover:text-foreground rounded-xl transition-all hover:border-primary/30"
-                >
-                    <XCircle size={22} />
-                </button>
-                <ChatInterface />
+                <ChatInterface onBack={() => setShowLocalChat(false)} />
             </div>
         );
     }
 
     return (
+    <>
         <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30">
             {/* Decorative grid overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.015]"
@@ -499,21 +511,42 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     </h1>
                 </div>
 
-                {/* MIDDLE: Clock, Profile, mentalmaths.au link */}
+                {/* MIDDLE: Clock, Study Timer, Profile */}
                 <div className="hidden md:flex items-center gap-4">
                     <div className="text-muted-foreground font-mono text-xs">
-                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </div>
 
-                    <a
-                        href="https://mentalmaths.au"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-display text-primary hover:text-accent transition-colors flex items-center gap-1"
+                    {/* Study Timer */}
+                    <button
+                        onClick={() => {
+                            if (studyTimerRunning) {
+                                setStudyTimerRunning(false);
+                            } else {
+                                setStudyTimerRunning(true);
+                            }
+                        }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all border ${
+                            studyTimerRunning
+                                ? 'bg-primary/10 border-primary/30 text-primary'
+                                : studyTimerSeconds > 0
+                                    ? 'bg-accent/10 border-accent/30 text-accent'
+                                    : 'bg-surface-1 border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30'
+                        }`}
+                        title={studyTimerRunning ? 'Pause study timer' : 'Start study timer'}
                     >
-                        mentalmaths.au
-                        <ExternalLink size={10} />
-                    </a>
+                        {studyTimerRunning ? <TimerOff size={12} /> : <Timer size={12} />}
+                        <span>{formatStudyTimer(studyTimerSeconds)}</span>
+                    </button>
+                    {studyTimerSeconds > 0 && !studyTimerRunning && (
+                        <button
+                            onClick={() => setStudyTimerSeconds(0)}
+                            className="text-[10px] text-muted-foreground hover:text-destructive transition-colors font-display uppercase tracking-wider"
+                            title="Reset timer"
+                        >
+                            Reset
+                        </button>
+                    )}
 
                     <div className="flex items-center gap-2 bg-surface-1 rounded-lg p-1.5 border border-surface-3">
                         <input
@@ -815,16 +848,18 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 </form>
             </footer>
 
-            {/* Keystroke Analytics Panel */}
-            {showKeystrokePanel && (
-                <KeystrokeAnalytics
-                    metrics={keystrokeMetrics}
-                    historicalMetrics={historicalMetrics}
-                    behaviorAnalysis={behaviorAnalysis}
-                    onClose={() => setShowKeystrokePanel(false)}
-                />
-            )}
         </div>
+
+        {/* Keystroke Analytics Panel — rendered outside main container for proper fixed positioning */}
+        {showKeystrokePanel && (
+            <KeystrokeAnalytics
+                metrics={keystrokeMetrics}
+                historicalMetrics={historicalMetrics}
+                behaviorAnalysis={behaviorAnalysis}
+                onClose={() => setShowKeystrokePanel(false)}
+            />
+        )}
+    </>
     )
 }
 
