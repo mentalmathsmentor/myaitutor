@@ -802,37 +802,39 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <div
                 ref={chatContainerRef}
                 onScroll={handleScroll}
-                className={`${isDemoMode ? 'pt-[145px]' : 'pt-[110px]'} pb-32 max-w-2xl mx-auto px-4 min-h-screen`}
+                className={`${isDemoMode ? 'pt-[170px]' : 'pt-[120px]'} pb-36 max-w-2xl mx-auto px-4 min-h-screen`}
             >
-                <div className="space-y-4">
+                <div className="space-y-5">
                     {messages.map((msg, idx) => (
                         <div
                             key={idx}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-reveal`}
                             style={{ animationDelay: `${idx * 50}ms` }}
                         >
-                            <div
-                                className={`max-w-[85%] px-5 py-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-br-md shadow-glow-sm'
-                                    : 'glass-card text-foreground rounded-bl-md'
-                                    }`}
-                            >
-                                {msg.source === 'typing' ? (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                    </div>
-                                ) : (
-                                    <div className="chat-prose">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
-                                        >
-                                            {msg.text}
-                                        </ReactMarkdown>
-                                    </div>
-                                )}
+                            <div className={`relative max-w-[80%] ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}>
+                                <div
+                                    className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
+                                        ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
+                                        : 'glass-card text-foreground rounded-2xl rounded-bl-sm'
+                                        }`}
+                                >
+                                    {msg.source === 'typing' ? (
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                        </div>
+                                    ) : (
+                                        <div className="chat-prose">
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkMath]}
+                                                rehypePlugins={[rehypeKatex]}
+                                            >
+                                                {msg.text}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
