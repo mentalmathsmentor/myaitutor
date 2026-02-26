@@ -326,6 +326,56 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
+/* Chat message prose styling */
+.chat-prose {
+  @apply relative;
+  z-index: 1;
+}
+
+.chat-prose p {
+  @apply mb-2 last:mb-0;
+}
+
+.chat-prose strong {
+  @apply font-semibold text-foreground;
+}
+
+.chat-prose em {
+  @apply italic;
+}
+
+.chat-prose code {
+  @apply font-mono text-xs bg-surface-1 px-1.5 py-0.5 rounded;
+}
+
+.chat-prose pre {
+  @apply bg-surface-1 rounded-lg p-3 overflow-x-auto mb-2 last:mb-0;
+}
+
+.chat-prose pre code {
+  @apply bg-transparent p-0;
+}
+
+.chat-prose ul {
+  @apply list-disc list-inside mb-2 last:mb-0 space-y-1;
+}
+
+.chat-prose ol {
+  @apply list-decimal list-inside mb-2 last:mb-0 space-y-1;
+}
+
+.chat-prose h1, .chat-prose h2, .chat-prose h3 {
+  @apply font-semibold mb-1;
+}
+
+.chat-prose blockquote {
+  @apply border-l-2 border-primary/40 pl-3 italic text-muted-foreground mb-2 last:mb-0;
+}
+
+.chat-prose .katex-display {
+  @apply my-2 overflow-x-auto;
+}
+
 /* Tag/Badge */
 .tag {
   @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-display uppercase tracking-wider;

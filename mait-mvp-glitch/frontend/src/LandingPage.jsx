@@ -1,21 +1,7 @@
 import { useState } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, ExternalLink } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb } from 'lucide-react'
 
-export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets }) {
-    const [code, setCode] = useState('')
-    const [error, setError] = useState(false)
-    const [showModal, setShowModal] = useState(false)
-
-    const handleLogin = (e) => {
-        e.preventDefault()
-        if (code === 'HSCMATE2026') {
-            onLogin()
-        } else {
-            setError(true)
-            setTimeout(() => setError(false), 2000)
-        }
-    }
-
+export default function LandingPage({ navigate, onLoginClick }) {
     return (
         <div className="min-h-screen bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
             {/* Decorative grid overlay */}
@@ -27,52 +13,8 @@ export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets
                 }}
             />
 
-            {/* Header */}
-            <header className="relative z-10 p-6 flex justify-between items-center animate-reveal animate-reveal-1">
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <BrainCircuit className="text-primary" size={28} />
-                        <div className="absolute inset-0 animate-ping opacity-30">
-                            <BrainCircuit className="text-primary" size={28} />
-                        </div>
-                    </div>
-                    <h1 className="font-display font-bold tracking-tight text-xl">
-                        MAIT <span className="text-muted-foreground font-normal">MVP</span>
-                    </h1>
-                </div>
-                <nav className="flex items-center gap-4">
-                    <a
-                        href="https://mentalmaths.au"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-display text-sm font-medium text-primary hover:text-accent transition-colors duration-300 hover:text-glow-primary flex items-center gap-1.5"
-                    >
-                        mentalmaths.au
-                        <ExternalLink size={12} />
-                    </a>
-                    <button
-                        onClick={onResources}
-                        className="font-display text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
-                    >
-                        AI Resources
-                    </button>
-                    <button
-                        onClick={onWorksheets}
-                        className="font-display text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
-                    >
-                        Worksheets
-                    </button>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="font-display text-sm font-medium text-foreground hover:text-primary transition-colors duration-300"
-                    >
-                        Login
-                    </button>
-                </nav>
-            </header>
-
             {/* Hero */}
-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 -mt-16">
+            <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-4">
                 <div className="tag animate-reveal animate-reveal-2 animate-float mb-8">
                     <Sparkles size={12} />
                     COMING 2026
@@ -92,7 +34,7 @@ export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets
                 {/* Two-path CTA */}
                 <div className="animate-reveal animate-reveal-5 flex flex-col sm:flex-row items-center gap-4">
                     <button
-                        onClick={onDemo}
+                        onClick={() => navigate('demo')}
                         className="btn-primary px-8 py-4 rounded-xl flex items-center gap-3 group"
                     >
                         <Play size={18} />
@@ -100,7 +42,7 @@ export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets
                         <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                     </button>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={onLoginClick}
                         className="px-8 py-4 rounded-xl flex items-center gap-3 font-display text-sm tracking-wide border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all duration-300 group"
                     >
                         <Lock size={16} />
@@ -167,7 +109,7 @@ export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets
                 </div>
                 <div className="text-center animate-reveal animate-reveal-6">
                     <button
-                        onClick={onResources}
+                        onClick={() => navigate('resources')}
                         className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-300 group"
                     >
                         View All Resources
@@ -193,61 +135,6 @@ export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets
                 </p>
             </footer>
 
-            {/* Login Modal */}
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-md">
-                    <div
-                        className="glass-card p-8 rounded-2xl w-full max-w-sm border-glow animate-reveal"
-                        style={{ animationDelay: '0ms' }}
-                    >
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-display text-lg font-bold flex items-center gap-2">
-                                <Lock size={18} className="text-primary" />
-                                Private Access
-                            </h3>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-surface-2"
-                            >
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                            </button>
-                        </div>
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            <div>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    placeholder="Enter Access Code"
-                                    value={code}
-                                    onChange={(e) => { setCode(e.target.value); setError(false); }}
-                                    className={`input-base text-center font-display text-xl tracking-[0.2em] uppercase py-5 ${error ? 'border-destructive focus:border-destructive' : ''}`}
-                                />
-                                {error && (
-                                    <p className="text-destructive text-xs mt-3 text-center font-display">
-                                        Invalid Access Code
-                                    </p>
-                                )}
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full btn-primary py-4 rounded-xl font-display text-lg"
-                            >
-                                Unlock App
-                            </button>
-                        </form>
-                        <div className="mt-4 text-center">
-                            <button
-                                onClick={() => { setShowModal(false); onDemo(); }}
-                                className="text-muted-foreground text-xs font-display hover:text-primary transition-colors"
-                            >
-                                Or try the free demo instead
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

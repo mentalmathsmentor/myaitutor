@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { modelService } from '../services/ModelService';
 import MessageBubble from './MessageBubble';
 
-const ChatInterface = () => {
+const ChatInterface = ({ onBack }) => {
     const [status, setStatus] = useState("initializing"); // initializing | ready | error
     const [statusMsg, setStatusMsg] = useState("Booting neural engine...");
     const [messages, setMessages] = useState([
@@ -117,6 +117,15 @@ const ChatInterface = () => {
             {/* Header */}
             <header className="flex items-center justify-between p-4 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur fixed top-0 w-full z-10 transition-all">
                 <div className="flex items-center gap-2 max-w-3xl mx-auto w-full">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-100"
+                            title="Back to chat"
+                        >
+                            <ArrowLeft size={18} />
+                        </button>
+                    )}
                     <div className="flex items-center gap-2">
                         <div className="bg-emerald-500/10 p-2 rounded-lg">
                             <Sparkles className="text-emerald-400" size={20} />

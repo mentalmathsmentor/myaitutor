@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GraduationCap, BookOpen, Sparkles, Copy, Check, ArrowLeft, ChevronDown, ChevronUp, Lightbulb, Code2, FileText, Wand2, Users } from 'lucide-react'
+import { GraduationCap, BookOpen, Sparkles, Copy, Check, ChevronDown, ChevronUp, Lightbulb, Code2, FileText, Wand2, Users } from 'lucide-react'
 
 function CopyButton({ text }) {
     const [copied, setCopied] = useState(false)
@@ -363,7 +363,7 @@ After each example, rate its reliability on a scale:
     },
 ]
 
-export default function AIResources({ onBack }) {
+export default function AIResources() {
     const [activeTab, setActiveTab] = useState('students')
 
     const tabs = [
@@ -393,25 +393,6 @@ export default function AIResources({ onBack }) {
                     backgroundSize: '60px 60px'
                 }}
             />
-
-            {/* Header */}
-            <header className="relative z-10 p-6 flex justify-between items-center animate-reveal animate-reveal-1">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-display text-sm"
-                >
-                    <ArrowLeft size={18} />
-                    Back
-                </button>
-                <a
-                    href="https://mentalmaths.au"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-display text-sm font-medium text-primary hover:text-accent transition-colors duration-300 hover:text-glow-primary"
-                >
-                    mentalmaths.au
-                </a>
-            </header>
 
             {/* Title */}
             <div className="relative z-10 text-center px-6 pt-4 pb-8">
