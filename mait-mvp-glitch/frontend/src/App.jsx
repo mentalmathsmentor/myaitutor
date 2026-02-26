@@ -770,12 +770,14 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                         <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                     </div>
                                 ) : (
-                                    <ReactMarkdown
-                                        remarkPlugins={[remarkMath]}
-                                        rehypePlugins={[rehypeKatex]}
-                                    >
-                                        {msg.text}
-                                    </ReactMarkdown>
+                                    <div className="chat-prose">
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
+                                        >
+                                            {msg.text}
+                                        </ReactMarkdown>
+                                    </div>
                                 )}
                             </div>
                         </div>
