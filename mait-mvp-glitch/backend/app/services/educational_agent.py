@@ -1,10 +1,10 @@
 """
-Educational agent with RAG-based context retrieval.
+Educational agent with RAG-based context retrieval and Bloom's Taxonomy progression.
 """
 from app.models import StudentContext
 from .gemini_client import get_gemini_response, format_response_as_text
-# NOTE: syllabus_service import DISABLED - ChromaDB hangs
-# from .syllabus_service import syllabus_service
+from .blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
+from .syllabus_service import syllabus_service
 import asyncio
 
 
@@ -12,31 +12,47 @@ async def generate_response_async(query: str, context: StudentContext) -> str:
     """
     Generate response using Gemini with RAG-retrieved context.
     Context size is automatically adjusted based on fatigue state.
+    Bloom's Taxonomy level is assessed and injected into the system prompt.
     """
     # 1. Get current state
     topic = context.pedagogical_state.current_topic or "Mathematics"
     fatigue = context.fatigue_metric.status
 
-    # 2. RAG Retrieval DISABLED - ChromaDB hangs
-    # syllabus_context = syllabus_service.get_relevant_context(...)
-    syllabus_context = ""  # Empty - Gemini answers without RAG
+    # 2. Bloom's Taxonomy - assess query and get teaching strategy
+    demonstrated_level = assess_response_level(query, topic)
+    bloom_instruction = get_bloom_teaching_strategy(context.pedagogical_state.blooms_level)
 
-    # 3. Call Gemini API with retrieved context
+    # 3. Advance bloom level based on demonstrated cognitive level
+    context = advance_bloom_level(context, demonstrated_level)
+
+    # 4. RAG Retrieval via FAISS
+    try:
+        syllabus_context = syllabus_service.get_relevant_context(
+            query=query,
+            fatigue_status=fatigue,
+            year=None
+        )
+    except Exception as e:
+        print(f"RAG retrieval failed (non-fatal): {e}")
+        syllabus_context = ""
+
+    # 5. Call Gemini API with retrieved context and bloom instruction
     gemini_response = await get_gemini_response(
         question=query,
         syllabus_context=syllabus_context,
         fatigue_state=fatigue,
-        current_topic=topic
+        current_topic=topic,
+        bloom_instruction=bloom_instruction
     )
-    
-    # 4. Process Code Verification (Execute Python blocks)
+
+    # 6. Process Code Verification (Execute Python blocks)
     response_text = gemini_response.get("text", "")
     processed_text = await execute_verification_code(response_text)
-    
+
     # Update the response text with executed outputs
     gemini_response["text"] = processed_text
 
-    # 5. Format and return
+    # 7. Format and return
     return format_response_as_text(gemini_response)
 
 

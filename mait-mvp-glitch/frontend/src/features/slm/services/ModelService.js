@@ -1,8 +1,20 @@
 import { CreateMLCEngine } from "@mlc-ai/web-llm";
 
-// Fallback model if window.ai is not available
-// Using Llama 3.2 3B Instruct (Optimized for WebLLM)
-const FALLBACK_MODEL = "Llama-3.2-3B-Instruct-q4f32_1-MLC";
+// Model options - small for demo (fast download), large for full quality
+const MODELS = {
+    small: {
+        id: "SmolLM2-360M-Instruct-q4f16_1-MLC",
+        name: "SmolLM 360M",
+        displayName: "Fast (SmolLM 360M)",
+        estimatedSizeMB: 200,
+    },
+    large: {
+        id: "Llama-3.2-3B-Instruct-q4f32_1-MLC",
+        name: "Llama 3.2 3B",
+        displayName: "Quality (Llama 3.2 3B)",
+        estimatedSizeMB: 1500,
+    }
+};
 
 const SYSTEM_INSTRUCTION = `You are "Mate" - a friendly Australian AI tutor for NSW HSC Mathematics.
 
@@ -42,75 +54,195 @@ class ModelService {
         this.status = 'IDLE'; // 'IDLE' | 'INITIALIZING' | 'READY' | 'ERROR'
         this.session = null; // for window.ai
         this.initPromise = null; // Singleton promise for in-flight init
+        this.currentModelSize = null; // 'small' | 'large'
+        this.currentModelInfo = null; // { id, name, displayName, estimatedSizeMB }
+        this.downloadStartTime = null;
+        this.lastProgressBytes = 0;
+        this.lastProgressTime = null;
+        this.downloadSpeedMBps = null;
     }
 
-    async initialize(onProgress) {
-        // If already ready, just return
-        if (this.status === 'READY') {
-            onProgress("Model already loaded.");
-            return this.type === 'WINDOW_AI' ? "Gemini Nano" : "Gemma 2 2B";
+    /**
+     * Check if WebGPU is available in this browser
+     * @returns {{ available: boolean, reason: string|null }}
+     */
+    static checkWebGPU() {
+        if (typeof navigator === 'undefined') {
+            return { available: false, reason: "Not running in a browser environment." };
+        }
+        if (!navigator.gpu) {
+            return {
+                available: false,
+                reason: "Your browser doesn't support WebGPU. Try Chrome 113+ or Edge 113+."
+            };
+        }
+        return { available: true, reason: null };
+    }
+
+    /**
+     * Get info about available models
+     */
+    static getAvailableModels() {
+        return MODELS;
+    }
+
+    /**
+     * Get current model info
+     * @returns {{ name: string, size: string, status: string, estimatedSizeMB: number, displayName: string }}
+     */
+    getModelInfo() {
+        if (!this.currentModelInfo) {
+            return {
+                name: 'None',
+                size: 'none',
+                status: this.status,
+                estimatedSizeMB: 0,
+                displayName: 'No model loaded',
+            };
+        }
+        return {
+            name: this.currentModelInfo.name,
+            size: this.currentModelSize,
+            status: this.status,
+            estimatedSizeMB: this.currentModelInfo.estimatedSizeMB,
+            displayName: this.currentModelInfo.displayName,
+        };
+    }
+
+    /**
+     * Initialize the model engine
+     * @param {Function} onProgress - Callback for progress updates: (report: { text, progress, fetchedMB, totalMB, speedMBps }) => void
+     * @param {string} modelSize - 'small' or 'large' (default: 'small')
+     */
+    async initialize(onProgress, modelSize = 'small') {
+        // If already ready with the SAME model, just return
+        if (this.status === 'READY' && this.currentModelSize === modelSize) {
+            onProgress({ text: "Model already loaded.", progress: 100 });
+            return this.currentModelInfo.name;
         }
 
-        // If initialization is in progress, latch onto it
-        if (this.initPromise) {
-            onProgress("Joining existing download...");
+        // If switching models, reset first
+        if (this.status === 'READY' && this.currentModelSize !== modelSize) {
+            await this.reset();
+        }
+
+        // If initialization is in progress for the same model, latch onto it
+        if (this.initPromise && this.currentModelSize === modelSize) {
+            onProgress({ text: "Joining existing download..." });
             return this.initPromise;
         }
 
+        // If in progress for a different model, reset and start fresh
+        if (this.initPromise && this.currentModelSize !== modelSize) {
+            await this.reset();
+        }
+
+        // Check WebGPU before attempting
+        const gpuCheck = ModelService.checkWebGPU();
+        if (!gpuCheck.available) {
+            this.type = 'ERROR';
+            this.status = 'ERROR';
+            throw new Error(gpuCheck.reason);
+        }
+
         this.status = 'INITIALIZING';
+        this.currentModelSize = modelSize;
+        this.currentModelInfo = MODELS[modelSize] || MODELS.small;
+        this.downloadStartTime = Date.now();
+        this.lastProgressTime = Date.now();
+        this.lastProgressBytes = 0;
+        this.downloadSpeedMBps = null;
 
         // Wrap the actual work in a promise to store it
         this.initPromise = this._doInitialize(onProgress);
         return this.initPromise;
     }
 
-    async _doInitialize(onProgress) {
-        onProgress("Checking local capabilities...");
-
-        // 1. Try window.ai (Gemini Nano)
-        // DISABLE FOR NOW to force Phi-3.5 as per user request
-        /*
-        if (window.ai && window.ai.languageModel) {
+    /**
+     * Reset the engine so a new model can be loaded
+     */
+    async reset() {
+        if (this.engine) {
             try {
-                const capabilities = await window.ai.languageModel.capabilities();
-                if (capabilities.available !== 'no') {
-                    onProgress("Optimizing local chrome model...");
-                    this.session = await window.ai.languageModel.create({
-                        systemPrompt: SYSTEM_INSTRUCTION
-                    });
-                    this.type = 'WINDOW_AI';
-                    onProgress("Ready (Gemini Nano)");
-                    this.status = 'READY';
-                    return "Gemini Nano";
-                }
+                await this.engine.unload();
             } catch (e) {
-                console.warn("window.ai failed to initialize, falling back...", e);
+                console.warn("Engine unload error (non-fatal):", e);
             }
+            this.engine = null;
         }
-        */
+        this.session = null;
+        this.type = 'NONE';
+        this.status = 'IDLE';
+        this.initPromise = null;
+        this.currentModelSize = null;
+        this.currentModelInfo = null;
+        this.downloadStartTime = null;
+        this.downloadSpeedMBps = null;
+    }
 
-        // 2. Fallback to WebLLM
-        onProgress("Initializing WebLLM...");
+    async _doInitialize(onProgress) {
+        const modelConfig = this.currentModelInfo;
+        const estimatedMB = modelConfig.estimatedSizeMB;
+
+        const wrapProgress = (text, progress = null, extraFields = {}) => {
+            onProgress({
+                text,
+                progress,
+                estimatedMB,
+                speedMBps: this.downloadSpeedMBps,
+                ...extraFields,
+            });
+        };
+
+        wrapProgress("Checking local capabilities...");
+
+        // WebLLM initialization
+        wrapProgress(`Initializing WebLLM (${modelConfig.name})...`);
         try {
             this.engine = await CreateMLCEngine(
-                FALLBACK_MODEL,
+                modelConfig.id,
                 {
                     initProgressCallback: (report) => {
-                        onProgress(report.text);
+                        // Parse progress percentage from report
+                        const percentMatch = report.text.match(/(\d+(?:\.\d+)?)\s*%/);
+                        let progressNum = null;
+                        if (percentMatch) {
+                            progressNum = parseFloat(percentMatch[1]);
+                        }
+
+                        // Estimate download speed from progress
+                        if (progressNum !== null && progressNum > 0) {
+                            const now = Date.now();
+                            const fetchedMB = (progressNum / 100) * estimatedMB;
+                            const elapsed = (now - this.downloadStartTime) / 1000; // seconds
+                            if (elapsed > 1) {
+                                this.downloadSpeedMBps = fetchedMB / elapsed;
+                            }
+                        }
+
+                        // Build user-friendly text
+                        let friendlyText = report.text;
+                        if (progressNum !== null) {
+                            const fetchedMB_display = ((progressNum / 100) * estimatedMB).toFixed(0);
+                            friendlyText = `Downloading model weights (${fetchedMB_display} MB / ${estimatedMB} MB)`;
+                        }
+
+                        wrapProgress(friendlyText, progressNum, {
+                            fetchedMB: progressNum !== null ? ((progressNum / 100) * estimatedMB) : null,
+                        });
                     }
                 }
             );
             this.type = 'WEB_LLM';
-
-            // Set system prompt for WebLLM (usually done via first message or config, 
-            // but for chat flow we'll prepend it to messages)
-            onProgress("Ready (Gemma 2 2B)");
+            wrapProgress(`Ready (${modelConfig.name})`, 100);
             this.status = 'READY';
-            return "Gemma 2 2B";
+            this.initPromise = null; // Clear so future calls can re-init if needed
+            return modelConfig.name;
         } catch (err) {
-            console.error("Critical: Failed to load any local model.", err);
+            console.error("Critical: Failed to load local model.", err);
             this.type = 'ERROR';
             this.status = 'ERROR';
+            this.initPromise = null;
             throw err;
         }
     }
@@ -123,7 +255,9 @@ class ModelService {
             type: this.type,
             status: this.status || 'IDLE',
             session: !!this.session,
-            engine: !!this.engine
+            engine: !!this.engine,
+            modelSize: this.currentModelSize,
+            modelName: this.currentModelInfo?.name || null,
         };
     }
 
@@ -134,9 +268,7 @@ class ModelService {
      */
     async streamChat(history, onChunk, systemInstruction = SYSTEM_INSTRUCTION) {
         if (this.type === 'WINDOW_AI') {
-            // ... (window.ai logic remains) ...
             try {
-                // ...
                 const lastMsg = history[history.length - 1];
                 if (lastMsg.role !== 'user') return;
 

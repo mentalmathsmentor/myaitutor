@@ -1,5 +1,6 @@
 """
 High-level retrieval service for MAIT RAG system.
+Uses FAISS vector store for semantic search.
 Integrates with fatigue system for context-aware retrieval.
 """
 import re

@@ -44,6 +44,10 @@ backend/*.log
 htmlcov/
 .pytest_cache/
 
+# SQLite database
+backend/data/
+data/
+
 # Build artifacts
 *.pyc
 *.pyo

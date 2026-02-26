@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, ExternalLink } from 'lucide-react'
 
-export default function LandingPage({ onLogin }) {
+export default function LandingPage({ onLogin, onDemo, onResources, onWorksheets }) {
     const [code, setCode] = useState('')
     const [error, setError] = useState(false)
     const [showModal, setShowModal] = useState(false)
@@ -40,23 +40,44 @@ export default function LandingPage({ onLogin }) {
                         MAIT <span className="text-muted-foreground font-normal">MVP</span>
                     </h1>
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="font-display text-sm font-medium text-primary hover:text-accent transition-colors duration-300 hover:text-glow-primary"
-                >
-                    Login
-                </button>
+                <nav className="flex items-center gap-4">
+                    <a
+                        href="https://mentalmaths.au"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-display text-sm font-medium text-primary hover:text-accent transition-colors duration-300 hover:text-glow-primary flex items-center gap-1.5"
+                    >
+                        mentalmaths.au
+                        <ExternalLink size={12} />
+                    </a>
+                    <button
+                        onClick={onResources}
+                        className="font-display text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+                    >
+                        AI Resources
+                    </button>
+                    <button
+                        onClick={onWorksheets}
+                        className="font-display text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
+                    >
+                        Worksheets
+                    </button>
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="font-display text-sm font-medium text-foreground hover:text-primary transition-colors duration-300"
+                    >
+                        Login
+                    </button>
+                </nav>
             </header>
 
             {/* Hero */}
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 -mt-16">
-                {/* Floating badge */}
                 <div className="tag animate-reveal animate-reveal-2 animate-float mb-8">
                     <Sparkles size={12} />
                     COMING 2026
                 </div>
 
-                {/* Main heading with glitch effect */}
                 <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1]">
                     <span className="gradient-text-primary">Your AI Study Mate</span>
                     <br />
@@ -65,17 +86,30 @@ export default function LandingPage({ onLogin }) {
 
                 <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg md:text-xl mb-10 max-w-lg leading-relaxed">
                     Learns when you're tired. Knows when to push.
-                    <span className="text-secondary"> The only tutor that optimizes your cognitive load.</span>
+                    <span className="text-secondary"> The only tutor that optimises your cognitive load.</span>
                 </p>
 
-                {/* CTA Button */}
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="animate-reveal animate-reveal-5 btn-primary px-8 py-4 rounded-xl flex items-center gap-3 group"
-                >
-                    Enter Access Code
-                    <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-                </button>
+                {/* Two-path CTA */}
+                <div className="animate-reveal animate-reveal-5 flex flex-col sm:flex-row items-center gap-4">
+                    <button
+                        onClick={onDemo}
+                        className="btn-primary px-8 py-4 rounded-xl flex items-center gap-3 group"
+                    >
+                        <Play size={18} />
+                        Try Free Demo
+                        <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                    </button>
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="px-8 py-4 rounded-xl flex items-center gap-3 font-display text-sm tracking-wide border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all duration-300 group"
+                    >
+                        <Lock size={16} />
+                        Full Access
+                    </button>
+                </div>
+                <p className="animate-reveal animate-reveal-6 text-muted-foreground text-xs mt-4">
+                    Demo runs locally in your browser. No sign-up, no API keys needed.
+                </p>
             </main>
 
             {/* Features */}
@@ -83,7 +117,7 @@ export default function LandingPage({ onLogin }) {
                 <FeatureCard
                     icon={<BrainCircuit className="text-primary" size={24} />}
                     title="NSW Syllabus Aligned"
-                    desc="Trained specifically on Advanced & Extension 1 outcomes."
+                    desc="Built for Advanced, Extension 1 and Extension 2 outcomes."
                     delay="animate-reveal-1"
                 />
                 <FeatureCard
@@ -100,6 +134,48 @@ export default function LandingPage({ onLogin }) {
                 />
             </section>
 
+            {/* AI Resources Preview */}
+            <section className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-16">
+                <div className="divider-glow mb-8" />
+                <div className="text-center mb-8">
+                    <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">
+                        <span className="gradient-text-primary">Free AI Resources</span>
+                    </h3>
+                    <p className="text-muted-foreground animate-reveal animate-reveal-2">
+                        Prompts, guides, and system prompts for students, teachers, and anyone curious about AI.
+                    </p>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4 mb-8">
+                    <ResourcePreviewCard
+                        icon={<GraduationCap className="text-primary" size={20} />}
+                        title="For Students"
+                        items={["Homework helper prompts", "Exam study summariser", "Practice question generator"]}
+                        delay="animate-reveal-3"
+                    />
+                    <ResourcePreviewCard
+                        icon={<BookOpen className="text-accent" size={20} />}
+                        title="For Teachers"
+                        items={["LaTeX worksheet generator", "Lesson plan builder", "Marking rubric creator"]}
+                        delay="animate-reveal-4"
+                    />
+                    <ResourcePreviewCard
+                        icon={<Lightbulb className="text-secondary" size={20} />}
+                        title="For Everyone"
+                        items={["Personal AI tutor setup", "Study planner prompts", "What can AI actually do?"]}
+                        delay="animate-reveal-5"
+                    />
+                </div>
+                <div className="text-center animate-reveal animate-reveal-6">
+                    <button
+                        onClick={onResources}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-300 group"
+                    >
+                        View All Resources
+                        <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                    </button>
+                </div>
+            </section>
+
             {/* Waitlist Section */}
             <section className="relative z-10 w-full max-w-xl mx-auto px-6 pb-16 text-center">
                 <div className="divider-glow mb-8" />
@@ -113,11 +189,11 @@ export default function LandingPage({ onLogin }) {
             {/* Footer */}
             <footer className="relative z-10 py-6 text-center border-t border-surface-2">
                 <p className="text-muted-foreground text-sm font-display">
-                    Built by <span className="text-primary">Mental Maths Mentor</span> · Coming 2026
+                    Built by <a href="https://mentalmaths.au" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">Mental Maths Mentor</a> · Coming 2026
                 </p>
             </footer>
 
-            {/* Modal */}
+            {/* Login Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/90 backdrop-blur-md">
                     <div
@@ -146,8 +222,7 @@ export default function LandingPage({ onLogin }) {
                                     placeholder="Enter Access Code"
                                     value={code}
                                     onChange={(e) => { setCode(e.target.value); setError(false); }}
-                                    className={`input-base text-center font-display text-xl tracking-[0.2em] uppercase py-5 ${error ? 'border-destructive focus:border-destructive' : ''
-                                        }`}
+                                    className={`input-base text-center font-display text-xl tracking-[0.2em] uppercase py-5 ${error ? 'border-destructive focus:border-destructive' : ''}`}
                                 />
                                 {error && (
                                     <p className="text-destructive text-xs mt-3 text-center font-display">
@@ -162,6 +237,14 @@ export default function LandingPage({ onLogin }) {
                                 Unlock App
                             </button>
                         </form>
+                        <div className="mt-4 text-center">
+                            <button
+                                onClick={() => { setShowModal(false); onDemo(); }}
+                                className="text-muted-foreground text-xs font-display hover:text-primary transition-colors"
+                            >
+                                Or try the free demo instead
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -177,6 +260,25 @@ function FeatureCard({ icon, title, desc, delay }) {
             </div>
             <h3 className="font-display font-bold mb-2 text-foreground">{title}</h3>
             <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+        </div>
+    )
+}
+
+function ResourcePreviewCard({ icon, title, items, delay }) {
+    return (
+        <div className={`glass-card p-5 rounded-xl hover:border-primary/30 transition-all duration-500 animate-reveal ${delay}`}>
+            <div className="flex items-center gap-2 mb-3">
+                {icon}
+                <h4 className="font-display text-sm font-bold">{title}</h4>
+            </div>
+            <ul className="space-y-1.5">
+                {items.map(item => (
+                    <li key={item} className="text-muted-foreground text-xs flex items-start gap-2">
+                        <span className="text-primary mt-0.5">&#8250;</span>
+                        {item}
+                    </li>
+                ))}
+            </ul>
         </div>
     )
 }
@@ -203,7 +305,7 @@ function WaitlistForm() {
             } else {
                 setStatus('error')
             }
-        } catch (e) {
+        } catch {
             setStatus('error')
         }
     }
