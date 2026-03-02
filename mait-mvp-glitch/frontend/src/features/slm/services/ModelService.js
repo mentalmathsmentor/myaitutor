@@ -3,16 +3,16 @@ import { CreateMLCEngine } from "@mlc-ai/web-llm";
 // Model options - small for demo (fast download), large for full quality
 const MODELS = {
     small: {
-        id: "SmolLM2-360M-Instruct-q4f16_1-MLC",
-        name: "SmolLM 360M",
-        displayName: "Fast (SmolLM 360M)",
-        estimatedSizeMB: 200,
+        id: "gemma-2-2b-it-q4f16_1-MLC",
+        name: "Gemma 2 2B",
+        displayName: "Fast (Gemma 2 2B)",
+        estimatedSizeMB: 1400,
     },
     large: {
-        id: "Llama-3.2-3B-Instruct-q4f32_1-MLC",
-        name: "Llama 3.2 3B",
-        displayName: "Quality (Llama 3.2 3B)",
-        estimatedSizeMB: 1500,
+        id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
+        name: "Phi 3.5 Mini",
+        displayName: "Quality (Phi 3.5 Mini)",
+        estimatedSizeMB: 2200,
     }
 };
 

@@ -773,10 +773,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         <p className="text-xs text-muted-foreground leading-relaxed">
                             Switching to{' '}
                             <span className="text-foreground font-medium">
-                                {showModelSwitchConfirm === 'small' ? 'Fast (SmolLM 360M)' : 'Quality (Llama 3.2 3B)'}
+                                {showModelSwitchConfirm === 'small' ? 'Fast (Gemma 2 2B)' : 'Quality (Phi 3.5 Mini)'}
                             </span>
                             {' '}requires downloading a new model
-                            (~{showModelSwitchConfirm === 'small' ? '200' : '1,500'} MB).
+                            (~{showModelSwitchConfirm === 'small' ? '1,400' : '2,200'} MB).
                             The current model will be unloaded.
                         </p>
                         <div className="flex gap-3 justify-center">
@@ -819,7 +819,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                         ? 'bg-primary/15 border-primary/40 text-primary'
                                         : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
                                 }`}
-                                title="SmolLM 360M - Faster download (~200 MB), quicker responses"
+                                title="Gemma 2 2B - Faster download (~1.4 GB), quicker responses"
                             >
                                 <Zap size={10} />
                                 <span className="hidden sm:inline">Fast</span>
@@ -831,7 +831,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                         ? 'bg-secondary/15 border-secondary/40 text-secondary'
                                         : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
                                 }`}
-                                title="Llama 3.2 3B - Higher quality (~1.5 GB download)"
+                                title="Phi 3.5 Mini - Higher quality (~2.2 GB download)"
                             >
                                 <FlaskConical size={10} />
                                 <span className="hidden sm:inline">Quality</span>
