@@ -39,7 +39,7 @@ function KeystrokeAnalytics({ metrics, historicalMetrics, behaviorAnalysis, onCl
     };
 
     return (
-        <div className="fixed right-4 top-20 w-80 glass-card rounded-2xl shadow-2xl z-40 overflow-hidden border-secondary/20 animate-reveal">
+        <div className="fixed right-4 top-[7rem] w-80 max-h-[calc(100vh-8rem)] overflow-y-auto bg-surface-2 border border-secondary/20 backdrop-blur-xl rounded-2xl shadow-2xl z-50 animate-reveal">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-surface-2">
                 <div className="flex items-center gap-2">
