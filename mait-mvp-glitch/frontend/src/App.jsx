@@ -63,7 +63,7 @@ function App() {
 
     const [context, setContext] = useState(null)
     const [messages, setMessages] = useState([
-        { role: 'bot', text: "G'day! I'm ready to crunch some NSW Maths. What's on your mind?" }
+        { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
     ])
 
     const [input, setInput] = useState('')
@@ -218,6 +218,28 @@ function App() {
         // Start download with the new model
         setTimeout(() => startLocalBrain(newSize), 100);
     };
+
+    // Update initial greeting when nickname or subject changes
+    useEffect(() => {
+        setMessages(prev => {
+            if (prev.length > 0 && prev[0].isGreeting) {
+                const name = userProfile.nickname || 'Mate';
+                const subject = userProfile.subject || 'NSW Maths';
+                return [{ ...prev[0], text: `G'day, ${name}! I'm ready to crunch some ${subject}. What's on your mind?` }, ...prev.slice(1)];
+            }
+            return prev;
+        });
+    }, [userProfile.nickname, userProfile.subject]);
+
+    // Lock body scroll on chat pages to prevent double scrollbar
+    useEffect(() => {
+        if (page === 'app' || page === 'demo') {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [page]);
 
     useEffect(() => {
         if (page === 'app' || page === 'demo') fetchContext();
@@ -836,7 +858,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                 <div
                                     className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
                                         ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
-                                        : 'glass-card text-foreground rounded-2xl rounded-bl-sm'
+                                        : 'bg-surface-2 border border-surface-3 text-foreground rounded-2xl rounded-bl-sm'
                                         }`}
                                 >
                                     {msg.source === 'typing' ? (
