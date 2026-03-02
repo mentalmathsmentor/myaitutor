@@ -11,9 +11,10 @@ import AIResources from './AIResources'
 import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
+import PastPapers from './PastPapers'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 
-const VALID_PAGES = ['landing', 'resources', 'worksheets', 'app', 'demo'];
+const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo'];
 
 function getPageFromHash() {
     const hash = window.location.hash.replace(/^#\/?/, '') || 'landing';
@@ -524,6 +525,16 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 <div className="pt-14">
                     <WorksheetGenerator />
                 </div>
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+            </>
+        )
+    }
+
+    if (page === 'pastpapers') {
+        return (
+            <>
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <PastPapers />
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
             </>
         )
