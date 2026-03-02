@@ -836,7 +836,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                 <div
                                     className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
                                         ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
-                                        : 'glass-card text-foreground rounded-2xl rounded-bl-sm'
+                                        : 'bg-surface-2 border border-surface-3 text-foreground rounded-2xl rounded-bl-sm'
                                         }`}
                                 >
                                     {msg.source === 'typing' ? (

@@ -353,7 +353,7 @@ body {
   left: -6px;
   width: 12px;
   height: 12px;
-  background: hsla(var(--surface-2), 0.6);
+  background: hsl(var(--surface-2));
   clip-path: polygon(100% 0, 0 100%, 100% 100%);
 }
 

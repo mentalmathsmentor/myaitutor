@@ -72,7 +72,7 @@ const MessageBubble = ({ role, content }) => {
                         text-[15px] leading-relaxed
                         ${isUser
                             ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
-                            : 'glass-card text-foreground rounded-2xl rounded-bl-sm'
+                            : 'bg-surface-2 border border-surface-3 text-foreground rounded-2xl rounded-bl-sm'
                         }
                     `}
                 >
