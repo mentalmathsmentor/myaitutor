@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Timer, TimerOff, RotateCcw, ExternalLink, ChevronDown, ChevronRight, Clock, AlertTriangle, Play, Square, BookOpen, Shield } from 'lucide-react'
 
 // ─── NESA URL builder ─────────────────────────────────────────────────────────
-const NESA_BASE = 'https://educationstandards.nsw.edu.au/wps/portal/nesa/11-12/resources/hsc-exam-papers/hsc-exam-paper-detail'
-const nesaUrl = (slug, year) => `${NESA_BASE}/${year}/${slug}-${year}-hsc-exam-pack`
+const NESA_BASE = 'https://www.nsw.gov.au/education-and-training/nesa/curriculum/hsc-exam-papers'
+const nesaUrl = (slug, year) => `${NESA_BASE}/${slug}/${year}`
 
-const NESA_YEARS = [2024, 2023, 2022, 2021, 2020]
+const NESA_YEARS = [2025, 2024, 2023, 2022, 2021, 2020]
 
 // ─── Paper catalogue ──────────────────────────────────────────────────────────
 const CATALOGUE = [
@@ -400,20 +400,17 @@ export default function PastPapers() {
                                                     </button>
                                                     {isOpen && NESA_YEARS.map(yr => {
                                                         const url = nesaUrl(section.slug, yr)
-                                                        const isActive = activeUrl === url
                                                         return (
-                                                            <button
+                                                            <a
                                                                 key={yr}
-                                                                onClick={() => handleSelect(url, `${subject.label} — ${yr} Official HSC`, subject.examDuration)}
-                                                                className={`w-full flex items-center justify-between pl-10 pr-3 py-1 text-[10px] transition-all ${
-                                                                    isActive
-                                                                        ? `${colorClass(subject.color, 'bg')} ${colorClass(subject.color, 'text')} border-l-2 ${colorClass(subject.color, 'border')}`
-                                                                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent'
-                                                                }`}
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="w-full flex items-center justify-between pl-10 pr-3 py-1 text-[10px] transition-all text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent"
                                                             >
                                                                 <span>{yr} HSC</span>
-                                                                <span className="text-[8px] font-mono opacity-40">NESA</span>
-                                                            </button>
+                                                                <ExternalLink size={8} className="opacity-40" />
+                                                            </a>
                                                         )
                                                     })}
                                                 </div>
@@ -472,21 +469,34 @@ export default function PastPapers() {
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-2 justify-center mt-2">
-                                {/* Quick-start buttons */}
+                                {/* Quick-start buttons — NESA links open new tab, THSC open in iframe */}
                                 {[
-                                    { label: '2024 Advanced HSC', url: nesaUrl('mathematics-advanced', 2024), color: 'primary', duration: 180 },
-                                    { label: '2024 Ext 1 HSC', url: nesaUrl('mathematics-extension-1', 2024), color: 'accent', duration: 120 },
+                                    { label: '2025 Advanced HSC', url: nesaUrl('mathematics-advanced', 2025), color: 'primary', external: true },
+                                    { label: '2025 Ext 1 HSC', url: nesaUrl('mathematics-extension-1', 2025), color: 'accent', external: true },
                                     { label: 'Advanced Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', color: 'primary', duration: 180 },
                                     { label: 'Ext 1 Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension1.html', color: 'accent', duration: 120 },
-                                ].map(q => (
-                                    <button
-                                        key={q.url}
-                                        onClick={() => handleSelect(q.url, q.label, q.duration)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-display border transition-all ${colorClass(q.color, 'badge')}`}
-                                    >
-                                        {q.label}
-                                    </button>
-                                ))}
+                                ].map(q =>
+                                    q.external ? (
+                                        <a
+                                            key={q.url}
+                                            href={q.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display border transition-all ${colorClass(q.color, 'badge')}`}
+                                        >
+                                            {q.label}
+                                            <ExternalLink size={10} />
+                                        </a>
+                                    ) : (
+                                        <button
+                                            key={q.url}
+                                            onClick={() => handleSelect(q.url, q.label, q.duration)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-display border transition-all ${colorClass(q.color, 'badge')}`}
+                                        >
+                                            {q.label}
+                                        </button>
+                                    )
+                                )}
                             </div>
                         </div>
                     ) : (
