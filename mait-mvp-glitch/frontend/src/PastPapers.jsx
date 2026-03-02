@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { Timer, TimerOff, RotateCcw, ExternalLink, ChevronDown, ChevronRight, Clock, AlertTriangle, Play, Square, BookOpen } from 'lucide-react'
+import { Timer, TimerOff, RotateCcw, ExternalLink, ChevronDown, ChevronRight, Clock, AlertTriangle, Play, Square, BookOpen, Shield } from 'lucide-react'
+
+// ─── NESA URL builder ─────────────────────────────────────────────────────────
+const NESA_BASE = 'https://educationstandards.nsw.edu.au/wps/portal/nesa/11-12/resources/hsc-exam-papers/hsc-exam-paper-detail'
+const nesaUrl = (slug, year) => `${NESA_BASE}/${year}/${slug}-${year}-hsc-exam-pack`
+
+const NESA_YEARS = [2024, 2023, 2022, 2021, 2020]
 
 // ─── Paper catalogue ──────────────────────────────────────────────────────────
 const CATALOGUE = [
@@ -7,30 +13,38 @@ const CATALOGUE = [
         year: 'Year 12',
         subjects: [
             {
-                id: 'y12-standard', label: 'Standard', color: 'secondary', examDuration: 130,
+                id: 'y12-standard', label: 'Standard', color: 'secondary', examDuration: 150,
                 sections: [
-                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_general.html', count: '~40' },
+                    { label: 'Internal Assessments', url: 'https://thsconline.github.io/s/yr12/Maths/assessment-tasks_general.html', count: '35' },
+                    { label: 'Official HSC (NESA)', nesa: true, slug: 'mathematics-standard' },
+                    { label: 'Past HSC Papers (<2019)', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_general.html', count: '~40' },
                     { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_general.html', count: '173' },
                 ],
             },
             {
-                id: 'y12-advanced', label: 'Advanced (2U)', color: 'primary', examDuration: 120,
+                id: 'y12-advanced', label: 'Advanced (2U)', color: 'primary', examDuration: 180,
                 sections: [
-                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_advanced.html', count: '~40' },
+                    { label: 'Internal Assessments', url: 'https://thsconline.github.io/s/yr12/Maths/assessment-tasks_advanced.html', count: '382' },
+                    { label: 'Official HSC (NESA)', nesa: true, slug: 'mathematics-advanced' },
+                    { label: 'Past HSC Papers (<2019)', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_advanced.html', count: '~40' },
                     { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', count: '655' },
                 ],
             },
             {
                 id: 'y12-ext1', label: 'Extension 1', color: 'accent', examDuration: 120,
                 sections: [
-                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension1.html', count: '~40' },
+                    { label: 'Internal Assessments', url: 'https://thsconline.github.io/s/yr12/Maths/assessment-tasks_extension1.html', count: '428' },
+                    { label: 'Official HSC (NESA)', nesa: true, slug: 'mathematics-extension-1' },
+                    { label: 'Past HSC Papers (<2019)', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension1.html', count: '~40' },
                     { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension1.html', count: '772' },
                 ],
             },
             {
                 id: 'y12-ext2', label: 'Extension 2', color: 'accent', examDuration: 180,
                 sections: [
-                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension2.html', count: '~35' },
+                    { label: 'Internal Assessments', url: 'https://thsconline.github.io/s/yr12/Maths/assessment-tasks_extension2.html', count: '447' },
+                    { label: 'Official HSC (NESA)', nesa: true, slug: 'mathematics-extension-2' },
+                    { label: 'Past HSC Papers (<2019)', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension2.html', count: '~35' },
                     { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension2.html', count: '695' },
                 ],
             },
@@ -48,12 +62,14 @@ const CATALOGUE = [
             {
                 id: 'y11-advanced', label: 'Advanced (2U)', color: 'primary', examDuration: 90,
                 sections: [
+                    { label: 'Internal Assessments', url: 'https://thsconline.github.io/s/yr11/Maths/assessment-tasks_advanced.html', count: '188' },
                     { label: 'Yearly Exams', url: 'https://thsconline.github.io/s/yr11/Maths/prelimpapers_advanced.html', count: '268' },
                 ],
             },
             {
                 id: 'y11-ext1', label: 'Extension 1', color: 'accent', examDuration: 60,
                 sections: [
+                    { label: 'Internal Assessments', url: 'https://thsconline.github.io/s/yr11/Maths/assessment-tasks_extension1.html', count: '173' },
                     { label: 'Yearly Exams', url: 'https://thsconline.github.io/s/yr11/Maths/prelimpapers_extension1.html', count: '225' },
                 ],
             },
@@ -308,6 +324,7 @@ export default function PastPapers() {
     const [activeLabel, setActiveLabel] = useState('')
     const [iframeLoaded, setIframeLoaded] = useState(false)
     const [expandedSubjects, setExpandedSubjects] = useState({ 'y12-advanced': true })
+    const [expandedNesa, setExpandedNesa] = useState({})
     const [suggestedDuration, setSuggestedDuration] = useState(120)
 
     const handleSelect = (url, label, duration) => {
@@ -321,6 +338,10 @@ export default function PastPapers() {
         setExpandedSubjects(prev => ({ ...prev, [id]: !prev[id] }))
     }
 
+    const toggleNesa = (subjectId) => {
+        setExpandedNesa(prev => ({ ...prev, [subjectId]: !prev[subjectId] }))
+    }
+
     return (
         <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay">
 
@@ -331,7 +352,7 @@ export default function PastPapers() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
-                <aside className="w-52 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
+                <aside className="w-56 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
                     <div className="px-3 pt-3 pb-1">
                         <p className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">NSW Maths Papers</p>
                     </div>
@@ -361,6 +382,45 @@ export default function PastPapers() {
 
                                     {/* Section links */}
                                     {expandedSubjects[subject.id] && subject.sections.map(section => {
+                                        // ── NESA expandable section ──
+                                        if (section.nesa) {
+                                            const nesaKey = `${subject.id}-nesa`
+                                            const isOpen = expandedNesa[nesaKey]
+                                            return (
+                                                <div key={nesaKey}>
+                                                    <button
+                                                        onClick={() => toggleNesa(nesaKey)}
+                                                        className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-[11px] transition-all text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent`}
+                                                    >
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Shield size={10} className="text-primary/60" />
+                                                            {section.label}
+                                                        </span>
+                                                        {isOpen ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                                                    </button>
+                                                    {isOpen && NESA_YEARS.map(yr => {
+                                                        const url = nesaUrl(section.slug, yr)
+                                                        const isActive = activeUrl === url
+                                                        return (
+                                                            <button
+                                                                key={yr}
+                                                                onClick={() => handleSelect(url, `${subject.label} — ${yr} Official HSC`, subject.examDuration)}
+                                                                className={`w-full flex items-center justify-between pl-10 pr-3 py-1 text-[10px] transition-all ${
+                                                                    isActive
+                                                                        ? `${colorClass(subject.color, 'bg')} ${colorClass(subject.color, 'text')} border-l-2 ${colorClass(subject.color, 'border')}`
+                                                                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent'
+                                                                }`}
+                                                            >
+                                                                <span>{yr} HSC</span>
+                                                                <span className="text-[8px] font-mono opacity-40">NESA</span>
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )
+                                        }
+
+                                        // ── Regular section link ──
                                         const isActive = activeUrl === section.url
                                         return (
                                             <button
@@ -385,14 +445,13 @@ export default function PastPapers() {
                     {/* Source credit */}
                     <div className="mt-auto px-3 py-3 border-t border-surface-2">
                         <p className="text-[9px] text-muted-foreground/50 leading-relaxed">
-                            Papers sourced from{' '}
-                            <a
-                                href="https://thsconline.github.io/s/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary/70 hover:text-primary underline"
-                            >
+                            Papers from{' '}
+                            <a href="https://thsconline.github.io/s/" target="_blank" rel="noopener noreferrer" className="text-primary/70 hover:text-primary underline">
                                 THSC Online
+                            </a>
+                            {' '}&{' '}
+                            <a href="https://educationstandards.nsw.edu.au/wps/portal/nesa/11-12/resources/hsc-exam-papers" target="_blank" rel="noopener noreferrer" className="text-primary/70 hover:text-primary underline">
+                                NESA
                             </a>
                         </p>
                     </div>
@@ -409,15 +468,15 @@ export default function PastPapers() {
                             <div>
                                 <p className="text-sm font-display text-foreground mb-1">Select a paper collection</p>
                                 <p className="text-xs text-muted-foreground max-w-sm">
-                                    Choose a subject and paper type from the sidebar to browse HSC and trial papers from THSC Online.
+                                    Browse past HSC papers, trial papers, and internal assessments. Official NESA papers include marking guidelines and sample answers.
                                 </p>
                             </div>
                             <div className="flex flex-wrap gap-2 justify-center mt-2">
                                 {/* Quick-start buttons */}
                                 {[
-                                    { label: 'Advanced HSC', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_advanced.html', color: 'primary', duration: 120 },
-                                    { label: 'Ext 1 HSC', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension1.html', color: 'accent', duration: 120 },
-                                    { label: 'Advanced Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', color: 'primary', duration: 120 },
+                                    { label: '2024 Advanced HSC', url: nesaUrl('mathematics-advanced', 2024), color: 'primary', duration: 180 },
+                                    { label: '2024 Ext 1 HSC', url: nesaUrl('mathematics-extension-1', 2024), color: 'accent', duration: 120 },
+                                    { label: 'Advanced Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', color: 'primary', duration: 180 },
                                     { label: 'Ext 1 Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension1.html', color: 'accent', duration: 120 },
                                 ].map(q => (
                                     <button
