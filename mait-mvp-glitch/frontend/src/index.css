@@ -255,7 +255,8 @@ body {
   outline-offset: 2px;
 }
 
-/* COMPONENT STYLES */
+/* COMPONENT STYLES — wrapped in @layer so Tailwind utilities (fixed, absolute, etc.) always win */
+@layer components {
 
 /* Glass morphism card */
 .glass-card {
@@ -425,3 +426,5 @@ body {
     transparent 100%
   );
 }
+
+} /* end @layer components */
