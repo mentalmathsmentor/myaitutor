@@ -16,13 +16,22 @@ import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 
 const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo'];
 
-function getPageFromHash() {
-    const hash = window.location.hash.replace(/^#\/?/, '') || 'landing';
-    return VALID_PAGES.includes(hash) ? hash : 'landing';
+function getPageFromPath() {
+    // Support both clean URLs (/pastpapers) and legacy hash URLs (/#/pastpapers)
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    if (hash && VALID_PAGES.includes(hash)) {
+        // Migrate hash URL to clean URL
+        window.history.replaceState(null, '', hash === 'landing' ? '/' : `/${hash}`);
+        return hash;
+    }
+    const path = window.location.pathname.replace(/^\//, '') || 'landing';
+    return VALID_PAGES.includes(path) ? path : 'landing';
 }
 
 function navigateTo(page) {
-    window.location.hash = page === 'landing' ? '/' : `/${page}`;
+    const url = page === 'landing' ? '/' : `/${page}`;
+    window.history.pushState(null, '', url);
+    window.dispatchEvent(new Event('popstate'));
 }
 
 
@@ -39,15 +48,15 @@ const getStudentId = () => {
 
 // page: 'landing' | 'resources' | 'worksheets' | 'app' | 'demo'
 function App() {
-    const [page, setPage] = useState(getPageFromHash)
+    const [page, setPage] = useState(getPageFromPath)
     const [showLocalChat, setShowLocalChat] = useState(false)
     const [showLoginModal, setShowLoginModal] = useState(false)
 
-    // Hash-based routing — browser back/forward support
+    // Clean URL routing — browser back/forward support
     useEffect(() => {
-        const onHashChange = () => setPage(getPageFromHash());
-        window.addEventListener('hashchange', onHashChange);
-        return () => window.removeEventListener('hashchange', onHashChange);
+        const onNav = () => setPage(getPageFromPath());
+        window.addEventListener('popstate', onNav);
+        return () => window.removeEventListener('popstate', onNav);
     }, []);
 
     const [studentId] = useState(getStudentId);
