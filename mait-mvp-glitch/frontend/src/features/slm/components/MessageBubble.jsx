@@ -65,56 +65,57 @@ const MessageBubble = ({ role, content }) => {
 
     return (
         <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} animate-reveal`}>
-            <div
-                className={`
-                    max-w-[90%] sm:max-w-[85%]
-                    px-5 py-4
-                    rounded-2xl text-[15px] leading-relaxed
-                    ${isUser
-                        ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-br-md shadow-glow-sm'
-                        : 'glass-card text-foreground rounded-bl-md'
-                    }
-                `}
-            >
-                <div className="space-y-3">
-                    {isUser ? (
-                        <div className="whitespace-pre-wrap">{content}</div>
-                    ) : (
-                        contentComponents.map((comp, idx) => {
-                            if (comp.type === 'graph') {
+            <div className={`relative max-w-[85%] sm:max-w-[80%] ${isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}>
+                <div
+                    className={`
+                        px-4 py-3
+                        text-[15px] leading-relaxed
+                        ${isUser
+                            ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
+                            : 'glass-card text-foreground rounded-2xl rounded-bl-sm'
+                        }
+                    `}
+                >
+                    <div className="space-y-3">
+                        {isUser ? (
+                            <div className="whitespace-pre-wrap">{content}</div>
+                        ) : (
+                            contentComponents.map((comp, idx) => {
+                                if (comp.type === 'graph') {
+                                    return (
+                                        <div key={idx} className="my-3">
+                                            <GraphViewer data={comp.data} />
+                                        </div>
+                                    );
+                                }
+                                if (comp.type === 'code-verify') {
+                                    return (
+                                        <div key={idx} className="my-3">
+                                            <CodeVerifier code={comp.code} output={comp.output} />
+                                        </div>
+                                    );
+                                }
                                 return (
-                                    <div key={idx} className="my-3">
-                                        <GraphViewer data={comp.data} />
-                                    </div>
-                                );
-                            }
-                            if (comp.type === 'code-verify') {
-                                return (
-                                    <div key={idx} className="my-3">
-                                        <CodeVerifier code={comp.code} output={comp.output} />
-                                    </div>
-                                );
-                            }
-                            return (
-                                <div
-                                    key={idx}
-                                    className="prose prose-invert prose-sm max-w-none
-                                        [&>p]:mb-2 [&>p:last-child]:mb-0
-                                        [&>ul]:my-2 [&>ol]:my-2
-                                        [&_strong]:text-primary [&_strong]:font-semibold
-                                        [&_code]:bg-surface-1 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-primary [&_code]:font-mono [&_code]:text-sm
-                                        [&_.katex]:text-foreground"
-                                >
-                                    <ReactMarkdown
-                                        remarkPlugins={[remarkMath]}
-                                        rehypePlugins={[rehypeKatex]}
+                                    <div
+                                        key={idx}
+                                        className="chat-prose prose prose-invert prose-sm max-w-none
+                                            [&>p]:mb-2 [&>p:last-child]:mb-0
+                                            [&>ul]:my-2 [&>ol]:my-2
+                                            [&_strong]:text-primary [&_strong]:font-semibold
+                                            [&_code]:bg-surface-1 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-primary [&_code]:font-mono [&_code]:text-sm
+                                            [&_.katex]:text-foreground"
                                     >
-                                        {comp.content}
-                                    </ReactMarkdown>
-                                </div>
-                            );
-                        })
-                    )}
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkMath]}
+                                            rehypePlugins={[rehypeKatex]}
+                                        >
+                                            {comp.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

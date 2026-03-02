@@ -1,0 +1,479 @@
+import { useState, useEffect, useRef } from 'react'
+import { Timer, TimerOff, RotateCcw, ExternalLink, ChevronDown, ChevronRight, Clock, AlertTriangle, Play, Square, BookOpen } from 'lucide-react'
+
+// ─── Paper catalogue ──────────────────────────────────────────────────────────
+const CATALOGUE = [
+    {
+        year: 'Year 12',
+        subjects: [
+            {
+                id: 'y12-standard', label: 'Standard', color: 'secondary', examDuration: 130,
+                sections: [
+                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_general.html', count: '~40' },
+                    { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_general.html', count: '173' },
+                ],
+            },
+            {
+                id: 'y12-advanced', label: 'Advanced (2U)', color: 'primary', examDuration: 120,
+                sections: [
+                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_advanced.html', count: '~40' },
+                    { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', count: '655' },
+                ],
+            },
+            {
+                id: 'y12-ext1', label: 'Extension 1', color: 'accent', examDuration: 120,
+                sections: [
+                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension1.html', count: '~40' },
+                    { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension1.html', count: '772' },
+                ],
+            },
+            {
+                id: 'y12-ext2', label: 'Extension 2', color: 'accent', examDuration: 180,
+                sections: [
+                    { label: 'HSC Papers', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension2.html', count: '~35' },
+                    { label: 'Trial Papers', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension2.html', count: '695' },
+                ],
+            },
+        ],
+    },
+    {
+        year: 'Year 11',
+        subjects: [
+            {
+                id: 'y11-standard', label: 'Standard', color: 'secondary', examDuration: 90,
+                sections: [
+                    { label: 'Yearly Exams', url: 'https://thsconline.github.io/s/yr11/Maths/prelimpapers_general.html', count: '10' },
+                ],
+            },
+            {
+                id: 'y11-advanced', label: 'Advanced (2U)', color: 'primary', examDuration: 90,
+                sections: [
+                    { label: 'Yearly Exams', url: 'https://thsconline.github.io/s/yr11/Maths/prelimpapers_advanced.html', count: '268' },
+                ],
+            },
+            {
+                id: 'y11-ext1', label: 'Extension 1', color: 'accent', examDuration: 60,
+                sections: [
+                    { label: 'Yearly Exams', url: 'https://thsconline.github.io/s/yr11/Maths/prelimpapers_extension1.html', count: '225' },
+                ],
+            },
+        ],
+    },
+]
+
+// ─── Timer presets (minutes) ──────────────────────────────────────────────────
+const PRESETS = [
+    { label: '30m', seconds: 30 * 60 },
+    { label: '1h', seconds: 60 * 60 },
+    { label: '2h', seconds: 120 * 60 },
+    { label: '3h', seconds: 180 * 60 },
+]
+
+function colorClass(color, style = 'text') {
+    const map = {
+        primary: { text: 'text-primary', border: 'border-primary/40', bg: 'bg-primary/10', badge: 'bg-primary/15 border-primary/30 text-primary' },
+        secondary: { text: 'text-secondary', border: 'border-secondary/40', bg: 'bg-secondary/10', badge: 'bg-secondary/15 border-secondary/30 text-secondary' },
+        accent: { text: 'text-accent', border: 'border-accent/40', bg: 'bg-accent/10', badge: 'bg-accent/15 border-accent/30 text-accent' },
+    }
+    return map[color]?.[style] ?? ''
+}
+
+function pad(n) { return String(n).padStart(2, '0') }
+function formatTime(totalSeconds) {
+    const h = Math.floor(totalSeconds / 3600)
+    const m = Math.floor((totalSeconds % 3600) / 60)
+    const s = totalSeconds % 60
+    if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`
+    return `${pad(m)}:${pad(s)}`
+}
+
+// ─── Exam Timer component ─────────────────────────────────────────────────────
+function ExamTimer({ suggestedDuration }) {
+    const [mode, setMode] = useState('countdown') // 'countdown' | 'countup'
+    const [preset, setPreset] = useState(120 * 60)
+    const [custom, setCustom] = useState('')
+    const [showCustom, setShowCustom] = useState(false)
+    const [elapsed, setElapsed] = useState(0)
+    const [remaining, setRemaining] = useState(120 * 60)
+    const [running, setRunning] = useState(false)
+    const intervalRef = useRef(null)
+
+    // Update remaining when preset changes and not running
+    useEffect(() => {
+        if (!running) setRemaining(preset)
+    }, [preset, running])
+
+    // Sync to suggested duration from selected subject
+    useEffect(() => {
+        if (!running && suggestedDuration) {
+            const secs = suggestedDuration * 60
+            setPreset(secs)
+            setRemaining(secs)
+        }
+    }, [suggestedDuration])
+
+    useEffect(() => {
+        if (running) {
+            intervalRef.current = setInterval(() => {
+                if (mode === 'countup') {
+                    setElapsed(e => e + 1)
+                } else {
+                    setRemaining(r => {
+                        if (r <= 1) {
+                            clearInterval(intervalRef.current)
+                            setRunning(false)
+                            return 0
+                        }
+                        return r - 1
+                    })
+                }
+            }, 1000)
+        } else {
+            clearInterval(intervalRef.current)
+        }
+        return () => clearInterval(intervalRef.current)
+    }, [running, mode])
+
+    const handleReset = () => {
+        setRunning(false)
+        setElapsed(0)
+        setRemaining(preset)
+    }
+
+    const handlePreset = (secs) => {
+        setPreset(secs)
+        setRemaining(secs)
+        setElapsed(0)
+        setRunning(false)
+        setShowCustom(false)
+    }
+
+    const handleCustomSubmit = () => {
+        const mins = parseInt(custom, 10)
+        if (!isNaN(mins) && mins > 0) {
+            handlePreset(mins * 60)
+            setCustom('')
+        }
+        setShowCustom(false)
+    }
+
+    const display = mode === 'countup' ? elapsed : remaining
+    const total = mode === 'countdown' ? preset : null
+    const pct = total ? Math.max(0, Math.min(100, ((total - remaining) / total) * 100)) : null
+    const isLow = mode === 'countdown' && remaining <= 300 && remaining > 0
+    const isDanger = mode === 'countdown' && remaining <= 60 && remaining > 0
+    const isDone = mode === 'countdown' && remaining === 0
+
+    const displayColor = isDone
+        ? 'text-destructive'
+        : isDanger
+            ? 'text-accent animate-pulse'
+            : isLow
+                ? 'text-accent'
+                : 'text-foreground'
+
+    return (
+        <div className="flex-none glass-card border-b border-surface-2 px-4 py-3">
+            <div className="max-w-5xl mx-auto flex flex-wrap items-center gap-x-6 gap-y-3">
+
+                {/* Label */}
+                <div className="flex items-center gap-2 shrink-0">
+                    <Clock size={14} className="text-primary" />
+                    <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Exam Timer</span>
+                </div>
+
+                {/* Big time display */}
+                <div className={`font-display font-bold tabular-nums shrink-0 ${isDone ? 'text-2xl text-destructive' : 'text-2xl'} ${displayColor}`}>
+                    {isDone ? 'TIME UP' : formatTime(display)}
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
+                        onClick={() => setRunning(r => !r)}
+                        disabled={isDone}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display uppercase tracking-wide border transition-all disabled:opacity-40 ${
+                            running
+                                ? 'bg-accent/15 border-accent/40 text-accent hover:bg-accent/25'
+                                : 'bg-primary/15 border-primary/40 text-primary hover:bg-primary/25'
+                        }`}
+                    >
+                        {running ? <Square size={11} fill="currentColor" /> : <Play size={11} fill="currentColor" />}
+                        {running ? 'Pause' : 'Start'}
+                    </button>
+                    <button
+                        onClick={handleReset}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display uppercase tracking-wide border border-surface-3 text-muted-foreground hover:text-foreground hover:border-surface-3 transition-all"
+                    >
+                        <RotateCcw size={11} />
+                        Reset
+                    </button>
+                </div>
+
+                {/* Mode toggle */}
+                <div className="flex items-center gap-1 shrink-0">
+                    {['countdown', 'countup'].map(m => (
+                        <button
+                            key={m}
+                            onClick={() => { setMode(m); handleReset() }}
+                            className={`px-2 py-1 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                mode === m
+                                    ? 'bg-secondary/15 border-secondary/40 text-secondary'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            {m === 'countdown' ? '↓ Down' : '↑ Up'}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Presets */}
+                {mode === 'countdown' && (
+                    <div className="flex items-center gap-1 shrink-0">
+                        {PRESETS.map(p => (
+                            <button
+                                key={p.label}
+                                onClick={() => handlePreset(p.seconds)}
+                                className={`px-2 py-1 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                    preset === p.seconds && !showCustom
+                                        ? 'bg-primary/15 border-primary/40 text-primary'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                        {/* Custom */}
+                        {showCustom ? (
+                            <div className="flex items-center gap-1">
+                                <input
+                                    type="number"
+                                    placeholder="min"
+                                    value={custom}
+                                    onChange={e => setCustom(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                    className="w-14 px-2 py-1 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
+                                    autoFocus
+                                />
+                                <button
+                                    onClick={handleCustomSubmit}
+                                    className="px-2 py-1 rounded text-[10px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
+                                >
+                                    Set
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowCustom(true)}
+                                className="px-2 py-1 rounded text-[10px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
+                            >
+                                Custom
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                {/* Progress bar */}
+                {mode === 'countdown' && total && (
+                    <div className="flex-1 min-w-[80px] max-w-[200px] hidden sm:block">
+                        <div className="w-full h-1.5 bg-surface-1 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full rounded-full transition-all duration-1000 ${
+                                    isDanger ? 'bg-destructive' : isLow ? 'bg-accent' : 'bg-gradient-to-r from-primary to-secondary'
+                                }`}
+                                style={{ width: `${100 - pct}%` }}
+                            />
+                        </div>
+                        <div className="text-[9px] text-muted-foreground font-mono mt-0.5 text-right">
+                            {Math.round((100 - pct))}% remaining
+                        </div>
+                    </div>
+                )}
+
+                {/* Low time warning */}
+                {isLow && !isDone && (
+                    <div className={`flex items-center gap-1 text-[10px] font-display uppercase tracking-wider shrink-0 ${isDanger ? 'text-destructive' : 'text-accent'}`}>
+                        <AlertTriangle size={11} />
+                        {isDanger ? 'Under 1 min!' : 'Under 5 min'}
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// ─── Main PastPapers page ─────────────────────────────────────────────────────
+export default function PastPapers() {
+    const [activeUrl, setActiveUrl] = useState(null)
+    const [activeLabel, setActiveLabel] = useState('')
+    const [iframeLoaded, setIframeLoaded] = useState(false)
+    const [expandedSubjects, setExpandedSubjects] = useState({ 'y12-advanced': true })
+    const [suggestedDuration, setSuggestedDuration] = useState(120)
+
+    const handleSelect = (url, label, duration) => {
+        setActiveUrl(url)
+        setActiveLabel(label)
+        setIframeLoaded(false)
+        if (duration) setSuggestedDuration(duration)
+    }
+
+    const toggleSubject = (id) => {
+        setExpandedSubjects(prev => ({ ...prev, [id]: !prev[id] }))
+    }
+
+    return (
+        <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay">
+
+            {/* Exam Timer Bar */}
+            <ExamTimer suggestedDuration={suggestedDuration} />
+
+            {/* Body: sidebar + viewer */}
+            <div className="flex flex-1 overflow-hidden">
+
+                {/* ── Sidebar ─────────────────────────────────────────────── */}
+                <aside className="w-52 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
+                    <div className="px-3 pt-3 pb-1">
+                        <p className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">NSW Maths Papers</p>
+                    </div>
+
+                    {CATALOGUE.map(group => (
+                        <div key={group.year} className="mt-1">
+                            {/* Year header */}
+                            <div className="px-3 py-1.5">
+                                <span className="text-[9px] font-display uppercase tracking-widest text-muted-foreground/60">{group.year}</span>
+                            </div>
+
+                            {group.subjects.map(subject => (
+                                <div key={subject.id}>
+                                    {/* Subject toggle */}
+                                    <button
+                                        onClick={() => toggleSubject(subject.id)}
+                                        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-display tracking-wide transition-all hover:bg-surface-2/50 ${
+                                            colorClass(subject.color, 'text')
+                                        }`}
+                                    >
+                                        <span>{subject.label}</span>
+                                        {expandedSubjects[subject.id]
+                                            ? <ChevronDown size={12} />
+                                            : <ChevronRight size={12} />
+                                        }
+                                    </button>
+
+                                    {/* Section links */}
+                                    {expandedSubjects[subject.id] && subject.sections.map(section => {
+                                        const isActive = activeUrl === section.url
+                                        return (
+                                            <button
+                                                key={section.url}
+                                                onClick={() => handleSelect(section.url, `${subject.label} — ${section.label}`, subject.examDuration)}
+                                                className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-[11px] transition-all ${
+                                                    isActive
+                                                        ? `${colorClass(subject.color, 'bg')} ${colorClass(subject.color, 'text')} border-l-2 ${colorClass(subject.color, 'border')}`
+                                                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent'
+                                                }`}
+                                            >
+                                                <span>{section.label}</span>
+                                                <span className="text-[9px] font-mono opacity-50">{section.count}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+
+                    {/* Source credit */}
+                    <div className="mt-auto px-3 py-3 border-t border-surface-2">
+                        <p className="text-[9px] text-muted-foreground/50 leading-relaxed">
+                            Papers sourced from{' '}
+                            <a
+                                href="https://thsconline.github.io/s/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary/70 hover:text-primary underline"
+                            >
+                                THSC Online
+                            </a>
+                        </p>
+                    </div>
+                </aside>
+
+                {/* ── Viewer ──────────────────────────────────────────────── */}
+                <main className="flex-1 flex flex-col overflow-hidden">
+                    {!activeUrl ? (
+                        /* Empty state */
+                        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
+                            <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center">
+                                <BookOpen size={28} className="text-primary/60" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-display text-foreground mb-1">Select a paper collection</p>
+                                <p className="text-xs text-muted-foreground max-w-sm">
+                                    Choose a subject and paper type from the sidebar to browse HSC and trial papers from THSC Online.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 justify-center mt-2">
+                                {/* Quick-start buttons */}
+                                {[
+                                    { label: 'Advanced HSC', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_advanced.html', color: 'primary', duration: 120 },
+                                    { label: 'Ext 1 HSC', url: 'https://thsconline.github.io/s/yr12/Maths/hscpapers_extension1.html', color: 'accent', duration: 120 },
+                                    { label: 'Advanced Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', color: 'primary', duration: 120 },
+                                    { label: 'Ext 1 Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension1.html', color: 'accent', duration: 120 },
+                                ].map(q => (
+                                    <button
+                                        key={q.url}
+                                        onClick={() => handleSelect(q.url, q.label, q.duration)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-display border transition-all ${colorClass(q.color, 'badge')}`}
+                                    >
+                                        {q.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Viewer toolbar */}
+                            <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-surface-2 bg-surface-1/20 backdrop-blur-sm gap-3">
+                                <span className="text-xs font-display text-foreground truncate">{activeLabel}</span>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {!iframeLoaded && (
+                                        <span className="text-[10px] text-muted-foreground font-mono animate-pulse">Loading…</span>
+                                    )}
+                                    <a
+                                        href={activeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+                                    >
+                                        <ExternalLink size={11} />
+                                        Open in new tab
+                                    </a>
+                                </div>
+                            </div>
+
+                            {/* Iframe */}
+                            <div className="flex-1 relative">
+                                {!iframeLoaded && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                            <p className="text-xs text-muted-foreground font-display">Loading papers…</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <iframe
+                                    key={activeUrl}
+                                    src={activeUrl}
+                                    title={activeLabel}
+                                    onLoad={() => setIframeLoaded(true)}
+                                    className="w-full h-full border-0"
+                                    allow="fullscreen"
+                                />
+                            </div>
+                        </>
+                    )}
+                </main>
+            </div>
+        </div>
+    )
+}

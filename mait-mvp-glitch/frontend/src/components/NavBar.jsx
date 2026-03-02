@@ -1,10 +1,11 @@
-import { BrainCircuit, Home, BookOpen, FileText, Play, Lock, Menu, X } from 'lucide-react'
+import { BrainCircuit, Home, BookOpen, FileText, Play, Lock, Menu, X, GraduationCap } from 'lucide-react'
 import { useState } from 'react'
 
 const NAV_ITEMS = [
     { id: 'landing', label: 'Home', icon: Home },
     { id: 'resources', label: 'AI Resources', icon: BookOpen },
     { id: 'worksheets', label: 'Worksheets', icon: FileText },
+    { id: 'pastpapers', label: 'Past Papers', icon: GraduationCap },
     { id: 'demo', label: 'Free Demo', icon: Play },
 ]
 

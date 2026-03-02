@@ -83,7 +83,7 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   opacity: 0.03;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
 /* Glow effects */
@@ -324,6 +324,37 @@ body {
 
 .input-base::placeholder {
   color: hsl(var(--muted-foreground));
+}
+
+/* Chat bubble tails */
+.chat-bubble-user {
+  position: relative;
+}
+
+.chat-bubble-user::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  background: hsl(172, 70%, 35%);
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.chat-bubble-assistant {
+  position: relative;
+}
+
+.chat-bubble-assistant::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -6px;
+  width: 12px;
+  height: 12px;
+  background: hsla(var(--surface-2), 0.6);
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
 }
 
 /* Chat message prose styling */

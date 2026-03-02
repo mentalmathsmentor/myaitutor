@@ -11,9 +11,10 @@ import AIResources from './AIResources'
 import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
+import PastPapers from './PastPapers'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 
-const VALID_PAGES = ['landing', 'resources', 'worksheets', 'app', 'demo'];
+const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo'];
 
 function getPageFromHash() {
     const hash = window.location.hash.replace(/^#\/?/, '') || 'landing';
@@ -529,13 +530,23 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         )
     }
 
+    if (page === 'pastpapers') {
+        return (
+            <>
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <PastPapers />
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+            </>
+        )
+    }
+
     // Chat pages (app / demo) — NavBar + HUD toolbar + chat
     return (
     <>
         <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
-        <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30">
+        <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30">
             {/* Decorative grid overlay */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.015]"
+            <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0"
                 style={{
                     backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
                                      linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
@@ -544,7 +555,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             />
 
             {/* HUD TOOLBAR — below NavBar */}
-            <div className="fixed top-14 left-0 right-0 z-40 glass-card backdrop-blur-xl border-b border-surface-2 px-4 py-2 flex justify-between items-center">
+            <div className="flex-none z-40 glass-card backdrop-blur-xl border-b border-surface-2 px-4 py-2 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <BrainCircuit className="text-primary" size={18} />
@@ -756,7 +767,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
             {/* Demo mode banner with model quality toggle */}
             {isDemoMode && (
-                <div className="fixed top-[100px] left-0 right-0 z-30 bg-accent/10 border-b border-accent/20 px-4 py-2">
+                <div className="flex-none z-30 bg-accent/10 border-b border-accent/20 px-4 py-2">
                     <div className="max-w-2xl mx-auto flex items-center justify-between">
                         <p className="text-xs font-display text-accent flex items-center flex-wrap gap-x-1">
                             <Play size={12} className="inline mr-0.5" />
@@ -802,46 +813,50 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <div
                 ref={chatContainerRef}
                 onScroll={handleScroll}
-                className={`${isDemoMode ? 'pt-[145px]' : 'pt-[110px]'} pb-32 max-w-2xl mx-auto px-4 min-h-screen`}
+                className="flex-1 overflow-y-auto"
             >
-                <div className="space-y-4">
+            <div className="max-w-2xl mx-auto px-4 py-6">
+                <div className="space-y-5">
                     {messages.map((msg, idx) => (
                         <div
                             key={idx}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-reveal`}
                             style={{ animationDelay: `${idx * 50}ms` }}
                         >
-                            <div
-                                className={`max-w-[85%] px-5 py-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-br-md shadow-glow-sm'
-                                    : 'glass-card text-foreground rounded-bl-md'
-                                    }`}
-                            >
-                                {msg.source === 'typing' ? (
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                    </div>
-                                ) : (
-                                    <div className="chat-prose">
-                                        <ReactMarkdown
-                                            remarkPlugins={[remarkMath]}
-                                            rehypePlugins={[rehypeKatex]}
-                                        >
-                                            {msg.text}
-                                        </ReactMarkdown>
-                                    </div>
-                                )}
+                            <div className={`relative max-w-[80%] ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}>
+                                <div
+                                    className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
+                                        ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
+                                        : 'glass-card text-foreground rounded-2xl rounded-bl-sm'
+                                        }`}
+                                >
+                                    {msg.source === 'typing' ? (
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                        </div>
+                                    ) : (
+                                        <div className="chat-prose">
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkMath]}
+                                                rehypePlugins={[rehypeKatex]}
+                                            >
+                                                {msg.text}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
                     <div ref={endOfMsgRef} />
                 </div>
             </div>
+            </div>
 
             {/* INPUT FOOTER */}
-            <footer className="fixed bottom-0 w-full glass-card backdrop-blur-xl border-t border-surface-2 p-4">
+            <footer className="flex-none glass-card backdrop-blur-xl border-t border-surface-2 p-4">
                 <form onSubmit={handleStudy} className="max-w-2xl mx-auto relative flex gap-3">
                     <input
                         autoFocus
