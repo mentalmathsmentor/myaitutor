@@ -632,9 +632,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
                     <div className="flex items-center gap-2 bg-surface-1 rounded-lg p-1 border border-surface-3">
                         <input
-                            className="bg-transparent border-none text-xs font-display font-medium text-foreground w-20 text-center focus:outline-none placeholder:text-muted-foreground"
+                            className="bg-transparent border-none text-xs font-display font-medium text-foreground w-24 text-center focus:outline-none placeholder:text-muted-foreground truncate"
                             value={userProfile.nickname}
-                            onChange={(e) => setUserProfile({ ...userProfile, nickname: e.target.value })}
+                            onChange={(e) => setUserProfile({ ...userProfile, nickname: e.target.value.slice(0, 16) })}
+                            maxLength={16}
                             placeholder="Name"
                         />
                         <div className="w-px h-4 bg-surface-3"></div>
