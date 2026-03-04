@@ -115,10 +115,10 @@ function ExamTimer({ suggestedDuration }) {
     const [running, setRunning] = useState(false)
     const intervalRef = useRef(null)
 
-    // Update remaining when preset changes and not running
+    // Update remaining when preset changes (but not when running changes)
     useEffect(() => {
         if (!running) setRemaining(preset)
-    }, [preset, running])
+    }, [preset])
 
     // Sync to suggested duration from selected subject
     useEffect(() => {
