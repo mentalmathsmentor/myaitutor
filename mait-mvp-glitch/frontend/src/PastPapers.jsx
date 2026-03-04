@@ -164,8 +164,8 @@ function ExamTimer({ suggestedDuration }) {
     }
 
     const handleCustomSubmit = () => {
-        const hrs = parseFloat(customH) || 0
-        const mins = parseFloat(customM) || 0
+        const hrs = Math.min(parseFloat(customH) || 0, 24)
+        const mins = Math.min(parseFloat(customM) || 0, 60)
         const wholeMinutes = Math.floor(mins)
         const extraSeconds = Math.round((mins - wholeMinutes) * 60)
         const totalSeconds = Math.round(hrs * 3600) + wholeMinutes * 60 + extraSeconds
@@ -289,7 +289,7 @@ function ExamTimer({ suggestedDuration }) {
                             <div className="flex items-center gap-1.5 w-full justify-center mt-1">
                                 <div className="flex items-center rounded-lg bg-surface-1/80 border border-surface-3 px-2 py-1 gap-1.5">
                                     <input
-                                        type="number" placeholder="0" min="0" value={customH}
+                                        type="number" placeholder="0" min="0" max="24" value={customH}
                                         onChange={e => setCustomH(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
                                         className="w-7 bg-transparent text-xs text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
@@ -298,7 +298,7 @@ function ExamTimer({ suggestedDuration }) {
                                     <span className="text-[9px] text-muted-foreground/60 font-display">h</span>
                                     <span className="text-muted-foreground/30">:</span>
                                     <input
-                                        type="number" placeholder="0" min="0" step="any" value={customM}
+                                        type="number" placeholder="0" min="0" max="60" value={customM}
                                         onChange={e => setCustomM(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
                                         className="w-7 bg-transparent text-xs text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
