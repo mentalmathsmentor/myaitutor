@@ -177,14 +177,6 @@ function ExamTimer({ suggestedDuration }) {
         setShowCustom(false)
     }
 
-    const adjustTime = (delta) => {
-        if (running) return
-        const newPreset = Math.max(60, preset + delta)
-        setPreset(newPreset)
-        setRemaining(newPreset)
-        setElapsed(0)
-    }
-
     const display = mode === 'countup' ? elapsed : remaining
     const total = mode === 'countdown' ? preset : null
     const pct = total ? Math.max(0, Math.min(1, remaining / total)) : null
@@ -192,9 +184,8 @@ function ExamTimer({ suggestedDuration }) {
     const isDanger = mode === 'countdown' && remaining <= 60 && remaining > 0
     const isDone = mode === 'countdown' && remaining === 0
 
-    // Ring SVG
-    const SIZE = 88
-    const SW = 4.5
+    const SIZE = 52
+    const SW = 3
     const RAD = (SIZE - SW * 2) / 2
     const CIRC = 2 * Math.PI * RAD
     const ringOffset = mode === 'countdown' && total ? CIRC * (1 - pct) : 0
@@ -216,85 +207,55 @@ function ExamTimer({ suggestedDuration }) {
                 : 'text-foreground'
 
     return (
-        <div className="flex-none glass-card border-b border-surface-2 px-4 py-2">
-            <div className="max-w-5xl mx-auto flex items-center gap-5">
+        <div className="absolute top-3 right-3 z-20 glass-card border border-surface-2 rounded-xl shadow-xl backdrop-blur-md">
+            <div className="flex items-center gap-3 px-3 py-2">
 
-                {/* ── Circular ring ───────────────────────── */}
+                {/* ── Circular ring (no +/−) ──────────────── */}
                 <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
                     <svg width={SIZE} height={SIZE} className="-rotate-90">
-                        <circle
-                            cx={SIZE / 2} cy={SIZE / 2} r={RAD}
-                            fill="none"
-                            stroke="hsla(var(--surface-3), 0.6)"
-                            strokeWidth={SW}
-                        />
+                        <circle cx={SIZE / 2} cy={SIZE / 2} r={RAD} fill="none" stroke="hsla(var(--surface-3), 0.6)" strokeWidth={SW} />
                         {mode === 'countdown' && (
                             <circle
                                 cx={SIZE / 2} cy={SIZE / 2} r={RAD}
-                                fill="none"
-                                stroke={ringStroke}
-                                strokeWidth={SW}
-                                strokeLinecap="round"
-                                strokeDasharray={CIRC}
-                                strokeDashoffset={ringOffset}
+                                fill="none" stroke={ringStroke} strokeWidth={SW}
+                                strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={ringOffset}
                                 className="transition-all duration-1000 ease-linear"
-                                style={{ filter: `drop-shadow(0 0 6px ${ringStroke})` }}
+                                style={{ filter: `drop-shadow(0 0 5px ${ringStroke})` }}
                             />
                         )}
                     </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        {!running && mode === 'countdown' ? (
-                            <button
-                                onClick={() => adjustTime(60)}
-                                className="text-muted-foreground/50 hover:text-primary text-[11px] font-display leading-none transition-colors select-none"
-                            >
-                                +
-                            </button>
-                        ) : <div className="h-3" />}
-                        <span className={`font-display font-bold tabular-nums leading-none ${
-                            isDone ? 'text-[13px]' : 'text-[15px]'
-                        } ${timeColor}`}>
-                            {isDone ? 'TIME UP' : formatTime(display)}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-[10px]' : 'text-[12px]'} ${timeColor}`}>
+                            {isDone ? 'DONE' : formatTime(display)}
                         </span>
-                        {!running && mode === 'countdown' ? (
-                            <button
-                                onClick={() => adjustTime(-60)}
-                                className="text-muted-foreground/50 hover:text-primary text-[13px] font-display leading-none transition-colors select-none"
-                            >
-                                −
-                            </button>
-                        ) : <div className="h-3" />}
                     </div>
                 </div>
 
-                {/* ── Play/Pause + Stop ───────────────────── */}
-                <div className="flex items-center gap-2.5 shrink-0">
-                    <button
-                        onClick={() => setRunning(r => !r)}
-                        disabled={isDone}
-                        className="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-40 shadow-lg shadow-primary/25"
-                    >
-                        {running
-                            ? <Pause size={15} fill="currentColor" strokeWidth={0} />
-                            : <Play size={15} fill="currentColor" strokeWidth={0} className="ml-0.5" />
-                        }
-                    </button>
-                    <button
-                        onClick={handleReset}
-                        className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-                    >
-                        <Square size={13} />
-                    </button>
-                </div>
-
-                {/* ── Mode + Presets ──────────────────────── */}
-                <div className="flex flex-col gap-1.5 shrink-0">
-                    <div className="flex items-center gap-1">
+                {/* ── Controls ────────────────────────────── */}
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => setRunning(r => !r)}
+                            disabled={isDone}
+                            className="w-7 h-7 rounded-full flex items-center justify-center bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-40 shadow-md shadow-primary/20"
+                        >
+                            {running
+                                ? <Pause size={11} fill="currentColor" strokeWidth={0} />
+                                : <Play size={11} fill="currentColor" strokeWidth={0} className="ml-px" />
+                            }
+                        </button>
+                        <button
+                            onClick={handleReset}
+                            className="w-7 h-7 rounded-full flex items-center justify-center border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                        >
+                            <Square size={10} />
+                        </button>
+                        <div className="h-4 w-px bg-surface-3 mx-0.5" />
                         {['countdown', 'countup'].map(m => (
                             <button
                                 key={m}
                                 onClick={() => { setMode(m); handleReset() }}
-                                className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-display uppercase tracking-wider border transition-all ${
                                     mode === m
                                         ? 'bg-secondary/15 border-secondary/40 text-secondary'
                                         : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -303,14 +264,20 @@ function ExamTimer({ suggestedDuration }) {
                                 {m === 'countdown' ? '↓ Down' : '↑ Up'}
                             </button>
                         ))}
+                        {isLow && !isDone && (
+                            <span className={`text-[9px] font-display uppercase tracking-wider ml-1 ${isDanger ? 'text-destructive animate-pulse' : 'text-accent'}`}>
+                                <AlertTriangle size={9} className="inline -mt-px mr-0.5" />
+                                {isDanger ? '<1m' : '<5m'}
+                            </span>
+                        )}
                     </div>
                     {mode === 'countdown' && (
-                        <div className="flex items-center gap-1 flex-wrap">
+                        <div className="flex items-center gap-1">
                             {PRESETS.map(p => (
                                 <button
                                     key={p.label}
                                     onClick={() => handlePreset(p.seconds)}
-                                    className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                    className={`px-1.5 py-0.5 rounded text-[9px] font-display uppercase tracking-wider border transition-all ${
                                         preset === p.seconds && !showCustom
                                             ? 'bg-primary/15 border-primary/40 text-primary'
                                             : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -320,23 +287,27 @@ function ExamTimer({ suggestedDuration }) {
                                 </button>
                             ))}
                             {showCustom ? (
-                                <div className="flex items-center gap-1">
-                                    <input
-                                        type="number" placeholder="h" min="0" value={customH}
-                                        onChange={e => setCustomH(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                        className="w-10 px-1.5 py-0.5 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
-                                        autoFocus
-                                    />
-                                    <span className="text-[10px] text-muted-foreground font-mono">:</span>
-                                    <input
-                                        type="number" placeholder="m" min="0" step="any" value={customM}
-                                        onChange={e => setCustomM(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                        className="w-12 px-1.5 py-0.5 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
-                                    />
+                                <div className="flex items-center gap-1 ml-0.5">
+                                    <div className="flex items-center rounded-lg bg-surface-1/80 border border-surface-3 px-2 py-0.5 gap-1.5">
+                                        <input
+                                            type="number" placeholder="0" min="0" value={customH}
+                                            onChange={e => setCustomH(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                            className="w-6 bg-transparent text-[10px] text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                            autoFocus
+                                        />
+                                        <span className="text-[8px] text-muted-foreground/60 font-display uppercase">h</span>
+                                        <span className="text-muted-foreground/30 text-[10px]">:</span>
+                                        <input
+                                            type="number" placeholder="0" min="0" step="any" value={customM}
+                                            onChange={e => setCustomM(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                            className="w-6 bg-transparent text-[10px] text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                        />
+                                        <span className="text-[8px] text-muted-foreground/60 font-display uppercase">m</span>
+                                    </div>
                                     <button onClick={handleCustomSubmit}
-                                        className="px-2 py-0.5 rounded text-[10px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
+                                        className="px-1.5 py-0.5 rounded text-[9px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
                                     >
                                         Set
                                     </button>
@@ -344,7 +315,7 @@ function ExamTimer({ suggestedDuration }) {
                             ) : (
                                 <button
                                     onClick={() => setShowCustom(true)}
-                                    className="px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
+                                    className="px-1.5 py-0.5 rounded text-[9px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
                                 >
                                     Custom
                                 </button>
@@ -352,16 +323,6 @@ function ExamTimer({ suggestedDuration }) {
                         </div>
                     )}
                 </div>
-
-                <div className="flex-1" />
-
-                {/* Low time warning */}
-                {isLow && !isDone && (
-                    <div className={`flex items-center gap-1.5 text-[10px] font-display uppercase tracking-wider shrink-0 ${isDanger ? 'text-destructive animate-pulse' : 'text-accent'}`}>
-                        <AlertTriangle size={12} />
-                        <span>{isDanger ? 'Under 1 min!' : 'Under 5 min'}</span>
-                    </div>
-                )}
             </div>
         </div>
     )
@@ -394,11 +355,11 @@ export default function PastPapers() {
     return (
         <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay">
 
-            {/* Exam Timer Bar */}
-            <ExamTimer suggestedDuration={suggestedDuration} />
-
             {/* Body: sidebar + viewer */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden relative">
+
+                {/* Exam Timer – floating top-right */}
+                <ExamTimer suggestedDuration={suggestedDuration} />
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
                 <aside className="w-56 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
