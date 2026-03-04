@@ -107,7 +107,8 @@ function formatTime(totalSeconds) {
 function ExamTimer({ suggestedDuration }) {
     const [mode, setMode] = useState('countdown') // 'countdown' | 'countup'
     const [preset, setPreset] = useState(120 * 60)
-    const [custom, setCustom] = useState('')
+    const [customH, setCustomH] = useState('')
+    const [customM, setCustomM] = useState('')
     const [showCustom, setShowCustom] = useState(false)
     const [elapsed, setElapsed] = useState(0)
     const [remaining, setRemaining] = useState(120 * 60)
@@ -165,10 +166,16 @@ function ExamTimer({ suggestedDuration }) {
     }
 
     const handleCustomSubmit = () => {
-        const mins = parseInt(custom, 10)
-        if (!isNaN(mins) && mins > 0) {
-            handlePreset(mins * 60)
-            setCustom('')
+        const hrs = parseFloat(customH) || 0
+        const mins = parseFloat(customM) || 0
+        // Integer part of mins = minutes, decimal part = fraction of a minute → seconds
+        const wholeMinutes = Math.floor(mins)
+        const extraSeconds = Math.round((mins - wholeMinutes) * 60)
+        const totalSeconds = Math.round(hrs * 3600) + wholeMinutes * 60 + extraSeconds
+        if (totalSeconds > 0) {
+            handlePreset(totalSeconds)
+            setCustomH('')
+            setCustomM('')
         }
         setShowCustom(false)
     }
@@ -264,12 +271,24 @@ function ExamTimer({ suggestedDuration }) {
                             <div className="flex items-center gap-1">
                                 <input
                                     type="number"
-                                    placeholder="min"
-                                    value={custom}
-                                    onChange={e => setCustom(e.target.value)}
+                                    placeholder="h"
+                                    min="0"
+                                    value={customH}
+                                    onChange={e => setCustomH(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                    className="w-14 px-2 py-1 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
+                                    className="w-10 px-1.5 py-1 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
                                     autoFocus
+                                />
+                                <span className="text-[10px] text-muted-foreground font-mono">:</span>
+                                <input
+                                    type="number"
+                                    placeholder="m"
+                                    min="0"
+                                    step="any"
+                                    value={customM}
+                                    onChange={e => setCustomM(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                    className="w-12 px-1.5 py-1 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
                                 />
                                 <button
                                     onClick={handleCustomSubmit}
@@ -536,6 +555,7 @@ export default function PastPapers() {
                                     title={activeLabel}
                                     onLoad={() => setIframeLoaded(true)}
                                     className="w-full h-full border-0"
+                                    sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"
                                     allow="fullscreen"
                                 />
                             </div>
