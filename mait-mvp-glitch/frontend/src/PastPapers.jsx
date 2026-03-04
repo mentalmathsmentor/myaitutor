@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Timer, TimerOff, RotateCcw, ExternalLink, ChevronDown, ChevronRight, Clock, AlertTriangle, Play, Square, BookOpen, Shield } from 'lucide-react'
+import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield } from 'lucide-react'
 
 // ─── NESA URL builder ─────────────────────────────────────────────────────────
 const NESA_BASE = 'https://www.nsw.gov.au/education-and-training/nesa/curriculum/hsc-exam-papers'
@@ -105,7 +105,7 @@ function formatTime(totalSeconds) {
 
 // ─── Exam Timer component ─────────────────────────────────────────────────────
 function ExamTimer({ suggestedDuration }) {
-    const [mode, setMode] = useState('countdown') // 'countdown' | 'countup'
+    const [mode, setMode] = useState('countdown')
     const [preset, setPreset] = useState(120 * 60)
     const [customH, setCustomH] = useState('')
     const [customM, setCustomM] = useState('')
@@ -115,12 +115,10 @@ function ExamTimer({ suggestedDuration }) {
     const [running, setRunning] = useState(false)
     const intervalRef = useRef(null)
 
-    // Update remaining when preset changes (but not when running changes)
     useEffect(() => {
         if (!running) setRemaining(preset)
     }, [preset])
 
-    // Sync to suggested duration from selected subject
     useEffect(() => {
         if (!running && suggestedDuration) {
             const secs = suggestedDuration * 60
@@ -168,7 +166,6 @@ function ExamTimer({ suggestedDuration }) {
     const handleCustomSubmit = () => {
         const hrs = parseFloat(customH) || 0
         const mins = parseFloat(customM) || 0
-        // Integer part of mins = minutes, decimal part = fraction of a minute → seconds
         const wholeMinutes = Math.floor(mins)
         const extraSeconds = Math.round((mins - wholeMinutes) * 60)
         const totalSeconds = Math.round(hrs * 3600) + wholeMinutes * 60 + extraSeconds
@@ -180,14 +177,37 @@ function ExamTimer({ suggestedDuration }) {
         setShowCustom(false)
     }
 
+    const adjustTime = (delta) => {
+        if (running) return
+        const newPreset = Math.max(60, preset + delta)
+        setPreset(newPreset)
+        setRemaining(newPreset)
+        setElapsed(0)
+    }
+
     const display = mode === 'countup' ? elapsed : remaining
     const total = mode === 'countdown' ? preset : null
-    const pct = total ? Math.max(0, Math.min(100, ((total - remaining) / total) * 100)) : null
+    const pct = total ? Math.max(0, Math.min(1, remaining / total)) : null
     const isLow = mode === 'countdown' && remaining <= 300 && remaining > 0
     const isDanger = mode === 'countdown' && remaining <= 60 && remaining > 0
     const isDone = mode === 'countdown' && remaining === 0
 
-    const displayColor = isDone
+    // Ring SVG
+    const SIZE = 88
+    const SW = 4.5
+    const RAD = (SIZE - SW * 2) / 2
+    const CIRC = 2 * Math.PI * RAD
+    const ringOffset = mode === 'countdown' && total ? CIRC * (1 - pct) : 0
+
+    const ringStroke = isDone
+        ? 'hsl(var(--destructive))'
+        : isDanger
+            ? 'hsl(var(--accent))'
+            : isLow
+                ? 'hsl(var(--accent))'
+                : 'hsl(var(--primary))'
+
+    const timeColor = isDone
         ? 'text-destructive'
         : isDanger
             ? 'text-accent animate-pulse'
@@ -196,140 +216,150 @@ function ExamTimer({ suggestedDuration }) {
                 : 'text-foreground'
 
     return (
-        <div className="flex-none glass-card border-b border-surface-2 px-4 py-3">
-            <div className="max-w-5xl mx-auto flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="flex-none glass-card border-b border-surface-2 px-4 py-2">
+            <div className="max-w-5xl mx-auto flex items-center gap-5">
 
-                {/* Label */}
-                <div className="flex items-center gap-2 shrink-0">
-                    <Clock size={14} className="text-primary" />
-                    <span className="text-[10px] font-display uppercase tracking-widest text-muted-foreground">Exam Timer</span>
+                {/* ── Circular ring ───────────────────────── */}
+                <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
+                    <svg width={SIZE} height={SIZE} className="-rotate-90">
+                        <circle
+                            cx={SIZE / 2} cy={SIZE / 2} r={RAD}
+                            fill="none"
+                            stroke="hsla(var(--surface-3), 0.6)"
+                            strokeWidth={SW}
+                        />
+                        {mode === 'countdown' && (
+                            <circle
+                                cx={SIZE / 2} cy={SIZE / 2} r={RAD}
+                                fill="none"
+                                stroke={ringStroke}
+                                strokeWidth={SW}
+                                strokeLinecap="round"
+                                strokeDasharray={CIRC}
+                                strokeDashoffset={ringOffset}
+                                className="transition-all duration-1000 ease-linear"
+                                style={{ filter: `drop-shadow(0 0 6px ${ringStroke})` }}
+                            />
+                        )}
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        {!running && mode === 'countdown' ? (
+                            <button
+                                onClick={() => adjustTime(60)}
+                                className="text-muted-foreground/50 hover:text-primary text-[11px] font-display leading-none transition-colors select-none"
+                            >
+                                +
+                            </button>
+                        ) : <div className="h-3" />}
+                        <span className={`font-display font-bold tabular-nums leading-none ${
+                            isDone ? 'text-[13px]' : 'text-[15px]'
+                        } ${timeColor}`}>
+                            {isDone ? 'TIME UP' : formatTime(display)}
+                        </span>
+                        {!running && mode === 'countdown' ? (
+                            <button
+                                onClick={() => adjustTime(-60)}
+                                className="text-muted-foreground/50 hover:text-primary text-[13px] font-display leading-none transition-colors select-none"
+                            >
+                                −
+                            </button>
+                        ) : <div className="h-3" />}
+                    </div>
                 </div>
 
-                {/* Big time display */}
-                <div className={`font-display font-bold tabular-nums shrink-0 ${isDone ? 'text-2xl text-destructive' : 'text-2xl'} ${displayColor}`}>
-                    {isDone ? 'TIME UP' : formatTime(display)}
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center gap-2 shrink-0">
+                {/* ── Play/Pause + Stop ───────────────────── */}
+                <div className="flex items-center gap-2.5 shrink-0">
                     <button
                         onClick={() => setRunning(r => !r)}
                         disabled={isDone}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display uppercase tracking-wide border transition-all disabled:opacity-40 ${
-                            running
-                                ? 'bg-accent/15 border-accent/40 text-accent hover:bg-accent/25'
-                                : 'bg-primary/15 border-primary/40 text-primary hover:bg-primary/25'
-                        }`}
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-40 shadow-lg shadow-primary/25"
                     >
-                        {running ? <Square size={11} fill="currentColor" /> : <Play size={11} fill="currentColor" />}
-                        {running ? 'Pause' : 'Start'}
+                        {running
+                            ? <Pause size={15} fill="currentColor" strokeWidth={0} />
+                            : <Play size={15} fill="currentColor" strokeWidth={0} className="ml-0.5" />
+                        }
                     </button>
                     <button
                         onClick={handleReset}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display uppercase tracking-wide border border-surface-3 text-muted-foreground hover:text-foreground hover:border-surface-3 transition-all"
+                        className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
                     >
-                        <RotateCcw size={11} />
-                        Reset
+                        <Square size={13} />
                     </button>
                 </div>
 
-                {/* Mode toggle */}
-                <div className="flex items-center gap-1 shrink-0">
-                    {['countdown', 'countup'].map(m => (
-                        <button
-                            key={m}
-                            onClick={() => { setMode(m); handleReset() }}
-                            className={`px-2 py-1 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
-                                mode === m
-                                    ? 'bg-secondary/15 border-secondary/40 text-secondary'
-                                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                            }`}
-                        >
-                            {m === 'countdown' ? '↓ Down' : '↑ Up'}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Presets */}
-                {mode === 'countdown' && (
-                    <div className="flex items-center gap-1 shrink-0">
-                        {PRESETS.map(p => (
+                {/* ── Mode + Presets ──────────────────────── */}
+                <div className="flex flex-col gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1">
+                        {['countdown', 'countup'].map(m => (
                             <button
-                                key={p.label}
-                                onClick={() => handlePreset(p.seconds)}
-                                className={`px-2 py-1 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
-                                    preset === p.seconds && !showCustom
-                                        ? 'bg-primary/15 border-primary/40 text-primary'
+                                key={m}
+                                onClick={() => { setMode(m); handleReset() }}
+                                className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                    mode === m
+                                        ? 'bg-secondary/15 border-secondary/40 text-secondary'
                                         : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                {p.label}
+                                {m === 'countdown' ? '↓ Down' : '↑ Up'}
                             </button>
                         ))}
-                        {/* Custom */}
-                        {showCustom ? (
-                            <div className="flex items-center gap-1">
-                                <input
-                                    type="number"
-                                    placeholder="h"
-                                    min="0"
-                                    value={customH}
-                                    onChange={e => setCustomH(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                    className="w-10 px-1.5 py-1 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
-                                    autoFocus
-                                />
-                                <span className="text-[10px] text-muted-foreground font-mono">:</span>
-                                <input
-                                    type="number"
-                                    placeholder="m"
-                                    min="0"
-                                    step="any"
-                                    value={customM}
-                                    onChange={e => setCustomM(e.target.value)}
-                                    onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                    className="w-12 px-1.5 py-1 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
-                                />
+                    </div>
+                    {mode === 'countdown' && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                            {PRESETS.map(p => (
                                 <button
-                                    onClick={handleCustomSubmit}
-                                    className="px-2 py-1 rounded text-[10px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
+                                    key={p.label}
+                                    onClick={() => handlePreset(p.seconds)}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                        preset === p.seconds && !showCustom
+                                            ? 'bg-primary/15 border-primary/40 text-primary'
+                                            : 'border-transparent text-muted-foreground hover:text-foreground'
+                                    }`}
                                 >
-                                    Set
+                                    {p.label}
                                 </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => setShowCustom(true)}
-                                className="px-2 py-1 rounded text-[10px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
-                            >
-                                Custom
-                            </button>
-                        )}
-                    </div>
-                )}
+                            ))}
+                            {showCustom ? (
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        type="number" placeholder="h" min="0" value={customH}
+                                        onChange={e => setCustomH(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                        className="w-10 px-1.5 py-0.5 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
+                                        autoFocus
+                                    />
+                                    <span className="text-[10px] text-muted-foreground font-mono">:</span>
+                                    <input
+                                        type="number" placeholder="m" min="0" step="any" value={customM}
+                                        onChange={e => setCustomM(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                        className="w-12 px-1.5 py-0.5 rounded bg-surface-1 border border-primary/30 text-xs text-center font-mono text-foreground focus:outline-none focus:border-primary"
+                                    />
+                                    <button onClick={handleCustomSubmit}
+                                        className="px-2 py-0.5 rounded text-[10px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
+                                    >
+                                        Set
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setShowCustom(true)}
+                                    className="px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
+                                >
+                                    Custom
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
 
-                {/* Progress bar */}
-                {mode === 'countdown' && total && (
-                    <div className="flex-1 min-w-[80px] max-w-[200px] hidden sm:block">
-                        <div className="w-full h-1.5 bg-surface-1 rounded-full overflow-hidden">
-                            <div
-                                className={`h-full rounded-full transition-all duration-1000 ${
-                                    isDanger ? 'bg-destructive' : isLow ? 'bg-accent' : 'bg-gradient-to-r from-primary to-secondary'
-                                }`}
-                                style={{ width: `${100 - pct}%` }}
-                            />
-                        </div>
-                        <div className="text-[9px] text-muted-foreground font-mono mt-0.5 text-right">
-                            {Math.round((100 - pct))}% remaining
-                        </div>
-                    </div>
-                )}
+                <div className="flex-1" />
 
                 {/* Low time warning */}
                 {isLow && !isDone && (
-                    <div className={`flex items-center gap-1 text-[10px] font-display uppercase tracking-wider shrink-0 ${isDanger ? 'text-destructive' : 'text-accent'}`}>
-                        <AlertTriangle size={11} />
-                        {isDanger ? 'Under 1 min!' : 'Under 5 min'}
+                    <div className={`flex items-center gap-1.5 text-[10px] font-display uppercase tracking-wider shrink-0 ${isDanger ? 'text-destructive animate-pulse' : 'text-accent'}`}>
+                        <AlertTriangle size={12} />
+                        <span>{isDanger ? 'Under 1 min!' : 'Under 5 min'}</span>
                     </div>
                 )}
             </div>
