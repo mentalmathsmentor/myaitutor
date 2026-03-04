@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield } from 'lucide-react'
+import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield, MessageCircle } from 'lucide-react'
 
 // ─── NESA URL builder ─────────────────────────────────────────────────────────
 const NESA_BASE = 'https://www.nsw.gov.au/education-and-training/nesa/curriculum/hsc-exam-papers'
@@ -456,8 +456,15 @@ export default function PastPapers() {
                         </div>
                     ))}
 
-                    {/* Source credit */}
-                    <div className="mt-auto px-3 py-3 border-t border-surface-2">
+                    {/* Source credit + Feedback */}
+                    <div className="mt-auto px-3 py-3 border-t border-surface-2 flex flex-col gap-2">
+                        <a
+                            href="mailto:mentalmathsmentor@gmail.com?subject=MAIT%20Feedback"
+                            className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all text-[10px] font-display"
+                        >
+                            <MessageCircle size={10} />
+                            Feedback / Questions
+                        </a>
                         <p className="text-[9px] text-muted-foreground/50 leading-relaxed">
                             Papers from{' '}
                             <a href="https://thsconline.github.io/s/" target="_blank" rel="noopener noreferrer" className="text-primary/70 hover:text-primary underline">
