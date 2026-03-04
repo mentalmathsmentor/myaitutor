@@ -12,6 +12,7 @@ import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
 import PastPapers from './PastPapers'
+import TopicSidebar from './components/TopicSidebar'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 
 const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo'];
@@ -841,80 +842,95 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 </div>
             )}
 
-            {/* CHAT AREA */}
-            <div
-                ref={chatContainerRef}
-                onScroll={handleScroll}
-                className="flex-1 overflow-y-auto"
-            >
-            <div className="max-w-2xl mx-auto px-4 py-6">
-                <div className="space-y-5">
-                    {messages.map((msg, idx) => (
-                        <div
-                            key={idx}
-                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-reveal`}
-                            style={{ animationDelay: `${idx * 50}ms` }}
-                        >
-                            <div className={`relative max-w-[80%] ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}>
-                                <div
-                                    className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
-                                        : 'bg-surface-2 border border-surface-3 text-foreground rounded-2xl rounded-bl-sm'
-                                        }`}
-                                >
-                                    {msg.source === 'typing' ? (
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                        </div>
-                                    ) : (
-                                        <div className="chat-prose">
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkMath]}
-                                                rehypePlugins={[rehypeKatex]}
-                                            >
-                                                {msg.text}
-                                            </ReactMarkdown>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                    <div ref={endOfMsgRef} />
-                </div>
-            </div>
-            </div>
-
-            {/* INPUT FOOTER */}
-            <footer className="flex-none glass-card backdrop-blur-xl border-t border-surface-2 p-4">
-                <form onSubmit={handleStudy} className="max-w-2xl mx-auto relative flex gap-3">
-                    <input
-                        autoFocus
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        disabled={context?.fatigue_metric?.status === 'LOCKOUT'}
-                        placeholder={
-                            !isModelReady && isDemoMode
-                                ? "Model is downloading... please wait"
-                                : context?.fatigue_metric?.status === 'LOCKOUT'
-                                    ? "Rest period active..."
-                                    : "Ask about calculus, trigonometry, statistics..."
-                        }
-                        className="input-base flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                        {...keystrokeAttachToInput()}
-                    />
-                    <button
-                        type="submit"
-                        disabled={!input.trim() || loading || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
-                        className="btn-primary p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
+            {/* MAIN CONTENT: Chat + Sidebar */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Chat column */}
+                <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                    {/* CHAT AREA */}
+                    <div
+                        ref={chatContainerRef}
+                        onScroll={handleScroll}
+                        className="flex-1 overflow-y-auto"
                     >
-                        <Send size={18} />
-                    </button>
-                </form>
-            </footer>
+                    <div className="max-w-2xl mx-auto px-4 py-6">
+                        <div className="space-y-5">
+                            {messages.map((msg, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-reveal`}
+                                    style={{ animationDelay: `${idx * 50}ms` }}
+                                >
+                                    <div className={`relative max-w-[80%] ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}>
+                                        <div
+                                            className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
+                                                ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
+                                                : 'bg-surface-2 border border-surface-3 text-foreground rounded-2xl rounded-bl-sm'
+                                                }`}
+                                        >
+                                            {msg.source === 'typing' ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                </div>
+                                            ) : (
+                                                <div className="chat-prose">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkMath]}
+                                                        rehypePlugins={[rehypeKatex]}
+                                                    >
+                                                        {msg.text}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={endOfMsgRef} />
+                        </div>
+                    </div>
+                    </div>
+
+                    {/* INPUT FOOTER */}
+                    <footer className="flex-none glass-card backdrop-blur-xl border-t border-surface-2 p-4">
+                        <form onSubmit={handleStudy} className="max-w-2xl mx-auto relative flex gap-3">
+                            <input
+                                autoFocus
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                disabled={context?.fatigue_metric?.status === 'LOCKOUT'}
+                                placeholder={
+                                    !isModelReady && isDemoMode
+                                        ? "Model is downloading... please wait"
+                                        : context?.fatigue_metric?.status === 'LOCKOUT'
+                                            ? "Rest period active..."
+                                            : "Ask about calculus, trigonometry, statistics..."
+                                }
+                                className="input-base flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                {...keystrokeAttachToInput()}
+                            />
+                            <button
+                                type="submit"
+                                disabled={!input.trim() || loading || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
+                                className="btn-primary p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
+                            >
+                                <Send size={18} />
+                            </button>
+                        </form>
+                    </footer>
+                </div>
+
+                {/* Topic Sidebar */}
+                <TopicSidebar
+                    subject={userProfile.subject}
+                    onTopicClick={(subtopic, topic, code) => {
+                        const question = `Explain ${subtopic} from ${topic} (${code})`;
+                        setInput(question);
+                    }}
+                />
+            </div>
 
         </div>
 
