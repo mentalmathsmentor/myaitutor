@@ -184,8 +184,8 @@ function ExamTimer({ suggestedDuration }) {
     const isDanger = mode === 'countdown' && remaining <= 60 && remaining > 0
     const isDone = mode === 'countdown' && remaining === 0
 
-    const SIZE = 100
-    const SW = 4.5
+    const SIZE = 200
+    const SW = 5
     const RAD = (SIZE - SW * 2) / 2
     const CIRC = 2 * Math.PI * RAD
     const ringOffset = mode === 'countdown' && total ? CIRC * (1 - pct) : 0
@@ -212,7 +212,12 @@ function ExamTimer({ suggestedDuration }) {
 
                 {/* ── Ring + time ─────────────────────────── */}
                 <div className="relative" style={{ width: SIZE, height: SIZE }}>
-                    <svg width={SIZE} height={SIZE} className="-rotate-90">
+                    <svg
+                        width={SIZE} height={SIZE}
+                        className="-rotate-90"
+                        overflow="visible"
+                        style={mode === 'countdown' && !isDone ? { filter: `drop-shadow(0 0 8px ${ringStroke})` } : undefined}
+                    >
                         <circle cx={SIZE / 2} cy={SIZE / 2} r={RAD} fill="none" stroke="hsla(var(--surface-3), 0.6)" strokeWidth={SW} />
                         {mode === 'countdown' && (
                             <circle
@@ -220,12 +225,11 @@ function ExamTimer({ suggestedDuration }) {
                                 fill="none" stroke={ringStroke} strokeWidth={SW}
                                 strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={ringOffset}
                                 className="transition-all duration-1000 ease-linear"
-                                style={{ filter: `drop-shadow(0 0 6px ${ringStroke})` }}
                             />
                         )}
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-xs' : 'text-[15px]'} ${timeColor}`}>
+                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-xl' : 'text-[28px]'} ${timeColor}`}>
                             {isDone ? 'DONE' : formatTime(display)}
                         </span>
                     </div>
@@ -361,7 +365,7 @@ export default function PastPapers() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
-                <aside className="w-56 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
+                <aside className="w-64 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
 
                     {/* Exam Timer */}
                     <ExamTimer suggestedDuration={suggestedDuration} />
