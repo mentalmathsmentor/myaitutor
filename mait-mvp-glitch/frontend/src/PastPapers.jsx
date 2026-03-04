@@ -184,8 +184,8 @@ function ExamTimer({ suggestedDuration }) {
     const isDanger = mode === 'countdown' && remaining <= 60 && remaining > 0
     const isDone = mode === 'countdown' && remaining === 0
 
-    const SIZE = 52
-    const SW = 3
+    const SIZE = 76
+    const SW = 4
     const RAD = (SIZE - SW * 2) / 2
     const CIRC = 2 * Math.PI * RAD
     const ringOffset = mode === 'countdown' && total ? CIRC * (1 - pct) : 0
@@ -207,11 +207,11 @@ function ExamTimer({ suggestedDuration }) {
                 : 'text-foreground'
 
     return (
-        <div className="absolute top-3 right-3 z-20 glass-card border border-surface-2 rounded-xl shadow-xl backdrop-blur-md">
-            <div className="flex items-center gap-3 px-3 py-2">
+        <div className="px-3 py-3 border-b border-surface-2">
+            <div className="flex flex-col items-center gap-2.5">
 
-                {/* ── Circular ring (no +/−) ──────────────── */}
-                <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
+                {/* ── Ring + time ─────────────────────────── */}
+                <div className="relative" style={{ width: SIZE, height: SIZE }}>
                     <svg width={SIZE} height={SIZE} className="-rotate-90">
                         <circle cx={SIZE / 2} cy={SIZE / 2} r={RAD} fill="none" stroke="hsla(var(--surface-3), 0.6)" strokeWidth={SW} />
                         {mode === 'countdown' && (
@@ -220,109 +220,111 @@ function ExamTimer({ suggestedDuration }) {
                                 fill="none" stroke={ringStroke} strokeWidth={SW}
                                 strokeLinecap="round" strokeDasharray={CIRC} strokeDashoffset={ringOffset}
                                 className="transition-all duration-1000 ease-linear"
-                                style={{ filter: `drop-shadow(0 0 5px ${ringStroke})` }}
+                                style={{ filter: `drop-shadow(0 0 6px ${ringStroke})` }}
                             />
                         )}
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-[10px]' : 'text-[12px]'} ${timeColor}`}>
+                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-sm' : 'text-lg'} ${timeColor}`}>
                             {isDone ? 'DONE' : formatTime(display)}
                         </span>
                     </div>
                 </div>
 
-                {/* ── Controls ────────────────────────────── */}
-                <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5">
+                {/* ── Play / Stop / Mode ──────────────────── */}
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setRunning(r => !r)}
+                        disabled={isDone}
+                        className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-40 shadow-md shadow-primary/20"
+                    >
+                        {running
+                            ? <Pause size={13} fill="currentColor" strokeWidth={0} />
+                            : <Play size={13} fill="currentColor" strokeWidth={0} className="ml-0.5" />
+                        }
+                    </button>
+                    <button
+                        onClick={handleReset}
+                        className="w-8 h-8 rounded-full flex items-center justify-center border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+                    >
+                        <Square size={11} />
+                    </button>
+                    <div className="h-5 w-px bg-surface-3 mx-0.5" />
+                    {['countdown', 'countup'].map(m => (
                         <button
-                            onClick={() => setRunning(r => !r)}
-                            disabled={isDone}
-                            className="w-7 h-7 rounded-full flex items-center justify-center bg-primary text-primary-foreground hover:brightness-110 transition-all disabled:opacity-40 shadow-md shadow-primary/20"
+                            key={m}
+                            onClick={() => { setMode(m); handleReset() }}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                mode === m
+                                    ? 'bg-secondary/15 border-secondary/40 text-secondary'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                            }`}
                         >
-                            {running
-                                ? <Pause size={11} fill="currentColor" strokeWidth={0} />
-                                : <Play size={11} fill="currentColor" strokeWidth={0} className="ml-px" />
-                            }
+                            {m === 'countdown' ? '↓' : '↑'}
                         </button>
-                        <button
-                            onClick={handleReset}
-                            className="w-7 h-7 rounded-full flex items-center justify-center border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-                        >
-                            <Square size={10} />
-                        </button>
-                        <div className="h-4 w-px bg-surface-3 mx-0.5" />
-                        {['countdown', 'countup'].map(m => (
+                    ))}
+                </div>
+
+                {/* ── Presets ─────────────────────────────── */}
+                {mode === 'countdown' && (
+                    <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {PRESETS.map(p => (
                             <button
-                                key={m}
-                                onClick={() => { setMode(m); handleReset() }}
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-display uppercase tracking-wider border transition-all ${
-                                    mode === m
-                                        ? 'bg-secondary/15 border-secondary/40 text-secondary'
+                                key={p.label}
+                                onClick={() => handlePreset(p.seconds)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
+                                    preset === p.seconds && !showCustom
+                                        ? 'bg-primary/15 border-primary/40 text-primary'
                                         : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
                             >
-                                {m === 'countdown' ? '↓ Down' : '↑ Up'}
+                                {p.label}
                             </button>
                         ))}
-                        {isLow && !isDone && (
-                            <span className={`text-[9px] font-display uppercase tracking-wider ml-1 ${isDanger ? 'text-destructive animate-pulse' : 'text-accent'}`}>
-                                <AlertTriangle size={9} className="inline -mt-px mr-0.5" />
-                                {isDanger ? '<1m' : '<5m'}
-                            </span>
+                        {showCustom ? (
+                            <div className="flex items-center gap-1.5 w-full justify-center mt-1">
+                                <div className="flex items-center rounded-lg bg-surface-1/80 border border-surface-3 px-2 py-1 gap-1.5">
+                                    <input
+                                        type="number" placeholder="0" min="0" value={customH}
+                                        onChange={e => setCustomH(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                        className="w-7 bg-transparent text-xs text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                        autoFocus
+                                    />
+                                    <span className="text-[9px] text-muted-foreground/60 font-display">h</span>
+                                    <span className="text-muted-foreground/30">:</span>
+                                    <input
+                                        type="number" placeholder="0" min="0" step="any" value={customM}
+                                        onChange={e => setCustomM(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
+                                        className="w-7 bg-transparent text-xs text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                    />
+                                    <span className="text-[9px] text-muted-foreground/60 font-display">m</span>
+                                </div>
+                                <button onClick={handleCustomSubmit}
+                                    className="px-2 py-1 rounded text-[10px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
+                                >
+                                    Set
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowCustom(true)}
+                                className="px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
+                            >
+                                Custom
+                            </button>
                         )}
                     </div>
-                    {mode === 'countdown' && (
-                        <div className="flex items-center gap-1">
-                            {PRESETS.map(p => (
-                                <button
-                                    key={p.label}
-                                    onClick={() => handlePreset(p.seconds)}
-                                    className={`px-1.5 py-0.5 rounded text-[9px] font-display uppercase tracking-wider border transition-all ${
-                                        preset === p.seconds && !showCustom
-                                            ? 'bg-primary/15 border-primary/40 text-primary'
-                                            : 'border-transparent text-muted-foreground hover:text-foreground'
-                                    }`}
-                                >
-                                    {p.label}
-                                </button>
-                            ))}
-                            {showCustom ? (
-                                <div className="flex items-center gap-1 ml-0.5">
-                                    <div className="flex items-center rounded-lg bg-surface-1/80 border border-surface-3 px-2 py-0.5 gap-1.5">
-                                        <input
-                                            type="number" placeholder="0" min="0" value={customH}
-                                            onChange={e => setCustomH(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                            className="w-6 bg-transparent text-[10px] text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                            autoFocus
-                                        />
-                                        <span className="text-[8px] text-muted-foreground/60 font-display uppercase">h</span>
-                                        <span className="text-muted-foreground/30 text-[10px]">:</span>
-                                        <input
-                                            type="number" placeholder="0" min="0" step="any" value={customM}
-                                            onChange={e => setCustomM(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleCustomSubmit()}
-                                            className="w-6 bg-transparent text-[10px] text-center font-mono text-foreground focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                        />
-                                        <span className="text-[8px] text-muted-foreground/60 font-display uppercase">m</span>
-                                    </div>
-                                    <button onClick={handleCustomSubmit}
-                                        className="px-1.5 py-0.5 rounded text-[9px] font-display border border-primary/40 text-primary hover:bg-primary/15 transition-all"
-                                    >
-                                        Set
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setShowCustom(true)}
-                                    className="px-1.5 py-0.5 rounded text-[9px] font-display uppercase tracking-wider border border-transparent text-muted-foreground hover:text-foreground transition-all"
-                                >
-                                    Custom
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                )}
+
+                {/* ── Low time warning ────────────────────── */}
+                {isLow && !isDone && (
+                    <div className={`flex items-center gap-1.5 text-[10px] font-display uppercase tracking-wider ${isDanger ? 'text-destructive animate-pulse' : 'text-accent'}`}>
+                        <AlertTriangle size={11} />
+                        <span>{isDanger ? 'Under 1 min!' : 'Under 5 min'}</span>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -356,14 +358,15 @@ export default function PastPapers() {
         <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay">
 
             {/* Body: sidebar + viewer */}
-            <div className="flex flex-1 overflow-hidden relative">
-
-                {/* Exam Timer – floating top-right */}
-                <ExamTimer suggestedDuration={suggestedDuration} />
+            <div className="flex flex-1 overflow-hidden">
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
                 <aside className="w-56 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
-                    <div className="px-3 pt-3 pb-1">
+
+                    {/* Exam Timer */}
+                    <ExamTimer suggestedDuration={suggestedDuration} />
+
+                    <div className="px-3 pt-2 pb-1">
                         <p className="text-[9px] font-display uppercase tracking-widest text-muted-foreground">NSW Maths Papers</p>
                     </div>
 
