@@ -585,7 +585,6 @@ export default function PastPapers() {
                                     title={activeLabel}
                                     onLoad={() => setIframeLoaded(true)}
                                     className="w-full h-full border-0"
-                                    sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"
                                     allow="fullscreen"
                                 />
                             </div>
