@@ -15,7 +15,8 @@
       "Bash(pkill:*)",
       "Bash(npm run build:*)",
       "Bash(npx tailwindcss:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npx vite build)"
     ]
   }
 }

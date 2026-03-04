@@ -394,6 +394,16 @@ def list_worksheet_topics(year_level: Optional[int] = Query(default=None, ge=7, 
 class SubscribeRequest(BaseModel):
     email: str
 
+@app.post("/visit")
+async def record_visit():
+    """Increment visit counter and return the new count."""
+    try:
+        count = await storage.increment_visit_count()
+        return {"count": count}
+    except Exception as e:
+        return {"count": 0}
+
+
 @app.post("/subscribe")
 async def subscribe_waitlist(request: SubscribeRequest):
     """Save waitlist email to SQLite database."""

@@ -1,7 +1,17 @@
-import { useState } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle } from 'lucide-react'
 
 export default function LandingPage({ navigate, onLoginClick }) {
+    const [visitCount, setVisitCount] = useState(null)
+
+    useEffect(() => {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        fetch(`${API_URL}/visit`, { method: 'POST' })
+            .then(r => r.json())
+            .then(d => setVisitCount(d.count))
+            .catch(() => {})
+    }, [])
+
     return (
         <div className="min-h-screen bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
             {/* Decorative grid overlay */}
@@ -129,10 +139,22 @@ export default function LandingPage({ navigate, onLoginClick }) {
             </section>
 
             {/* Footer */}
-            <footer className="relative z-10 py-6 text-center border-t border-surface-2">
+            <footer className="relative z-10 py-6 text-center border-t border-surface-2 flex flex-col items-center gap-3">
+                <a
+                    href="mailto:mentalmathsmentor@gmail.com?subject=MAIT%20Feedback"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all text-sm font-display"
+                >
+                    <MessageCircle size={14} />
+                    Feedback / Questions
+                </a>
                 <p className="text-muted-foreground text-sm font-display">
                     Built by <a href="https://mentalmaths.au" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">Mental Maths Mentor</a> · Coming 2026
                 </p>
+                {visitCount !== null && (
+                    <p className="text-muted-foreground/40 text-xs font-mono tabular-nums">
+                        {visitCount.toLocaleString()} visits
+                    </p>
+                )}
             </footer>
 
         </div>

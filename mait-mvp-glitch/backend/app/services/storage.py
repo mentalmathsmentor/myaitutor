@@ -33,6 +33,15 @@ async def init_db() -> None:
                 timestamp TEXT NOT NULL
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS visit_counter (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                count INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        await db.execute("""
+            INSERT OR IGNORE INTO visit_counter (id, count) VALUES (1, 0)
+        """)
         await db.commit()
 
 
@@ -81,6 +90,24 @@ async def save_email(email: str) -> None:
             (email, timestamp),
         )
         await db.commit()
+
+
+async def increment_visit_count() -> int:
+    """Increment and return the visit counter."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        await db.execute("UPDATE visit_counter SET count = count + 1 WHERE id = 1")
+        await db.commit()
+        cursor = await db.execute("SELECT count FROM visit_counter WHERE id = 1")
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
+
+async def get_visit_count() -> int:
+    """Return the current visit count without incrementing."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        cursor = await db.execute("SELECT count FROM visit_counter WHERE id = 1")
+        row = await cursor.fetchone()
+        return row[0] if row else 0
 
 
 async def get_all_emails() -> List[dict]:
