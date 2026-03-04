@@ -184,8 +184,8 @@ function ExamTimer({ suggestedDuration }) {
     const isDanger = mode === 'countdown' && remaining <= 60 && remaining > 0
     const isDone = mode === 'countdown' && remaining === 0
 
-    const SIZE = 76
-    const SW = 4
+    const SIZE = 100
+    const SW = 4.5
     const RAD = (SIZE - SW * 2) / 2
     const CIRC = 2 * Math.PI * RAD
     const ringOffset = mode === 'countdown' && total ? CIRC * (1 - pct) : 0
@@ -225,7 +225,7 @@ function ExamTimer({ suggestedDuration }) {
                         )}
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-sm' : 'text-lg'} ${timeColor}`}>
+                        <span className={`font-display font-bold tabular-nums leading-none ${isDone ? 'text-xs' : 'text-[15px]'} ${timeColor}`}>
                             {isDone ? 'DONE' : formatTime(display)}
                         </span>
                     </div>
