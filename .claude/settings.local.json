@@ -16,7 +16,12 @@
       "Bash(npm run build:*)",
       "Bash(npx tailwindcss:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx vite build)"
+      "Bash(npx vite build)",
+      "Bash(git pull origin claude/review-codebase-sqhR2 --rebase)",
+      "Bash(git push -u origin claude/review-codebase-sqhR2)",
+      "Bash(git add mait-mvp-glitch/backend/app/services/storage.py)",
+      "Bash(git stash)",
+      "Bash(git stash pop)"
     ]
   }
 }
