@@ -117,7 +117,7 @@ MAIT uses a **Hybrid Edge-Cloud Architecture** — decoupling emotional intellig
 │  ┌──────────────┐  ┌──────┴────────┐  ┌───────────────────┐ │
 │  │  Bloom's     │  │  Gemini       │  │  Syllabus RAG     │ │
 │  │  Taxonomy    │  │  Client       │  │  (FAISS +         │ │
-│  │  Engine      │  │  (Flash 3.0)  │  │  Embeddings)      │ │
+│  │  Engine      │  │  (Flash-Lite) │  │  Embeddings)      │ │
 │  └──────────────┘  └───────────────┘  └───────────────────┘ │
 │                                                              │
 │  ┌──────────────┐  ┌───────────────────────────────────────┐ │
@@ -159,7 +159,7 @@ MAIT uses a **Hybrid Edge-Cloud Architecture** — decoupling emotional intellig
 |---|---|
 | **FastAPI** | Async Python web framework |
 | **Uvicorn** | ASGI server |
-| **Google Gemini (google-genai)** | Cloud LLM (Gemini 3.0 Flash Preview) |
+| **Google Gemini (google-genai)** | Cloud LLM (Gemini 3.1 Flash-Lite, configurable via `GEMINI_MODEL` env var) |
 | **FAISS** | Vector similarity search for RAG |
 | **sentence-transformers** | Embedding generation for syllabus documents |
 | **aiosqlite** | Async SQLite for persistent storage |
@@ -317,7 +317,8 @@ Frontend will be available at `http://localhost:5173`.
 | Variable | Required | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | Yes (cloud mode) | Google Gemini API key |
-| `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `http://localhost:5173,http://localhost:3000`) |
+| `GEMINI_MODEL` | No | Gemini model ID (default: `gemini-3.1-flash-lite`). Use `gemini-3.1-pro` for complex Extension 2 queries |
+| `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `http://localhost:5173,http://localhost:3000`). Production: `https://myaitutor.au,https://www.myaitutor.au` |
 | `VITE_API_URL` | No | Backend URL for the frontend (default: `http://127.0.0.1:8000`) |
 
 ---
@@ -423,7 +424,8 @@ MAIT takes a **privacy-first** approach to student data:
 ### Next
 - [ ] Persistent conversation history in Gemini calls
 - [ ] Streaming responses for real-time typing effect
-- [ ] Rate limiting and session TTL cleanup
+- [x] Rate limiting (slowapi on `/interact` and `/generate-worksheet`)
+- [ ] Session TTL cleanup
 - [ ] Extension 1 and Extension 2 syllabus RAG documents
 - [ ] "Guess-First" orchestrated latency workflow
 - [ ] Topic mastery visualiser
