@@ -141,7 +141,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
             {/* Footer */}
             <footer className="relative z-10 py-6 text-center border-t border-surface-2 flex flex-col items-center gap-3">
                 <a
-                    href="mailto:mentalmathsmentor@gmail.com?subject=MAIT%20Feedback"
+                    href="mailto:mentor@mentalmaths.au?subject=MAIT%20Feedback"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all text-sm font-display"
                 >
                     <MessageCircle size={14} />

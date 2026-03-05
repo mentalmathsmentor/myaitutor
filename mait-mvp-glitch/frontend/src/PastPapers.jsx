@@ -459,7 +459,7 @@ export default function PastPapers() {
                     {/* Source credit + Feedback */}
                     <div className="mt-auto px-3 py-3 border-t border-surface-2 flex flex-col gap-2">
                         <a
-                            href="mailto:mentalmathsmentor@gmail.com?subject=MAIT%20Feedback"
+                            href="mailto:mentor@mentalmaths.au?subject=MAIT%20Feedback"
                             className="flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all text-[10px] font-display"
                         >
                             <MessageCircle size={10} />
