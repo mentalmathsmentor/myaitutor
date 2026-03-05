@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText } from 'lucide-react'
+
+const SYLLABI = [
+    { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-secondary' },
+    { label: 'Advanced', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-advanced-11-12-2024/overview', color: 'text-primary' },
+    { label: 'Extension 1', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-1-11-12-2024/overview', color: 'text-accent' },
+    { label: 'Extension 2', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-2-12-2024/overview', color: 'text-accent' },
+]
 
 export default function LandingPage({ navigate, onLoginClick }) {
     const [visitCount, setVisitCount] = useState(null)
@@ -84,6 +91,33 @@ export default function LandingPage({ navigate, onLoginClick }) {
                     desc="Late night study panic? Mate is always awake and ready."
                     delay="animate-reveal-3"
                 />
+            </section>
+
+            {/* NSW Syllabus Links */}
+            <section className="relative z-10 w-full max-w-3xl mx-auto px-6 pb-16">
+                <div className="divider-glow mb-8" />
+                <div className="text-center mb-6">
+                    <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">
+                        <span className="gradient-text-primary">NSW HSC Syllabi</span>
+                    </h3>
+                    <p className="text-muted-foreground animate-reveal animate-reveal-2">
+                        Official NESA curriculum documents for each course.
+                    </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 animate-reveal animate-reveal-3">
+                    {SYLLABI.map(s => (
+                        <a
+                            key={s.label}
+                            href={s.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm border border-surface-3 hover:border-primary/40 transition-all duration-300 group ${s.color}`}
+                        >
+                            <FileText size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                            {s.label}
+                        </a>
+                    ))}
+                </div>
             </section>
 
             {/* AI Resources Preview */}

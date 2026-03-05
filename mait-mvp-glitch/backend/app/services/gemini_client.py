@@ -8,7 +8,8 @@ if TYPE_CHECKING:
 
 # Initialize Gemini Client (New SDK) - Lazy Loading
 client = None
-MODEL_ID = 'gemini-3-flash-preview' # Updated to Gemini 3.0 Flash Preview
+# Default: Flash-Lite for cost efficiency. Override with gemini-3.1-pro for complex Extension 2 queries.
+MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
 def get_client():
     global client

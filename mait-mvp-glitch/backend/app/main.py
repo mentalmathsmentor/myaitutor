@@ -1,6 +1,6 @@
 import shutil
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file immediately
 load_dotenv()
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from .models import StudentContext, FatigueStatus, KeystrokeSubmission, KeystrokeMetrics, KeystrokeProfile
 from .services import wellness_engine, educational_agent
@@ -26,6 +30,11 @@ from typing import Optional
 
 app = FastAPI(title="MAIT MVP (The Glitch Edition)")
 
+# Rate limiting
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -36,13 +45,15 @@ async def startup_event():
     print("RAG system enabled (FAISS backend).")
     print("Application startup complete.")
 
-# Enable CORS - Security: Only allow specific origins
-# For production, replace with actual frontend domain
+# CORS - environment-based origins
+# For production: CORS_ORIGINS=https://myaitutor.au,https://www.myaitutor.au
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # REVERTED: Allow all for MVP dev to fix 400 Error
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods including OPTIONS
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -67,14 +78,15 @@ async def get_context(student_id: str):
     return await get_or_create_context(student_id)
 
 @app.post("/interact")
-async def interact(request: InteractionRequest):
+@limiter.limit("20/minute")
+async def interact(request: Request, body: InteractionRequest):
     # 1. Retrieve/Create Context
-    context = await get_or_create_context(request.student_id)
+    context = await get_or_create_context(body.student_id)
 
     # 2. Check Wellness BEFORE processing
     context = wellness_engine.check_wellness(context)
     if context.fatigue_metric.status == FatigueStatus.LOCKOUT:
-        await storage.save_context(request.student_id, context)
+        await storage.save_context(body.student_id, context)
         return {
             "response": "LOCKOUT ACTIVE. Go take a break, mate.",
             "context": context,
@@ -83,7 +95,7 @@ async def interact(request: InteractionRequest):
         }
 
     # 3. Update Fatigue for this interaction
-    context = wellness_engine.update_fatigue(context, request.complexity)
+    context = wellness_engine.update_fatigue(context, body.complexity)
 
     # 4. Generate Response using real Gemini LLM (if not locked out after update)
     #    Note: educational_agent.generate_response_async now handles Bloom's
@@ -92,10 +104,10 @@ async def interact(request: InteractionRequest):
          response_text = "Whoa, you just hit the wall. Break time!"
     else:
          # Use async Gemini integration - fatigue + bloom state injected into system prompt
-         response_text = await educational_agent.generate_response_async(request.query, context)
+         response_text = await educational_agent.generate_response_async(body.query, context)
 
     # 5. Save Context (bloom level updated by educational_agent)
-    await storage.save_context(request.student_id, context)
+    await storage.save_context(body.student_id, context)
 
     return {
         "response": response_text,
@@ -310,7 +322,8 @@ def classify_error_tendency(errors: int, chars: int) -> str:
 # ============================================
 
 @app.post("/generate-worksheet")
-async def generate_worksheet(request: WorksheetRequest):
+@limiter.limit("5/minute")
+async def generate_worksheet(request: Request, body: WorksheetRequest):
     """
     Generate a NESA-styled maths worksheet PDF.
 
@@ -319,11 +332,11 @@ async def generate_worksheet(request: WorksheetRequest):
     """
     pdf_path: Optional[str] = None
     try:
-        pdf_path = await generate_worksheet_pdf(request)
+        pdf_path = await generate_worksheet_pdf(body)
 
         # Build a human-readable filename
-        safe_topic = request.topic.replace(" ", "_").replace("/", "-")[:40]
-        filename = f"worksheet_yr{request.year_level}_{safe_topic}.pdf"
+        safe_topic = body.topic.replace(" ", "_").replace("/", "-")[:40]
+        filename = f"worksheet_yr{body.year_level}_{safe_topic}.pdf"
 
         return FileResponse(
             path=pdf_path,
