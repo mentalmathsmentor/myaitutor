@@ -1350,25 +1350,12 @@ function LoginModal({ show, onClose, onSubmit, onDemo, onGoogleSuccess, authLoad
         e.preventDefault()
         setIsVerifying(true)
         setError(false)
-        try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${API_URL}/auth/verify-access`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code })
-            })
-            if (res.ok) {
-                onSubmit(true)
-            } else {
-                setError(true)
-                setTimeout(() => setError(false), 2000)
-            }
-        } catch {
+        const success = await onSubmit(code)
+        if (!success) {
             setError(true)
             setTimeout(() => setError(false), 2000)
-        } finally {
-            setIsVerifying(false)
         }
+        setIsVerifying(false)
     }
 
     return (
