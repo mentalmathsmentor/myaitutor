@@ -356,7 +356,8 @@ Fatigue increases exponentially with rapid-fire messages and decays at 2 points 
 | `POST` | `/interact` | Main tutoring interaction |
 | `POST` | `/query` | Alternative query (chunked sections) |
 | `GET` | `/context/{student_id}` | Retrieve student context |
-| `POST` | `/reset/{student_id}` | Reset student context |
+| `POST` | `/reset/{student_id}` | Reset student context and conversation history |
+| `GET` | `/history/{student_id}` | Retrieve conversation history for a student |
 | `POST` | `/keystroke-metrics` | Submit keystroke session data |
 | `GET` | `/keystroke-profile/{student_id}` | Get psychometric profile |
 | `DELETE` | `/keystroke-profile/{student_id}` | Reset keystroke profile |
@@ -422,7 +423,7 @@ MAIT takes a **privacy-first** approach to student data:
 - [x] Waitlist / early access sign-up
 
 ### Next
-- [ ] Persistent conversation history in Gemini calls
+- [x] Persistent conversation history in Gemini calls
 - [ ] Streaming responses for real-time typing effect
 - [x] Rate limiting (slowapi on `/interact` and `/generate-worksheet`)
 - [ ] Session TTL cleanup
@@ -454,6 +455,28 @@ Detailed technical documentation lives inside `mait-mvp-glitch/`:
 | [GEMINI_INTEGRATION.md](mait-mvp-glitch/GEMINI_INTEGRATION.md) | Gemini API integration details and fatigue flow |
 | [KEYSTROKE_PSYCHOMETRICS.md](mait-mvp-glitch/KEYSTROKE_PSYCHOMETRICS.md) | Typing analytics system specification |
 | [CRITICAL_FIXES.md](mait-mvp-glitch/CRITICAL_FIXES.md) | Security audit and fixes applied |
+
+---
+
+## Changelog
+
+### 2026-03-06 — Persistent Conversation History
+
+**Summary:** Gemini API calls now include rolling conversation history, enabling multi-turn tutoring with context persistence across page refreshes.
+
+**Backend Changes:**
+
+- **`storage.py`** — Added `conversation_history` table to SQLite schema with columns for `student_id`, `role`, `content`, `timestamp`, `fatigue_state`, `blooms_level`, and `topic`. New methods: `save_message()`, `get_history()`, `clear_history()`, `get_history_token_estimate()`.
+- **`gemini_client.py`** — `get_gemini_response()` now accepts an optional `conversation_history` parameter. History is sent as multi-turn `Content` objects to the Gemini API. System prompt updated with instructions to use conversation context naturally without summarising it.
+- **`educational_agent.py`** — `generate_response_async()` now fetches conversation history from storage before calling Gemini, passes it to the client, and saves both the user message and assistant response after receiving the reply. Includes token budget pruning (6000 token limit, oldest messages truncated first).
+- **`main.py`** — New `GET /history/{student_id}` endpoint to retrieve conversation history. `/reset/{student_id}` now also clears conversation history. `/query` endpoint now fetches, prunes, and passes conversation history to Gemini, and saves both messages to storage.
+- **`.env`** — Created with `GEMINI_API_KEY`, `GEMINI_MODEL`, and `CORS_ORIGINS` configured.
+
+**Frontend Changes:**
+
+- **`App.jsx`** — On chat page mount (`/app`), fetches conversation history via `GET /history/{student_id}` and populates the chat UI with previous messages. Added "CLEAR" button (with `Trash2` icon) in the HUD toolbar that calls `POST /reset/{student_id}` and resets the local message state. Demo mode is unaffected.
+
+**What's NOT changed:** Fatigue/wellness engine, Bloom's taxonomy assessment, RAG/syllabus retrieval, keystroke psychometrics, local SLM demo mode.
 
 ---
 
