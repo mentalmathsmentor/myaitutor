@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X } from 'lucide-react'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X, ListPlus, Clock } from 'lucide-react'
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
 import NavBar from './components/NavBar'
@@ -107,6 +107,8 @@ function App() {
     const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false)
     const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem('mait_autosave') === 'true')
     const autoSavePromptShown = useRef(false)
+    const [pendingQueue, setPendingQueue] = useState([])
+    const [showQueueConfirm, setShowQueueConfirm] = useState(null) // string (pending text) or null
 
     const isDemoMode = page === 'demo'
 
@@ -432,6 +434,21 @@ function App() {
         }
     }, [isModelReady, messageQueue, loading]);
 
+    // Process pending queue when response finishes
+    useEffect(() => {
+        if (!loading && pendingQueue.length > 0) {
+            const nextMsg = pendingQueue[0];
+            setPendingQueue(prev => prev.slice(1));
+            // Remove the queued badge from this message
+            setMessages(prev => prev.map(m =>
+                m.source === 'queued' && m.text === nextMsg
+                    ? { ...m, source: undefined }
+                    : m
+            ));
+            processUserMessage(nextMsg);
+        }
+    }, [loading, pendingQueue]);
+
     // Auto-start local brain when entering demo mode
     useEffect(() => {
         if (isDemoMode && !isModelReady && !downloadProgress) {
@@ -615,11 +632,27 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         e.preventDefault();
         if (!input.trim()) return;
         const userText = input.trim();
+        if (loading) {
+            setShowQueueConfirm(userText);
+            return;
+        }
         setInput('');
         setMessages(prev => [...prev, { role: 'user', text: userText }]);
-        // Record keystroke metrics for this message and submit to backend
         keystrokeRecordMessage();
         processUserMessage(userText);
+    };
+
+    const confirmQueueMessage = () => {
+        if (!showQueueConfirm) return;
+        const text = showQueueConfirm;
+        setInput('');
+        setShowQueueConfirm(null);
+        setPendingQueue(prev => [...prev, text]);
+        setMessages(prev => [...prev, { role: 'user', text, source: 'queued' }]);
+    };
+
+    const cancelQueueMessage = () => {
+        setShowQueueConfirm(null);
     };
 
     const shouldQueryAPI = (text) => {
@@ -1104,9 +1137,17 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     style={{ animationDelay: `${idx * 50}ms` }}
                                 >
                                     <div className={`relative max-w-[80%] ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}`}>
+                                        {msg.source === 'queued' && (
+                                            <div className="flex items-center gap-1 mb-1 justify-end">
+                                                <Clock size={9} className="text-accent" />
+                                                <span className="text-[9px] font-display text-accent uppercase tracking-wider">Queued</span>
+                                            </div>
+                                        )}
                                         <div
                                             className={`px-4 py-3 text-sm leading-relaxed ${msg.role === 'user'
-                                                ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
+                                                ? msg.source === 'queued'
+                                                    ? 'bg-gradient-to-br from-accent/80 to-accent/60 text-accent-foreground rounded-2xl rounded-br-sm opacity-75'
+                                                    : 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-2xl rounded-br-sm shadow-glow-sm'
                                                 : 'bg-surface-2 border border-surface-3 text-foreground rounded-2xl rounded-bl-sm'
                                                 }`}
                                         >
@@ -1137,6 +1178,15 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
                     {/* INPUT FOOTER */}
                     <footer className="flex-none glass-card backdrop-blur-xl border-t border-surface-2 p-4">
+                        {/* Queue indicator */}
+                        {pendingQueue.length > 0 && (
+                            <div className="max-w-2xl mx-auto mb-2 flex items-center gap-2 px-1">
+                                <Clock size={11} className="text-accent" />
+                                <span className="text-[10px] font-display text-accent uppercase tracking-wider">
+                                    {pendingQueue.length} question{pendingQueue.length > 1 ? 's' : ''} queued
+                                </span>
+                            </div>
+                        )}
                         <form onSubmit={handleStudy} className="max-w-2xl mx-auto relative flex gap-3">
                             <input
                                 autoFocus
@@ -1149,17 +1199,24 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                         ? "Model is downloading... please wait"
                                         : context?.fatigue_metric?.status === 'LOCKOUT'
                                             ? "Rest period active..."
-                                            : "Ask about calculus, trigonometry, statistics..."
+                                            : loading
+                                                ? "Type your next question to queue it..."
+                                                : "Ask about calculus, trigonometry, statistics..."
                                 }
                                 className="input-base flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
                                 {...keystrokeAttachToInput()}
                             />
                             <button
                                 type="submit"
-                                disabled={!input.trim() || loading || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
-                                className="btn-primary p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
+                                disabled={!input.trim() || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
+                                className={`p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none transition-all ${
+                                    loading && input.trim()
+                                        ? 'bg-accent text-accent-foreground hover:opacity-90 shadow-glow-sm'
+                                        : 'btn-primary'
+                                }`}
+                                title={loading ? 'Queue this question' : 'Send'}
                             >
-                                <Send size={18} />
+                                {loading && input.trim() ? <ListPlus size={18} /> : <Send size={18} />}
                             </button>
                         </form>
                     </footer>
@@ -1185,6 +1242,42 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 behaviorAnalysis={behaviorAnalysis}
                 onClose={() => setShowKeystrokePanel(false)}
             />
+        )}
+
+        {/* Queue Confirmation Dialog */}
+        {showQueueConfirm && (
+            <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 animate-reveal">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={cancelQueueMessage} />
+                <div className="relative glass-card border border-accent/20 rounded-2xl p-5 max-w-sm w-full shadow-glow animate-reveal z-10">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-xl bg-accent/10 border border-accent/20">
+                            <ListPlus size={20} className="text-accent" />
+                        </div>
+                        <h3 className="font-display font-bold text-foreground text-sm">Queue This Question?</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                        MAIT is still responding. Want to queue your question so it's answered next?
+                    </p>
+                    <div className="bg-surface-1 border border-surface-3 rounded-xl px-3 py-2 mb-4">
+                        <p className="text-xs text-foreground line-clamp-3 italic">"{showQueueConfirm}"</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={confirmQueueMessage}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-display font-bold tracking-wide bg-accent text-accent-foreground hover:opacity-90 transition-all"
+                        >
+                            <ListPlus size={14} />
+                            Queue It
+                        </button>
+                        <button
+                            onClick={cancelQueueMessage}
+                            className="flex-1 py-2.5 px-3 rounded-xl text-xs font-display font-medium tracking-wide bg-surface-1 border border-surface-3 text-muted-foreground hover:text-foreground transition-all"
+                        >
+                            Wait Instead
+                        </button>
+                    </div>
+                </div>
+            </div>
         )}
 
         {/* Auto-Save Popup */}
