@@ -3,16 +3,16 @@ import { CreateMLCEngine } from "@mlc-ai/web-llm";
 // Model options - small for demo (fast download), large for full quality
 const MODELS = {
     small: {
-        id: "gemma-3-2b-it-q4f16_1-MLC",
-        name: "Gemma 3 2B",
-        displayName: "Fast (Gemma 3 2B)",
-        estimatedSizeMB: 1500,
+        id: "gemma-2-2b-it-q4f16_1-MLC",
+        name: "Gemma 2 2B",
+        displayName: "Fast (Gemma 2 2B)",
+        estimatedSizeMB: 1400,
     },
     large: {
-        id: "Phi-4-mini-instruct-q4f16_1-MLC",
-        name: "Phi-4 Mini",
-        displayName: "Quality (Phi-4 Mini 3.8B)",
-        estimatedSizeMB: 2500,
+        id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
+        name: "Phi 3.5 Mini",
+        displayName: "Quality (Phi 3.5 Mini)",
+        estimatedSizeMB: 2200,
     }
 };
 
