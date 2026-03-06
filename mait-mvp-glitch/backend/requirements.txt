@@ -17,3 +17,4 @@ pytest
 httpx
 pytest-asyncio
 slowapi
+google-auth

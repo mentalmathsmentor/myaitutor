@@ -1,4 +1,4 @@
-import { BrainCircuit, Home, BookOpen, FileText, Play, Lock, Menu, X, GraduationCap } from 'lucide-react'
+import { BrainCircuit, Home, BookOpen, FileText, Play, Lock, Menu, X, GraduationCap, LogOut } from 'lucide-react'
 import { useState } from 'react'
 
 const NAV_ITEMS = [
@@ -9,7 +9,7 @@ const NAV_ITEMS = [
     { id: 'demo', label: 'Free Demo', icon: Play },
 ]
 
-export default function NavBar({ currentPage, navigate, onLoginClick }) {
+export default function NavBar({ currentPage, navigate, onLoginClick, authUser, onLogout }) {
     const [mobileOpen, setMobileOpen] = useState(false)
 
     const isActive = (id) => currentPage === id
@@ -52,19 +52,46 @@ export default function NavBar({ currentPage, navigate, onLoginClick }) {
                     })}
                 </div>
 
-                {/* Right side: Login + mobile menu toggle */}
+                {/* Right side: Auth + mobile menu toggle */}
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={onLoginClick}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${
-                            currentPage === 'app'
-                                ? 'bg-primary/15 text-primary border-primary/30'
-                                : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
-                        }`}
-                    >
-                        <Lock size={12} />
-                        <span className="hidden sm:inline">Login</span>
-                    </button>
+                    {authUser ? (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => navigate('app')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${
+                                    currentPage === 'app'
+                                        ? 'bg-primary/15 text-primary border-primary/30'
+                                        : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
+                                }`}
+                            >
+                                {authUser.picture ? (
+                                    <img src={authUser.picture} alt="" className="w-4 h-4 rounded-full" referrerPolicy="no-referrer" />
+                                ) : (
+                                    <Lock size={12} />
+                                )}
+                                <span className="hidden sm:inline">{authUser.name?.split(' ')[0] || 'App'}</span>
+                            </button>
+                            <button
+                                onClick={onLogout}
+                                className="p-1.5 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-surface-1"
+                                title="Sign out"
+                            >
+                                <LogOut size={13} />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={onLoginClick}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${
+                                currentPage === 'app'
+                                    ? 'bg-primary/15 text-primary border-primary/30'
+                                    : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
+                            }`}
+                        >
+                            <Lock size={12} />
+                            <span className="hidden sm:inline">Login</span>
+                        </button>
+                    )}
 
                     {/* Mobile hamburger */}
                     <button

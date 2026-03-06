@@ -3,7 +3,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2 } from 'lucide-react'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut } from 'lucide-react'
+import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
 import NavBar from './components/NavBar'
 import LandingPage from './LandingPage'
@@ -47,6 +48,13 @@ const getStudentId = () => {
     return id;
 };
 
+const getSavedAuthUser = () => {
+    try {
+        const saved = localStorage.getItem('mait_auth_user');
+        return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+};
+
 // page: 'landing' | 'resources' | 'worksheets' | 'app' | 'demo'
 function App() {
     const [page, setPage] = useState(getPageFromPath)
@@ -60,7 +68,13 @@ function App() {
         return () => window.removeEventListener('popstate', onNav);
     }, []);
 
-    const [studentId] = useState(getStudentId);
+    // Auth state — persisted to localStorage
+    const [authUser, setAuthUser] = useState(getSavedAuthUser);
+    const [studentId, setStudentId] = useState(() => {
+        const saved = getSavedAuthUser();
+        return saved?.student_id || getStudentId();
+    });
+    const [authLoading, setAuthLoading] = useState(false);
 
     const [context, setContext] = useState(null)
     const [messages, setMessages] = useState([
@@ -74,7 +88,10 @@ function App() {
     const [downloadProgress, setDownloadProgress] = useState(null)
     const [showOverlay, setShowOverlay] = useState(false)
     const [messageQueue, setMessageQueue] = useState([])
-    const [userProfile, setUserProfile] = useState({ nickname: 'Mate', subject: 'Mathematics Advanced' })
+    const [userProfile, setUserProfile] = useState(() => {
+        const saved = getSavedAuthUser();
+        return { nickname: saved?.name?.split(' ')[0] || 'Mate', subject: 'Mathematics Advanced' };
+    })
     const [currentTime, setCurrentTime] = useState(new Date())
     const [showKeystrokePanel, setShowKeystrokePanel] = useState(false)
     const [studyTimerRunning, setStudyTimerRunning] = useState(false)
@@ -553,7 +570,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         setShowLoginModal(true);
     };
 
-    // Login modal submit
+    // Access code login (legacy fallback)
     const handleLoginSubmit = (code) => {
         if (code === 'HSCMATE2026') {
             setShowLoginModal(false);
@@ -563,15 +580,75 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return false;
     };
 
+    // Google login handler
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setAuthLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: credentialResponse.credential }),
+            });
+            if (!res.ok) throw new Error('Auth failed');
+            const data = await res.json();
+
+            const user = {
+                student_id: data.student_id,
+                name: data.user.name,
+                email: data.user.email,
+                picture: data.user.picture,
+            };
+
+            // If this is a new Google user and we had anonymous data, migrate it
+            const oldId = localStorage.getItem('mait_student_id');
+            if (data.status === 'new' && oldId && oldId !== data.student_id) {
+                try {
+                    await fetch(`${API_URL}/auth/migrate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ old_student_id: oldId, new_student_id: data.student_id }),
+                    });
+                } catch (e) {
+                    console.warn('Migration failed (non-fatal):', e);
+                }
+            }
+
+            // Persist auth state
+            localStorage.setItem('mait_auth_user', JSON.stringify(user));
+            localStorage.setItem('mait_student_id', data.student_id);
+            setAuthUser(user);
+            setStudentId(data.student_id);
+            setShowLoginModal(false);
+            navigateTo('app');
+        } catch (e) {
+            console.error('Google login error:', e);
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('mait_auth_user');
+        // Generate a new anonymous ID
+        const newId = `student_${crypto.randomUUID()}`;
+        localStorage.setItem('mait_student_id', newId);
+        setAuthUser(null);
+        setStudentId(newId);
+        setMessages([
+            { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
+        ]);
+        navigateTo('landing');
+    };
+
     // Non-chat pages: NavBar + page content
     if (page === 'landing') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
                     <LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} />
                 </div>
-                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
     }
@@ -579,11 +656,11 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'resources') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
                     <AIResources />
                 </div>
-                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
     }
@@ -591,11 +668,11 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'worksheets') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
                     <WorksheetGenerator />
                 </div>
-                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
     }
@@ -603,9 +680,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'pastpapers') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <PastPapers />
-                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} />
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
     }
@@ -613,7 +690,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     // Chat pages (app / demo) — NavBar + HUD toolbar + chat
     return (
     <>
-        <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} />
+        <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
         <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30">
             {/* Decorative grid overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0"
@@ -692,6 +769,25 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* Logged-in user profile */}
+                    {authUser && (
+                        <div className="flex items-center gap-2 bg-surface-1 rounded-lg px-2 py-1 border border-surface-3">
+                            {authUser.picture && (
+                                <img src={authUser.picture} alt="" className="w-5 h-5 rounded-full" referrerPolicy="no-referrer" />
+                            )}
+                            <span className="text-[10px] font-display text-foreground truncate max-w-[80px]">
+                                {authUser.name?.split(' ')[0] || authUser.email}
+                            </span>
+                            <button
+                                onClick={handleLogout}
+                                className="text-muted-foreground hover:text-destructive transition-colors"
+                                title="Sign out"
+                            >
+                                <LogOut size={11} />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Keystroke Analytics Toggle */}
                     <button
                         onClick={() => setShowKeystrokePanel(!showKeystrokePanel)}
@@ -997,9 +1093,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     )
 }
 
-function LoginModal({ show, onClose, onSubmit, onDemo }) {
+function LoginModal({ show, onClose, onSubmit, onDemo, onGoogleSuccess, authLoading }) {
     const [code, setCode] = useState('')
     const [error, setError] = useState(false)
+    const [showAccessCode, setShowAccessCode] = useState(false)
 
     if (!show) return null;
 
@@ -1017,7 +1114,7 @@ function LoginModal({ show, onClose, onSubmit, onDemo }) {
             <div className="glass-card p-8 rounded-2xl w-full max-w-sm border-glow animate-reveal">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="font-display text-lg font-bold flex items-center gap-2">
-                        Private Access
+                        Sign In
                     </h3>
                     <button
                         onClick={onClose}
@@ -1026,29 +1123,67 @@ function LoginModal({ show, onClose, onSubmit, onDemo }) {
                         <XCircle size={18} />
                     </button>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <input
-                            autoFocus
-                            type="text"
-                            placeholder="Enter Access Code"
-                            value={code}
-                            onChange={(e) => { setCode(e.target.value); setError(false); }}
-                            className={`input-base text-center font-display text-xl tracking-[0.2em] uppercase py-5 ${error ? 'border-destructive focus:border-destructive' : ''}`}
-                        />
-                        {error && (
-                            <p className="text-destructive text-xs mt-3 text-center font-display">
-                                Invalid Access Code
-                            </p>
+
+                {/* Google Sign-In */}
+                <div className="space-y-4">
+                    <p className="text-xs text-muted-foreground text-center font-display">
+                        Sign in with Google to save your progress across devices
+                    </p>
+                    <div className="flex justify-center">
+                        {authLoading ? (
+                            <div className="text-xs text-muted-foreground font-display animate-pulse">Signing in...</div>
+                        ) : (
+                            <GoogleLogin
+                                onSuccess={onGoogleSuccess}
+                                onError={() => console.error('Google login failed')}
+                                theme="filled_black"
+                                shape="pill"
+                                size="large"
+                                text="signin_with"
+                                width="300"
+                            />
                         )}
                     </div>
-                    <button
-                        type="submit"
-                        className="w-full btn-primary py-4 rounded-xl font-display text-lg"
-                    >
-                        Unlock App
-                    </button>
-                </form>
+
+                    <div className="flex items-center gap-3 my-4">
+                        <div className="flex-1 h-px bg-surface-3"></div>
+                        <span className="text-[10px] text-muted-foreground font-display uppercase tracking-wider">or</span>
+                        <div className="flex-1 h-px bg-surface-3"></div>
+                    </div>
+
+                    {/* Access code toggle */}
+                    {!showAccessCode ? (
+                        <button
+                            onClick={() => setShowAccessCode(true)}
+                            className="w-full py-3 rounded-xl text-sm font-display border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+                        >
+                            Use Access Code
+                        </button>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="Enter Access Code"
+                                value={code}
+                                onChange={(e) => { setCode(e.target.value); setError(false); }}
+                                className={`input-base text-center font-display text-lg tracking-[0.15em] uppercase py-4 ${error ? 'border-destructive focus:border-destructive' : ''}`}
+                            />
+                            {error && (
+                                <p className="text-destructive text-xs text-center font-display">
+                                    Invalid Access Code
+                                </p>
+                            )}
+                            <button
+                                type="submit"
+                                className="w-full btn-primary py-3 rounded-xl font-display"
+                            >
+                                Unlock
+                            </button>
+                        </form>
+                    )}
+                </div>
+
                 <div className="mt-4 text-center">
                     <button
                         onClick={onDemo}

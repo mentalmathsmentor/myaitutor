@@ -62,6 +62,21 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_conv_timestamp
             ON conversation_history(student_id, timestamp)
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                google_id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL UNIQUE,
+                email TEXT,
+                name TEXT,
+                picture TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_login DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_users_student_id
+            ON users(student_id)
+        """)
         await db.commit()
 
 
@@ -200,6 +215,60 @@ async def get_history_token_estimate(student_id: str) -> int:
         row = await cursor.fetchone()
         total_chars = row[0] or 0
         return total_chars // 4
+
+
+async def upsert_user(
+    google_id: str,
+    student_id: str,
+    email: str = "",
+    name: str = "",
+    picture: str = "",
+) -> dict:
+    """Create or update a user record. Returns the user dict."""
+    now = datetime.now().isoformat()
+    async with aiosqlite.connect(_DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO users (google_id, student_id, email, name, picture, last_login)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(google_id) DO UPDATE SET
+                email = excluded.email,
+                name = excluded.name,
+                picture = excluded.picture,
+                last_login = excluded.last_login
+            """,
+            (google_id, student_id, email, name, picture, now),
+        )
+        await db.commit()
+    return await get_user_by_google_id(google_id)
+
+
+async def get_user_by_google_id(google_id: str) -> Optional[dict]:
+    """Look up a user by Google ID."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT google_id, student_id, email, name, picture, created_at, last_login FROM users WHERE google_id = ?",
+            (google_id,),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return dict(row)
+
+
+async def get_user_by_student_id(student_id: str) -> Optional[dict]:
+    """Look up a user by student_id."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            "SELECT google_id, student_id, email, name, picture, created_at, last_login FROM users WHERE student_id = ?",
+            (student_id,),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return dict(row)
 
 
 async def get_all_emails() -> List[dict]:
