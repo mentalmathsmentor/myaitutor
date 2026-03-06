@@ -14,9 +14,10 @@ import ChatInterface from './features/slm/components/ChatInterface'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
 import PastPapers from './PastPapers'
 import TopicSidebar from './components/TopicSidebar'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 
-const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo'];
+const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo', 'privacy'];
 
 function getPageFromPath() {
     // Support both clean URLs (/pastpapers) and legacy hash URLs (/#/pastpapers)
@@ -62,6 +63,7 @@ const getSavedAuthUser = () => {
 function App() {
     const [page, setPage] = useState(getPageFromPath)
     const [showLocalChat, setShowLocalChat] = useState(false)
+    const [showMobileSyllabus, setShowMobileSyllabus] = useState(false)
     const [showLoginModal, setShowLoginModal] = useState(false)
 
     // Clean URL routing — browser back/forward support
@@ -133,7 +135,9 @@ function App() {
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/context/${studentId}`);
+            const res = await fetch(`${API_URL}/context/${studentId}`, {
+                headers: { 'X-Student-Id': studentId }
+            });
             if (!res.ok) throw new Error("Backend unreachable");
             const data = await res.json();
             setContext(data);
@@ -270,7 +274,9 @@ function App() {
     const fetchHistory = async () => {
         if (isDemoMode) return;
         try {
-            const res = await fetch(`${API_URL}/history/${studentId}?limit=50`);
+            const res = await fetch(`${API_URL}/history/${studentId}?limit=50`, {
+                headers: { 'X-Student-Id': studentId }
+            });
             if (!res.ok) return;
             const data = await res.json();
             if (data.messages && data.messages.length > 0) {
@@ -292,7 +298,10 @@ function App() {
 
     const handleClearHistory = async () => {
         try {
-            await fetch(`${API_URL}/reset/${studentId}`, { method: 'POST' });
+            await fetch(`${API_URL}/reset/${studentId}`, {
+                method: 'POST',
+                headers: { 'X-Student-Id': studentId }
+            });
             setMessages([
                 { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
             ]);
@@ -601,7 +610,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
 
                     const apiResponse = await fetch(`${API_URL}/query`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Student-Id': studentId
+                        },
                         body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
                     });
 
@@ -818,11 +830,13 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         )
     }
 
-    if (page === 'pastpapers') {
+    if (page === 'privacy') {
         return (
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <PastPapers />
+                <div className="pt-14">
+                    <PrivacyPolicy navigate={navigateTo} />
+                </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -854,6 +868,14 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         <span className="font-display font-bold tracking-tight text-xs">
                             {isDemoMode ? <span className="text-accent">DEMO</span> : <span className="text-muted-foreground">MVP</span>}
                         </span>
+                        <div className="md:hidden h-4 w-px bg-surface-3 mx-1" />
+                        <button
+                            onClick={() => setShowMobileSyllabus(!showMobileSyllabus)}
+                            className={`md:hidden p-1.5 rounded-lg border transition-all ${showMobileSyllabus ? 'bg-primary/20 border-primary/40 text-primary' : 'border-surface-3 text-muted-foreground'}`}
+                            title="Syllabus"
+                        >
+                            <BookOpen size={16} />
+                        </button>
                     </div>
 
                     {/* MIDDLE: Clock, Study Timer, Profile */}
@@ -1240,13 +1262,26 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     </div>
 
                     {/* Topic Sidebar */}
-                    <TopicSidebar
-                        subject={userProfile.subject}
-                        onTopicClick={(subtopic, topic, code) => {
-                            const question = `Explain ${subtopic} from ${topic} (${code})`;
-                            setInput(question);
-                        }}
-                    />
+                    <div className={`
+                        fixed inset-0 z-50 lg:relative lg:inset-auto lg:z-0
+                        ${showMobileSyllabus ? 'flex' : 'hidden'} lg:flex
+                    `}>
+                        {/* Mobile Overlay */}
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm lg:hidden"
+                            onClick={() => setShowMobileSyllabus(false)}
+                        />
+                        <div className="relative h-full bg-background lg:bg-transparent">
+                            <TopicSidebar
+                                subject={userProfile.subject}
+                                onTopicClick={(subtopic, topic, code) => {
+                                    const question = `Explain ${subtopic} from ${topic} (${code})`;
+                                    setInput(question);
+                                    setShowMobileSyllabus(false);
+                                }}
+                            />
+                        </div>
+                    </div>
                 </div>
 
             </div>

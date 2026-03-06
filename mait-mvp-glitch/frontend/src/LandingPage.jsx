@@ -176,22 +176,50 @@ export default function LandingPage({ navigate, onLoginClick }) {
             </section>
 
             {/* Footer */}
-            <footer className="relative z-10 py-6 text-center border-t border-surface-2 flex flex-col items-center gap-3">
-                <a
-                    href="mailto:mentor@mentalmaths.au?subject=MAIT%20Feedback"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all text-sm font-display"
-                >
-                    <MessageCircle size={14} />
-                    Feedback / Questions
-                </a>
-                <p className="text-muted-foreground text-sm font-display">
-                    Built by <a href="https://mentalmaths.au" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">Mental Maths Mentor</a> · Coming 2026
-                </p>
-                {visitCount !== null && (
-                    <p className="text-muted-foreground/40 text-xs font-mono tabular-nums">
-                        {visitCount.toLocaleString()} visits
-                    </p>
-                )}
+            <footer className="relative z-10 py-12 px-6 border-t border-surface-2 bg-surface-1/30 backdrop-blur-sm">
+                <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex flex-col items-center md:items-start gap-2">
+                        <div className="flex items-center gap-2">
+                            <img src="/MAIT Logo 2.png" alt="MAIT" className="h-6 w-auto" />
+                            <span className="font-display font-bold text-sm tracking-tight text-foreground">MAIT</span>
+                        </div>
+                        <p className="text-muted-foreground text-[10px] tracking-wide uppercase">Your AI Study Mate</p>
+                    </div>
+
+                    <div className="flex items-center gap-8">
+                        <button
+                            onClick={() => navigate('privacy')}
+                            className="text-muted-foreground hover:text-primary transition-colors text-sm font-display font-medium"
+                        >
+                            Privacy Policy
+                        </button>
+                        <a
+                            href="https://mentalmaths.au"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-muted-foreground hover:text-primary transition-colors text-sm font-display font-medium"
+                        >
+                            Mental Maths Mentor
+                        </a>
+                        <a
+                            href="mailto:mentor@mentalmaths.au?subject=MAIT%20Feedback"
+                            className="text-muted-foreground hover:text-primary transition-colors text-sm font-display font-medium"
+                        >
+                            Feedback
+                        </a>
+                    </div>
+
+                    <div className="text-right flex flex-col items-center md:items-end gap-1">
+                        <p className="text-muted-foreground text-xs font-display">
+                            © 2026 MAIT. All rights reserved.
+                        </p>
+                        {visitCount !== null && (
+                            <p className="text-muted-foreground/30 text-[10px] font-mono tabular-nums">
+                                {visitCount.toLocaleString()} visits
+                            </p>
+                        )}
+                    </div>
+                </div>
             </footer>
 
         </div>

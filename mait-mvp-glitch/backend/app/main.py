@@ -26,10 +26,26 @@ from .services.artifact_engine import (
     get_all_topics,
 )
 import os
-from datetime import datetime
-from typing import Optional
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+# Initialize Sentry for error tracking
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[FastApiIntegration()],
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+    )
 
 app = FastAPI(title="MAIT MVP (The Glitch Edition)")
+
+# Simple Auth: Verify Student-ID header for sensitive data
+async def verify_student_auth(request: Request, student_id: str):
+    header_id = request.headers.get("X-Student-Id")
+    if header_id and header_id != student_id:
+        raise HTTPException(status_code=403, detail="Unauthorized: Student ID mismatch")
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
@@ -75,12 +91,14 @@ async def get_or_create_context(student_id: str) -> StudentContext:
     return context
 
 @app.get("/context/{student_id}", response_model=StudentContext)
-async def get_context(student_id: str):
+async def get_context(request: Request, student_id: str):
+    await verify_student_auth(request, student_id)
     return await get_or_create_context(student_id)
 
 @app.post("/interact")
 @limiter.limit("20/minute")
 async def interact(request: Request, body: InteractionRequest):
+    await verify_student_auth(request, body.student_id)
     # 1. Retrieve/Create Context
     context = await get_or_create_context(body.student_id)
 
@@ -118,13 +136,14 @@ async def interact(request: Request, body: InteractionRequest):
     }
 
 @app.post("/query")
-async def query_api(request: InteractionRequest):
+async def query_api(request: Request, body: InteractionRequest):
     """
     Query the API and return chunked sections for display as separate message bubbles.
     This is used when the frontend detects a query that needs API enrichment.
     """
+    await verify_student_auth(request, body.student_id)
     # Get context
-    context = await get_or_create_context(request.student_id)
+    context = await get_or_create_context(body.student_id)
 
     # Check wellness
     context = wellness_engine.check_wellness(context)
@@ -208,7 +227,8 @@ async def query_api(request: InteractionRequest):
     }
 
 @app.post("/reset/{student_id}")
-async def reset_context(student_id: str):
+async def reset_context(request: Request, student_id: str):
+    await verify_student_auth(request, student_id)
     context = StudentContext(student_id=student_id)
     await storage.save_context(student_id, context)
     await storage.clear_history(student_id)
@@ -216,8 +236,9 @@ async def reset_context(student_id: str):
 
 
 @app.get("/history/{student_id}")
-async def get_history(student_id: str, limit: int = Query(default=50, ge=1, le=200)):
+async def get_history(request: Request, student_id: str, limit: int = Query(default=50, ge=1, le=200)):
     """Retrieve conversation history for a student."""
+    await verify_student_auth(request, student_id)
     history = await storage.get_history(student_id, limit=limit)
     return {"student_id": student_id, "messages": history}
 
