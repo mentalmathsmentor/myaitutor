@@ -319,6 +319,8 @@ Frontend will be available at `http://localhost:5173`.
 | `GEMINI_API_KEY` | Yes (cloud mode) | Google Gemini API key |
 | `GEMINI_MODEL` | No | Gemini model ID (default: `gemini-3.1-flash-lite`). Use `gemini-3.1-pro` for complex Extension 2 queries |
 | `CORS_ORIGINS` | No | Comma-separated allowed origins (default: `http://localhost:5173,http://localhost:3000`). Production: `https://myaitutor.au,https://www.myaitutor.au` |
+| `GOOGLE_CLIENT_ID` | Yes (Google login) | Google OAuth 2.0 Client ID — [Create one here](https://console.cloud.google.com/apis/credentials) |
+| `VITE_GOOGLE_CLIENT_ID` | No | Frontend override for Google Client ID (default: uses hardcoded dev ID) |
 | `VITE_API_URL` | No | Backend URL for the frontend (default: `http://127.0.0.1:8000`) |
 
 ---
@@ -364,6 +366,9 @@ Fatigue increases exponentially with rapid-fire messages and decays at 2 points 
 | `POST` | `/generate-worksheet` | Generate a PDF worksheet |
 | `GET` | `/worksheet-topics` | List available worksheet topics |
 | `POST` | `/subscribe` | Join the early access waitlist |
+| `POST` | `/auth/google` | Google OAuth login (verify ID token, create/return user) |
+| `POST` | `/auth/migrate` | Migrate anonymous data to Google account |
+| `GET` | `/auth/me/{student_id}` | Get user profile for a student |
 
 ---
 
@@ -459,6 +464,28 @@ Detailed technical documentation lives inside `mait-mvp-glitch/`:
 ---
 
 ## Changelog
+
+### 2026-03-06 — Google Login with Persistent Student Memory
+
+**Summary:** Students can now sign in with Google to persist all their data (conversation history, fatigue state, Bloom's progress, keystroke profile) across devices and sessions. Anonymous access with access code still works as a fallback.
+
+**Backend Changes:**
+
+- **`services/auth.py`** (new) — Google OAuth ID token verification using `google-auth` library. Validates tokens against the configured `GOOGLE_CLIENT_ID` and extracts user profile (name, email, picture).
+- **`storage.py`** — New `users` table mapping `google_id` to `student_id` with profile fields (email, name, picture, created_at, last_login). Methods: `upsert_user()`, `get_user_by_google_id()`, `get_user_by_student_id()`.
+- **`main.py`** — Three new auth endpoints:
+  - `POST /auth/google` — Verifies Google ID token, creates or returns existing user with stable `student_id` (`google_{sub}`)
+  - `POST /auth/migrate` — Migrates conversation history and context from an anonymous `student_id` to a Google-based one (so no data is lost on first login)
+  - `GET /auth/me/{student_id}` — Returns user profile
+- **`.env` / `.env.example`** — Added `GOOGLE_CLIENT_ID` configuration.
+- **`requirements.txt`** — Added `google-auth` dependency.
+
+**Frontend Changes:**
+
+- **`main.jsx`** — Wrapped app in `GoogleOAuthProvider` from `@react-oauth/google`.
+- **`App.jsx`** — Auth state (`authUser`) persisted to `localStorage`. `studentId` now uses Google-based ID when logged in. Login modal redesigned with Google Sign-In button (primary) + access code (secondary fallback). HUD toolbar shows user avatar, first name, and logout button when authenticated. Logout generates a fresh anonymous ID. Data migration triggered automatically on first Google login.
+- **`NavBar.jsx`** — Shows user avatar + first name with logout button when authenticated; shows "Login" lock icon when anonymous.
+- **`package.json`** — Added `@react-oauth/google` and `jwt-decode` dependencies.
 
 ### 2026-03-06 — Persistent Conversation History
 

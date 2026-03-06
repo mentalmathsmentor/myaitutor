@@ -16,6 +16,7 @@ from slowapi.errors import RateLimitExceeded
 from .models import StudentContext, FatigueStatus, KeystrokeSubmission, KeystrokeMetrics, KeystrokeProfile
 from .services import wellness_engine, educational_agent
 from .services import storage
+from .services.auth import verify_google_token
 from .services.syllabus_service import syllabus_service
 from .services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from .services.artifact_engine import (
@@ -219,6 +220,120 @@ async def get_history(student_id: str, limit: int = Query(default=50, ge=1, le=2
     """Retrieve conversation history for a student."""
     history = await storage.get_history(student_id, limit=limit)
     return {"student_id": student_id, "messages": history}
+
+
+# ============================================
+# GOOGLE AUTH ENDPOINTS
+# ============================================
+
+class GoogleLoginRequest(BaseModel):
+    token: str = Field(..., description="Google ID token from frontend sign-in")
+
+class MigrateRequest(BaseModel):
+    old_student_id: str = Field(..., description="Anonymous student ID to migrate from")
+    new_student_id: str = Field(..., description="Google-based student ID to migrate to")
+
+
+@app.post("/auth/google")
+async def google_login(body: GoogleLoginRequest):
+    """
+    Verify a Google ID token and return/create the associated student.
+    If this Google account has logged in before, return the existing student_id
+    so all history, context, and keystroke data persists.
+    If new, create a user record with a stable student_id derived from the Google ID.
+    """
+    user_info = verify_google_token(body.token)
+    if user_info is None:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    google_id = user_info["google_id"]
+
+    # Check if user exists
+    existing_user = await storage.get_user_by_google_id(google_id)
+    if existing_user:
+        # Update last login and profile info
+        user = await storage.upsert_user(
+            google_id=google_id,
+            student_id=existing_user["student_id"],
+            email=user_info["email"],
+            name=user_info["name"],
+            picture=user_info["picture"],
+        )
+        return {
+            "status": "existing",
+            "student_id": user["student_id"],
+            "user": user,
+        }
+
+    # New user — create stable student_id from Google sub
+    student_id = f"google_{google_id}"
+    user = await storage.upsert_user(
+        google_id=google_id,
+        student_id=student_id,
+        email=user_info["email"],
+        name=user_info["name"],
+        picture=user_info["picture"],
+    )
+    return {
+        "status": "new",
+        "student_id": student_id,
+        "user": user,
+    }
+
+
+@app.post("/auth/migrate")
+async def migrate_student_data(body: MigrateRequest):
+    """
+    Migrate data from an anonymous student_id to a Google-based student_id.
+    This transfers conversation history, student context, and keystroke data
+    so nothing is lost when a student logs in with Google for the first time.
+    """
+    old_id = body.old_student_id
+    new_id = body.new_student_id
+
+    if old_id == new_id:
+        return {"status": "no_migration_needed"}
+
+    # Check if old student has any data
+    old_context = await storage.get_context(old_id)
+    new_context = await storage.get_context(new_id)
+
+    migrated = []
+
+    # Migrate context (only if new student has no context yet)
+    if old_context and not new_context:
+        old_context.student_id = new_id
+        await storage.save_context(new_id, old_context)
+        migrated.append("context")
+
+    # Migrate conversation history
+    old_history = await storage.get_history(old_id, limit=200)
+    if old_history:
+        for msg in old_history:
+            await storage.save_message(
+                new_id, msg["role"], msg["content"],
+                fatigue_state=msg.get("fatigue_state"),
+                blooms_level=msg.get("blooms_level"),
+                topic=msg.get("topic"),
+            )
+        await storage.clear_history(old_id)
+        migrated.append("conversation_history")
+
+    return {
+        "status": "migrated",
+        "migrated": migrated,
+        "old_student_id": old_id,
+        "new_student_id": new_id,
+    }
+
+
+@app.get("/auth/me/{student_id}")
+async def get_user_profile(student_id: str):
+    """Get the user profile associated with a student_id."""
+    user = await storage.get_user_by_student_id(student_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 
 # ============================================
