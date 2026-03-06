@@ -242,9 +242,12 @@ async def verify_access_code(body: AccessCodeRequest):
     """
     Verify the site-wide access code securely on the backend.
     """
-    # Use environment variable for the code, fallback to default MVP code
+    received_code = body.code.strip().upper()
     expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026").strip().upper()
-    if body.code.strip().upper() == expected_code:
+    
+    print(f"DEBUG AUTH: Received '{received_code}', Expected '{expected_code}'")
+    
+    if received_code == expected_code:
         return {"status": "success"}
     
     raise HTTPException(status_code=401, detail="Invalid access code")
