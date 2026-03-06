@@ -9,9 +9,6 @@ FAISS_INDEX_DIR = DATA_DIR / "faiss_index"
 # Syllabus source files
 SYLLABUS_SOURCES = [
     DATA_DIR / "Maths Advanced Syllabus.pdf",
-    Path("/Users/darayeet/Documents/!Tutoring/Syllabi/MADV - Y11-12 2024 Syllabus/NESA - Y11-12 MADV 2024 Syllabus.pdf"),
-    Path("/Users/darayeet/Documents/!Tutoring/Syllabi/MADV - Y11-12 2024 Syllabus/NESA - Y11-12 MADV 2024 Syllabus.docx"),
-    Path("/Users/darayeet/Documents/!Tutoring/Syllabi/MADV - Y11-12 2024 Syllabus/NESA - Y11-12 MADV 2024 Syllabus Support.docx.docx"),
 ]
 
 # Embedding Model

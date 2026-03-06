@@ -5,10 +5,10 @@ from ..models import StudentContext, FatigueStatus, FatigueMetric
 WEARY_THRESHOLD = 60
 LOCKOUT_THRESHOLD = 100
 
-# PLACEHOLDER - TUNE LATER
-BASE_FATIGUE_PER_MESSAGE = 3
+# TUNE LATER
+BASE_FATIGUE_PER_MESSAGE = 2
 TIME_WINDOW_MINUTES = 15  # Rolling window to measure intensity
-INTENSITY_EXPONENT = 1.6  # Exponential scaling factor (slightly higher for spike)
+INTENSITY_EXPONENT = 1.2  # Exponential scaling factor (slightly higher for spike)
 DECAY_RATE_PER_MINUTE = 2.0  # Natural fatigue recovery
 
 def calculate_fatigue(messages_in_window: int, minutes_since_last: float, current_fatigue: float) -> float:

@@ -234,6 +234,21 @@ class MigrateRequest(BaseModel):
     new_student_id: str = Field(..., description="Google-based student ID to migrate to")
 
 
+class AccessCodeRequest(BaseModel):
+    code: str
+
+@app.post("/auth/verify-access")
+async def verify_access_code(body: AccessCodeRequest):
+    """
+    Verify the site-wide access code securely on the backend.
+    """
+    # Use environment variable for the code, fallback to default MVP code
+    expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026")
+    if body.code == expected_code:
+        return {"status": "success"}
+    
+    raise HTTPException(status_code=401, detail="Invalid access code")
+
 @app.post("/auth/google")
 async def google_login(body: GoogleLoginRequest):
     """
