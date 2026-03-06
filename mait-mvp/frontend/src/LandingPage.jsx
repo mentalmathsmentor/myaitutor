@@ -1,12 +1,83 @@
-import { useState, useEffect } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check } from 'lucide-react'
 
 const SYLLABI = [
-    { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-secondary' },
-    { label: 'Advanced', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-advanced-11-12-2024/overview', color: 'text-primary' },
-    { label: 'Extension 1', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-1-11-12-2024/overview', color: 'text-accent' },
-    { label: 'Extension 2', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-2-12/overview', color: 'text-accent' },
+    { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
+    { label: 'Advanced', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-advanced-11-12-2024/overview', color: 'text-primary', className: 'course-card-advanced' },
+    { label: 'Extension 1', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-1-11-12-2024/overview', color: 'text-orange-400', className: 'course-card-extension-1' },
+    { label: 'Extension 2', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-2-12/overview', color: 'text-purple-400', className: 'course-card-extension-2' },
 ]
+
+// Math symbols for floating particles
+const MATH_SYMBOLS = ['π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴']
+
+function MathParticles() {
+    const [particles, setParticles] = useState([])
+
+    useEffect(() => {
+        const newParticles = Array.from({ length: 15 }, (_, i) => ({
+            id: i,
+            symbol: MATH_SYMBOLS[Math.floor(Math.random() * MATH_SYMBOLS.length)],
+            left: `${Math.random() * 100}%`,
+            delay: `${Math.random() * 15}s`,
+            duration: `${12 + Math.random() * 8}s`,
+            size: `${0.8 + Math.random() * 0.6}rem`,
+        }))
+        setParticles(newParticles)
+    }, [])
+
+    return (
+        <div className="math-particles">
+            {particles.map((p) => (
+                <span
+                    key={p.id}
+                    className="math-particle"
+                    style={{
+                        left: p.left,
+                        animationDelay: p.delay,
+                        animationDuration: p.duration,
+                        fontSize: p.size,
+                    }}
+                >
+                    {p.symbol}
+                </span>
+            ))}
+        </div>
+    )
+}
+
+function ScrollReveal({ children, delay = 0, className = '' }) {
+    const [isVisible, setIsVisible] = useState(false)
+    const ref = useRef(null)
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => setIsVisible(true), delay)
+                    observer.disconnect()
+                }
+            },
+            { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+        )
+
+        if (ref.current) {
+            observer.observe(ref.current)
+        }
+
+        return () => observer.disconnect()
+    }, [delay])
+
+    return (
+        <div
+            ref={ref}
+            className={`${className} transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+            style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
+        >
+            {children}
+        </div>
+    )
+}
 
 export default function LandingPage({ navigate, onLoginClick }) {
     const [visitCount, setVisitCount] = useState(null)
@@ -24,6 +95,16 @@ export default function LandingPage({ navigate, onLoginClick }) {
 
     return (
         <div className="min-h-screen bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
+            {/* Floating Orbs Background */}
+            <div className="orb-container">
+                <div className="orb orb-1" />
+                <div className="orb orb-2" />
+                <div className="orb orb-3" />
+            </div>
+
+            {/* Math Particles */}
+            <MathParticles />
+
             {/* Decorative grid overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
                 style={{
@@ -34,16 +115,16 @@ export default function LandingPage({ navigate, onLoginClick }) {
             />
 
             {/* Hero */}
-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-4">
+            <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-8 pb-16 min-h-[70vh]">
                 <div className="tag animate-reveal animate-reveal-2 animate-float mb-8">
-                    <Sparkles size={12} />
+                    <Sparkles size={12} className="animate-sparkle" />
                     COMING 2026
                 </div>
 
                 <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1]">
                     <span className="gradient-text-primary">Your AI Study Mate</span>
                     <br />
-                    <span className="text-foreground animate-glitch inline-block">for HSC Maths</span>
+                    <span className="text-foreground inline-block">for HSC Maths</span>
                 </h2>
 
                 <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg md:text-xl mb-10 max-w-lg leading-relaxed">
@@ -55,15 +136,15 @@ export default function LandingPage({ navigate, onLoginClick }) {
                 <div className="animate-reveal animate-reveal-5 flex flex-col sm:flex-row items-center gap-4">
                     <button
                         onClick={() => navigate('demo')}
-                        className="btn-primary px-8 py-4 rounded-xl flex items-center gap-3 group"
+                        className="btn-primary btn-glow px-8 py-4 rounded-xl flex items-center gap-3 group"
                     >
-                        <Play size={18} />
+                        <Play size={18} className="group-hover:scale-110 transition-transform" />
                         Try Free Demo
                         <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                     </button>
                     <button
                         onClick={onLoginClick}
-                        className="px-8 py-4 rounded-xl flex items-center gap-3 font-display text-sm tracking-wide border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all duration-300 group"
+                        className="btn-secondary"
                     >
                         <Lock size={16} />
                         Full Access
@@ -75,104 +156,134 @@ export default function LandingPage({ navigate, onLoginClick }) {
             </main>
 
             {/* Features */}
-            <section className="relative z-10 grid md:grid-cols-3 gap-6 px-6 pb-16 max-w-5xl mx-auto w-full">
-                <FeatureCard
-                    icon={<BrainCircuit className="text-primary" size={24} />}
-                    title="NSW Syllabus Aligned"
-                    desc="Built for Advanced, Extension 1 and Extension 2 outcomes."
-                    delay="animate-reveal-1"
-                />
-                <FeatureCard
-                    icon={<Battery className="text-accent" size={24} />}
-                    title="Fatigue-Aware"
-                    desc="Detects burnout and adjusts interaction complexity in real-time."
-                    delay="animate-reveal-2"
-                />
-                <FeatureCard
-                    icon={<Moon className="text-secondary" size={24} />}
-                    title="Available 24/7"
-                    desc="Late night study panic? Mate is always awake and ready."
-                    delay="animate-reveal-3"
-                />
+            <section className="relative z-10 grid md:grid-cols-3 gap-6 px-6 pb-20 max-w-5xl mx-auto w-full">
+                <ScrollReveal delay={0}>
+                    <FeatureCard
+                        icon={<BrainCircuit className="text-primary" size={24} />}
+                        title="NSW Syllabus Aligned"
+                        desc="Built for Advanced, Extension 1 and Extension 2 outcomes."
+                    />
+                </ScrollReveal>
+                <ScrollReveal delay={100}>
+                    <FeatureCard
+                        icon={<Battery className="text-accent" size={24} />}
+                        title="Fatigue-Aware"
+                        desc="Detects burnout and adjusts interaction complexity in real-time."
+                    />
+                </ScrollReveal>
+                <ScrollReveal delay={200}>
+                    <FeatureCard
+                        icon={<Moon className="text-secondary" size={24} />}
+                        title="Available 24/7"
+                        desc="Late night study panic? Mate is always awake and ready."
+                    />
+                </ScrollReveal>
             </section>
 
             {/* NSW Syllabus Links */}
-            <section className="relative z-10 w-full max-w-3xl mx-auto px-6 pb-16">
-                <div className="divider-glow mb-8" />
+            <section className="relative z-10 w-full max-w-3xl mx-auto px-6 pb-20">
+                <ScrollReveal>
+                    <div className="divider-glow mb-8" />
+                </ScrollReveal>
                 <div className="text-center mb-6">
-                    <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">
-                        <span className="gradient-text-primary">NSW HSC Syllabi</span>
-                    </h3>
-                    <p className="text-muted-foreground animate-reveal animate-reveal-2">
-                        Official NESA curriculum documents for each course.
-                    </p>
+                    <ScrollReveal delay={100}>
+                        <h3 className="font-display text-2xl font-bold mb-3">
+                            <span className="gradient-text-primary">NSW HSC Syllabi</span>
+                        </h3>
+                    </ScrollReveal>
+                    <ScrollReveal delay={200}>
+                        <p className="text-muted-foreground">
+                            Official NESA curriculum documents for each course.
+                        </p>
+                    </ScrollReveal>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-3 animate-reveal animate-reveal-3">
-                    {SYLLABI.map(s => (
-                        <a
-                            key={s.label}
-                            href={s.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm border border-surface-3 hover:border-primary/40 transition-all duration-300 group ${s.color}`}
-                        >
-                            <FileText size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
-                            {s.label}
-                        </a>
-                    ))}
-                </div>
+                <ScrollReveal delay={300}>
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        {SYLLABI.map(s => (
+                            <a
+                                key={s.label}
+                                href={s.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`course-card ${s.className} inline-flex items-center gap-2 ${s.color}`}
+                            >
+                                <FileText size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                                {s.label}
+                            </a>
+                        ))}
+                    </div>
+                </ScrollReveal>
             </section>
 
             {/* AI Resources Preview */}
-            <section className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-16">
-                <div className="divider-glow mb-8" />
+            <section className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-20">
+                <ScrollReveal>
+                    <div className="divider-glow mb-8" />
+                </ScrollReveal>
                 <div className="text-center mb-8">
-                    <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">
-                        <span className="gradient-text-primary">Free AI Resources</span>
-                    </h3>
-                    <p className="text-muted-foreground animate-reveal animate-reveal-2">
-                        Prompts, guides, and system prompts for students, teachers, and anyone curious about AI.
-                    </p>
+                    <ScrollReveal delay={100}>
+                        <h3 className="font-display text-2xl font-bold mb-3">
+                            <span className="gradient-text-primary">Free AI Resources</span>
+                        </h3>
+                    </ScrollReveal>
+                    <ScrollReveal delay={200}>
+                        <p className="text-muted-foreground">
+                            Prompts, guides, and system prompts for students, teachers, and anyone curious about AI.
+                        </p>
+                    </ScrollReveal>
                 </div>
                 <div className="grid md:grid-cols-3 gap-4 mb-8">
-                    <ResourcePreviewCard
-                        icon={<GraduationCap className="text-primary" size={20} />}
-                        title="For Students"
-                        items={["Homework helper prompts", "Exam study summariser", "Practice question generator"]}
-                        delay="animate-reveal-3"
-                    />
-                    <ResourcePreviewCard
-                        icon={<BookOpen className="text-accent" size={20} />}
-                        title="For Teachers"
-                        items={["LaTeX worksheet generator", "Lesson plan builder", "Marking rubric creator"]}
-                        delay="animate-reveal-4"
-                    />
-                    <ResourcePreviewCard
-                        icon={<Lightbulb className="text-secondary" size={20} />}
-                        title="For Everyone"
-                        items={["Personal AI tutor setup", "Study planner prompts", "What can AI actually do?"]}
-                        delay="animate-reveal-5"
-                    />
+                    <ScrollReveal delay={300}>
+                        <ResourcePreviewCard
+                            icon={<GraduationCap className="text-primary" size={20} />}
+                            title="For Students"
+                            items={["Homework helper prompts", "Exam study summariser", "Practice question generator"]}
+                        />
+                    </ScrollReveal>
+                    <ScrollReveal delay={400}>
+                        <ResourcePreviewCard
+                            icon={<BookOpen className="text-accent" size={20} />}
+                            title="For Teachers"
+                            items={["LaTeX worksheet generator", "Lesson plan builder", "Marking rubric creator"]}
+                        />
+                    </ScrollReveal>
+                    <ScrollReveal delay={500}>
+                        <ResourcePreviewCard
+                            icon={<Lightbulb className="text-secondary" size={20} />}
+                            title="For Everyone"
+                            items={["Personal AI tutor setup", "Study planner prompts", "What can AI actually do?"]}
+                        />
+                    </ScrollReveal>
                 </div>
-                <div className="text-center animate-reveal animate-reveal-6">
-                    <button
-                        onClick={() => navigate('resources')}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-300 group"
-                    >
-                        View All Resources
-                        <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                    </button>
-                </div>
+                <ScrollReveal delay={600}>
+                    <div className="text-center">
+                        <button
+                            onClick={() => navigate('resources')}
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 group"
+                        >
+                            View All Resources
+                            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                        </button>
+                    </div>
+                </ScrollReveal>
             </section>
 
             {/* Waitlist Section */}
-            <section className="relative z-10 w-full max-w-xl mx-auto px-6 pb-16 text-center">
-                <div className="divider-glow mb-8" />
-                <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">Get Early Access</h3>
-                <p className="text-muted-foreground mb-6 animate-reveal animate-reveal-2">Join the waitlist. Be first when we launch.</p>
-                <div className="animate-reveal animate-reveal-3">
-                    <WaitlistForm />
-                </div>
+            <section className="relative z-10 w-full max-w-xl mx-auto px-6 pb-20 text-center">
+                <ScrollReveal>
+                    <div className="divider-glow mb-8" />
+                </ScrollReveal>
+                <ScrollReveal delay={100}>
+                    <h3 className="font-display text-2xl font-bold mb-3">Get Early Access</h3>
+                </ScrollReveal>
+                <ScrollReveal delay={200}>
+                    <p className="text-muted-foreground mb-6">Join the waitlist. Be first when we launch.</p>
+                </ScrollReveal>
+                <ScrollReveal delay={300}>
+                    <div className="gradient-border-card p-6 rounded-2xl">
+                        <WaitlistForm />
+                    </div>
+                </ScrollReveal>
             </section>
 
             {/* Footer */}
@@ -226,10 +337,10 @@ export default function LandingPage({ navigate, onLoginClick }) {
     )
 }
 
-function FeatureCard({ icon, title, desc, delay }) {
+function FeatureCard({ icon, title, desc }) {
     return (
-        <div className={`glass-card p-6 rounded-2xl text-center hover:border-primary/30 transition-all duration-500 group animate-reveal ${delay}`}>
-            <div className="bg-surface-1 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform duration-300 border border-surface-3">
+        <div className="glass-card card-shine p-6 rounded-2xl text-center group">
+            <div className="bg-surface-1 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-5 icon-hover-lift border border-surface-3">
                 {icon}
             </div>
             <h3 className="font-display font-bold mb-2 text-foreground">{title}</h3>
@@ -238,11 +349,11 @@ function FeatureCard({ icon, title, desc, delay }) {
     )
 }
 
-function ResourcePreviewCard({ icon, title, items, delay }) {
+function ResourcePreviewCard({ icon, title, items }) {
     return (
-        <div className={`glass-card p-5 rounded-xl hover:border-primary/30 transition-all duration-500 animate-reveal ${delay}`}>
+        <div className="glass-card card-shine p-5 rounded-xl group">
             <div className="flex items-center gap-2 mb-3">
-                {icon}
+                <span className="icon-hover-rotate">{icon}</span>
                 <h4 className="font-display text-sm font-bold">{title}</h4>
             </div>
             <ul className="space-y-1.5">
@@ -286,8 +397,10 @@ function WaitlistForm() {
 
     if (status === 'success') {
         return (
-            <div className="glass-card border-primary/30 text-primary p-5 rounded-xl flex items-center justify-center gap-2">
-                <Sparkles size={16} />
+            <div className="glass-card border-primary/30 text-primary p-5 rounded-xl flex items-center justify-center gap-3 animate-success">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Check size={16} className="text-primary" />
+                </div>
                 <span className="font-display">You're on the list! We'll be in touch.</span>
             </div>
         )

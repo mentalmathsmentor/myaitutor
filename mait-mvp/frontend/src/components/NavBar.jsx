@@ -11,11 +11,20 @@ const NAV_ITEMS = [
 
 export default function NavBar({ currentPage, navigate, onLoginClick, authUser, onLogout }) {
     const [mobileOpen, setMobileOpen] = useState(false)
+    const [scrolled, setScrolled] = useState(false)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
 
     const isActive = (id) => currentPage === id
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 glass-card backdrop-blur-xl border-b border-surface-2">
+        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-card backdrop-blur-xl border-b border-surface-2 shadow-lg shadow-primary/5' : 'bg-transparent'}`}>
             <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
                 {/* Logo */}
                 <button
@@ -39,8 +48,8 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                                 key={item.id}
                                 onClick={() => navigate(item.id)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 ${active
-                                        ? 'bg-primary/15 text-primary border border-primary/30'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-1 border border-transparent'
+                                    ? 'bg-primary/15 text-primary border border-primary/30'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-1 border border-transparent'
                                     }`}
                             >
                                 <Icon size={14} />
@@ -57,8 +66,8 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                             <button
                                 onClick={() => navigate('app')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${currentPage === 'app'
-                                        ? 'bg-primary/15 text-primary border-primary/30'
-                                        : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
+                                    ? 'bg-primary/15 text-primary border-primary/30'
+                                    : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
                                     }`}
                             >
                                 {authUser.picture ? (
@@ -80,8 +89,8 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                         <button
                             onClick={onLoginClick}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${currentPage === 'app'
-                                    ? 'bg-primary/15 text-primary border-primary/30'
-                                    : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
+                                ? 'bg-primary/15 text-primary border-primary/30'
+                                : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
                                 }`}
                         >
                             <Lock size={12} />
@@ -110,8 +119,8 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                                 key={item.id}
                                 onClick={() => { navigate(item.id); setMobileOpen(false); }}
                                 className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-display transition-all ${active
-                                        ? 'bg-primary/15 text-primary'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-1'
+                                    ? 'bg-primary/15 text-primary'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-1'
                                     }`}
                             >
                                 <Icon size={16} />

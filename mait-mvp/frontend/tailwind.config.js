@@ -41,9 +41,11 @@ export default {
                 },
             },
             borderRadius: {
+                xl: "calc(var(--radius) + 4px)",
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
+                xs: "calc(var(--radius) - 6px)",
             },
             animation: {
                 'glitch': 'glitch 3s ease-in-out infinite',
@@ -51,6 +53,8 @@ export default {
                 'float': 'float 4s ease-in-out infinite',
                 'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
                 'shimmer': 'shimmer 2s linear infinite',
+                'accordion-down': "accordion-down 0.2s ease-out",
+                'accordion-up': "accordion-up 0.2s ease-out",
             },
             keyframes: {
                 glitch: {
@@ -97,6 +101,14 @@ export default {
                     '0%': { backgroundPosition: '-200% 0' },
                     '100%': { backgroundPosition: '200% 0' },
                 },
+                "accordion-down": {
+                    from: { height: "0" },
+                    to: { height: "var(--radix-accordion-content-height)" },
+                },
+                "accordion-up": {
+                    from: { height: "var(--radix-accordion-content-height)" },
+                    to: { height: "0" },
+                },
             },
             boxShadow: {
                 'glow-sm': '0 0 10px -3px hsla(var(--primary), 0.3)',
@@ -106,5 +118,5 @@ export default {
             },
         },
     },
-    plugins: [],
+    plugins: [require("tailwindcss-animate")],
 }
