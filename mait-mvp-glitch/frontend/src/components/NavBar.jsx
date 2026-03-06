@@ -20,14 +20,13 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                 {/* Logo */}
                 <button
                     onClick={() => navigate('landing')}
-                    className="flex items-center gap-2.5 group"
+                    className="flex items-center group"
                 >
-                    <div className="relative">
-                        <BrainCircuit className="text-primary" size={22} />
-                    </div>
-                    <span className="font-display font-bold tracking-tight text-sm text-foreground">
-                        MAIT
-                    </span>
+                    <img
+                        src="/mait-logo.png"
+                        alt="MAIT Logo"
+                        className="h-8 w-auto object-contain brightness-110"
+                    />
                 </button>
 
                 {/* Desktop nav links */}
@@ -39,11 +38,10 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                             <button
                                 key={item.id}
                                 onClick={() => navigate(item.id)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 ${
-                                    active
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 ${active
                                         ? 'bg-primary/15 text-primary border border-primary/30'
                                         : 'text-muted-foreground hover:text-foreground hover:bg-surface-1 border border-transparent'
-                                }`}
+                                    }`}
                             >
                                 <Icon size={14} />
                                 {item.label}
@@ -58,11 +56,10 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => navigate('app')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${
-                                    currentPage === 'app'
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${currentPage === 'app'
                                         ? 'bg-primary/15 text-primary border-primary/30'
                                         : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
-                                }`}
+                                    }`}
                             >
                                 {authUser.picture ? (
                                     <img src={authUser.picture} alt="" className="w-4 h-4 rounded-full" referrerPolicy="no-referrer" />
@@ -82,11 +79,10 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                     ) : (
                         <button
                             onClick={onLoginClick}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${
-                                currentPage === 'app'
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display tracking-wide transition-all duration-200 border ${currentPage === 'app'
                                     ? 'bg-primary/15 text-primary border-primary/30'
                                     : 'text-foreground hover:text-primary border-surface-3 hover:border-primary/30'
-                            }`}
+                                }`}
                         >
                             <Lock size={12} />
                             <span className="hidden sm:inline">Login</span>
@@ -113,11 +109,10 @@ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, 
                             <button
                                 key={item.id}
                                 onClick={() => { navigate(item.id); setMobileOpen(false); }}
-                                className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-display transition-all ${
-                                    active
+                                className={`flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm font-display transition-all ${active
                                         ? 'bg-primary/15 text-primary'
                                         : 'text-muted-foreground hover:text-foreground hover:bg-surface-1'
-                                }`}
+                                    }`}
                             >
                                 <Icon size={16} />
                                 {item.label}
