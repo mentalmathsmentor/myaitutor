@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff } from 'lucide-react'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2 } from 'lucide-react'
 import { modelService } from './features/slm/services/ModelService'
 import NavBar from './components/NavBar'
 import LandingPage from './LandingPage'
@@ -242,8 +242,46 @@ function App() {
         return () => { document.body.style.overflow = ''; };
     }, [page]);
 
+    const fetchHistory = async () => {
+        if (isDemoMode) return;
+        try {
+            const res = await fetch(`${API_URL}/history/${studentId}?limit=50`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.messages && data.messages.length > 0) {
+                const historyMessages = data.messages.map(msg => ({
+                    role: msg.role === 'user' ? 'user' : 'bot',
+                    text: msg.content,
+                    source: 'history',
+                    timestamp: msg.timestamp
+                }));
+                setMessages([
+                    { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true },
+                    ...historyMessages
+                ]);
+            }
+        } catch (e) {
+            console.warn("Failed to load history:", e);
+        }
+    };
+
+    const handleClearHistory = async () => {
+        try {
+            await fetch(`${API_URL}/reset/${studentId}`, { method: 'POST' });
+            setMessages([
+                { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
+            ]);
+            fetchContext();
+        } catch (e) {
+            console.warn("Failed to clear history:", e);
+        }
+    };
+
     useEffect(() => {
-        if (page === 'app' || page === 'demo') fetchContext();
+        if (page === 'app' || page === 'demo') {
+            fetchContext();
+            fetchHistory();
+        }
     }, [page, studentId])
 
     // Auto-scroll logic
@@ -665,6 +703,18 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         <Activity size={13} />
                         <span className="hidden sm:inline">METRICS</span>
                     </button>
+
+                    {/* Clear History Button - full mode only */}
+                    {!isDemoMode && (
+                        <button
+                            onClick={handleClearHistory}
+                            className="flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-destructive/30 text-muted-foreground hover:text-destructive rounded-lg transition-all text-xs font-display tracking-wide"
+                            title="Clear conversation history"
+                        >
+                            <Trash2 size={13} />
+                            <span className="hidden sm:inline">CLEAR</span>
+                        </button>
+                    )}
 
                     {/* Local SLM Toggle - only in full mode (demo auto-starts it) */}
                     {!isDemoMode && (

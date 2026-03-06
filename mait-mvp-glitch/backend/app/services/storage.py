@@ -42,6 +42,26 @@ async def init_db() -> None:
         await db.execute("""
             INSERT OR IGNORE INTO visit_counter (id, count) VALUES (1, 0)
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS conversation_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id TEXT NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
+                content TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                fatigue_state TEXT,
+                blooms_level TEXT,
+                topic TEXT
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_conv_student
+            ON conversation_history(student_id)
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_conv_timestamp
+            ON conversation_history(student_id, timestamp)
+        """)
         await db.commit()
 
 
@@ -108,6 +128,78 @@ async def get_visit_count() -> int:
         cursor = await db.execute("SELECT count FROM visit_counter WHERE id = 1")
         row = await cursor.fetchone()
         return row[0] if row else 0
+
+
+async def save_message(
+    student_id: str,
+    role: str,
+    content: str,
+    fatigue_state: str = None,
+    blooms_level: str = None,
+    topic: str = None,
+) -> None:
+    """Save a single conversation message."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        await db.execute(
+            """
+            INSERT INTO conversation_history
+                (student_id, role, content, fatigue_state, blooms_level, topic)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (student_id, role, content, fatigue_state, blooms_level, topic),
+        )
+        await db.commit()
+
+
+async def get_history(student_id: str, limit: int = 20) -> List[dict]:
+    """Retrieve the last N messages for a student, ordered chronologically."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
+            """
+            SELECT role, content, timestamp, fatigue_state, blooms_level, topic
+            FROM conversation_history
+            WHERE student_id = ?
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (student_id, limit),
+        )
+        rows = await cursor.fetchall()
+        # Reverse so oldest first (chronological order)
+        return [
+            {
+                "role": row["role"],
+                "content": row["content"],
+                "timestamp": row["timestamp"],
+                "fatigue_state": row["fatigue_state"],
+                "blooms_level": row["blooms_level"],
+                "topic": row["topic"],
+            }
+            for row in reversed(rows)
+        ]
+
+
+async def clear_history(student_id: str) -> None:
+    """Clear all conversation history for a student."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        await db.execute(
+            "DELETE FROM conversation_history WHERE student_id = ?",
+            (student_id,),
+        )
+        await db.commit()
+
+
+async def get_history_token_estimate(student_id: str) -> int:
+    """Rough token count estimate for a student's history."""
+    async with aiosqlite.connect(_DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT SUM(LENGTH(content)) FROM conversation_history WHERE student_id = ?",
+            (student_id,),
+        )
+        row = await cursor.fetchone()
+        total_chars = row[0] or 0
+        return total_chars // 4
 
 
 async def get_all_emails() -> List[dict]:

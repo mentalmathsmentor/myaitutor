@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from app.models import FatigueStatus
 
 if TYPE_CHECKING:
@@ -54,6 +54,14 @@ Brief notes on where students usually make mistakes.
 
 **BLOOM'S TAXONOMY PEDAGOGICAL INSTRUCTION:**
 {bloom_instruction}
+
+**CONVERSATION HISTORY:**
+You have access to the conversation history with this student. Use it to:
+- Reference previous questions and answers naturally ("As we discussed earlier...")
+- Track multi-step problem solving ("Now for the next step...")
+- Avoid repeating explanations already given
+- Notice patterns (e.g., student keeps making the same sign error)
+Do NOT summarize the entire history in your response. Just use it as context.
 """
 
 FATIGUE_INSTRUCTIONS = {
@@ -68,7 +76,8 @@ async def get_gemini_response(
     syllabus_context: str = "",
     fatigue_state: FatigueStatus = FatigueStatus.FRESH,
     current_topic: str = "Mathematics Advanced",
-    bloom_instruction: str = ""
+    bloom_instruction: str = "",
+    conversation_history: Optional[List[dict]] = None
 ) -> Dict[str, Any]:
     """
     Async client for Gemini 2.0 Flash (Preview) integration.
@@ -120,7 +129,23 @@ async def get_gemini_response(
 **Instructions:**
 Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (double newlines) between distinct thoughts/sections. Do NOT use JSON format. Just write naturally with clear section separation.
 """
-    
+
+    # Build multi-turn contents with conversation history
+    from google.genai import types as genai_types
+    contents = []
+    if conversation_history:
+        for msg in conversation_history:
+            role = "user" if msg["role"] == "user" else "model"
+            contents.append(genai_types.Content(
+                role=role,
+                parts=[genai_types.Part(text=msg["content"])]
+            ))
+    # Add the current query as the final user message
+    contents.append(genai_types.Content(
+        role="user",
+        parts=[genai_types.Part(text=user_prompt)]
+    ))
+
     # Config for generation
     from google.genai import types
     config = types.GenerateContentConfig(
@@ -139,7 +164,7 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
             response = await asyncio.wait_for(
                 client_instance.aio.models.generate_content(
                     model=MODEL_ID,
-                    contents=user_prompt,
+                    contents=contents,
                     config=config
                 ),
                 timeout=30.0

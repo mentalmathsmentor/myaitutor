@@ -161,12 +161,38 @@ async def query_api(request: InteractionRequest):
         print(f"RAG retrieval failed in /query (non-fatal): {e}")
         syllabus_context = ""
 
+    # Fetch conversation history
+    conversation_history = await storage.get_history(request.student_id, limit=20)
+
+    # Prune history if token estimate exceeds budget
+    token_estimate = await storage.get_history_token_estimate(request.student_id)
+    if token_estimate > 6000 and conversation_history:
+        while conversation_history and token_estimate > 6000:
+            removed = conversation_history.pop(0)
+            token_estimate -= len(removed["content"]) // 4
+
     gemini_response = await get_gemini_response(
         question=request.query,
         syllabus_context=syllabus_context,
         fatigue_state=context.fatigue_metric.status,
         current_topic=topic,
-        bloom_instruction=bloom_instruction
+        bloom_instruction=bloom_instruction,
+        conversation_history=conversation_history
+    )
+
+    # Save both messages to conversation history
+    response_text = gemini_response.get("text", "")
+    await storage.save_message(
+        request.student_id, "user", request.query,
+        fatigue_state=context.fatigue_metric.status.value,
+        blooms_level=context.pedagogical_state.blooms_level.value,
+        topic=topic
+    )
+    await storage.save_message(
+        request.student_id, "assistant", response_text,
+        fatigue_state=context.fatigue_metric.status.value,
+        blooms_level=context.pedagogical_state.blooms_level.value,
+        topic=topic
     )
 
     # Save context (bloom level updated above)
@@ -184,7 +210,15 @@ async def query_api(request: InteractionRequest):
 async def reset_context(student_id: str):
     context = StudentContext(student_id=student_id)
     await storage.save_context(student_id, context)
-    return context
+    await storage.clear_history(student_id)
+    return {"message": "Student context and history cleared", "context": context}
+
+
+@app.get("/history/{student_id}")
+async def get_history(student_id: str, limit: int = Query(default=50, ge=1, le=200)):
+    """Retrieve conversation history for a student."""
+    history = await storage.get_history(student_id, limit=limit)
+    return {"student_id": student_id, "messages": history}
 
 
 # ============================================
