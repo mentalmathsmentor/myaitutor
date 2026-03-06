@@ -690,11 +690,20 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     };
 
     // Access code login (legacy fallback)
-    const handleLoginSubmit = (code) => {
-        if (code === 'HSCMATE2026') {
-            setShowLoginModal(false);
-            navigateTo('app');
-            return true;
+    const handleLoginSubmit = async (code) => {
+        try {
+            const res = await fetch(`${API_URL}/auth/verify-access`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code }),
+            });
+            if (res.ok) {
+                setShowLoginModal(false);
+                navigateTo('app');
+                return true;
+            }
+        } catch (e) {
+            console.warn('Access code verification failed', e);
         }
         return false;
     };
@@ -844,10 +853,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         <button
                             onClick={() => setStudyTimerRunning(r => !r)}
                             className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-mono transition-all border ${studyTimerRunning
-                                    ? 'bg-primary/10 border-primary/30 text-primary'
-                                    : studyTimerSeconds > 0
-                                        ? 'bg-accent/10 border-accent/30 text-accent'
-                                        : 'bg-surface-1 border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30'
+                                ? 'bg-primary/10 border-primary/30 text-primary'
+                                : studyTimerSeconds > 0
+                                    ? 'bg-accent/10 border-accent/30 text-accent'
+                                    : 'bg-surface-1 border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30'
                                 }`}
                             title={studyTimerRunning ? 'Pause study timer' : 'Start study timer'}
                         >
@@ -985,8 +994,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     <div className="w-full bg-surface-1 rounded-full h-1 overflow-hidden">
                                         <div
                                             className={`h-full transition-all duration-300 ease-out ${downloadProgress.progress === 100
-                                                    ? 'bg-gradient-to-r from-primary to-accent'
-                                                    : 'bg-gradient-to-r from-primary to-secondary'
+                                                ? 'bg-gradient-to-r from-primary to-accent'
+                                                : 'bg-gradient-to-r from-primary to-secondary'
                                                 }`}
                                             style={{ width: `${Math.min(downloadProgress.progress, 100)}%` }}
                                         />
@@ -1090,8 +1099,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                 <button
                                     onClick={() => handleModelSizeSwitch('small')}
                                     className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${demoModelSize === 'small'
-                                            ? 'bg-primary/15 border-primary/40 text-primary'
-                                            : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
+                                        ? 'bg-primary/15 border-primary/40 text-primary'
+                                        : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
                                         }`}
                                     title="Gemma 2 2B - Faster download (~1.4 GB), quicker responses"
                                 >
@@ -1101,8 +1110,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                 <button
                                     onClick={() => handleModelSizeSwitch('large')}
                                     className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${demoModelSize === 'large'
-                                            ? 'bg-secondary/15 border-secondary/40 text-secondary'
-                                            : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
+                                        ? 'bg-secondary/15 border-secondary/40 text-secondary'
+                                        : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
                                         }`}
                                     title="Phi 3.5 Mini - Higher quality (~2.2 GB download)"
                                 >
@@ -1206,8 +1215,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     type="submit"
                                     disabled={!input.trim() || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
                                     className={`p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none transition-all ${loading && input.trim()
-                                            ? 'bg-accent text-accent-foreground hover:opacity-90 shadow-glow-sm'
-                                            : 'btn-primary'
+                                        ? 'bg-accent text-accent-foreground hover:opacity-90 shadow-glow-sm'
+                                        : 'btn-primary'
                                         }`}
                                     title={loading ? 'Queue this question' : 'Send'}
                                 >
