@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut } from 'lucide-react'
+import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X } from 'lucide-react'
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
 import NavBar from './components/NavBar'
@@ -104,6 +104,9 @@ function App() {
     const [webGPUError, setWebGPUError] = useState(null) // WebGPU not available error
     const [showModelSwitchConfirm, setShowModelSwitchConfirm] = useState(null) // 'small' | 'large' | null
     const [loadedModelName, setLoadedModelName] = useState(null) // actual model name once loaded
+    const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false)
+    const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem('mait_autosave') === 'true')
+    const autoSavePromptShown = useRef(false)
 
     const isDemoMode = page === 'demo'
 
@@ -293,6 +296,89 @@ function App() {
             console.warn("Failed to clear history:", e);
         }
     };
+
+    const downloadChat = () => {
+        const chatMessages = messages.filter(m => !m.isGreeting);
+        if (chatMessages.length === 0) return;
+        const timestamp = new Date().toLocaleString('en-AU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const filename = `MAIT_Chat_${new Date().toISOString().slice(0,10)}.txt`;
+        let content = `MAIT — AI Maths Tutor Chat Export\n`;
+        content += `Date: ${timestamp}\n`;
+        content += `Student: ${userProfile.nickname}\n`;
+        content += `Subject: ${userProfile.subject}\n`;
+        content += `${'─'.repeat(50)}\n\n`;
+        messages.forEach(msg => {
+            const label = msg.role === 'user' ? `🧑 ${userProfile.nickname}` : '🤖 MAIT';
+            content += `${label}:\n${msg.text}\n\n`;
+        });
+        content += `${'─'.repeat(50)}\nExported from MAIT — myaitutor.com\n`;
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const handleAutoSaveToggle = (enabled) => {
+        setAutoSaveEnabled(enabled);
+        localStorage.setItem('mait_autosave', enabled ? 'true' : 'false');
+        setShowAutoSavePrompt(false);
+    };
+
+    // Auto-save prompt: show once per session after 3+ user messages
+    useEffect(() => {
+        if (autoSavePromptShown.current || autoSaveEnabled) return;
+        const userMsgCount = messages.filter(m => m.role === 'user').length;
+        if (userMsgCount >= 3 && !localStorage.getItem('mait_autosave_dismissed')) {
+            setShowAutoSavePrompt(true);
+            autoSavePromptShown.current = true;
+        }
+    }, [messages, autoSaveEnabled]);
+
+    // Auto-save: download chat when leaving page or closing tab
+    useEffect(() => {
+        if (!autoSaveEnabled) return;
+        const handleBeforeUnload = () => {
+            const chatMessages = messages.filter(m => !m.isGreeting);
+            if (chatMessages.length < 2) return;
+            const timestamp = new Date().toLocaleString('en-AU', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const filename = `MAIT_Chat_${new Date().toISOString().slice(0,10)}.txt`;
+            let content = `MAIT — AI Maths Tutor Chat Export\n`;
+            content += `Date: ${timestamp}\n`;
+            content += `Student: ${userProfile.nickname}\n`;
+            content += `Subject: ${userProfile.subject}\n`;
+            content += `${'─'.repeat(50)}\n\n`;
+            messages.forEach(msg => {
+                const label = msg.role === 'user' ? `🧑 ${userProfile.nickname}` : '🤖 MAIT';
+                content += `${label}:\n${msg.text}\n\n`;
+            });
+            content += `${'─'.repeat(50)}\nExported from MAIT — myaitutor.com\n`;
+            // Use localStorage as a fallback since downloads don't work in beforeunload
+            localStorage.setItem('mait_autosave_chat', content);
+            localStorage.setItem('mait_autosave_filename', filename);
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [autoSaveEnabled, messages, userProfile]);
+
+    // On mount, check if there's an auto-saved chat from a previous session and offer download
+    useEffect(() => {
+        const savedChat = localStorage.getItem('mait_autosave_chat');
+        const savedFilename = localStorage.getItem('mait_autosave_filename');
+        if (savedChat && savedFilename) {
+            const blob = new Blob([savedChat], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = savedFilename;
+            a.click();
+            URL.revokeObjectURL(url);
+            localStorage.removeItem('mait_autosave_chat');
+            localStorage.removeItem('mait_autosave_filename');
+        }
+    }, []);
 
     useEffect(() => {
         if (page === 'app' || page === 'demo') {
@@ -800,6 +886,17 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         <span className="hidden sm:inline">METRICS</span>
                     </button>
 
+                    {/* Download Chat Button */}
+                    <button
+                        onClick={downloadChat}
+                        disabled={messages.filter(m => !m.isGreeting).length === 0}
+                        className="flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-accent/30 text-muted-foreground hover:text-accent rounded-lg transition-all text-xs font-display tracking-wide disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-surface-3 disabled:hover:text-muted-foreground"
+                        title="Download chat as text file"
+                    >
+                        <Save size={13} />
+                        <span className="hidden sm:inline">SAVE</span>
+                    </button>
+
                     {/* Clear History Button - full mode only */}
                     {!isDemoMode && (
                         <button
@@ -1088,6 +1185,56 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 behaviorAnalysis={behaviorAnalysis}
                 onClose={() => setShowKeystrokePanel(false)}
             />
+        )}
+
+        {/* Auto-Save Popup */}
+        {showAutoSavePrompt && (
+            <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 animate-reveal">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => {
+                    setShowAutoSavePrompt(false);
+                    localStorage.setItem('mait_autosave_dismissed', 'true');
+                }} />
+                <div className="relative glass-card border border-primary/20 rounded-2xl p-5 max-w-sm w-full shadow-glow animate-reveal z-10">
+                    <button
+                        onClick={() => {
+                            setShowAutoSavePrompt(false);
+                            localStorage.setItem('mait_autosave_dismissed', 'true');
+                        }}
+                        className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <X size={16} />
+                    </button>
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                            <Save size={20} className="text-primary" />
+                        </div>
+                        <h3 className="font-display font-bold text-foreground text-sm">Save Your Chats?</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                        Want to automatically save your chat history as a text file when you leave? You can also save anytime using the <strong className="text-foreground">SAVE</strong> button in the toolbar.
+                    </p>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleAutoSaveToggle(true)}
+                            className="flex-1 btn-primary py-2 px-3 rounded-xl text-xs font-display font-bold tracking-wide"
+                        >
+                            Enable Auto-Save
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowAutoSavePrompt(false);
+                                localStorage.setItem('mait_autosave_dismissed', 'true');
+                            }}
+                            className="flex-1 py-2 px-3 rounded-xl text-xs font-display font-medium tracking-wide bg-surface-1 border border-surface-3 text-muted-foreground hover:text-foreground hover:border-surface-3 transition-all"
+                        >
+                            No Thanks
+                        </button>
+                    </div>
+                    {autoSaveEnabled && (
+                        <p className="text-[10px] text-primary mt-2 text-center font-display">Auto-save enabled!</p>
+                    )}
+                </div>
+            </div>
         )}
     </>
     )
