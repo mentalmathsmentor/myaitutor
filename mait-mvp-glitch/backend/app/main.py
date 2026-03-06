@@ -243,8 +243,8 @@ async def verify_access_code(body: AccessCodeRequest):
     Verify the site-wide access code securely on the backend.
     """
     # Use environment variable for the code, fallback to default MVP code
-    expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026")
-    if body.code == expected_code:
+    expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026").strip().upper()
+    if body.code.strip().upper() == expected_code:
         return {"status": "success"}
     
     raise HTTPException(status_code=401, detail="Invalid access code")
