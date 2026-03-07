@@ -9,7 +9,14 @@ const SYLLABI = [
 ]
 
 // Math symbols for floating particles
-const MATH_SYMBOLS = ['π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴']
+const MATH_SYMBOLS = [
+    // Core Symbols
+    'π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴',
+    // NESA Syllabus Formulae (Standard, Advanced, Extension 1 & 2)
+    'd/dx', 'dy/dx', 'ax²+bx+c=0', 'sin²θ+cos²θ=1', 'x=(-b±√∆)/2a',
+    'FV=PV(1+r)ⁿ', 'z=(x-μ)/σ', 'ⁿCᵣ', 'ⁿPᵣ', 'a·b=|a||b|cosθ',
+    'z=r(cosθ+isinθ)', '∫eˣdx=eˣ', 'y-y₁=m(x-x₁)', 'a²+b²=c²'
+]
 
 function MathParticles() {
     const [particles, setParticles] = useState([])
@@ -19,7 +26,7 @@ function MathParticles() {
             id: i,
             symbol: MATH_SYMBOLS[Math.floor(Math.random() * MATH_SYMBOLS.length)],
             left: `${Math.random() * 100}%`,
-            delay: `${Math.random() * 15}s`,
+            delay: `-${Math.random() * 20}s`,
             duration: `${12 + Math.random() * 8}s`,
             size: `${0.8 + Math.random() * 0.6}rem`,
         }))
