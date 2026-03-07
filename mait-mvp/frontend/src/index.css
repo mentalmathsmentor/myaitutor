@@ -149,7 +149,7 @@ body {
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.2rem;
   color: hsla(var(--primary), 0.08);
-  animation: particle-float 15s linear infinite;
+  animation: particle-float 15s linear infinite both;
   user-select: none;
 }
 
