@@ -35,6 +35,7 @@ function navigateTo(page) {
     const url = page === 'landing' ? '/' : `/${page}`;
     window.history.pushState(null, '', url);
     window.dispatchEvent(new Event('popstate'));
+    window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 
