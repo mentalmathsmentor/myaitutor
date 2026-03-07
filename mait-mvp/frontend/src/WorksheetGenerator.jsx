@@ -3,7 +3,7 @@ import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, 
 import syllabusData from './syllabus_data.json'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
-const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Ruled lines (Writing)', 'Compact (No space)']
+const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)']
 
 export default function WorksheetGenerator() {
     // State
@@ -42,6 +42,22 @@ export default function WorksheetGenerator() {
         setExpandedSubtopics(prev => ({ ...prev, [subt]: !prev[subt] }));
     };
 
+    const isSubtopicSelected = (mod, subt) => {
+        const points = currentSyllabus[mod]?.[subt];
+        return points && points.length > 0 && points.every(p => selectedPoints.includes(p));
+    };
+
+    const toggleSubtopicSelection = (mod, subt) => {
+        const points = currentSyllabus[mod]?.[subt] || [];
+        const currentlyAllSelected = points.length > 0 && points.every(p => selectedPoints.includes(p));
+
+        if (currentlyAllSelected) {
+            setSelectedPoints(prev => prev.filter(p => !points.includes(p)));
+        } else {
+            setSelectedPoints(prev => Array.from(new Set([...prev, ...points])));
+        }
+    };
+
     const handlePointToggle = (point) => {
         setSelectedPoints(prev =>
             prev.includes(point) ? prev.filter(p => p !== point) : [...prev, point]
@@ -75,12 +91,18 @@ export default function WorksheetGenerator() {
         }
 
         let headerString = '';
-        if (includeName && includeDate) headerString = 'Name: \\makebox[4cm]{\\hrulefill} \\quad Date: \\makebox[2.5cm]{\\hrulefill}';
-        else if (includeName) headerString = 'Name: \\makebox[4cm]{\\hrulefill}';
-        else if (includeDate) headerString = 'Date: \\makebox[2.5cm]{\\hrulefill}';
+        if (includeName && includeDate) headerString = '\\noindent\\textbf{Name:} \\makebox[6cm]{\\hrulefill} \\hfill \\textbf{Date:} \\makebox[3cm]{\\hrulefill}';
+        else if (includeName) headerString = '\\noindent\\textbf{Name:} \\makebox[6cm]{\\hrulefill}';
+        else if (includeDate) headerString = '\\noindent\\textbf{Date:} \\makebox[3cm]{\\hrulefill}';
 
         let marksLogic = includeMarks ? '\\unskip\\hfill\\textbf{[X Marks]}' : 'Do not assign marks';
-        let answerKeyLogic = generateAnswerKey ? 'Insert \\newpage at the end and provide a Teacher Answer Key' : 'Do not generate an answer key';
+        let spacingLogic = workingSpace === 'Two-column Compact'
+            ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\begin{multicols}{2} ... \\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
+            : `Apply spacing style: ${workingSpace}.`;
+
+        let answerKeyLogic = generateAnswerKey
+            ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\begin{multicols}{2}` and `\\end{multicols}`, separated by the vertical rule.'
+            : 'Do not generate an answer key';
 
         let contentString = '';
         if (mode === 'A') {
@@ -104,19 +126,21 @@ Your job is to create a professional, compile-ready PDF worksheet.
 **1. THE PREAMBLE:**
 \\documentclass[12pt, a4paper]{article}
 \\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
-\\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace}
+\\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
 \\usepackage[hidelinks]{hyperref} 
+\\setlength{\\columnsep}{1cm}
+\\setlength{\\columnseprule}{0.4pt}
 
 \\pagestyle{fancy}
 \\fancyhf{}
 \\lhead{ ${lheadContent} }
-\\rhead{ ${headerString} }
+\\rhead{}
 \\cfoot{Page \\thepage}
 \\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\setlength{\\headheight}{30pt}
 \\begin{document}
-
+${headerString ? `\n${headerString}\n\\vspace{0.8cm}\n` : ''}
 \\begin{center}
     {\\Large \\textbf{ ${mode === 'A' ? 'Syllabus Focus: Mixed Topics' : 'Custom Worksheet'} }}
 \\end{center}
@@ -125,7 +149,7 @@ Your job is to create a professional, compile-ready PDF worksheet.
 **2. LAYOUT & FORMATTING RULES:**
 * NATIVE NUMBERING ONLY: Use the standard enumerate environment. Let LaTeX handle numbering. Do NOT use custom labels like \\item[\\textbf{Question 1:}].
 * LINE BREAKS: Do NOT use \\\\ for line breaks within questions. Use a blank line (double return) to ensure text aligns to the left margin perfectly.
-* Spacing: Apply ${workingSpace}.
+* Spacing: ${spacingLogic}
 * **MARKS ALIGNMENT (CRITICAL):** ${marksLogic === 'Do not assign marks' ? marksLogic : `If assigning marks, you MUST use \`${marksLogic}\` at the very end of the question text. Do NOT let the marks wrap to a new line awkwardly. Ensure they are pushed completely flush-right.`}
 * **MANDATORY DIAGRAMS & SHAPES:** If a question mentions a shape, graph, diagram, angle relationship (e.g., "vertically opposite", "transversal"), or geometric property, you MUST generate the corresponding TikZ code to draw a clean, professional diagram below the question text.
 
@@ -214,10 +238,6 @@ ${contentString}
 
             {/* Header Content */}
             <div className="relative z-10 text-center px-6 pt-12 pb-12 w-full max-w-4xl">
-                <div className="tag animate-reveal animate-reveal-1 mb-6 inline-flex">
-                    <Sparkles size={12} />
-                    A.G.E. PROMPT ENGINE V2.5
-                </div>
                 <h2 className="animate-reveal animate-reveal-2 text-4xl md:text-6xl font-display font-bold tracking-tight mb-4">
                     <span className="gradient-text-primary">Universal Worksheet Generator</span>
                 </h2>
@@ -238,7 +258,7 @@ ${contentString}
                             </label>
                             <input
                                 type="text"
-                                placeholder="Leave blank to omit"
+                                placeholder="Optional"
                                 value={schoolName}
                                 onChange={(e) => setSchoolName(e.target.value)}
                                 className="input-base w-full text-sm font-display py-3"
@@ -276,7 +296,7 @@ ${contentString}
                             onClick={() => setMode('B')}
                             className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                            Manual Mode (Formatting)
+                            BYO Questions
                         </button>
                     </div>
 

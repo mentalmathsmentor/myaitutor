@@ -123,12 +123,15 @@ export default function LandingPage({ navigate, onLoginClick }) {
 
             {/* Hero */}
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-8 pb-16 min-h-[70vh]">
-                <div className="tag animate-reveal animate-reveal-2 animate-float mb-8">
+                {/* Hero Text Backdrop Blur for Readability */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[120%] bg-cosmic/70 blur-3xl rounded-[100%] pointer-events-none -z-10" />
+
+                <div className="tag animate-reveal animate-reveal-2 animate-float mb-8 relative">
                     <Sparkles size={12} className="animate-sparkle" />
                     COMING 2026
                 </div>
 
-                <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1]">
+                <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1] relative">
                     <span className="gradient-text-primary">Your AI Study Mate</span>
                     <br />
                     <span className="text-foreground inline-block">for HSC Maths</span>
