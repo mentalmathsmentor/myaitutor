@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList } from 'lucide-react'
 
 const SYLLABI = [
     { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
@@ -267,7 +267,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
                         </p>
                     </ScrollReveal>
                 </div>
-                <div className="grid md:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <ScrollReveal delay={300}>
                         <ResourcePreviewCard
                             icon={<GraduationCap className="text-primary" size={20} />}
@@ -299,6 +299,36 @@ export default function LandingPage({ navigate, onLoginClick }) {
                             View All Resources
                             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                         </button>
+                    </div>
+                </ScrollReveal>
+            </section>
+
+            {/* Worksheet Generator CTA */}
+            <section className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-20">
+                <ScrollReveal>
+                    <div className="divider-glow mb-8" />
+                </ScrollReveal>
+                <ScrollReveal delay={100}>
+                    <div className="glass-card card-shine rounded-2xl overflow-hidden">
+                        <div className="flex flex-col md:flex-row items-center gap-6 p-8">
+                            <div className="flex-shrink-0 w-16 h-16 bg-primary/15 rounded-2xl flex items-center justify-center border border-primary/20">
+                                <ClipboardList size={32} className="text-primary" />
+                            </div>
+                            <div className="text-center md:text-left flex-1">
+                                <span className="text-xs font-display uppercase tracking-widest text-primary font-bold mb-2 block">✦ Try it now — free</span>
+                                <h3 className="font-display text-2xl font-bold mb-2">HSC Worksheet Generator</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">
+                                    Generate professional, NESA-aligned LaTeX worksheets in seconds. Select specific syllabus dot-points, set your spacing, and get a production-ready prompt for Gemini Canvas.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate('worksheets')}
+                                className="btn-primary btn-glow px-6 py-3 rounded-xl flex items-center gap-2 group whitespace-nowrap flex-shrink-0"
+                            >
+                                Open Generator
+                                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                            </button>
+                        </div>
                     </div>
                 </ScrollReveal>
             </section>
