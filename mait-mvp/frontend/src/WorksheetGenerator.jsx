@@ -1,110 +1,119 @@
 import { useState } from 'react'
-import { FileText, Sparkles, Download, AlertCircle, ChevronDown, Loader2 } from 'lucide-react'
+import { Sparkles, Copy, ExternalLink, ChevronDown, CheckCircle2 } from 'lucide-react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
-
-const TOPICS = [
-    'Differentiation - Chain Rule',
-    'Integration by Parts',
-    'Trigonometric Identities',
-    'Probability',
-    'Sequences and Series',
-    'Vectors',
-    'Complex Numbers',
-]
-
-const YEAR_LEVELS = [
-    { label: 'Year 11', value: 11 },
-    { label: 'Year 12 Advanced', value: 12 },
-    { label: 'Extension 1', value: 12 },
-    { label: 'Extension 2', value: 12 },
-]
-
-const DIFFICULTIES = [
-    { label: 'Mixed', value: 'mixed' },
-    { label: 'Easy → Hard', value: 'easy' },
-    { label: 'Exam-level', value: 'hard' },
-]
+// Constants for dropdowns
+const YEAR_LEVELS = ['Year 7', 'Year 8', 'Year 9', 'Year 10', 'Year 11 Standard', 'Year 11 Advanced', 'Year 12 Standard', 'Year 12 Advanced', 'Extension 1', 'Extension 2']
+const TOPICS = ['Algebra', 'Geometry', 'Biology', 'Chemistry', 'English', 'History', 'Other']
+const SPACING_OPTIONS = ['working blank space (Math)', 'Ruled lines (Writing)', 'Compact (No space)']
 
 export default function WorksheetGenerator() {
-    const [topic, setTopic] = useState(TOPICS[0])
-    const [yearLevel, setYearLevel] = useState(YEAR_LEVELS[1].label)
+    // State
+    const [schoolName, setSchoolName] = useState('')
+    const [classYear, setClassYear] = useState('Year 10')
+    const [topic, setTopic] = useState('Algebra')
+    const [customTopic, setCustomTopic] = useState('')
+    const [includeName, setIncludeName] = useState(true)
+    const [includeDate, setIncludeDate] = useState(true)
+    const [mode, setMode] = useState('A')
     const [numQuestions, setNumQuestions] = useState(10)
-    const [difficulty, setDifficulty] = useState(DIFFICULTIES[0].label)
+    const [instructions, setInstructions] = useState('')
+    const [rawQuestions, setRawQuestions] = useState('')
+    const [workingSpace, setWorkingSpace] = useState(SPACING_OPTIONS[0])
+    const [includeMarks, setIncludeMarks] = useState(false)
+    const [generateAnswerKey, setGenerateAnswerKey] = useState(false)
+    
+    const [isCopied, setIsCopied] = useState(false)
 
-    const [loading, setLoading] = useState(false)
-    const [progress, setProgress] = useState(0)
-    const [pdfBlob, setPdfBlob] = useState(null)
-    const [error, setError] = useState(null)
+    const generatePrompt = () => {
+        const finalTopic = topic === 'Other' && customTopic.trim() ? customTopic : topic;
+        
+        let headerString = '';
+        if (includeName && includeDate) headerString = 'Name: \\makebox[4cm]{\\hrulefill} \\quad Date: \\makebox[2.5cm]{\\hrulefill}';
+        else if (includeName) headerString = 'Name: \\makebox[4cm]{\\hrulefill}';
+        else if (includeDate) headerString = 'Date: \\makebox[2.5cm]{\\hrulefill}';
+        
+        let marksLogic = includeMarks ? 'Right-align marks using \\hfill \\textbf{[X Marks]}' : 'Do not assign marks';
+        let answerKeyLogic = generateAnswerKey ? 'Insert \\newpage at the end and provide a Teacher Answer Key' : 'Do not generate an answer key';
+        
+        let contentString = '';
+        if (mode === 'A') {
+            contentString = `Please generate ${numQuestions} NESA-style questions based on this syllabus: ${instructions}`;
+        } else {
+            contentString = `Please format these exact questions: ${rawQuestions}`;
+        }
+        
+        const promptString = `Act as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
+
+Your job is to create a professional, compile-ready PDF worksheet. 
+
+**CRITICAL UI DIRECTIVE (THE GAG ORDER):** 
+1. Output the entire LaTeX script inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`.
+2. Do NOT output any conversational text before or after the code block. 
+3. Output ONLY the raw code block to trigger the UI Canvas preview.
+
+**1. THE PREAMBLE:**
+\\documentclass[12pt, a4paper]{article}
+\\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
+\\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace}
+\\usepackage[hidelinks]{hyperref} 
+
+\\pagestyle{fancy}
+\\fancyhf{}
+\\lhead{\\textbf{ ${schoolName || '[SCHOOL NAME]'} - ${classYear} }}
+\\rhead{ ${headerString} }
+\\cfoot{Page \\thepage}
+\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}
+\\renewcommand{\\headrulewidth}{0.4pt}
+\\setlength{\\headheight}{30pt}
+\\begin{document}
+
+\\begin{center}
+    {\\Large \\textbf{ ${finalTopic} }}
+\\end{center}
+\\vspace{0.5cm}
+
+**2. LAYOUT RULES:**
+* NATIVE NUMBERING ONLY: Use the standard enumerate environment. Let LaTeX handle numbering.
+* LINE BREAKS: Do NOT use \\\\ for line breaks within questions. Use a blank line (double return).
+* Spacing: Apply ${workingSpace}.
+* Marks: ${marksLogic}.
+
+**3. PAGINATION & FOOTER:**
+* Before every new \\item, insert \\needspace{6cm}.
+* Insert this footer: \\vfill \\hrule \\vspace{0.2cm} \\footnotesize \\textbf{AI SELF-CHECK:} \\textit{Ask AI for a hint, not the answer.}
+
+**4. ANSWER KEY:**
+${answerKeyLogic}.
+
+***
+**USER CONTENT TO PROCESS:**
+${contentString}
+`;
+        return promptString;
+    }
 
     const handleGenerate = async (e) => {
         e.preventDefault()
-        setLoading(true)
-        setProgress(0)
-        setPdfBlob(null)
-        setError(null)
-
-        // Simulate progress while waiting for the API
-        const progressInterval = setInterval(() => {
-            setProgress(prev => {
-                if (prev >= 90) {
-                    clearInterval(progressInterval)
-                    return 90
-                }
-                return prev + Math.random() * 15
-            })
-        }, 500)
-
+        const promptText = generatePrompt();
         try {
-            const res = await fetch(`${API_URL}/generate-worksheet`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    topic,
-                    year_level: YEAR_LEVELS.find(y => y.label === yearLevel)?.value ?? 12,
-                    num_questions: numQuestions,
-                    difficulty: DIFFICULTIES.find(d => d.label === difficulty)?.value ?? 'mixed',
-                }),
-            })
-
-            clearInterval(progressInterval)
-
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => null)
-                throw new Error(errorData?.detail || `Server error (${res.status}). Please try again.`)
-            }
-
-            const blob = await res.blob()
-            setPdfBlob(blob)
-            setProgress(100)
+            await navigator.clipboard.writeText(promptText);
+            setIsCopied(true);
+            setTimeout(() => {
+                setIsCopied(false);
+                window.open('https://gemini.google.com/app', '_blank');
+            }, 2000);
         } catch (err) {
-            clearInterval(progressInterval)
-            setProgress(0)
-            setError(
-                err.message === 'Failed to fetch'
-                    ? 'Could not connect to the server. Please check your connection and try again.'
-                    : err.message
-            )
-        } finally {
-            setLoading(false)
+            console.error('Failed to copy text: ', err);
+            prompt(
+                "Your browser strictly blocked clipboard access. Please manually copy this master prompt, then paste in Gemini:", 
+                promptText
+            );
+            window.open('https://gemini.google.com/app', '_blank');
         }
     }
 
-    const handleDownload = () => {
-        if (!pdfBlob) return
-        const url = URL.createObjectURL(pdfBlob)
-        const a = document.createElement('a')
-        a.href = url
-        const safeTopicName = topic.replace(/[^a-zA-Z0-9]/g, '_')
-        a.download = `${safeTopicName}_${yearLevel.replace(/\s+/g, '_')}_worksheet.pdf`
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-    }
-
     return (
-        <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30">
+        <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30 flex flex-col">
             {/* Decorative grid overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
                 style={{
@@ -118,212 +127,288 @@ export default function WorksheetGenerator() {
             <div className="relative z-10 text-center px-6 pt-4 pb-8">
                 <div className="tag animate-reveal animate-reveal-2 animate-float mb-6 inline-flex">
                     <Sparkles size={12} />
-                    A.G.E. ENGINE
+                    A.G.E. PROMPT ENGINE
                 </div>
                 <h2 className="animate-reveal animate-reveal-3 text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">
-                    <span className="gradient-text-primary">Worksheet Generator</span>
+                    <span className="gradient-text-primary">Universal Worksheet Generator</span>
                 </h2>
                 <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed">
-                    Generate tailored HSC Maths worksheets as print-ready PDFs. Powered by the Artifact Generation Engine.
+                    Instantly craft perfectly formatted, printable worksheets using Google Gemini's Canvas.
                 </p>
             </div>
 
             {/* Form */}
-            <div className="relative z-10 max-w-2xl mx-auto px-6 pb-16">
+            <div className="relative z-10 max-w-2xl mx-auto px-6 pb-16 w-full">
                 <form onSubmit={handleGenerate} className="glass-card rounded-2xl p-6 md:p-8 space-y-6 animate-reveal animate-reveal-5">
 
-                    {/* Topic */}
-                    <div className="space-y-2">
-                        <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
-                            Topic
-                        </label>
-                        <div className="relative">
-                            <select
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                disabled={loading}
-                                className="input-base appearance-none pr-10 cursor-pointer font-display text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {TOPICS.map(t => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                        </div>
-                    </div>
-
-                    {/* Year Level */}
-                    <div className="space-y-2">
-                        <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
-                            Year Level
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {YEAR_LEVELS.map(level => (
-                                <button
-                                    key={level.label}
-                                    type="button"
-                                    disabled={loading}
-                                    onClick={() => setYearLevel(level.label)}
-                                    className={`px-3 py-2.5 rounded-xl font-display text-xs transition-all duration-300 border text-center disabled:opacity-50 disabled:cursor-not-allowed ${
-                                        yearLevel === level.label
-                                            ? 'bg-primary/15 border-primary/40 text-primary'
-                                            : 'bg-surface-1 border-surface-3 text-muted-foreground hover:border-primary/20 hover:text-foreground'
-                                    }`}
-                                >
-                                    {level.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Number of Questions */}
-                    <div className="space-y-2">
-                        <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
-                            Number of Questions
-                            <span className="text-primary ml-2 text-sm font-bold normal-case">{numQuestions}</span>
-                        </label>
-                        <div className="relative px-1">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                        {/* School Name */}
+                        <div className="space-y-2">
+                            <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                School / Institution Name
+                            </label>
                             <input
-                                type="range"
-                                min={5}
-                                max={20}
-                                step={1}
-                                value={numQuestions}
-                                onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
-                                disabled={loading}
-                                className="w-full h-2 rounded-full appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{
-                                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((numQuestions - 5) / 15) * 100}%, hsl(var(--surface-2)) ${((numQuestions - 5) / 15) * 100}%, hsl(var(--surface-2)) 100%)`,
-                                }}
+                                type="text"
+                                placeholder="(Optional)"
+                                value={schoolName}
+                                onChange={(e) => setSchoolName(e.target.value)}
+                                className="input-base w-full text-sm font-display"
                             />
-                            <div className="flex justify-between mt-1.5">
-                                <span className="text-[10px] text-muted-foreground font-mono">5</span>
-                                <span className="text-[10px] text-muted-foreground font-mono">20</span>
+                        </div>
+
+                        {/* Year Level */}
+                        <div className="space-y-2">
+                            <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                Class / Year Level
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={classYear}
+                                    onChange={(e) => setClassYear(e.target.value)}
+                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full"
+                                >
+                                    {YEAR_LEVELS.map(y => <option key={y} value={y}>{y}</option>)}
+                                </select>
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                             </div>
                         </div>
                     </div>
 
-                    {/* Difficulty */}
-                    <div className="space-y-2">
-                        <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
-                            Difficulty
-                        </label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {DIFFICULTIES.map(d => (
-                                <button
-                                    key={d.label}
-                                    type="button"
-                                    disabled={loading}
-                                    onClick={() => setDifficulty(d.label)}
-                                    className={`px-3 py-2.5 rounded-xl font-display text-xs transition-all duration-300 border text-center disabled:opacity-50 disabled:cursor-not-allowed ${
-                                        difficulty === d.label
-                                            ? 'bg-primary/15 border-primary/40 text-primary'
-                                            : 'bg-surface-1 border-surface-3 text-muted-foreground hover:border-primary/20 hover:text-foreground'
-                                    }`}
+                    <div className="grid sm:grid-cols-2 gap-4">
+                        {/* Topic */}
+                        <div className="space-y-2">
+                            <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                Topic
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={topic}
+                                    onChange={(e) => setTopic(e.target.value)}
+                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full"
                                 >
-                                    {d.label}
-                                </button>
-                            ))}
+                                    {TOPICS.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="divider-glow" />
-
-                    {/* Generate Button */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full btn-primary py-4 rounded-xl font-display text-base flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 size={18} className="animate-spin" />
-                                Generating Worksheet...
-                            </>
-                        ) : (
-                            <>
-                                <FileText size={18} />
-                                Generate Worksheet
-                            </>
-                        )}
-                    </button>
-
-                    {/* Progress Bar */}
-                    {loading && (
-                        <div className="space-y-2 animate-reveal">
-                            <div className="w-full bg-surface-1 rounded-full h-2 overflow-hidden border border-surface-3">
-                                <div
-                                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500 ease-out rounded-full"
-                                    style={{ width: `${Math.min(progress, 100)}%` }}
+                        {/* Custom Topic (Conditional) */}
+                        {topic === 'Other' && (
+                            <div className="space-y-2 animate-reveal">
+                                <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                    Custom Topic Name
+                                </label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="e.g., Quantum Mechanics"
+                                    value={customTopic}
+                                    onChange={(e) => setCustomTopic(e.target.value)}
+                                    className="input-base w-full text-sm font-display"
                                 />
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-display text-muted-foreground uppercase tracking-wider">
-                                    {progress < 30 ? 'Crafting questions...' : progress < 60 ? 'Formatting LaTeX...' : progress < 90 ? 'Compiling PDF...' : 'Almost there...'}
-                                </span>
-                                <span className="text-[10px] font-mono text-primary">
-                                    {Math.round(progress)}%
-                                </span>
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
-                    {/* Error Message */}
-                    {error && (
-                        <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/30 animate-reveal">
-                            <AlertCircle size={18} className="text-destructive shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm text-destructive font-display font-bold">Generation Failed</p>
-                                <p className="text-xs text-destructive/80 mt-1 leading-relaxed">{error}</p>
-                            </div>
+                    {/* Checkboxes */}
+                    <div className="space-y-3">
+                        <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                            Student Header Details
+                        </label>
+                        <div className="flex gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeName}
+                                    onChange={(e) => setIncludeName(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-3 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                />
+                                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors font-display">Include Name Space</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeDate}
+                                    onChange={(e) => setIncludeDate(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-3 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                />
+                                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors font-display">Include Date Space</span>
+                            </label>
                         </div>
-                    )}
+                    </div>
+                    
+                    <div className="divider-glow" />
 
-                    {/* Download Success */}
-                    {pdfBlob && !loading && (
-                        <div className="space-y-4 animate-reveal">
-                            <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/10 border border-primary/30">
-                                <Sparkles size={18} className="text-primary shrink-0 mt-0.5" />
+                    {/* Worksheet Mode */}
+                    <div className="space-y-3">
+                        <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                            Worksheet Mode
+                        </label>
+                        <div className="space-y-2">
+                            <label className="flex items-start gap-3 p-3 rounded-xl border border-surface-3 bg-surface-1/50 cursor-pointer hover:border-primary/30 transition-all">
+                                <input
+                                    type="radio"
+                                    name="worksheetMode"
+                                    value="A"
+                                    checked={mode === 'A'}
+                                    onChange={() => setMode('A')}
+                                    className="mt-0.5 w-4 h-4 text-primary bg-surface-2 border-surface-3 focus:ring-primary/20"
+                                />
                                 <div>
-                                    <p className="text-sm text-primary font-display font-bold">Worksheet Ready</p>
-                                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                        Your {numQuestions}-question {topic} worksheet for {yearLevel} has been generated.
-                                    </p>
+                                    <div className="font-display font-medium text-foreground text-sm">Generate Questions from Topic/Syllabus</div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">
+                                        Provide instructions and let AI write the questions. 
+                                        (<a href="https://educationstandards.nsw.edu.au/wps/portal/nesa/k-10/understanding-the-curriculum/syllabuses-a-z" target="_blank" rel="noreferrer" className="text-primary hover:underline">NESA Syllabus</a>)
+                                    </div>
+                                </div>
+                            </label>
+                            <label className="flex items-center gap-3 p-3 rounded-xl border border-surface-3 bg-surface-1/50 cursor-pointer hover:border-primary/30 transition-all">
+                                <input
+                                    type="radio"
+                                    name="worksheetMode"
+                                    value="B"
+                                    checked={mode === 'B'}
+                                    onChange={() => setMode('B')}
+                                    className="w-4 h-4 text-primary bg-surface-2 border-surface-3 focus:ring-primary/20"
+                                />
+                                <span className="font-display font-medium text-foreground text-sm">Format My Own Questions</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Conditional Content Area */}
+                    <div className="space-y-4 pt-2">
+                        {mode === 'A' ? (
+                            <div className="space-y-4 animate-reveal">
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                        Number of Questions
+                                        <span className="text-primary ml-2 text-sm font-bold normal-case">{numQuestions}</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min={1}
+                                        max={30}
+                                        step={1}
+                                        value={numQuestions}
+                                        onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
+                                        className="w-full h-2 rounded-full appearance-none cursor-pointer disabled:opacity-50"
+                                        style={{
+                                            background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((numQuestions - 1) / 29) * 100}%, hsl(var(--surface-2)) ${((numQuestions - 1) / 29) * 100}%, hsl(var(--surface-2)) 100%)`,
+                                        }}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                        Syllabus / Topic Instructions
+                                    </label>
+                                    <textarea
+                                        required={mode === 'A'}
+                                        rows={4}
+                                        placeholder="Paste syllabus dot points, learning objectives, or specific mathematical concepts here..."
+                                        value={instructions}
+                                        onChange={(e) => setInstructions(e.target.value)}
+                                        className="input-base w-full text-sm font-display resize-y"
+                                    />
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={handleDownload}
-                                className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-display text-sm tracking-wide border border-primary/40 text-primary hover:bg-primary/10 transition-all duration-300 group"
-                            >
-                                <Download size={18} className="transition-transform group-hover:translate-y-0.5" />
-                                Download PDF
-                            </button>
-                        </div>
-                    )}
-                </form>
+                        ) : (
+                            <div className="space-y-2 animate-reveal">
+                                <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                    Paste Your Raw Questions
+                                </label>
+                                <textarea
+                                    required={mode === 'B'}
+                                    rows={5}
+                                    placeholder="Paste your unformatted questions here. The AI will perfectly typeset them and add the designated working space..."
+                                    value={rawQuestions}
+                                    onChange={(e) => setRawQuestions(e.target.value)}
+                                    className="input-base w-full text-sm font-display resize-y"
+                                />
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="divider-glow" />
 
-                {/* Info Section */}
-                <div className="mt-8 grid sm:grid-cols-3 gap-4 animate-reveal animate-reveal-6">
-                    <div className="glass-card rounded-xl p-5 text-center">
-                        <div className="text-2xl font-display font-bold text-primary mb-1">7+</div>
-                        <p className="text-muted-foreground text-xs font-display">Topics Available</p>
+                    {/* Layout & Extras */}
+                    <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                                Working Space
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={workingSpace}
+                                    onChange={(e) => setWorkingSpace(e.target.value)}
+                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full"
+                                >
+                                    {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 sm:pt-6">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeMarks}
+                                    onChange={(e) => setIncludeMarks(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-3 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                />
+                                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors font-display">Include Marks?</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={generateAnswerKey}
+                                    onChange={(e) => setGenerateAnswerKey(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-3 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                />
+                                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors font-display">Generate Answer Key?</span>
+                            </label>
+                        </div>
                     </div>
-                    <div className="glass-card rounded-xl p-5 text-center">
-                        <div className="text-2xl font-display font-bold text-accent mb-1">LaTeX</div>
-                        <p className="text-muted-foreground text-xs font-display">Typeset Quality</p>
+
+                    {/* Action Area */}
+                    <div className="pt-4 drop-shadow-lg">
+                        <button
+                            type="submit"
+                            disabled={isCopied}
+                            className={`w-full py-4 rounded-xl font-display text-lg flex items-center justify-center gap-3 transition-all duration-300 ${
+                                isCopied 
+                                ? 'bg-green-500/20 text-green-400 border border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.3)]' 
+                                : 'btn-primary'
+                            }`}
+                        >
+                            {isCopied ? (
+                                <>
+                                    <CheckCircle2 size={20} className="animate-pulse" />
+                                    Copied! Opening Gemini...
+                                </>
+                            ) : (
+                                <>
+                                    <Copy size={20} />
+                                    Generate Prompt & Open Gemini <ExternalLink size={16} className="opacity-70" />
+                                </>
+                            )}
+                        </button>
+
+                        <div className="mt-4 p-4 rounded-xl bg-accent/5 border border-accent/20 flex gap-3 text-left">
+                            <span className="text-accent shrink-0 text-xl leading-none">⚠️</span>
+                            <p className="text-xs text-muted-foreground leading-relaxed font-display">
+                                <strong className="text-accent font-bold">Tip:</strong> Ensure the <strong className="text-foreground">Canvas</strong> feature is enabled in your Gemini text-box for the split-screen preview with editing! Use "Thinking" for fastest code generation.
+                            </p>
+                        </div>
                     </div>
-                    <div className="glass-card rounded-xl p-5 text-center">
-                        <div className="text-2xl font-display font-bold text-secondary mb-1">PDF</div>
-                        <p className="text-muted-foreground text-xs font-display">Print-Ready Output</p>
-                    </div>
-                </div>
+                </form>
             </div>
 
             {/* Footer */}
-            <footer className="relative z-10 py-6 text-center border-t border-surface-2">
+            <footer className="relative z-10 py-6 text-center border-t border-surface-2 mt-auto">
                 <p className="text-muted-foreground text-sm font-display">
-                    Built by <a href="https://mentalmaths.au" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">Mental Maths Mentor</a> · A.G.E. Worksheet Engine
+                    Built by <a href="https://myaitutor.au" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">MAIT</a> · Universal Prompt Engine
                 </p>
             </footer>
         </div>
