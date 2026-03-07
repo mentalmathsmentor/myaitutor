@@ -494,10 +494,10 @@ body {
 
   /* Glass morphism card - ENHANCED */
   .glass-card {
-    @apply relative overflow-hidden;
-    background: hsla(var(--surface-2), 0.6);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsla(var(--primary), 0.1);
+    @apply relative overflow-hidden rounded-2xl;
+    background: hsla(var(--surface-2), 0.7);
+    backdrop-filter: blur(24px) saturate(120%);
+    border: 1px solid hsla(var(--primary), 0.05);
     transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -733,6 +733,7 @@ body {
   .chat-prose {
     @apply relative;
     z-index: 1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 1px 8px rgba(0, 0, 0, 0.4);
   }
 
   .chat-prose p {

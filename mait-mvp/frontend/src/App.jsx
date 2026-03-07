@@ -105,6 +105,7 @@ function App() {
 
     // New state for polished demo experience
     const [demoModelSize, setDemoModelSize] = useState('small') // 'small' | 'large'
+    const [localBrainChoice, setLocalBrainChoice] = useState(null) // null | 'local' | 'cloud'
     const [downloadError, setDownloadError] = useState(null) // error message string or null
     const [webGPUError, setWebGPUError] = useState(null) // WebGPU not available error
     const [showModelSwitchConfirm, setShowModelSwitchConfirm] = useState(null) // 'small' | 'large' | null
@@ -413,8 +414,11 @@ function App() {
     };
 
     useEffect(() => {
-        if (isNearBottom.current) {
-            endOfMsgRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (isNearBottom.current && chatContainerRef.current) {
+            chatContainerRef.current.scrollTo({
+                top: chatContainerRef.current.scrollHeight,
+                behavior: "smooth"
+            });
         }
     }, [messages]);
 
@@ -475,19 +479,57 @@ function App() {
             return;
         }
 
-        if (!isModelReady) {
+        if (localBrainChoice !== 'cloud' && !isModelReady) {
             setMessages(prev => [...prev, {
                 role: 'bot',
                 text: isDemoMode
                     ? "Local model is loading... hang tight! It'll be ready in a moment."
-                    : "Local Brain is not active. Click 'LOCAL CORE' to start.",
+                    : "Local Brain is not active. Please click Download Local Brain.",
                 source: 'local'
             }]);
             return;
         }
 
         setLoading(true);
-        const needsAPI = !isDemoMode && shouldQueryAPI(userText);
+        const needsAPI = !isDemoMode && (localBrainChoice === 'cloud' || shouldQueryAPI(userText));
+
+        if (localBrainChoice === 'cloud' && !isDemoMode) {
+            try {
+                setMessages(prev => [...prev, { role: 'bot', text: 'typing', source: 'typing' }]);
+
+                const apiResponse = await fetch(`${API_URL}/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
+                    body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
+                });
+
+                setMessages(prev => prev.filter(m => m.source !== 'typing'));
+
+                if (apiResponse.ok) {
+                    const data = await apiResponse.json();
+                    if (data.sections && data.sections.length > 0) {
+                        data.sections.forEach((section, i) => {
+                            setTimeout(() => {
+                                setMessages(prev => [...prev, { role: 'bot', text: section, source: 'api', sectionIndex: i }]);
+                            }, i * 100);
+                        });
+                    } else if (data.response) {
+                        setMessages(prev => [...prev, { role: 'bot', text: data.response, source: 'api' }]);
+                    } else {
+                        setMessages(prev => [...prev, { role: 'bot', text: "Hmm, the cloud couldn't find an answer.", source: 'api' }]);
+                    }
+                    if (data.context) setContext(data.context);
+                } else {
+                    setMessages(prev => [...prev, { role: 'bot', text: "Cloud connection failed. Try again?", source: 'error' }]);
+                }
+            } catch (err) {
+                console.warn("API Error", err);
+                setMessages(prev => prev.filter(m => m.source !== 'typing'));
+                setMessages(prev => [...prev, { role: 'bot', text: "Cloud connection failed. Try again?", source: 'error' }]);
+            }
+            setLoading(false);
+            return;
+        }
 
         const splitIntoChunks = (text) => {
             const isInsideLatex = (str) => {
@@ -836,6 +878,18 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
                     <PrivacyPolicy navigate={navigateTo} />
+                </div>
+                <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
+            </>
+        )
+    }
+
+    if (page === 'pastpapers') {
+        return (
+            <>
+                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <div className="pt-14 h-screen">
+                    <PastPapers />
                 </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
@@ -1235,7 +1289,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     onChange={(e) => setInput(e.target.value)}
                                     disabled={context?.fatigue_metric?.status === 'LOCKOUT'}
                                     placeholder={
-                                        !isModelReady && isDemoMode
+                                        (!isModelReady && isDemoMode) || (localBrainChoice === 'local' && !isModelReady)
                                             ? "Model is downloading... please wait"
                                             : context?.fatigue_metric?.status === 'LOCKOUT'
                                                 ? "Rest period active..."
@@ -1248,7 +1302,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                 />
                                 <button
                                     type="submit"
-                                    disabled={!input.trim() || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode)}
+                                    disabled={!input.trim() || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode) || (localBrainChoice === 'local' && !isModelReady)}
                                     className={`p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none transition-all ${loading && input.trim()
                                         ? 'bg-accent text-accent-foreground hover:opacity-90 shadow-glow-sm'
                                         : 'btn-primary'
@@ -1285,6 +1339,45 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 </div>
 
             </div>
+
+            {/* Local Brain Choice Modal */}
+            {!isDemoMode && page === 'app' && localBrainChoice === null && (
+                <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-reveal">
+                    <div className="glass-card p-8 rounded-3xl max-w-lg w-full border-glow text-center shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <BrainCircuit size={120} />
+                        </div>
+                        <h2 className="text-2xl font-display font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent relative z-10">
+                            Initialize MAIT Brain
+                        </h2>
+                        <p className="text-sm text-muted-foreground mb-8 relative z-10">
+                            Choose how you'd like to run your AI tutor today. Local Brain runs entirely on your device for fast, private math help.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 relative z-10">
+                            <button
+                                onClick={() => { setLocalBrainChoice('local'); startLocalBrain('large'); }}
+                                className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl bg-primary/10 border border-primary/30 hover:bg-primary/20 hover:border-primary/50 transition-all group"
+                            >
+                                <Cpu size={36} className="text-primary group-hover:scale-110 transition-transform" />
+                                <div>
+                                    <div className="font-display font-bold text-foreground">Download Local Brain</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Recommended (~2.2GB)</div>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setLocalBrainChoice('cloud')}
+                                className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl bg-surface-1 border border-surface-3 hover:bg-surface-2 hover:border-surface-4 transition-all group"
+                            >
+                                <Zap size={36} className="text-muted-foreground group-hover:text-foreground group-hover:scale-110 transition-transform" />
+                                <div>
+                                    <div className="font-display font-bold text-foreground">Use Cloud API</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Faster Start (Gemini)</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Keystroke Analytics Panel — rendered outside main container for proper fixed positioning */}
             {showKeystrokePanel && (
