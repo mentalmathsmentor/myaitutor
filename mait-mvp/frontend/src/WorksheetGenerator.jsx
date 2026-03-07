@@ -580,17 +580,21 @@ ${contentString}
                     >
                         <ListFilter size={18} className={showReference ? 'text-primary' : 'text-muted-foreground'} />
                         <span className="text-sm font-display font-semibold">
-                            {showReference ? 'Hide Syllabus Reference' : 'Show HSC Syllabus Reference'}
+                            {showReference ? 'Hide HSC Question Topic Test Maker' : 'HSC Question Topic Test Maker'}
                         </span>
                         {showReference ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </button>
 
                     {showReference && (
-                        <div className="w-full aspect-[16/10] bg-surface-1 rounded-3xl overflow-hidden border border-surface-3 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div
+                            className="w-full aspect-[16/10] rounded-3xl overflow-hidden border border-surface-3 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500"
+                            style={{ colorScheme: 'light', background: 'white' }}
+                        >
                             <iframe
                                 src="https://hscmathsbytopic.firsteducation.com.au/"
                                 className="w-full h-full border-none"
-                                title="HSC Maths Syllabus Reference"
+                                title="HSC Question Topic Test Maker"
+                                style={{ colorScheme: 'light' }}
                             />
                         </div>
                     )}
