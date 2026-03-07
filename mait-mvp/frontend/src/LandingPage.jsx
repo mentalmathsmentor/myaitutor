@@ -11,11 +11,36 @@ const SYLLABI = [
 // Math symbols for floating particles
 const MATH_SYMBOLS = [
     // Core Symbols
-    'π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴',
-    // NESA Syllabus Formulae (Standard, Advanced, Extension 1 & 2)
-    'd/dx', 'dy/dx', 'ax²+bx+c=0', 'sin²θ+cos²θ=1', 'x=(-b±√∆)/2a',
-    'FV=PV(1+r)ⁿ', 'z=(x-μ)/σ', 'ⁿCᵣ', 'ⁿPᵣ', 'a·b=|a||b|cosθ',
-    'z=r(cosθ+isinθ)', '∫eˣdx=eˣ', 'y-y₁=m(x-x₁)', 'a²+b²=c²'
+    'π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴', 'α', 'β', 'γ', 'φ', 'ω', 'ε', 'μ', 'σ',
+    // Standard & Advanced — Algebra & Functions
+    'ax²+bx+c=0', 'x=(-b±√∆)/2a', 'y-y₁=m(x-x₁)', 'a²+b²=c²', 'logₐx', '|x|',
+    'f(g(x))', 'f⁻¹(x)', 'Σxᵢ/n', 'A=½bh', 'V=⅓πr²h',
+    // Standard — Financial & Statistics
+    'FV=PV(1+r)ⁿ', 'z=(x-μ)/σ', 'A=P(1+r/n)ⁿᵗ', 'σ²', 'x̄',
+    // Advanced — Calculus
+    'd/dx', 'dy/dx', 'f\'(x)', 'f\'\'(x)', '∫eˣdx=eˣ', '∫xⁿdx', 'lim x→∞',
+    'd/dx(sin x)=cos x', 'd/dx(eˣ)=eˣ', 'd/dx(ln x)=1/x', '∫₀¹ f(x)dx',
+    'A=∫ₐᵇ f(x)dx', 'dy/dx=dy/du·du/dx',
+    // Advanced — Trigonometry
+    'sin²θ+cos²θ=1', 'tan θ=sin θ/cos θ', 'sin(A±B)', 'cos 2θ=2cos²θ−1',
+    'a/sin A=b/sin B', 'c²=a²+b²−2ab cos C',
+    // Advanced — Probability
+    'ⁿCᵣ', 'ⁿPᵣ', 'P(A∪B)', 'P(A|B)', 'E(X)=Σxᵢpᵢ', 'Var(X)',
+    // Extension 1 — Inverse Trig & Induction
+    'sin⁻¹x', 'cos⁻¹x', 'tan⁻¹x', '∫dx/√(1−x²)', 'n! ', 'P(n)→P(n+1)',
+    'x=a cos θ', 'v²=u²+2as', 'ẍ=−n²x',
+    // Extension 1 — Vectors
+    'a·b=|a||b|cosθ', '|a×b|', 'r=a+tb',
+    // Extension 2 — Complex Numbers
+    'z=a+bi', '|z|=√(a²+b²)', 'z=r·cis θ', 'zⁿ=rⁿcis(nθ)', 'z̄', 'Re(z)', 'Im(z)',
+    'e^(iθ)=cosθ+isinθ',
+    // Extension 2 — Mechanics & Integration
+    '∫sec²x dx', '∫dx/(a²+x²)', '∮', 'ẍ=F/m', 'T=2π/ω',
+    // Physics
+    'F=ma', 'E=mc²', 'v=fλ', 'W=Fd', 'p=mv', 'KE=½mv²',
+    'V=IR', 'P=IV', 'F=kQq/r²', 'Φ=BA',
+    // Engineering Studies
+    'σ=F/A', 'τ=Tr/J', 'ε=∆L/L', 'η=Pout/Pin'
 ]
 
 function MathParticles() {
