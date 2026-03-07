@@ -1,0 +1,23 @@
+name: Deploy Backend to Render
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mait-mvp/backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Render
+        # You will need to add RENDER_DEPLOY_HOOK as a Secret in your GitHub repository settings
+        # Get the hook URL from Render Dashboard -> Your Service -> Settings -> Deploy Hook
+        if: github.ref == 'refs/heads/main'
+        run: |
+          curl -f "${{ secrets.RENDER_DEPLOY_HOOK }}"
