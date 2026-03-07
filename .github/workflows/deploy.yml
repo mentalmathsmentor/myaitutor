@@ -24,24 +24,24 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: mait-mvp-glitch/frontend/package-lock.json
+          cache-dependency-path: mait-mvp/frontend/package-lock.json
 
       - name: Install dependencies
-        working-directory: mait-mvp-glitch/frontend
+        working-directory: mait-mvp/frontend
         run: npm ci
 
       - name: Build
-        working-directory: mait-mvp-glitch/frontend
+        working-directory: mait-mvp/frontend
         run: npm run build
 
       - name: Copy 404.html for SPA support
-        working-directory: mait-mvp-glitch/frontend
+        working-directory: mait-mvp/frontend
         run: cp dist/index.html dist/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: mait-mvp-glitch/frontend/dist
+          path: mait-mvp/frontend/dist
 
   deploy:
     environment:

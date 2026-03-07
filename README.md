@@ -178,7 +178,7 @@ MAIT uses a **Hybrid Edge-Cloud Architecture** — decoupling emotional intellig
 ```
 myaitutor/
 ├── README.md                          ← you are here
-├── mait-mvp-glitch/
+├── mait-mvp/
 │   ├── frontend/                      React + Vite SPA
 │   │   ├── src/
 │   │   │   ├── App.jsx                Main app + routing + chat UI
@@ -451,15 +451,15 @@ MAIT takes a **privacy-first** approach to student data:
 
 ## Documentation
 
-Detailed technical documentation lives inside `mait-mvp-glitch/`:
+Detailed technical documentation lives inside `mait-mvp/`:
 
 | Document | Description |
 |---|---|
-| [QUICKSTART.md](mait-mvp-glitch/QUICKSTART.md) | 5-minute setup guide with troubleshooting |
-| [SETUP.md](mait-mvp-glitch/SETUP.md) | Full setup instructions and architecture diagram |
-| [GEMINI_INTEGRATION.md](mait-mvp-glitch/GEMINI_INTEGRATION.md) | Gemini API integration details and fatigue flow |
-| [KEYSTROKE_PSYCHOMETRICS.md](mait-mvp-glitch/KEYSTROKE_PSYCHOMETRICS.md) | Typing analytics system specification |
-| [CRITICAL_FIXES.md](mait-mvp-glitch/CRITICAL_FIXES.md) | Security audit and fixes applied |
+| [QUICKSTART.md](mait-mvp/QUICKSTART.md) | 5-minute setup guide with troubleshooting |
+| [SETUP.md](mait-mvp/SETUP.md) | Full setup instructions and architecture diagram |
+| [GEMINI_INTEGRATION.md](mait-mvp/GEMINI_INTEGRATION.md) | Gemini API integration details and fatigue flow |
+| [KEYSTROKE_PSYCHOMETRICS.md](mait-mvp/KEYSTROKE_PSYCHOMETRICS.md) | Typing analytics system specification |
+| [CRITICAL_FIXES.md](mait-mvp/CRITICAL_FIXES.md) | Security audit and fixes applied |
 
 ---
 
