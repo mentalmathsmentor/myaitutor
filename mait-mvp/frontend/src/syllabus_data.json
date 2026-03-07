@@ -188,24 +188,192 @@
       ]
     }
   },
+  "Year 11 Advanced": {
+    "Functions": {
+      "Algebraic Techniques": [
+        "Define A Relation: Define a relation as any set of ordered pairs (\ud835\udc65, \ud835\udc66) of real numbers",
+        "Understand The Formal: Understand the formal definition of a function as a set of ordered pairs (\ud835\udc65, \ud835\udc66) of real numbers",
+        "Understand And Use: Understand and use interval notation as a way of representing domain and range, eg [4, \u221e)",
+        "Know What Is: Know what is meant by one-to-one, one-to-many, many-to-one and many-to-many",
+        "Use The Vertical: Use the vertical line test to identify a function",
+        "Determine If A: Determine if a function is one-to-one (ACMSM094)",
+        "Identify The Domain: Identify the domain and range of a composite function",
+        "Explain The Geometrical: Explain the geometrical significance of \ud835\udc5a and \ud835\udc50 in the equation \ud835\udc53(\ud835\udc65) = \ud835\udc5a\ud835\udc65 + \ud835\udc50",
+        "Derive The Equation: Derive the equation of a straight line passing through a fixed point (\ud835\udc651 , \ud835\udc661 ) and having a given",
+        "Derive The Equation: Derive the equation of a straight line passing through two points (\ud835\udc651 , \ud835\udc661 ) and (\ud835\udc652 , \ud835\udc662 ) by first",
+        "Find The Equations: Find the equations of straight lines, including parallel and perpendicular lines, given sufficient",
+        "Understand The Role: Understand the role of the discriminant in relation to the position of the graph",
+        "Understand That Solving: Understand that solving \ud835\udc53(\ud835\udc65) = \ud835\udc58 corresponds to finding the values of \ud835\udc65 for which the graph",
+        "Recognise The Shape: Recognise the shape and features of the graph of \ud835\udc66 = |\ud835\udc4e\ud835\udc65 + \ud835\udc4f| and hence sketch the graph",
+        "Derive The Equation: Derive the equation of a circle, centre the origin, by considering Pythagoras\u2019 theorem and",
+        "Transform Equations: Transform equations of the form \ud835\udc65 2 + \ud835\udc66 2 + \ud835\udc4e\ud835\udc65 + \ud835\udc4f\ud835\udc66 + \ud835\udc50 = 0 into the form",
+        "Sketch Circles Given: Sketch circles given their equations and find the equation of a circle from its graph",
+        "Examine Translations: Examine translations and the graphs of \ud835\udc66 = \ud835\udc53(\ud835\udc65) + \ud835\udc50 and \ud835\udc66 = \ud835\udc53(\ud835\udc65 + \ud835\udc4f) using technology",
+        "Examine Dilations: Examine dilations and the graphs of \ud835\udc66 = \ud835\udc58\ud835\udc53(\ud835\udc65) and \ud835\udc66 = \ud835\udc53(\ud835\udc4e\ud835\udc65) using technology",
+        "Recognise That The: Recognise that the order in which transformations are applied is important in the construction",
+        "Select And Use: Select and use an appropriate method to graph a given function, including finding intercepts,",
+        "Determine Asymptotes: Determine asymptotes and discontinuities where appropriate (vertical and horizontal",
+        "Determine The Number: Determine the number of solutions of an equation by considering appropriate graphs"
+      ],
+      "Further Functions & Relations": [
+        "Recognise That A: Recognise that a direct variation relationship produces a straight-line graph"
+      ],
+      "Linear, Quadratic & Cubic Functions": [
+        "Recognise Features: Recognise features of the graph of a quadratic, including its parabolic nature, turning point,",
+        "Find The Vertex: Find the vertex and intercepts of a quadratic graph by either factorising, completing the square",
+        "Find The Equation: Find the equation of a quadratic given sufficient information (ACMMM009)",
+        "Solve Linear: Solve linear and quadratic inequalities by sketching appropriate graphs"
+      ]
+    },
+    "Trigonometric Functions": {
+      "Trigonometry & Measure of Angles": [
+        "Use Technology And/Or: Use technology and/or geometric construction to investigate the ambiguous case of the sine",
+        "Interpret Information About: Interpret information about a two or three-dimensional context given in diagrammatic or",
+        "Convert Between The: Convert between the two measures, using the fact that 360\u00b0 = 2\ud835\udf0b radians",
+        "Know The Difference: Know the difference between an equation and an identity"
+      ],
+      "Trigonometric Functions & Graphs": [
+        "Sketch The Trigonometric: Sketch the trigonometric functions in degrees for 0\u00b0 \u2264 \ud835\udc65 \u2264 360\u00b0",
+        "Use Technology: Use technology or otherwise to examine the effect on the graphs of changing the amplitude",
+        "Use \ud835\udc58, \ud835\udc4e,: Use \ud835\udc58, \ud835\udc4e, \ud835\udc4f, \ud835\udc50 to describe transformational shifts and sketch graphs"
+      ],
+      "Radians": [
+        "Recognise And Use: Recognise and use the exact values of sin \ud835\udf03, cos \ud835\udf03 and tan \ud835\udf03 in both degrees and radians for"
+      ]
+    },
+    "Calculus": {
+      "The Derivative Function & Its Graph": [
+        "Sketch Graphs: Sketch graphs of functions that are continuous and compare them with graphs of functions",
+        "Describe Continuity Informally,: Describe continuity informally, and identify continuous functions from their graphs",
+        "Establish That \ud835\udc53: Establish that \ud835\udc53 \u2032 (\ud835\udc65) = 0 at a stationary point, \ud835\udc53 \u2032 (\ud835\udc65) > 0 when the function is increasing and",
+        "Identify Families: Identify families of curves with the same derivative function (ACMMM121)",
+        "Use Technology: Use technology to plot functions and their gradient functions",
+        "Examine Examples: Examine examples of variable rates of change of non-linear functions (ACMMM087)",
+        "Apply The Chain: Apply the chain rule: If \u210e(\ud835\udc65) = \ud835\udc53(\ud835\udc54(\ud835\udc65)) then \u210e\u2032(\ud835\udc65) = \ud835\udc53\u2032(\ud835\udc54(\ud835\udc65)) \ud835\udc54\u2032(\ud835\udc65), or if \ud835\udc66 is a function of \ud835\udc62 and",
+        "Use The Composite: Use the composite function rule (chain rule) to establish that",
+        "Use The Composite: Use the composite function rule (chain rule) to establish and use the derivatives of sin(\ud835\udc53(\ud835\udc65)),",
+        "Deduce From The: Deduce from the sign of the first derivative whether a function is increasing, decreasing or",
+        "Use The First: Use the first derivative to find intervals over which a function is increasing or decreasing, and",
+        "Use The First: Use the first derivative to investigate a stationary point of a function over a given domain,",
+        "Determine The Greatest: Determine the greatest or least value of a function over a given domain (if the domain is not",
+        "Use The Second: Use the second derivative to determine concavity and the nature of stationary points",
+        "Understand That When: Understand that when the second derivative is equal to 0 this does not necessarily represent a",
+        "Define Variables: Define variables and construct functions to represent the relationships between variables",
+        "Examine Families: Examine families of anti-derivatives of a given function graphically",
+        "Consider Functions Which: Consider functions which cannot be integrated in the scope of this syllabus, for example",
+        "Use Symmetry Properties: Use symmetry properties of even and odd functions to simplify calculations of area"
+      ],
+      "Gradients of Tangents": [
+        "Apply The Product: Apply the product rule: If \u210e(\ud835\udc65) = \ud835\udc53(\ud835\udc65) \ud835\udc54(\ud835\udc65) then \u210e\u2032(\ud835\udc65) = \ud835\udc53(\ud835\udc65) \ud835\udc54\u2032(\ud835\udc65) + \ud835\udc53\u2032(\ud835\udc65) \ud835\udc54(\ud835\udc65), or if \ud835\udc62 and \ud835\udc63",
+        "Apply The Quotient: Apply the quotient rule: If \u210e(\ud835\udc65) =",
+        "Use The Logarithmic: Use the logarithmic laws to simplify an expression before differentiating",
+        "Use Calculus: Use calculus to establish the location of local and global maxima and minima, including",
+        "Evaluate Solutions: Evaluate solutions and their reasonableness given the constraints of the domain and formulate",
+        "Use Geometric Arguments: Use geometric arguments (rather than substitution into a given formula) to approximate a",
+        "Recognise And Use: Recognise and use the additivity and linearity of definite integrals (ACMMM128)",
+        "Calculate Total Change: Calculate total change by integrating instantaneous rate of change"
+      ],
+      "Calculating with Derivatives": [
+        "Understand The Concepts: Understand the concepts of concavity and points of inflection and their relationship with the"
+      ]
+    },
+    "Exponential and Logarithmic Functions": {
+      "Introducing Logarithms": [
+        "Understand And Use: Understand and use the fact that log \ud835\udc4e \ud835\udc4e \ud835\udc65 = \ud835\udc65 for all real \ud835\udc65, and \ud835\udc4elog\ud835\udc4e \ud835\udc65 = \ud835\udc65 for all \ud835\udc65 > 0"
+      ],
+      "The Exponential Function & Natural Logarithms": [
+        "Define The Natural: Define the natural logarithm ln \ud835\udc65 = log \ud835\udc52 \ud835\udc65 from the exponential function \ud835\udc53(\ud835\udc65) = \ud835\udc52 \ud835\udc65",
+        "Recognise And Use: Recognise and use the inverse relationship of the functions \ud835\udc66 = \ud835\udc52 \ud835\udc65 and \ud835\udc66 = ln \ud835\udc65 (ACMMM160)",
+        "Use The Natural: Use the natural logarithm and the relationships \ud835\udc52 ln \ud835\udc65 = \ud835\udc65 where \ud835\udc65 > 0, and ln(\ud835\udc52 \ud835\udc65 ) = \ud835\udc65 for all",
+        "Interpret The Meaning: Interpret the meaning of the intercepts of an exponential graph and explain the circumstances"
+      ],
+      "Logarithmic Laws & Applications": [
+        "Use The Logarithmic: Use the logarithmic laws to simplify and evaluate natural logarithmic expressions and solve"
+      ],
+      "Graphs & Applications of Exp/Log Functions": [
+        "Recognise That The: Recognise that the graphs of \ud835\udc66 = \ud835\udc4e \ud835\udc65 and \ud835\udc66 = log \ud835\udc4e \ud835\udc65 are reflections in the line \ud835\udc66 = \ud835\udc65"
+      ]
+    },
+    "Statistical Analysis": {
+      "Probability & Venn Diagrams": [
+        "Identify Factors That: Identify factors that could complicate the simulation of real-world events (ACMEM153)",
+        "Use Relative Frequencies: Use relative frequencies obtained from data as point estimates of probabilities (ACMMM055)",
+        "Use Everyday Occurrences: Use everyday occurrences to illustrate set descriptions and representations of events and set",
+        "Know That A: Know that a random variable describes some aspect in a population from which samples can",
+        "Use Relative Frequencies: Use relative frequencies obtained from data to obtain point estimates of probabilities",
+        "Use Var(\ud835\udc4b) =: Use Var(\ud835\udc4b) = \ud835\udc38((\ud835\udc4b \u2212 \ud835\udf07)2 ) = \ud835\udc38(\ud835\udc4b 2 ) \u2212 \ud835\udf07 2 for a random variable and Var(\ud835\udc65) = \ud835\udf0e 2 for a dataset",
+        "Compare The Suitability: Compare the suitability of different methods of data presentation in real-world contexts",
+        "Investigate Real-World Examples: Investigate real-world examples from the media illustrating appropriate and inappropriate uses",
+        "Use Different Approaches: Use different approaches for identifying outliers, for example consideration of the distance",
+        "Investigate And Recognise: Investigate and recognise the effect of outliers on the mean, median and standard deviation",
+        "Describe Bivariate Datasets: Describe bivariate datasets in terms of form (linear/non-linear) and in the case of linear, also",
+        "Identify The Dependent: Identify the dependent and independent variables within bivariate datasets where appropriate",
+        "Describe And Interpret: Describe and interpret a variety of bivariate datasets involving two numerical variables using",
+        "Fit A Line: Fit a line of best fit to the data by eye and using technology (ACMEM141, ACMEM142)",
+        "Fit A Least-Squares: Fit a least-squares regression line to the data using technology (ACMGM057)",
+        "Interpret The Intercept: Interpret the intercept and gradient of the fitted line (ACMGM059)",
+        "Distinguish Between Interpolation: Distinguish between interpolation and extrapolation, recognising the limitations of using the",
+        "Know The Two: Know the two properties of a probability density function: \ud835\udc53(\ud835\udc65) \u2265 0 for all real \ud835\udc65 and",
+        "Explore Properties: Explore properties of a continuous random variable that is uniformly distributed",
+        "Find The Mode: Find the mode from a given probability density function",
+        "Understand The Meaning: Understand the meaning of a cumulative distribution function with respect to a given",
+        "Use A Cumulative: Use a cumulative distribution function to calculate the median and other percentiles",
+        "Identify Contexts That: Identify contexts that are suitable for modelling by normal random variables, eg the height of a",
+        "Recognise Features: Recognise features of the graph of the probability density function of the normal distribution",
+        "Visually Represent Probabilities: Visually represent probabilities by shading areas under the normal curve, eg identifying the",
+        "Use The Formula: Use the formula \ud835\udc67 =",
+        "Apply The Empirical: Apply the empirical rule to a variety of problems",
+        "Verify, Using The: Verify, using the Trapezoidal rule, the results concerning the areas under the normal curve",
+        "Use Statistical Tables: Use statistical tables to determine probabilities",
+        "Use Technology: Use technology to determine probabilities"
+      ],
+      "Discrete Probability Distributions": [
+        "Know The Difference: Know the difference between a discrete random variable and a continuous random variable",
+        "Recognise Uniform Discrete: Recognise uniform discrete random variables and use them to model random phenomena with",
+        "Examine Simple Examples: Examine simple examples of non-uniform discrete random variables, and recognise that for",
+        "Recognise The Mean: Recognise the mean or expected value, \ud835\udc38(\ud835\udc4b) = \ud835\udf07, of a discrete random variable \ud835\udc4b as a",
+        "Recognise The Variance,: Recognise the variance, Var(\ud835\udc4b), and standard deviation (\ud835\udf0e) of a discrete random variable as"
+      ]
+    }
+  },
+  "Year 12 Advanced": {
+    "Financial Mathematics": {
+      "Modelling Investments & Loans": [
+        "Identify An Annuity: Identify an annuity (present or future value) as an investment account with regular, equal",
+        "Use Technology: Use technology to model an annuity as a recurrence relation and investigate (numerically or",
+        "Use A Table: Use a table of interest factors to perform annuity calculations, eg calculating the present or",
+        "Calculate The Effective: Calculate the effective annual rate of interest and use results to compare investment returns",
+        "Solve Problems Involving: Solve problems involving compound interest loans or investments, eg determining the future",
+        "Recognise A Reducing: Recognise a reducing balance loan as a compound interest loan with periodic repayments,",
+        "Calculate The Future: Calculate the future value or present value of an annuity by developing an expression for the"
+      ],
+      "Geometric Sequences & Series": [
+        "Verify Entries: Verify entries in tables of future values or annuities by using geometric series"
+      ]
+    }
+  },
   "Year 11 Extension 1": {
     "Functions": {
-      "Misc": [
+      "Inverse Functions": [
         "Understand Why The: Understand why the graph of the inverse relation is obtained by reflecting the graph of the",
+        "Understand That Linear: Understand that linear and quadratic functions, and circles can be expressed in either"
+      ],
+      "Graphical Relationships": [
         "Using The Fact: Using the fact that this reflection exchanges horizontal and vertical lines, recognise that the",
-        "Understand That Linear: Understand that linear and quadratic functions, and circles can be expressed in either",
-        "Convert Linear: Convert linear and quadratic functions, and circles from parametric form to Cartesian form and",
-        "Sketch Linear: Sketch linear and quadratic functions, and circles expressed in parametric form",
         "Understand And Use: Understand and use terminology relating to polynomials including degree, leading term,",
         "Review The Process: Review the process of division with remainders for integers",
-        "The Process Of Division Using: Describe the process of division using the terms: dividend, divisor, quotient, remainder",
+        "Describe The Process: Describe the process of division using the terms: dividend, divisor, quotient, remainder"
+      ],
+      "Parametric Form of a Function": [
+        "Convert Linear: Convert linear and quadratic functions, and circles from parametric form to Cartesian form and",
+        "Sketch Linear: Sketch linear and quadratic functions, and circles expressed in parametric form",
         "Consider Quadratic, Cubic: Consider quadratic, cubic and quartic equations, and derive formulae as appropriate for the",
         "Prove That If: Prove that if a polynomial equation of the form \ud835\udc43(\ud835\udc65) = 0 has a root of multiplicity \ud835\udc5f > 1, then",
         "Examine The Sign: Examine the sign change of the function and shape of the graph either side of roots of varying"
       ]
     },
     "Trigonometric Functions": {
-      "Misc": [
+      "Inverse Trigonometric Functions": [
         "Understand And Use: Understand and use the notation arcsin \ud835\udc65 and sin\u22121 \ud835\udc65 for the inverse function of sin \ud835\udc65 when",
         "Sin (\ud835\udc34 \u00b1: Sin (\ud835\udc34 \u00b1 \ud835\udc35) = sin \ud835\udc34 cos \ud835\udc35 \u00b1 cos \ud835\udc34 sin \ud835\udc35",
         "Cos (\ud835\udc34 \u00b1: Cos (\ud835\udc34 \u00b1 \ud835\udc35) = cos \ud835\udc34 cos \ud835\udc35 \u2213 sin \ud835\udc34 sin \ud835\udc35",
@@ -218,21 +386,23 @@
       ]
     },
     "Calculus": {
-      "Misc": [
+      "Rates of Change with Respect to Time": [
         "Investigate Examples Where: Investigate examples where the rate of change of some aspect of a given object with respect",
-        "Rates Of Change, For Example: Use appropriate language to describe rates of change, for example \u2018at rest\u2019, \u2018initially\u2019, \u2018change",
+        "Use Appropriate Language: Use appropriate language to describe rates of change, for example \u2018at rest\u2019, \u2018initially\u2019, \u2018change",
         "Sketch The Curve: Sketch the curve \ud835\udc41(\ud835\udc61) = \ud835\udc43 + \ud835\udc34\ud835\udc52 \ud835\udc58\ud835\udc61 for positive and negative values of \ud835\udc58",
         "Note That Whenever: Note that whenever \ud835\udc58 < 0, the quantity \ud835\udc41 tends to the limit \ud835\udc43 as \ud835\udc61 \u2192 \u221e, irrespective of the",
         "Recognise That This: Recognise that this model states that the rate of change of a quantity varies directly with the"
       ]
     },
     "Combinatorics": {
-      "Misc": [
-        "Cases Where Some Items Are: Solve problems involving cases where some items are not distinct (excluding arrangements in",
+      "Permutations & Combinations": [
+        "Solve Problems Involving: Solve problems involving cases where some items are not distinct (excluding arrangements in",
         "Understand That If: Understand that if there are \ud835\udc5b pigeonholes and \ud835\udc5b + 1 pigeons to go into them, then at least",
         "Generalise To: If: Generalise to: If \ud835\udc5b pigeons are sitting in \ud835\udc58 pigeonholes, where \ud835\udc5b > \ud835\udc58, then there is at least one",
         "Prove The Pigeonhole: Prove the pigeonhole principle",
-        "Understand And Use: Understand and use the notations ( ) and \ud835\udc5b \ud835\udc36\ud835\udc5f and the formula \ud835\udc5b \ud835\udc36\ud835\udc5f =",
+        "Understand And Use: Understand and use the notations ( ) and \ud835\udc5b \ud835\udc36\ud835\udc5f and the formula \ud835\udc5b \ud835\udc36\ud835\udc5f ="
+      ],
+      "The Binomial Expansion & Pascal's Triangle": [
         "Note The Pattern: Note the pattern formed by the coefficients of \ud835\udc65 in the expansion of (1 + \ud835\udc65)\ud835\udc5b and recognise",
         "Recognise The Numbers: Recognise the numbers ( ) (also denoted \ud835\udc5b \ud835\udc36\ud835\udc5f ) as binomial coefficients (ACMMM047)",
         "Establish Combinatorial Proofs: Establish combinatorial proofs of the Pascal\u2019s triangle relations \ud835\udc5b \ud835\udc360 = 1, \ud835\udc5b \ud835\udc36\ud835\udc5b = 1;"
@@ -240,37 +410,27 @@
     }
   },
   "Year 12 Extension 1": {
-    "Core": {
-      "Misc": [
-        "Application Of Knowledge,: Application of knowledge, understanding, skills, values and attitudes in the fields of study they",
-        "Capacity To Manage: Capacity to manage their own learning and to become flexible, independent thinkers, problemsolvers and decision-makers",
-        "Capacity To Work: Capacity to work collaboratively with others",
-        "Respect For The: Respect for the cultural diversity of Australian society",
-        "Desire To Continue: Desire to continue learning in formal or informal settings after school",
-        "Further Academic Study,: Further academic study, vocational training and employment",
-        "Changing Workplaces, Including: Changing workplaces, including an increasingly STEM-focused (Science, Technology,",
-        "Full And Active: Full and active participation as global citizens"
-      ]
-    },
     "Proof": {
-      "Misc": [
+      "Mathematical Induction": [
         "Prove Divisibility Results,: Prove divisibility results, for example 32\ud835\udc5b \u2212 1 is divisible by 8 for any positive integer \ud835\udc5b"
       ]
     },
     "Vectors": {
-      "Misc": [
+      "Introduction to Vectors": [
         "Explain The Distinction: Explain the distinction between a position vector and a displacement (relative) vector",
         "Use Standard Notations: Use standard notations for vectors, for example: a~ , \u20d7\u20d7\u20d7\u20d7\u20d7",
         "Graphically Represent A: Graphically represent a scalar multiple of a vector (ACMSM012)",
         "Use The Triangle: Use the triangle law and the parallelogram law to find the sum and difference of two vectors",
         "Define And Use: Define and use addition and subtraction of vectors in component form (ACMSM017)",
         "Define And Use: Define and use multiplication by a scalar of a vector in component form (ACMSM018)",
-        "The Scalar Product, U\uf0d7: Apply the scalar product, u\uf0d7",
+        "Apply The Scalar: Apply the scalar product, u\uf0d7",
         "The Diagonals: The diagonals of a parallelogram meet at right angles if and only if it is a rhombus",
         "The Midpoints: The midpoints of the sides of a quadrilateral join to form a parallelogram (ACMSM040)",
         "The Sum: The sum of the squares of the lengths of the diagonals of a parallelogram is equal to the sum",
+        "The Force Due: The force due to air resistance is negligible"
+      ],
+      "Projectile Motion": [
         "The Projectile Is: The projectile is a point",
-        "The Force Due: The force due to air resistance is negligible",
         "The Only Force: The only force acting on the projectile is the constant force due to gravity, assuming that the",
         "Represent The Motion: Represent the motion of a projectile using vectors",
         "Recognise That The: Recognise that the horizontal and vertical components of the motion of a projectile can be",
@@ -279,44 +439,38 @@
       ]
     },
     "Calculus": {
-      "Misc": [
+      "Further Integration": [
         "Change An Integrand: Change an integrand into an appropriate form using algebra",
-        "Form A Direction: Form a direction field (slope field) from simple first-order differential equations",
         "Recognise The Shape: Recognise the shape of a direction field from several alternatives given the form of a",
         "Sketch Several Possible: Sketch several possible solution curves on a given direction field"
+      ],
+      "Modelling with First-Order Differential Equations": [
+        "Form A Direction: Form a direction field (slope field) from simple first-order differential equations"
       ]
     },
     "Statistical Analysis": {
-      "Misc": [
+      "Bernoulli & Binomial Distributions": [
         "Identify Contexts Suitable: Identify contexts suitable for modelling by Bernoulli random variables (ACMMM144)",
-        "The Formulae For The Mean,: Understand and apply the formulae for the mean, \ud835\udc38(\ud835\udc4b) = \ud835\udc65\u0305 = \ud835\udc5d, and variance,",
-        "The Expected Frequencies Of The: Calculate the expected frequencies of the various possible outcomes from a series of",
+        "Understand And Apply: Understand and apply the formulae for the mean, \ud835\udc38(\ud835\udc4b) = \ud835\udc65\u0305 = \ud835\udc5d, and variance,",
+        "Calculate The Expected: Calculate the expected frequencies of the various possible outcomes from a series of",
         "Identify Contexts Suitable: Identify contexts suitable for modelling by binomial random variables (ACMMM148)",
         "Identify The Binomial: Identify the binomial parameter \ud835\udc5d as the probability of success",
         "Understand And Use: Understand and use the notation \ud835\udc4b~Bin(\ud835\udc5b, \ud835\udc5d) to indicate that the random variable \ud835\udc4b is",
-        "The Formulae For Probabilities \ud835\udc43(\ud835\udc4b: Apply the formulae for probabilities \ud835\udc43(\ud835\udc4b = \ud835\udc5f) = \ud835\udc5b \ud835\udc36\ud835\udc5f \ud835\udc5d\ud835\udc5f (1 \u2212 \ud835\udc5d)\ud835\udc5b\u2212\ud835\udc5f associated with the binomial",
-        "The Formulae For The Mean,: Understand and apply the formulae for the mean, \ud835\udc38(\ud835\udc4b) = \ud835\udc65\u0305 = \ud835\udc5b\ud835\udc5d, and the variance,",
+        "Apply The Formulae: Apply the formulae for probabilities \ud835\udc43(\ud835\udc4b = \ud835\udc5f) = \ud835\udc5b \ud835\udc36\ud835\udc5f \ud835\udc5d\ud835\udc5f (1 \u2212 \ud835\udc5d)\ud835\udc5b\u2212\ud835\udc5f associated with the binomial",
+        "Understand And Apply: Understand and apply the formulae for the mean, \ud835\udc38(\ud835\udc4b) = \ud835\udc65\u0305 = \ud835\udc5b\ud835\udc5d, and the variance,"
+      ],
+      "Normal Approximation for the Sample Proportion": [
         "Understand The Concept: Understand the concept of the sample proportion \ud835\udc5d\u0302 as a random variable whose value varies",
         "Examine The Approximate: Examine the approximate normality of the distribution of \ud835\udc5d\u0302 for large samples (ACMMM175)"
       ]
     }
   },
   "Year 12 Extension 2": {
-    "Core": {
-      "Misc": [
-        "Application Of Knowledge,: Application of knowledge, understanding, skills, values and attitudes in the fields of study they",
-        "Capacity To Manage: Capacity to manage their own learning and to become flexible, independent thinkers, problemsolvers and decision-makers",
-        "Capacity To Work: Capacity to work collaboratively with others",
-        "Respect For The: Respect for the cultural diversity of Australian society",
-        "Desire To Continue: Desire to continue learning in formal or informal settings after school",
-        "Further Academic Study,: Further academic study, vocational training and employment",
-        "Changing Workplaces, Including: Changing workplaces, including an increasingly STEM-focused (Science, Technology,",
-        "Full And Active: Full and active participation as global citizens"
-      ]
-    },
     "Proof": {
-      "Misc": [
-        "Use The Symbols: Use the symbols for implication (\u21d2), equivalence (\u21d4) and equality (=) , demonstrating a",
+      "Proof by Contradiction & Equivalence": [
+        "Use The Symbols: Use the symbols for implication (\u21d2), equivalence (\u21d4) and equality (=) , demonstrating a"
+      ],
+      "The Language of Proof": [
         "Use The Phrases: Use the phrases \u2018for all\u2019 (\u2200), \u2018if and only if\u2019 (iff) and \u2018there exists\u2019 (\u2203) (ACMSM027)",
         "Understand That A: Understand that a statement is equivalent to its contrapositive but that the converse of a true",
         "Prove Inequalities: Prove inequalities by using the definition of \ud835\udc4e > \ud835\udc4f for real \ud835\udc4e and \ud835\udc4f",
@@ -328,13 +482,15 @@
       ]
     },
     "Vectors": {
-      "Misc": [
-        "Define The Standard: Define the standard unit vectors ~i , j and k~",
+      "3D Vectors & Geometric Proofs": [
+        "Define The Standard: Define the standard unit vectors ~i , j and k~"
+      ],
+      "Vector Equation of a Line": [
         "Establish That The: Establish that the magnitude of a vector in three dimensions can be found using:"
       ]
     },
     "Complex Numbers": {
-      "Misc": [
+      "Arithmetic of Complex Numbers": [
         "Develop An Understanding: Develop an understanding of the classification of numbers and their associated properties,",
         "Define The Number,: Define the number, \ud835\udc56, as a root of the equation \ud835\udc65 2 = \u22121 (ACMSM067)",
         "Use The Symbol: Use the symbol \ud835\udc56 to solve quadratic equations that do not have real roots",
@@ -346,33 +502,37 @@
         "Find The Reciprocal: Find the reciprocal and two square roots of complex numbers in the form \ud835\udc67 = \ud835\udc4e + \ud835\udc56\ud835\udc4f",
         "Use The Fact: Use the fact that there exists a one-to-one correspondence between the complex number \ud835\udc67 =",
         "Plot The Point: Plot the point corresponding to \ud835\udc67 = \ud835\udc4e + \ud835\udc56\ud835\udc4f",
-        "Prove De Moivre\u2019S: Prove De Moivre\u2019s theorem for integral powers using proof by induction (ACMSM083)",
-        "Use De Moivre\u2019S: Use De Moivre\u2019s theorem to derive trigonometric identities such as",
         "Given The Points: Given the points representing \ud835\udc671 and \ud835\udc672 , find the position of the points representing \ud835\udc671 + \ud835\udc672 and",
-        "The Vector Representing \ud835\udc671 +: Describe the vector representing \ud835\udc671 + \ud835\udc672 or \ud835\udc671 \u2212 \ud835\udc672 as corresponding to the relevant diagonal"
+        "Describe The Vector: Describe the vector representing \ud835\udc671 + \ud835\udc672 or \ud835\udc671 \u2212 \ud835\udc672 as corresponding to the relevant diagonal"
+      ],
+      "De Moivre's Theorem & Applications": [
+        "Prove De Moivre\u2019S: Prove De Moivre\u2019s theorem for integral powers using proof by induction (ACMSM083)",
+        "Use De Moivre\u2019S: Use De Moivre\u2019s theorem to derive trigonometric identities such as"
       ]
     },
     "Calculus": {
-      "Misc": [
+      "Integration by Parts": [
         "Develop The Method: Develop the method for integration by parts, expressed as \u222b \ud835\udc62\ud835\udc63\u2032\ud835\udc51\ud835\udc65 = \ud835\udc62\ud835\udc63 \u2212 \u222b \ud835\udc63\ud835\udc62\u2032\ud835\udc51\ud835\udc65 or"
       ]
     },
     "Mechanics": {
-      "Misc": [
+      "Simple Harmonic Motion": [
         "Establish That Simple: Establish that simple harmonic motion is modelled by equations of the form:",
         "Use \ud835\udc39 =: Use \ud835\udc39 = \ud835\udc5a\ud835\udc65\u0308 where \ud835\udc39 is the force acting on a mass, \ud835\udc5a, with acceleration \ud835\udc65\u0308",
-        "The Motion Of A Particle,: Interpret graphs of displacement-time and velocity-time to describe the motion of a particle,",
+        "Interpret Graphs: Interpret graphs of displacement-time and velocity-time to describe the motion of a particle,",
         "Derive, From Newton\u2019S: Derive, from Newton\u2019s laws of motion, the equation of motion of a particle moving in a single",
         "Derive An Expression: Derive an expression for velocity as a function of time",
         "Derive An Expression: Derive an expression for velocity as a function of displacement",
         "Derive An Expression: Derive an expression for displacement as a function of time",
-        "Resisted Motion Along A Horizontal: Solve problems involving resisted motion along a horizontal line",
         "Derive, From Newton\u2019S: Derive, from Newton\u2019s laws of motion, the equation of motion of a particle moving vertically in",
         "Derive An Expression: Derive an expression for velocity as a function of time and for velocity as a function of",
         "Determine The Terminal: Determine the terminal velocity of a falling particle from its equation of motion",
         "Solve Problems: Solve problems by using the expressions derived for acceleration, velocity and displacement",
         "Use Parametric Equations: Use parametric equations of a projectile to determine a corresponding Cartesian equation for",
         "Use The Cartesian: Use the Cartesian equation of the trajectory of a projectile, including problems in which the"
+      ],
+      "Resisted Motion": [
+        "Solve Problems Involving: Solve problems involving resisted motion along a horizontal line"
       ]
     }
   },
@@ -1010,174 +1170,6 @@
         "Learn To: Produce: Learn to: produce pictorial drawings",
         "Learn To: Computer: Learn to: computer graphics; computer aided drawing",
         "Learn To: Justify: Learn to: justify computer graphics as a communication"
-      ]
-    }
-  },
-  "Advanced": {
-    "Core": {
-      "Misc": [
-        "Application Of Knowledge,: Application of knowledge, understanding, skills, values and attitudes in the fields of study they",
-        "Capacity To Manage: Capacity to manage their own learning and to become flexible, independent thinkers, problemsolvers and decision-makers",
-        "Capacity To Work: Capacity to work collaboratively with others",
-        "Respect For The: Respect for the cultural diversity of Australian society",
-        "Desire To Continue: Desire to continue learning in formal or informal settings after school",
-        "Further Academic Study,: Further academic study, vocational training and employment",
-        "Changing Workplaces, Including: Changing workplaces, including an increasingly STEM-focused (Science, Technology,",
-        "Full And Active: Full and active participation as global citizens"
-      ]
-    },
-    "Functions": {
-      "Working with Functions": [
-        "Define A Relation: Define a relation as any set of ordered pairs (\ud835\udc65, \ud835\udc66) of real numbers",
-        "Understand The Formal: Understand the formal definition of a function as a set of ordered pairs (\ud835\udc65, \ud835\udc66) of real numbers",
-        "Understand And Use: Understand and use interval notation as a way of representing domain and range, eg [4, \u221e)",
-        "Know What Is: Know what is meant by one-to-one, one-to-many, many-to-one and many-to-many",
-        "Use The Vertical: Use the vertical line test to identify a function",
-        "Determine If A: Determine if a function is one-to-one (ACMSM094)",
-        "Identify The Domain: Identify the domain and range of a composite function",
-        "Recognise That A: Recognise that a direct variation relationship produces a straight-line graph",
-        "Explain The Geometrical: Explain the geometrical significance of \ud835\udc5a and \ud835\udc50 in the equation \ud835\udc53(\ud835\udc65) = \ud835\udc5a\ud835\udc65 + \ud835\udc50",
-        "Derive The Equation: Derive the equation of a straight line passing through a fixed point (\ud835\udc651 , \ud835\udc661 ) and having a given",
-        "Derive The Equation: Derive the equation of a straight line passing through two points (\ud835\udc651 , \ud835\udc661 ) and (\ud835\udc652 , \ud835\udc662 ) by first",
-        "Find The Equations: Find the equations of straight lines, including parallel and perpendicular lines, given sufficient",
-        "Recognise Features: Recognise features of the graph of a quadratic, including its parabolic nature, turning point,",
-        "Find The Vertex: Find the vertex and intercepts of a quadratic graph by either factorising, completing the square",
-        "Understand The Role: Understand the role of the discriminant in relation to the position of the graph",
-        "Find The Equation: Find the equation of a quadratic given sufficient information (ACMMM009)",
-        "Understand That Solving: Understand that solving \ud835\udc53(\ud835\udc65) = \ud835\udc58 corresponds to finding the values of \ud835\udc65 for which the graph",
-        "Recognise The Shape: Recognise the shape and features of the graph of \ud835\udc66 = |\ud835\udc4e\ud835\udc65 + \ud835\udc4f| and hence sketch the graph",
-        "Derive The Equation: Derive the equation of a circle, centre the origin, by considering Pythagoras\u2019 theorem and",
-        "Transform Equations: Transform equations of the form \ud835\udc65 2 + \ud835\udc66 2 + \ud835\udc4e\ud835\udc65 + \ud835\udc4f\ud835\udc66 + \ud835\udc50 = 0 into the form",
-        "Sketch Circles Given: Sketch circles given their equations and find the equation of a circle from its graph"
-      ],
-      "Graphing Techniques": [
-        "Examine Translations: Examine translations and the graphs of \ud835\udc66 = \ud835\udc53(\ud835\udc65) + \ud835\udc50 and \ud835\udc66 = \ud835\udc53(\ud835\udc65 + \ud835\udc4f) using technology",
-        "Examine Dilations: Examine dilations and the graphs of \ud835\udc66 = \ud835\udc58\ud835\udc53(\ud835\udc65) and \ud835\udc66 = \ud835\udc53(\ud835\udc4e\ud835\udc65) using technology",
-        "Recognise That The: Recognise that the order in which transformations are applied is important in the construction",
-        "Select And Use: Select and use an appropriate method to graph a given function, including finding intercepts,",
-        "Determine Asymptotes: Determine asymptotes and discontinuities where appropriate (vertical and horizontal",
-        "Determine The Number: Determine the number of solutions of an equation by considering appropriate graphs",
-        "Solve Linear: Solve linear and quadratic inequalities by sketching appropriate graphs"
-      ]
-    },
-    "Trigonometric Functions": {
-      "Trigonometry and Measure of Angles": [
-        "Use Technology And/Or: Use technology and/or geometric construction to investigate the ambiguous case of the sine",
-        "Interpret Information About: Interpret information about a two or three-dimensional context given in diagrammatic or",
-        "Sketch The Trigonometric: Sketch the trigonometric functions in degrees for 0\u00b0 \u2264 \ud835\udc65 \u2264 360\u00b0",
-        "Convert Between The: Convert between the two measures, using the fact that 360\u00b0 = 2\ud835\udf0b radians",
-        "Recognise And Use: Recognise and use the exact values of sin \ud835\udf03, cos \ud835\udf03 and tan \ud835\udf03 in both degrees and radians for"
-      ],
-      "Trigonometric Functions and Identities": [
-        "Know The Difference: Know the difference between an equation and an identity"
-      ],
-      "Trigonometric Functions and Graphs": [
-        "Use Technology: Use technology or otherwise to examine the effect on the graphs of changing the amplitude",
-        "Transformational Shifts And Sketch Graphs: Use \ud835\udc58, \ud835\udc4e, \ud835\udc4f, \ud835\udc50 to describe transformational shifts and sketch graphs"
-      ]
-    },
-    "Calculus": {
-      "Introduction to Differentiation": [
-        "Sketch Graphs: Sketch graphs of functions that are continuous and compare them with graphs of functions",
-        "Continuity Informally, And Identify Continuous: Describe continuity informally, and identify continuous functions from their graphs",
-        "Establish That \ud835\udc53: Establish that \ud835\udc53 \u2032 (\ud835\udc65) = 0 at a stationary point, \ud835\udc53 \u2032 (\ud835\udc65) > 0 when the function is increasing and",
-        "Identify Families: Identify families of curves with the same derivative function (ACMMM121)",
-        "Use Technology: Use technology to plot functions and their gradient functions",
-        "Examine Examples: Examine examples of variable rates of change of non-linear functions (ACMMM087)",
-        "The Product Rule: If \u210e(\ud835\udc65): Apply the product rule: If \u210e(\ud835\udc65) = \ud835\udc53(\ud835\udc65) \ud835\udc54(\ud835\udc65) then \u210e\u2032(\ud835\udc65) = \ud835\udc53(\ud835\udc65) \ud835\udc54\u2032(\ud835\udc65) + \ud835\udc53\u2032(\ud835\udc65) \ud835\udc54(\ud835\udc65), or if \ud835\udc62 and \ud835\udc63",
-        "The Quotient Rule: If \u210e(\ud835\udc65): Apply the quotient rule: If \u210e(\ud835\udc65) =",
-        "The Chain Rule: If \u210e(\ud835\udc65): Apply the chain rule: If \u210e(\ud835\udc65) = \ud835\udc53(\ud835\udc54(\ud835\udc65)) then \u210e\u2032(\ud835\udc65) = \ud835\udc53\u2032(\ud835\udc54(\ud835\udc65)) \ud835\udc54\u2032(\ud835\udc65), or if \ud835\udc66 is a function of \ud835\udc62 and"
-      ],
-      "Differential Calculus": [
-        "Use The Composite: Use the composite function rule (chain rule) to establish that",
-        "Use The Logarithmic: Use the logarithmic laws to simplify an expression before differentiating",
-        "Use The Composite: Use the composite function rule (chain rule) to establish and use the derivatives of sin(\ud835\udc53(\ud835\udc65)),"
-      ],
-      "Applications of Differentiation": [
-        "Deduce From The: Deduce from the sign of the first derivative whether a function is increasing, decreasing or",
-        "Use The First: Use the first derivative to find intervals over which a function is increasing or decreasing, and",
-        "Use The First: Use the first derivative to investigate a stationary point of a function over a given domain,",
-        "Determine The Greatest: Determine the greatest or least value of a function over a given domain (if the domain is not",
-        "Understand The Concepts: Understand the concepts of concavity and points of inflection and their relationship with the",
-        "Use The Second: Use the second derivative to determine concavity and the nature of stationary points",
-        "Understand That When: Understand that when the second derivative is equal to 0 this does not necessarily represent a",
-        "Define Variables: Define variables and construct functions to represent the relationships between variables",
-        "Use Calculus: Use calculus to establish the location of local and global maxima and minima, including",
-        "Evaluate Solutions: Evaluate solutions and their reasonableness given the constraints of the domain and formulate"
-      ],
-      "Integral Calculus": [
-        "Examine Families: Examine families of anti-derivatives of a given function graphically",
-        "Consider Functions Which: Consider functions which cannot be integrated in the scope of this syllabus, for example",
-        "Use Geometric Arguments: Use geometric arguments (rather than substitution into a given formula) to approximate a",
-        "Use Symmetry Properties: Use symmetry properties of even and odd functions to simplify calculations of area",
-        "Recognise And Use: Recognise and use the additivity and linearity of definite integrals (ACMMM128)",
-        "Total Change By Integrating Instantaneous: Calculate total change by integrating instantaneous rate of change"
-      ]
-    },
-    "Exponential and Logarithmic Functions": {
-      "Logarithms and Exponentials": [
-        "Understand And Use: Understand and use the fact that log \ud835\udc4e \ud835\udc4e \ud835\udc65 = \ud835\udc65 for all real \ud835\udc65, and \ud835\udc4elog\ud835\udc4e \ud835\udc65 = \ud835\udc65 for all \ud835\udc65 > 0",
-        "Define The Natural: Define the natural logarithm ln \ud835\udc65 = log \ud835\udc52 \ud835\udc65 from the exponential function \ud835\udc53(\ud835\udc65) = \ud835\udc52 \ud835\udc65",
-        "Recognise And Use: Recognise and use the inverse relationship of the functions \ud835\udc66 = \ud835\udc52 \ud835\udc65 and \ud835\udc66 = ln \ud835\udc65 (ACMMM160)",
-        "Use The Natural: Use the natural logarithm and the relationships \ud835\udc52 ln \ud835\udc65 = \ud835\udc65 where \ud835\udc65 > 0, and ln(\ud835\udc52 \ud835\udc65 ) = \ud835\udc65 for all",
-        "Use The Logarithmic: Use the logarithmic laws to simplify and evaluate natural logarithmic expressions and solve",
-        "Interpret The Meaning: Interpret the meaning of the intercepts of an exponential graph and explain the circumstances",
-        "Recognise That The: Recognise that the graphs of \ud835\udc66 = \ud835\udc4e \ud835\udc65 and \ud835\udc66 = log \ud835\udc4e \ud835\udc65 are reflections in the line \ud835\udc66 = \ud835\udc65"
-      ]
-    },
-    "Statistical Analysis": {
-      "Probability and Discrete Probability Distributions": [
-        "Identify Factors That: Identify factors that could complicate the simulation of real-world events (ACMEM153)",
-        "Use Relative Frequencies: Use relative frequencies obtained from data as point estimates of probabilities (ACMMM055)",
-        "Use Everyday Occurrences: Use everyday occurrences to illustrate set descriptions and representations of events and set",
-        "Know That A: Know that a random variable describes some aspect in a population from which samples can",
-        "Know The Difference: Know the difference between a discrete random variable and a continuous random variable",
-        "Use Relative Frequencies: Use relative frequencies obtained from data to obtain point estimates of probabilities",
-        "Recognise Uniform Discrete: Recognise uniform discrete random variables and use them to model random phenomena with",
-        "Examine Simple Examples: Examine simple examples of non-uniform discrete random variables, and recognise that for",
-        "Recognise The Mean: Recognise the mean or expected value, \ud835\udc38(\ud835\udc4b) = \ud835\udf07, of a discrete random variable \ud835\udc4b as a",
-        "Recognise The Variance,: Recognise the variance, Var(\ud835\udc4b), and standard deviation (\ud835\udf0e) of a discrete random variable as",
-        "Use Var(\ud835\udc4b) =: Use Var(\ud835\udc4b) = \ud835\udc38((\ud835\udc4b \u2212 \ud835\udf07)2 ) = \ud835\udc38(\ud835\udc4b 2 ) \u2212 \ud835\udf07 2 for a random variable and Var(\ud835\udc65) = \ud835\udf0e 2 for a dataset"
-      ],
-      "Descriptive Statistics and Bivariate Data Analysis": [
-        "Compare The Suitability: Compare the suitability of different methods of data presentation in real-world contexts",
-        "Investigate Real-World Examples: Investigate real-world examples from the media illustrating appropriate and inappropriate uses",
-        "Use Different Approaches: Use different approaches for identifying outliers, for example consideration of the distance",
-        "Investigate And Recognise: Investigate and recognise the effect of outliers on the mean, median and standard deviation",
-        "Bivariate Datasets In Terms Of: Describe bivariate datasets in terms of form (linear/non-linear) and in the case of linear, also",
-        "Identify The Dependent: Identify the dependent and independent variables within bivariate datasets where appropriate",
-        "And Interpret A Variety Of: Describe and interpret a variety of bivariate datasets involving two numerical variables using",
-        "Fit A Line: Fit a line of best fit to the data by eye and using technology (ACMEM141, ACMEM142)",
-        "Fit A Least-Squares: Fit a least-squares regression line to the data using technology (ACMGM057)",
-        "Interpret The Intercept: Interpret the intercept and gradient of the fitted line (ACMGM059)",
-        "Distinguish Between Interpolation: Distinguish between interpolation and extrapolation, recognising the limitations of using the"
-      ],
-      "Random Variables": [
-        "Know The Two: Know the two properties of a probability density function: \ud835\udc53(\ud835\udc65) \u2265 0 for all real \ud835\udc65 and",
-        "Explore Properties: Explore properties of a continuous random variable that is uniformly distributed",
-        "Find The Mode: Find the mode from a given probability density function",
-        "Understand The Meaning: Understand the meaning of a cumulative distribution function with respect to a given",
-        "The Median And Other Percentiles: Use a cumulative distribution function to calculate the median and other percentiles",
-        "Identify Contexts That: Identify contexts that are suitable for modelling by normal random variables, eg the height of a",
-        "Recognise Features: Recognise features of the graph of the probability density function of the normal distribution",
-        "Visually Represent Probabilities: Visually represent probabilities by shading areas under the normal curve, eg identifying the",
-        "Use The Formula: Use the formula \ud835\udc67 =",
-        "The Empirical Rule: Apply the empirical rule to a variety of problems",
-        "Verify, Using The: Verify, using the Trapezoidal rule, the results concerning the areas under the normal curve",
-        "Use Statistical Tables: Use statistical tables to determine probabilities",
-        "Use Technology: Use technology to determine probabilities"
-      ]
-    },
-    "Financial Mathematics": {
-      "Modelling Financial Situations": [
-        "Identify An Annuity: Identify an annuity (present or future value) as an investment account with regular, equal",
-        "Use Technology: Use technology to model an annuity as a recurrence relation and investigate (numerically or",
-        "Use A Table: Use a table of interest factors to perform annuity calculations, eg calculating the present or",
-        "The Effective Annual Rate Of: Calculate the effective annual rate of interest and use results to compare investment returns",
-        "Compound Interest Loans Or Investments,: Solve problems involving compound interest loans or investments, eg determining the future",
-        "Recognise A Reducing: Recognise a reducing balance loan as a compound interest loan with periodic repayments,",
-        "The Future Value Or Present: Calculate the future value or present value of an annuity by developing an expression for the",
-        "Verify Entries: Verify entries in tables of future values or annuities by using geometric series"
       ]
     }
   },

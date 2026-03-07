@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search } from 'lucide-react'
 import syllabusData from './syllabus_data.json'
+import canvasHint from './assets/canvas-hint.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
 const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)']
@@ -19,6 +20,7 @@ export default function WorksheetGenerator() {
     const [includeMarks, setIncludeMarks] = useState(false)
     const [generateAnswerKey, setGenerateAnswerKey] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [showReference, setShowReference] = useState(false)
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
@@ -114,7 +116,26 @@ export default function WorksheetGenerator() {
             contentString = `Please format these exact questions into a professional worksheet: ${rawQuestions}`;
         }
 
-        return `Act as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
+        // Generate dynamic title
+        let promptTitle = `${classYear} Worksheet`;
+        if (mode === 'A' && selectedPoints.length > 0) {
+            // Find the most frequent module/subtopic among selected points or just take the first one's module
+            // For simplicity, let's just find which module has the most points selected
+            const modCounts = {};
+            selectedPoints.forEach(p => {
+                for (const mod in currentSyllabus) {
+                    for (const subt in currentSyllabus[mod]) {
+                        if (currentSyllabus[mod][subt].includes(p)) {
+                            modCounts[mod] = (modCounts[mod] || 0) + 1;
+                        }
+                    }
+                }
+            });
+            const topMod = Object.keys(modCounts).reduce((a, b) => modCounts[a] > modCounts[b] ? a : b, '');
+            if (topMod) promptTitle = `${topMod} ${classYear} Worksheet`;
+        }
+
+        return `**${promptTitle}**\n\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
 
 Your job is to create a professional, compile-ready PDF worksheet. 
 
@@ -210,10 +231,16 @@ ${contentString}
                             <p className="text-lg leading-relaxed">
                                 We've copied your highly specific prompt to your clipboard.
                             </p>
-                            <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-2">
+                            <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4">
                                 <p className="text-sm font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
                                 <p className="text-xs">
                                     When Gemini opens, paste the prompt and make sure to enable the <span className="text-primary font-bold">"Canvas"</span> feature in the top right for the best visual experience.
+                                </p>
+                                <div className="rounded-xl overflow-hidden border border-primary/20 shadow-lg">
+                                    <img src={canvasHint} alt="Enable Canvas Hint" className="w-full h-auto" />
+                                </div>
+                                <p className="text-[10px] text-muted-foreground animate-pulse">
+                                    Look for the "Tools" menu in the top right of your message bar!
                                 </p>
                             </div>
                         </div>
@@ -365,11 +392,19 @@ ${contentString}
                                                                     <button
                                                                         type="button"
                                                                         onClick={() => toggleSubtopic(subt)}
-                                                                        className="p-1 hover:bg-surface-3 rounded transition-colors"
+                                                                        className="p-1 hover:bg-surface-3 rounded transition-colors flex-shrink-0"
                                                                     >
                                                                         {expandedSubtopics[subt] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                                                     </button>
-                                                                    <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide">{subt}</span>
+                                                                    <label className="flex items-center gap-2 cursor-pointer flex-1 overflow-hidden">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={isSubtopicSelected(mod, subt)}
+                                                                            onChange={() => toggleSubtopicSelection(mod, subt)}
+                                                                            className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer flex-shrink-0"
+                                                                        />
+                                                                        <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide truncate">{subt}</span>
+                                                                    </label>
                                                                 </div>
 
                                                                 {/* Subtopic Children (Dot Points) */}
@@ -427,12 +462,12 @@ ${contentString}
                                 <input
                                     type="range"
                                     min={1}
-                                    max={30}
-                                    value={numQuestions > 30 ? 30 : numQuestions}
+                                    max={50}
+                                    value={numQuestions > 50 ? 50 : numQuestions}
                                     onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
                                     className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
                                     style={{
-                                        background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(numQuestions, 30) - 1) / 29) * 100}%, hsl(var(--surface-3)) ${((Math.min(numQuestions, 30) - 1) / 29) * 100}%, hsl(var(--surface-3)) 100%)`,
+                                        background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) 100%)`,
                                     }}
                                 />
                                 <input
@@ -533,6 +568,33 @@ ${contentString}
                     </div>
 
                 </form>
+            </div>
+
+            {/* Quick Reference Section */}
+            <div className="relative z-10 w-full max-w-4xl px-6 pb-24 border-t border-surface-3/30 pt-12">
+                <div className="flex flex-col items-center gap-6">
+                    <button
+                        type="button"
+                        onClick={() => setShowReference(!showReference)}
+                        className="group flex items-center gap-3 px-6 py-3 rounded-2xl bg-surface-2/50 border border-surface-3 hover:border-primary/50 hover:bg-surface-3/50 transition-all"
+                    >
+                        <ListFilter size={18} className={showReference ? 'text-primary' : 'text-muted-foreground'} />
+                        <span className="text-sm font-display font-semibold">
+                            {showReference ? 'Hide Syllabus Reference' : 'Show HSC Syllabus Reference'}
+                        </span>
+                        {showReference ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+
+                    {showReference && (
+                        <div className="w-full aspect-[16/10] bg-surface-1 rounded-3xl overflow-hidden border border-surface-3 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <iframe
+                                src="https://hscmathsbytopic.firsteducation.com.au/"
+                                className="w-full h-full border-none"
+                                title="HSC Maths Syllabus Reference"
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Global Styled Scrollbar */}
