@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield, MessageCircle } from 'lucide-react'
+import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield, MessageCircle, FileText, ClipboardList, Timer } from 'lucide-react'
 
 // ─── NESA URL builder ─────────────────────────────────────────────────────────
 const NESA_BASE = 'https://www.nsw.gov.au/education-and-training/nesa/curriculum/hsc-exam-papers'
@@ -258,11 +258,10 @@ function ExamTimer({ suggestedDuration }) {
                         <button
                             key={m}
                             onClick={() => { setMode(m); handleReset() }}
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
-                                mode === m
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${mode === m
                                     ? 'bg-secondary/15 border-secondary/40 text-secondary'
                                     : 'border-transparent text-muted-foreground hover:text-foreground'
-                            }`}
+                                }`}
                         >
                             {m === 'countdown' ? '↓' : '↑'}
                         </button>
@@ -276,11 +275,10 @@ function ExamTimer({ suggestedDuration }) {
                             <button
                                 key={p.label}
                                 onClick={() => handlePreset(p.seconds)}
-                                className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${
-                                    preset === p.seconds && !showCustom
+                                className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${preset === p.seconds && !showCustom
                                         ? 'bg-primary/15 border-primary/40 text-primary'
                                         : 'border-transparent text-muted-foreground hover:text-foreground'
-                                }`}
+                                    }`}
                             >
                                 {p.label}
                             </button>
@@ -335,18 +333,15 @@ function ExamTimer({ suggestedDuration }) {
 }
 
 // ─── Main PastPapers page ─────────────────────────────────────────────────────
-export default function PastPapers() {
+export default function PastPapers({ navigate }) {
     const [activeUrl, setActiveUrl] = useState(null)
     const [activeLabel, setActiveLabel] = useState('')
-    const [iframeLoaded, setIframeLoaded] = useState(false)
     const [expandedSubjects, setExpandedSubjects] = useState({ 'y12-advanced': true })
     const [expandedNesa, setExpandedNesa] = useState({})
     const [suggestedDuration, setSuggestedDuration] = useState(120)
 
     const handleSelect = (url, label, duration) => {
-        setActiveUrl(url)
-        setActiveLabel(label)
-        setIframeLoaded(false)
+        if (url) window.open(url, '_blank', 'noopener,noreferrer')
         if (duration) setSuggestedDuration(duration)
     }
 
@@ -386,9 +381,8 @@ export default function PastPapers() {
                                     {/* Subject toggle */}
                                     <button
                                         onClick={() => toggleSubject(subject.id)}
-                                        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-display tracking-wide transition-all hover:bg-surface-2/50 ${
-                                            colorClass(subject.color, 'text')
-                                        }`}
+                                        className={`w-full flex items-center justify-between px-3 py-2 text-xs font-display tracking-wide transition-all hover:bg-surface-2/50 ${colorClass(subject.color, 'text')
+                                            }`}
                                     >
                                         <span>{subject.label}</span>
                                         {expandedSubjects[subject.id]
@@ -440,11 +434,10 @@ export default function PastPapers() {
                                             <button
                                                 key={section.url}
                                                 onClick={() => handleSelect(section.url, `${subject.label} — ${section.label}`, subject.examDuration)}
-                                                className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-[11px] transition-all ${
-                                                    isActive
+                                                className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-[11px] transition-all ${isActive
                                                         ? `${colorClass(subject.color, 'bg')} ${colorClass(subject.color, 'text')} border-l-2 ${colorClass(subject.color, 'border')}`
                                                         : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent'
-                                                }`}
+                                                    }`}
                                             >
                                                 <span>{section.label}</span>
                                                 <span className="text-[9px] font-mono opacity-50">{section.count}</span>
@@ -479,92 +472,128 @@ export default function PastPapers() {
                 </aside>
 
                 {/* ── Viewer ──────────────────────────────────────────────── */}
-                <main className="flex-1 flex flex-col overflow-hidden">
-                    {!activeUrl ? (
-                        /* Empty state */
-                        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
-                            <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center">
-                                <BookOpen size={28} className="text-primary/60" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-display text-foreground mb-1">Select a paper collection</p>
-                                <p className="text-xs text-muted-foreground max-w-sm">
-                                    Browse past HSC papers, trial papers, and internal assessments. Official NESA papers include marking guidelines and sample answers.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2 justify-center mt-2">
-                                {/* Quick-start buttons — NESA links open new tab, THSC open in iframe */}
-                                {[
-                                    { label: '2025 Advanced HSC', url: nesaUrl('mathematics-advanced', 2025), color: 'primary', external: true },
-                                    { label: '2025 Ext 1 HSC', url: nesaUrl('mathematics-extension-1', 2025), color: 'accent', external: true },
-                                    { label: 'Advanced Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_advanced.html', color: 'primary', duration: 180 },
-                                    { label: 'Ext 1 Trials', url: 'https://thsconline.github.io/s/yr12/Maths/trialpapers_extension1.html', color: 'accent', duration: 120 },
-                                ].map(q =>
-                                    q.external ? (
-                                        <a
-                                            key={q.url}
-                                            href={q.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display border transition-all ${colorClass(q.color, 'badge')}`}
-                                        >
-                                            {q.label}
-                                            <ExternalLink size={10} />
-                                        </a>
-                                    ) : (
-                                        <button
-                                            key={q.url}
-                                            onClick={() => handleSelect(q.url, q.label, q.duration)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-display border transition-all ${colorClass(q.color, 'badge')}`}
-                                        >
-                                            {q.label}
-                                        </button>
-                                    )
-                                )}
-                            </div>
+                {/* ── Resource Dashboard ────────────────────────────────────────── */}
+                <main className="flex-1 overflow-y-auto custom-scrollbar bg-background/20">
+                    <div className="max-w-5xl mx-auto px-6 py-12">
+                        {/* Intro Section */}
+                        <div className="mb-12">
+                            <h2 className="font-display text-3xl font-bold mb-4 gradient-text-primary">Past Papers & Practice</h2>
+                            <p className="text-muted-foreground text-lg max-w-2xl leading-relaxed">
+                                The best way to prepare for HSC Maths is past papers. We've curated the two most useful resources for NSW students — use them alongside MAIT's AI tools for a complete study workflow.
+                            </p>
                         </div>
-                    ) : (
-                        <>
-                            {/* Viewer toolbar */}
-                            <div className="flex-none flex items-center justify-between px-4 py-2 border-b border-surface-2 bg-surface-1/20 backdrop-blur-sm gap-3">
-                                <span className="text-xs font-display text-foreground truncate">{activeLabel}</span>
-                                <div className="flex items-center gap-2 shrink-0">
-                                    {!iframeLoaded && (
-                                        <span className="text-[10px] text-muted-foreground font-mono animate-pulse">Loading…</span>
-                                    )}
+
+                        {/* Primary Resource Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+                            {/* THSC Card */}
+                            <div className="glass-card card-shine rounded-2xl p-8 flex flex-col group border border-surface-3/50 hover:border-primary/40 transition-all duration-500">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                                        <FileText className="text-primary" size={24} />
+                                    </div>
+                                    <span className="text-[10px] font-display uppercase tracking-widest text-primary/60 bg-primary/5 px-2 py-1 rounded-md border border-primary/10">Archive</span>
+                                </div>
+                                <h3 className="font-display text-xl font-bold mb-1">THSC Online</h3>
+                                <p className="text-primary/80 text-xs font-medium mb-4 uppercase tracking-wider">Past Papers & Trial Exams</p>
+                                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                                    The most comprehensive archive of HSC trial papers from schools across NSW. Includes official NESA papers and sample answers.
+                                </p>
+                                <div className="flex flex-wrap gap-2 mb-8">
+                                    {["Official HSC Papers", "Trial Papers (655+)", "Solutions", "All Years"].map(tag => (
+                                        <span key={tag} className="text-[10px] bg-surface-2 text-muted-foreground px-2 py-1 rounded-md border border-surface-3">{tag}</span>
+                                    ))}
+                                </div>
+                                <div className="mt-auto pt-6 flex flex-col gap-4">
                                     <a
-                                        href={activeUrl}
+                                        href="https://thsconline.github.io/s/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
+                                        className="btn-primary flex items-center justify-center gap-2 py-3 rounded-xl group"
                                     >
-                                        <ExternalLink size={11} />
-                                        Open in new tab
+                                        Browse Past Papers
+                                        <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                                     </a>
+                                    <p className="text-[10px] text-center text-muted-foreground/50 italic">
+                                        Provided by THSC Online — an independent community resource
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Iframe */}
-                            <div className="flex-1 relative">
-                                {!iframeLoaded && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-background/60 z-10">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                            <p className="text-xs text-muted-foreground font-display">Loading papers…</p>
-                                        </div>
+                            {/* First Education Card */}
+                            <div className="glass-card card-shine rounded-2xl p-8 flex flex-col group border border-surface-3/50 hover:border-secondary/40 transition-all duration-500">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center border border-secondary/20">
+                                        <ClipboardList className="text-secondary" size={24} />
                                     </div>
-                                )}
-                                <iframe
-                                    key={activeUrl}
-                                    src={activeUrl}
-                                    title={activeLabel}
-                                    onLoad={() => setIframeLoaded(true)}
-                                    className="w-full h-full border-0"
-                                    allow="fullscreen"
-                                />
+                                    <span className="text-[10px] font-display uppercase tracking-widest text-secondary/60 bg-secondary/5 px-2 py-1 rounded-md border border-secondary/10">Generator</span>
+                                </div>
+                                <h3 className="font-display text-xl font-bold mb-1">First Education</h3>
+                                <p className="text-secondary/80 text-xs font-medium mb-4 uppercase tracking-wider">HSC Question Topic Test Maker</p>
+                                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                                    Build custom topic tests from real HSC questions. Select topics to include or exclude, then generate a printable PDF.
+                                </p>
+                                <div className="flex flex-wrap gap-2 mb-8">
+                                    {["Topic Selection", "Custom PDFs", "Answer Keys", "Live Filtering"].map(tag => (
+                                        <span key={tag} className="text-[10px] bg-surface-2 text-muted-foreground px-2 py-1 rounded-md border border-surface-3">{tag}</span>
+                                    ))}
+                                </div>
+                                <div className="mt-auto pt-6 flex flex-col gap-4">
+                                    <a
+                                        href="https://hscmathsbytopic.firsteducation.com.au/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn-secondary flex items-center justify-center gap-2 py-3 rounded-xl group font-bold tracking-wide"
+                                    >
+                                        Create Topic Test
+                                        <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                    </a>
+                                    <p className="text-[10px] text-center text-muted-foreground/50 italic">
+                                        Provided by <a href="https://firsteducation.com.au" target="_blank" rel="noopener noreferrer" className="hover:text-secondary underline transition-colors">First Education</a>
+                                    </p>
+                                </div>
                             </div>
-                        </>
-                    )}
+                        </div>
+
+                        {/* MAIT Tools Section */}
+                        <div>
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="h-px flex-1 bg-surface-3" />
+                                <h3 className="font-display text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground/60 whitespace-nowrap">MAIT Study Tools</h3>
+                                <div className="h-px flex-1 bg-surface-3" />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="glass-card p-6 rounded-xl border border-surface-3/30 hover:bg-surface-2/20 transition-all group">
+                                    <h4 className="font-display text-base font-bold mb-2 flex items-center gap-2">
+                                        <Sparkles size={16} className="text-primary" />
+                                        AI Worksheet Generator
+                                    </h4>
+                                    <p className="text-muted-foreground text-xs leading-relaxed mb-4">
+                                        Generate custom NESA-styled worksheets with AI. Choose your topic, difficulty, and number of questions.
+                                    </p>
+                                    <button
+                                        onClick={() => navigate('worksheets')}
+                                        className="text-xs font-display font-bold text-primary flex items-center gap-1.5 group-hover:gap-2 transition-all"
+                                    >
+                                        Open Worksheet Generator <ArrowRight size={14} />
+                                    </button>
+                                </div>
+
+                                <div className="glass-card p-6 rounded-xl border border-surface-3/30 hover:bg-surface-2/20 transition-all group">
+                                    <h4 className="font-display text-base font-bold mb-2 flex items-center gap-2">
+                                        <Timer size={16} className="text-accent" />
+                                        Exam Timer
+                                    </h4>
+                                    <p className="text-muted-foreground text-xs leading-relaxed mb-4">
+                                        Practice under exam conditions. Set your time, start the countdown, and build exam stamina using the sidebar tool.
+                                    </p>
+                                    <div className="text-[10px] font-display uppercase tracking-widest text-accent/60 flex items-center gap-1.5">
+                                        Active on sidebar <ChevronLeft size={10} className="animate-pulse" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </main>
             </div>
         </div>

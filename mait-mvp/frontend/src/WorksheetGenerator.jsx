@@ -572,32 +572,45 @@ ${contentString}
 
             {/* Quick Reference Section */}
             <div className="relative z-10 w-full max-w-4xl px-6 pb-24 border-t border-surface-3/30 pt-12">
-                <div className="flex flex-col items-center gap-6">
-                    <button
-                        type="button"
-                        onClick={() => setShowReference(!showReference)}
-                        className="group flex items-center gap-3 px-6 py-3 rounded-2xl bg-surface-2/50 border border-surface-3 hover:border-primary/50 hover:bg-surface-3/50 transition-all"
-                    >
-                        <ListFilter size={18} className={showReference ? 'text-primary' : 'text-muted-foreground'} />
-                        <span className="text-sm font-display font-semibold">
-                            {showReference ? 'Hide HSC Question Topic Test Maker' : 'HSC Question Topic Test Maker'}
-                        </span>
-                        {showReference ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                    </button>
-
-                    {showReference && (
-                        <div
-                            className="w-full aspect-[16/10] rounded-3xl overflow-hidden border border-surface-3 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500"
-                            style={{ colorScheme: 'light', background: 'white' }}
-                        >
-                            <iframe
-                                src="https://hscmathsbytopic.firsteducation.com.au/"
-                                className="w-full h-full border-none"
-                                title="HSC Question Topic Test Maker"
-                                style={{ colorScheme: 'light' }}
-                            />
+                <div className="w-full flex flex-col items-center gap-6">
+                    <div className="glass-card card-shine rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 border border-surface-3/50 hover:border-secondary/40 transition-all duration-500 w-full">
+                        <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-secondary/10 flex items-center justify-center border border-secondary/20 shadow-inner">
+                            <ClipboardList className="text-secondary" size={40} />
                         </div>
-                    )}
+
+                        <div className="flex-1 text-center md:text-left">
+                            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-3">
+                                <h3 className="font-display text-2xl font-bold">First Education</h3>
+                                <span className="inline-block px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-display font-bold uppercase tracking-wider w-fit mx-auto md:mx-0">
+                                    External Resource
+                                </span>
+                            </div>
+                            <p className="text-secondary/80 text-sm font-medium mb-3 uppercase tracking-widest">HSC Question Topic Test Maker</p>
+                            <p className="text-muted-foreground text-base leading-relaxed mb-6 max-w-2xl">
+                                Build custom topic tests from real HSC questions. Select topics to include or exclude, then generate a printable PDF. Perfect for targeted practice alongside MAIT's AI worksheets.
+                            </p>
+                            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                {["Topic Selection", "Custom PDFs", "Include/Exclude", "Answer Keys"].map(tag => (
+                                    <span key={tag} className="text-[11px] font-medium bg-surface-2/80 text-muted-foreground px-3 py-1 rounded-lg border border-surface-3/50">{tag}</span>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4 w-full md:w-auto shrink-0">
+                            <a
+                                href="https://hscmathsbytopic.firsteducation.com.au/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-secondary flex items-center justify-center gap-3 py-4 px-8 rounded-2xl group font-bold tracking-wide text-base shadow-lg shadow-secondary/10"
+                            >
+                                Create Topic Test
+                                <ExternalLink size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                            </a>
+                            <p className="text-xs text-center text-muted-foreground/50 italic">
+                                Provided by <a href="https://firsteducation.com.au" target="_blank" rel="noopener noreferrer" className="hover:text-secondary underline transition-colors">First Education</a>
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
