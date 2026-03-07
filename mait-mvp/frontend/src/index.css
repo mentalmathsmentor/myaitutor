@@ -38,6 +38,11 @@
     /* Glow effects */
     --glow-primary: 172 80% 45%;
     --glow-accent: 12 90% 62%;
+
+    /* RGB for dynamic shadows */
+    --primary-rgb: 0, 242, 219;
+    --secondary-rgb: 167, 139, 250;
+    --accent-rgb: 255, 87, 51;
   }
 }
 
@@ -48,6 +53,8 @@ body {
   font-weight: 400;
   letter-spacing: -0.01em;
   overflow-x: hidden;
+  overflow-y: overlay;
+  /* Prevents scrollbar from shifting content and helps with double scrollbars */
 }
 
 /* Display/Heading Font */
@@ -140,18 +147,18 @@ body {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: -10;
   overflow: hidden;
   /* Fades out particles in the center of the screen to protect hero text readability */
-  -webkit-mask-image: radial-gradient(ellipse at center, transparent 35%, black 75%);
-  mask-image: radial-gradient(ellipse at center, transparent 35%, black 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 45%, black 80%);
+  mask-image: radial-gradient(ellipse at center, transparent 45%, black 80%);
 }
 
 .math-particle {
   position: absolute;
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.2rem;
-  color: hsla(var(--primary), 0.08);
+  color: hsla(var(--primary), 0.05);
   animation: particle-float 15s linear infinite both;
   user-select: none;
 }

@@ -508,10 +508,10 @@ export default function PastPapers({ navigate }) {
                                         href="https://thsconline.github.io/s/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="btn-primary flex items-center justify-center gap-2 py-3 rounded-xl group"
+                                        className="btn-primary btn-distinct flex items-center justify-center gap-3 py-4 rounded-2xl group shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)] hover:shadow-[0_0_40px_rgba(var(--primary-rgb),0.4)] transition-all"
                                     >
-                                        Browse Past Papers
-                                        <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                        <span className="font-bold tracking-tight">Browse Past Papers</span>
+                                        <ExternalLink size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                                     </a>
                                     <p className="text-[10px] text-center text-muted-foreground/50 italic">
                                         Provided by THSC Online — an independent community resource
@@ -542,10 +542,10 @@ export default function PastPapers({ navigate }) {
                                         href="https://hscmathsbytopic.firsteducation.com.au/"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="btn-secondary flex items-center justify-center gap-2 py-3 rounded-xl group font-bold tracking-wide"
+                                        className="btn-secondary btn-distinct flex items-center justify-center gap-3 py-4 rounded-2xl group shadow-[0_0_20px_rgba(var(--secondary-rgb),0.2)] hover:shadow-[0_0_40px_rgba(var(--secondary-rgb),0.4)] transition-all"
                                     >
-                                        Create Topic Test
-                                        <ExternalLink size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                        <span className="font-bold tracking-tight">Create Topic Test</span>
+                                        <ExternalLink size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                                     </a>
                                     <p className="text-[10px] text-center text-muted-foreground/50 italic">
                                         Provided by <a href="https://firsteducation.com.au" target="_blank" rel="noopener noreferrer" className="hover:text-secondary underline transition-colors">First Education</a>

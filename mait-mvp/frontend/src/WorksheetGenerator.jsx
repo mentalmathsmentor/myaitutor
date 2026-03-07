@@ -234,13 +234,7 @@ ${contentString}
                             <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4">
                                 <p className="text-sm font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
                                 <p className="text-xs">
-                                    When Gemini opens, paste the prompt and make sure to enable the <span className="text-primary font-bold">"Canvas"</span> feature in the top right for the best visual experience.
-                                </p>
-                                <div className="rounded-xl overflow-hidden border border-primary/20 shadow-lg">
-                                    <img src={canvasHint} alt="Enable Canvas Hint" className="w-full h-auto" />
-                                </div>
-                                <p className="text-[10px] text-muted-foreground animate-pulse">
-                                    Look for the "Tools" menu in the top right of your message bar!
+                                    Use <span className="text-primary font-bold">'Thinking'</span> for fast and <span className="text-accent font-bold">'Pro'</span> for quality. Canvas feature also allows editing with highlight to ask
                                 </p>
                             </div>
                         </div>
@@ -547,11 +541,12 @@ ${contentString}
                             type="submit"
                             disabled={isCopied}
                             className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
-                                ? 'bg-green-500/10 text-green-500 border border-green-500/40'
-                                : 'bg-primary text-white hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.01] active:scale-100'
+                                ? 'bg-green-500/10 text-green-500 border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
+                                : 'bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98]'
                                 }`}
                         >
-                            <div className={`absolute inset-0 bg-white/10 transition-transform duration-[3s] ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} />
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                            <div className={`absolute inset-0 bg-green-500/10 transition-transform duration-[3s] ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} />
                             {isCopied ? (
                                 <>
                                     <CheckCircle2 size={18} className="relative z-10" />
@@ -559,9 +554,9 @@ ${contentString}
                                 </>
                             ) : (
                                 <>
-                                    <Copy size={18} />
-                                    <span>Generate Prompt & Open Gemini</span>
-                                    <ExternalLink size={14} className="opacity-50" />
+                                    <Sparkles size={18} className="animate-pulse" />
+                                    <span>Generate Worksheet</span>
+                                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </button>
