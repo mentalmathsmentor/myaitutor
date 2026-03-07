@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield, MessageCircle, FileText, ClipboardList, Timer } from 'lucide-react'
+import { ExternalLink, ChevronDown, ChevronRight, AlertTriangle, Play, Pause, Square, BookOpen, Shield, MessageCircle, FileText, ClipboardList, Timer, Sparkles, ArrowRight, ChevronLeft } from 'lucide-react'
 
 // ─── NESA URL builder ─────────────────────────────────────────────────────────
 const NESA_BASE = 'https://www.nsw.gov.au/education-and-training/nesa/curriculum/hsc-exam-papers'
@@ -259,8 +259,8 @@ function ExamTimer({ suggestedDuration }) {
                             key={m}
                             onClick={() => { setMode(m); handleReset() }}
                             className={`px-1.5 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${mode === m
-                                    ? 'bg-secondary/15 border-secondary/40 text-secondary'
-                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                ? 'bg-secondary/15 border-secondary/40 text-secondary'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {m === 'countdown' ? '↓' : '↑'}
@@ -276,8 +276,8 @@ function ExamTimer({ suggestedDuration }) {
                                 key={p.label}
                                 onClick={() => handlePreset(p.seconds)}
                                 className={`px-2 py-0.5 rounded text-[10px] font-display uppercase tracking-wider border transition-all ${preset === p.seconds && !showCustom
-                                        ? 'bg-primary/15 border-primary/40 text-primary'
-                                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                                    ? 'bg-primary/15 border-primary/40 text-primary'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
                                     }`}
                             >
                                 {p.label}
@@ -435,8 +435,8 @@ export default function PastPapers({ navigate }) {
                                                 key={section.url}
                                                 onClick={() => handleSelect(section.url, `${subject.label} — ${section.label}`, subject.examDuration)}
                                                 className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-[11px] transition-all ${isActive
-                                                        ? `${colorClass(subject.color, 'bg')} ${colorClass(subject.color, 'text')} border-l-2 ${colorClass(subject.color, 'border')}`
-                                                        : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent'
+                                                    ? `${colorClass(subject.color, 'bg')} ${colorClass(subject.color, 'text')} border-l-2 ${colorClass(subject.color, 'border')}`
+                                                    : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/40 border-l-2 border-transparent'
                                                     }`}
                                             >
                                                 <span>{section.label}</span>

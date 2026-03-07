@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search } from 'lucide-react'
+import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
 import syllabusData from './syllabus_data.json'
 import canvasHint from './assets/canvas-hint.png'
 
