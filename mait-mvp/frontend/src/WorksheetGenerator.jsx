@@ -1,59 +1,14 @@
-import { useState, useEffect } from 'react'
-import { Sparkles, Copy, ExternalLink, ChevronDown, CheckCircle2, AlertTriangle, ListFilter } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search } from 'lucide-react'
+import syllabusData from './syllabus_data.json'
 
-// Syllabus Data Object
-const SYLLABUS_DATA = {
-    "Year 11 Standard": {
-        "Algebra": ["Substitution into Formulae", "Solving Linear Equations", "Linear Functions", "Simultaneous Equations"],
-        "Financial Mathematics": ["Interest & Depreciation", "Earning & Managing Money", "Budgeting"],
-        "Statistical Analysis": ["Data Analysis", "Relative Frequency & Probability"]
-    },
-    "Year 12 Standard": {
-        "Algebra": ["Types of Relationships", "Simultaneous Equations (Graphical)", "Non-Linear Relationships"],
-        "Measurement": ["Right-Angled Trigonometry", "Non-Right-Angled Trigonometry", "Rates & Ratios"],
-        "Financial Mathematics": ["Investments & Loans", "Annuities"],
-        "Statistical Analysis": ["Bivariate Data Analysis", "The Normal Distribution"],
-        "Networks": ["Network Concepts", "Critical Path Analysis"]
-    },
-    "Year 11 Advanced": {
-        "Functions": ["Working with Functions", "Linear, Quadratic and Cubic Functions", "Further Functions and Relations"],
-        "Trigonometric Functions": ["Trigonometry and Measure of Angles", "Trigonometric Functions and Identities"],
-        "Calculus": ["Introduction to Differentiation"],
-        "Exponential and Logarithmic Functions": ["Logarithms and Exponentials"]
-    },
-    "Year 12 Advanced": {
-        "Functions": ["Graphing Techniques"],
-        "Trigonometric Functions": ["Trigonometric Functions and Graphs"],
-        "Calculus": ["Differential Calculus", "Integral Calculus"],
-        "Financial Mathematics": ["Modelling Financial Situations"],
-        "Statistical Analysis": ["Descriptive Statistics and Bivariate Data", "Random Variables"]
-    },
-    "Year 12 Extension 1": {
-        "Functions": ["Further Modelling with Functions", "Polynomials"],
-        "Trigonometric Functions": ["Inverse Trigonometric Functions", "Further Trigonometric Identities"],
-        "Calculus": ["Rates of Change", "Further Differentiation", "Further Integration"],
-        "Combinatorics": ["Permutations and Combinations", "Binomial Expansion and Pascal's Triangle"],
-        "Vectors": ["Introduction to Vectors"],
-        "Statistical Analysis": ["The Binomial Distribution"]
-    },
-    "Year 12 Extension 2": {
-        "Proof": ["The Nature of Proof", "Further Proof by Mathematical Induction"],
-        "Vectors": ["Further Work with Vectors"],
-        "Complex Numbers": ["Introduction to Complex Numbers", "Using Complex Numbers"],
-        "Calculus": ["Further Integration"],
-        "Mechanics": ["Applications of Calculus to Mechanics"]
-    }
-}
-
-const YEAR_LEVELS = Object.keys(SYLLABUS_DATA);
-const SPACING_OPTIONS = ['working blank space (Math)', 'Ruled lines (Writing)', 'Compact (No space)']
+const YEAR_LEVELS = Object.keys(syllabusData);
+const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Ruled lines (Writing)', 'Compact (No space)']
 
 export default function WorksheetGenerator() {
     // State
     const [schoolName, setSchoolName] = useState('')
-    const [classYear, setClassYear] = useState(YEAR_LEVELS[3]) // Year 12 Advanced
-    const [topic, setTopic] = useState('')
-    const [customTopic, setCustomTopic] = useState('')
+    const [classYear, setClassYear] = useState(YEAR_LEVELS[2]) // Year 12 Advanced
     const [selectedPoints, setSelectedPoints] = useState([])
     const [includeName, setIncludeName] = useState(true)
     const [includeDate, setIncludeDate] = useState(true)
@@ -63,24 +18,29 @@ export default function WorksheetGenerator() {
     const [workingSpace, setWorkingSpace] = useState(SPACING_OPTIONS[0])
     const [includeMarks, setIncludeMarks] = useState(false)
     const [generateAnswerKey, setGenerateAnswerKey] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
+    const [expandedModules, setExpandedModules] = useState({})
+    const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
-    // Derived Topics based on ClassYear
-    const availableTopics = SYLLABUS_DATA[classYear] ? [...Object.keys(SYLLABUS_DATA[classYear]), "Other"] : ["Other"];
-
-    // Derived Dot Points based on ClassYear and Topic
-    const availablePoints = (SYLLABUS_DATA[classYear] && SYLLABUS_DATA[classYear][topic]) ? SYLLABUS_DATA[classYear][topic] : [];
-
-    // Effects
-    useEffect(() => {
-        setTopic(availableTopics[0]);
-    }, [classYear]);
-
+    // Reset points on class change
     useEffect(() => {
         setSelectedPoints([]);
-    }, [topic]);
+    }, [classYear]);
+
+    // Hierarchy Helpers
+    const currentSyllabus = syllabusData[classYear] || {};
+    const modules = Object.keys(currentSyllabus);
+
+    const toggleModule = (mod) => {
+        setExpandedModules(prev => ({ ...prev, [mod]: !prev[mod] }));
+    };
+
+    const toggleSubtopic = (subt) => {
+        setExpandedSubtopics(prev => ({ ...prev, [subt]: !prev[subt] }));
+    };
 
     const handlePointToggle = (point) => {
         setSelectedPoints(prev =>
@@ -88,9 +48,26 @@ export default function WorksheetGenerator() {
         );
     };
 
-    const generatePrompt = () => {
-        const finalTopic = topic === 'Other' && customTopic.trim() ? customTopic : topic;
+    const isModuleSelected = (mod) => {
+        const subtopics = currentSyllabus[mod];
+        if (!subtopics) return false;
+        const allPoints = Object.values(subtopics).flat();
+        return allPoints.length > 0 && allPoints.every(p => selectedPoints.includes(p));
+    };
 
+    const toggleModuleSelection = (mod) => {
+        const subtopics = currentSyllabus[mod];
+        const allPoints = Object.values(subtopics).flat();
+        const currentlyAllSelected = allPoints.every(p => selectedPoints.includes(p));
+
+        if (currentlyAllSelected) {
+            setSelectedPoints(prev => prev.filter(p => !allPoints.includes(p)));
+        } else {
+            setSelectedPoints(prev => Array.from(new Set([...prev, ...allPoints])));
+        }
+    };
+
+    const generatePrompt = () => {
         // Header Logic
         let lheadContent = `\\textbf{ ${classYear} }`;
         if (schoolName.trim()) {
@@ -108,11 +85,11 @@ export default function WorksheetGenerator() {
         let contentString = '';
         if (mode === 'A') {
             const pointsText = selectedPoints.length > 0
-                ? `strictly targeting these syllabus points: ${selectedPoints.join(', ')}`
-                : `targeting the topic: ${finalTopic}`;
-            contentString = `Please generate ${numQuestions} NESA-style questions ${pointsText}.`;
+                ? `strictly targeting these specific syllabus dot-points and topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
+                : `targeting the general curriculum for ${classYear}`;
+            contentString = `Please generate ${numQuestions} professional-level exam questions ${pointsText}.`;
         } else {
-            contentString = `Please format these exact questions: ${rawQuestions}`;
+            contentString = `Please format these exact questions into a professional worksheet: ${rawQuestions}`;
         }
 
         return `Act as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
@@ -141,7 +118,7 @@ Your job is to create a professional, compile-ready PDF worksheet.
 \\begin{document}
 
 \\begin{center}
-    {\\Large \\textbf{ ${finalTopic} }}
+    {\\Large \\textbf{ ${mode === 'A' ? 'Syllabus Focus: Mixed Topics' : 'Custom Worksheet'} }}
 \\end{center}
 \\vspace{0.5cm}
 
@@ -156,7 +133,10 @@ Your job is to create a professional, compile-ready PDF worksheet.
 * Before every new \\item, insert \\needspace{6cm}.
 * Insert this footer: \\vfill \\hrule \\vspace{0.2cm} \\footnotesize \\textbf{AI SELF-CHECK:} \\textit{Ask AI for a hint, not the answer.}
 
-**4. ANSWER KEY:**
+**4. SCALING FOR 30+ QUESTIONS:**
+If the request is for more than 20 questions, ensure you maintain high quality and varied task difficulty. For 30+ questions, you may use smaller spacing segments to fit the content while maintaining readability.
+
+**5. ANSWER KEY:**
 ${answerKeyLogic}.
 
 ***
@@ -174,6 +154,7 @@ ${contentString}
             setIsCopied(true);
             setShowWarning(true);
 
+            // Warning is centered and blocks UI
             setTimeout(() => {
                 setShowWarning(false);
                 setIsCopied(false);
@@ -191,16 +172,32 @@ ${contentString}
 
     return (
         <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30 flex flex-col items-center">
-            {/* Warning Toast */}
+            {/* Centered Warning Modal */}
             {showWarning && (
-                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-bounce-subtle">
-                    <div className="bg-surface-1 border border-primary/40 rounded-2xl p-4 shadow-2xl flex items-center gap-4 max-w-sm">
-                        <div className="bg-primary/20 p-2 rounded-xl">
-                            <Sparkles className="text-primary w-6 h-6" />
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-cosmic/80 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="glass-card rounded-3xl p-8 md:p-12 max-w-lg w-full text-center space-y-6 border-primary/30 shadow-[0_0_50px_rgba(var(--primary-rgb),0.2)] animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                            <Sparkles className="text-primary w-10 h-10" />
                         </div>
-                        <div>
-                            <p className="text-sm font-display font-bold text-foreground">🚀 Don't forget to enable Canvas!</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">Choose 'Thinking' for fast generation and 'Pro' for power.</p>
+                        <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
+                            Ready to Generate?
+                        </h3>
+                        <div className="space-y-4 text-muted-foreground">
+                            <p className="text-lg leading-relaxed">
+                                We've copied your highly specific prompt to your clipboard.
+                            </p>
+                            <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-2">
+                                <p className="text-sm font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
+                                <p className="text-xs">
+                                    When Gemini opens, paste the prompt and make sure to enable the <span className="text-primary font-bold">"Canvas"</span> feature in the top right for the best visual experience.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="pt-4">
+                            <div className="h-1.5 w-full bg-surface-3 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary animate-progress-shrink origin-left" />
+                            </div>
+                            <p className="text-[10px] uppercase font-display tracking-widest text-muted-foreground mt-4">Launching in 3 seconds...</p>
                         </div>
                     </div>
                 </div>
@@ -217,21 +214,21 @@ ${contentString}
 
             {/* Header Content */}
             <div className="relative z-10 text-center px-6 pt-12 pb-12 w-full max-w-4xl">
-                <div className="tag animate-reveal animate-reveal-2 mb-6 inline-flex">
+                <div className="tag animate-reveal animate-reveal-1 mb-6 inline-flex">
                     <Sparkles size={12} />
-                    A.G.E. PROMPT ENGINE V2
+                    A.G.E. PROMPT ENGINE V2.5
                 </div>
-                <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl font-display font-bold tracking-tight mb-4">
+                <h2 className="animate-reveal animate-reveal-2 text-4xl md:text-6xl font-display font-bold tracking-tight mb-4">
                     <span className="gradient-text-primary">Universal Worksheet Generator</span>
                 </h2>
-                <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+                <p className="animate-reveal animate-reveal-3 text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
                     Personalized HSC exam-prep. Select your syllabus points and let Gemini handle the LaTeX.
                 </p>
             </div>
 
             {/* Main Form Container */}
-            <div className="relative z-10 w-full max-w-3xl px-6 pb-24">
-                <form onSubmit={handleGenerate} className="glass-card rounded-3xl p-6 md:p-10 space-y-8 animate-reveal animate-reveal-5">
+            <div className="relative z-10 w-full max-w-4xl px-6 pb-24">
+                <form onSubmit={handleGenerate} className="glass-card rounded-3xl p-6 md:p-10 space-y-8 animate-reveal animate-reveal-4 overflow-visible">
 
                     {/* Top Section: Meta Info */}
                     <div className="grid md:grid-cols-2 gap-6">
@@ -265,41 +262,6 @@ ${contentString}
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {/* Topic Dynamic Selector */}
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-[0.2em] text-muted-foreground">
-                                Select Topic Area
-                            </label>
-                            <div className="relative">
-                                <select
-                                    value={topic}
-                                    onChange={(e) => setTopic(e.target.value)}
-                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
-                                >
-                                    {availableTopics.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            </div>
-                        </div>
-
-                        {topic === 'Other' && (
-                            <div className="space-y-2 animate-reveal">
-                                <label className="block text-[10px] font-display uppercase tracking-[0.2em] text-muted-foreground">
-                                    Custom Topic Label
-                                </label>
-                                <input
-                                    required
-                                    type="text"
-                                    placeholder="e.g., Trigonometry"
-                                    value={customTopic}
-                                    onChange={(e) => setCustomTopic(e.target.value)}
-                                    className="input-base w-full text-sm font-display py-3"
-                                />
-                            </div>
-                        )}
-                    </div>
-
                     {/* Mode Selection */}
                     <div className="flex bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3">
                         <button
@@ -318,52 +280,118 @@ ${contentString}
                         </button>
                     </div>
 
-                    {/* Checkbox Checklist or Manual Area */}
-                    <div className="bg-surface-1/30 p-6 rounded-2xl border border-surface-3/50 min-h-[160px]">
+                    {/* Hierarchical Tree Checklist or Manual Area */}
+                    <div className="bg-surface-1/30 rounded-2xl border border-surface-3/50 min-h-[400px] overflow-hidden flex flex-col">
                         {mode === 'A' ? (
-                            <div className="space-y-4 animate-reveal">
-                                {availablePoints.length > 0 ? (
-                                    <>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <ListFilter size={14} className="text-primary" />
-                                            <span className="text-[10px] font-display uppercase tracking-wider text-primary font-bold">Dot Points Checklist</span>
-                                        </div>
-                                        <div className="grid gap-3">
-                                            {availablePoints.map(point => (
-                                                <label key={point} className="flex items-start gap-3 p-3 rounded-xl border border-surface-3 bg-surface-2/30 cursor-pointer hover:border-primary/20 transition-all group">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedPoints.includes(point)}
-                                                        onChange={() => handlePointToggle(point)}
-                                                        className="mt-0.5 w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
-                                                    />
-                                                    <span className={`text-xs font-display leading-tight transition-colors ${selectedPoints.includes(point) ? 'text-foreground' : 'text-muted-foreground'}`}>{point}</span>
-                                                </label>
-                                            ))}
-                                            <p className="text-[10px] text-muted-foreground italic mt-2 opacity-70">
-                                                If your topic isn't listed, please select 'Other' and you can upload your syllabus document directly to Gemini.
-                                            </p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-center py-8">
-                                        <AlertTriangle size={24} className="mx-auto text-muted-foreground mb-3 opacity-30" />
-                                        <p className="text-xs text-muted-foreground font-display">Select a topic to reveal syllabus dot-points.</p>
+                            <div className="flex flex-col h-full animate-reveal">
+                                {/* Search & Selected Header */}
+                                <div className="p-4 border-b border-surface-3/50 flex flex-wrap items-center gap-4 bg-surface-2/20">
+                                    <div className="relative flex-1 min-w-[200px]">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                        <input
+                                            type="text"
+                                            placeholder="Find a topic or point..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-surface-1 border border-surface-3 rounded-xl pl-9 pr-4 py-2 text-xs font-display focus:border-primary/50 outline-none transition-all"
+                                        />
                                     </div>
-                                )}
+                                    <div className="text-[10px] font-display uppercase tracking-widest text-primary font-bold flex items-center gap-2">
+                                        <CheckCircle2 size={12} />
+                                        {selectedPoints.length} Points Selected
+                                    </div>
+                                    {selectedPoints.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedPoints([])}
+                                            className="text-[10px] font-display uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            Clear All
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Scrollable Tree View */}
+                                <div className="flex-1 overflow-y-auto max-h-[500px] p-4 custom-scrollbar">
+                                    <div className="space-y-4">
+                                        {modules.map(mod => (
+                                            <div key={mod} className="space-y-1">
+                                                {/* Module row */}
+                                                <div className="flex items-center gap-2 group p-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleModule(mod)}
+                                                        className="p-1 hover:bg-surface-3 rounded transition-colors"
+                                                    >
+                                                        {expandedModules[mod] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                    </button>
+                                                    <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isModuleSelected(mod)}
+                                                            onChange={() => toggleModuleSelection(mod)}
+                                                            className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs font-display font-bold text-foreground group-hover:text-primary transition-colors">{mod}</span>
+                                                    </label>
+                                                </div>
+
+                                                {/* Module Children (Subtopics) */}
+                                                {expandedModules[mod] && (
+                                                    <div className="ml-6 space-y-3 border-l border-surface-3 pl-4 py-2">
+                                                        {Object.keys(currentSyllabus[mod] || {}).map(subt => (
+                                                            <div key={subt} className="space-y-1">
+                                                                <div className="flex items-center gap-2 group p-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleSubtopic(subt)}
+                                                                        className="p-1 hover:bg-surface-3 rounded transition-colors"
+                                                                    >
+                                                                        {expandedSubtopics[subt] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                                                    </button>
+                                                                    <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide">{subt}</span>
+                                                                </div>
+
+                                                                {/* Subtopic Children (Dot Points) */}
+                                                                {expandedSubtopics[subt] && (
+                                                                    <div className="ml-6 grid gap-2 py-1">
+                                                                        {currentSyllabus[mod][subt].map((point, idx) => (
+                                                                            <label
+                                                                                key={idx}
+                                                                                className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(point) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
+                                                                            >
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={selectedPoints.includes(point)}
+                                                                                    onChange={() => handlePointToggle(point)}
+                                                                                    className="mt-0.5 w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                                                                />
+                                                                                <span className="text-[11px] font-display leading-relaxed">{point}</span>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         ) : (
-                            <div className="space-y-3 animate-reveal">
+                            <div className="p-6 space-y-3 animate-reveal">
                                 <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
                                     Paste Your Raw Questions
                                 </label>
                                 <textarea
                                     required={mode === 'B'}
-                                    rows={5}
+                                    rows={10}
                                     placeholder="Paste questions here for automatic LaTeX formatting & layout adjustments..."
                                     value={rawQuestions}
                                     onChange={(e) => setRawQuestions(e.target.value)}
-                                    className="input-base w-full text-sm font-display resize-y py-3"
+                                    className="input-base w-full text-sm font-display resize-y py-3 min-h-[300px]"
                                 />
                             </div>
                         )}
@@ -464,8 +492,8 @@ ${contentString}
                             type="submit"
                             disabled={isCopied}
                             className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
-                                    ? 'bg-green-500/10 text-green-500 border border-green-500/40'
-                                    : 'bg-primary text-white hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.01] active:scale-100'
+                                ? 'bg-green-500/10 text-green-500 border border-green-500/40'
+                                : 'bg-primary text-white hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)] hover:scale-[1.01] active:scale-100'
                                 }`}
                         >
                             <div className={`absolute inset-0 bg-white/10 transition-transform duration-[3s] ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} />
@@ -490,17 +518,30 @@ ${contentString}
             {/* Global Styled Scrollbar */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .animate-bounce-subtle {
-                    animation: bounce-subtle 3s infinite;
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
                 }
-                @keyframes bounce-subtle {
-                    0%, 100% { transform: translate(-50%, 0); }
-                    50% { transform: translate(-50%, -10px); }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: hsl(var(--surface-4) / 0.5);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: hsl(var(--primary) / 0.5);
                 }
                 input[type=number]::-webkit-inner-spin-button, 
                 input[type=number]::-webkit-outer-spin-button { 
                     -webkit-appearance: none; 
                     margin: 0; 
+                }
+                @keyframes progress-shrink {
+                    from { transform: scaleX(1); }
+                    to { transform: scaleX(0); }
+                }
+                .animate-progress-shrink {
+                    animation: progress-shrink 3s linear forwards;
                 }
             `}} />
 
