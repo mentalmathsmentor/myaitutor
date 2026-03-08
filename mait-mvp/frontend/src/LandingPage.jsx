@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, Users } from 'lucide-react'
 
 const SYLLABI = [
     { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
@@ -84,6 +84,12 @@ function ScrollReveal({ children, delay = 0, className = '' }) {
             {children}
         </div>
     )
+}
+
+function ordinalSuffix(n) {
+    const s = ['th', 'st', 'nd', 'rd']
+    const v = n % 100
+    return n.toLocaleString() + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
 export default function LandingPage({ navigate, onLoginClick }) {
@@ -332,9 +338,12 @@ export default function LandingPage({ navigate, onLoginClick }) {
                             © 2026 MAIT. All rights reserved.
                         </p>
                         {visitCount !== null && (
-                            <p className="text-muted-foreground/30 text-[10px] font-mono tabular-nums">
-                                {visitCount.toLocaleString()} visits
-                            </p>
+                            <div className="flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/15">
+                                <Users size={12} className="text-primary" />
+                                <p className="text-xs font-display">
+                                    You are the <span className="text-primary font-bold tabular-nums">{ordinalSuffix(visitCount)}</span> visitor
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
