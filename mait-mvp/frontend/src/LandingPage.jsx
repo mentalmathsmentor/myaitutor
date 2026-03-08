@@ -395,13 +395,13 @@ export default function LandingPage({ navigate, onLoginClick }) {
                         <p className="text-muted-foreground text-xs font-display">
                             © 2026 MAIT. All rights reserved.
                         </p>
-                        <div className="flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/15">
-                            <Users size={12} className="text-primary" />
-                            <p className="text-xs font-display">
+                        <div className="flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-primary/10 border border-primary/25">
+                            <Users size={14} className="text-primary flex-shrink-0" />
+                            <p className="text-sm font-display text-foreground">
                                 {visitCount !== null ? (
                                     <>You are the <span className="text-primary font-bold tabular-nums">{ordinalSuffix(visitCount)}</span> visitor</>
                                 ) : (
-                                    <span className="text-muted-foreground/50 inline-block w-24 h-3 rounded bg-surface-2 animate-pulse" />
+                                    <span className="text-muted-foreground">Counting visitors...</span>
                                 )}
                             </p>
                         </div>
