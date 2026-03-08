@@ -547,7 +547,7 @@ ${contentString}
                                 }`}
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
-                            <div className={`absolute inset-0 bg-green-500/10 transition-transform duration-[3s] ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} />
+                            <div className={`absolute inset-0 bg-green-500/10 transition-transform ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} style={{ transitionDuration: '3s' }} />
                             {isCopied ? (
                                 <>
                                     <CheckCircle2 size={18} className="relative z-10" />
