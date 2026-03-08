@@ -45,7 +45,7 @@ function navigateTo(page) {
 const API_URL = import.meta.env.VITE_API_URL ||
     (window.location.hostname === 'myaitutor.au' || window.location.hostname === 'www.myaitutor.au'
         ? 'https://api.myaitutor.au'
-        : 'http://127.0.0.1:8000');
+        : '');
 
 const getStudentId = () => {
     let id = localStorage.getItem('mait_student_id');

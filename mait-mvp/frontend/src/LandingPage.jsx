@@ -125,7 +125,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
         const API_URL = import.meta.env.VITE_API_URL ||
             (window.location.hostname === 'myaitutor.au' || window.location.hostname === 'www.myaitutor.au'
                 ? 'https://api.myaitutor.au'
-                : 'http://localhost:8000')
+                : '')
         const timeout = setTimeout(() => setVisitLoaded(true), 3000)
         fetch(`${API_URL}/visit`, { method: 'POST' })
             .then(r => r.json())
@@ -461,7 +461,7 @@ function WaitlistForm() {
 
         setStatus('loading')
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const API_URL = import.meta.env.VITE_API_URL || '';
             const res = await fetch(`${API_URL}/subscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
