@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList, Users } from 'lucide-react'
 
 const SYLLABI = [
     { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
