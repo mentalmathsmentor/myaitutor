@@ -138,51 +138,51 @@
   "Year 11 Standard": {
     "Algebra": {
       "MS-A1 Formulae and Equations": [
-        "Review Substitution: Review substitution of numerical values into linear and non\u2011linear algebraic expressions and equations",
+        "Review Substitution: Review substitution of numerical values into linear and non‑linear algebraic expressions and equations",
         "Formulae, Including Calculating Distance, Speed: Change the subject of a linear formula and solve problems involving formulae, including calculating distance, speed and time or stopping distances using a suitable formula",
         "Develop And Solve: Develop and solve linear equations derived from substituting values into a formula or from a word description",
         "And Interpret Blood Alcohol Content: Calculate and interpret blood alcohol content (BAC) using appropriate formulae; determine time required to reach zero BAC and describe limitations of BAC estimation methods",
-        "Required Medication Dosages For Children: Calculate required medication dosages for children and adults using Fried\u2019s, Young\u2019s and Clark\u2019s formulae"
+        "Required Medication Dosages For Children: Calculate required medication dosages for children and adults using Fried’s, Young’s and Clark’s formulae"
       ],
       "MS-A2 Linear Relationships": [
-        "Linear Relationships, Construct Straight\u2011Line Graphs: Model, analyse and solve problems involving linear relationships, construct straight\u2011line graphs and interpret gradient and intercepts; recognise direct variation relationships and interpret the linear function y = mx + b",
-        "Construct And Analyse: Construct and analyse linear models graphically or algebraically to solve practical direct\u2011variation problems, such as fuel\u2011cost or currency\u2011conversion graphs, and evaluate model limitations"
+        "Linear Relationships, Construct Straight‑Line Graphs: Model, analyse and solve problems involving linear relationships, construct straight‑line graphs and interpret gradient and intercepts; recognise direct variation relationships and interpret the linear function y = mx + b",
+        "Construct And Analyse: Construct and analyse linear models graphically or algebraically to solve practical direct‑variation problems, such as fuel‑cost or currency‑conversion graphs, and evaluate model limitations"
       ]
     },
     "Measurement": {
       "MS-M1 Applications of Measurement": [
         "Absolute And Percentage Error And: Review use of metric units (including units of area) and convert between units (e.g., kilometres to metres or litres to millilitres); calculate absolute and percentage error and state limits of accuracy",
-        "Pythagoras\u2019 Theorem And Scale Factors: Use standard form and metric prefixes in measurement contexts; review solving perimeter and area problems for triangles, rectangles, parallelograms, trapezia, circles, sectors and composite shapes; apply Pythagoras\u2019 theorem and scale factors to find lengths",
+        "Pythagoras’ Theorem And Scale Factors: Use standard form and metric prefixes in measurement contexts; review solving perimeter and area problems for triangles, rectangles, parallelograms, trapezia, circles, sectors and composite shapes; apply Pythagoras’ theorem and scale factors to find lengths",
         "Surface Area And Volume Of: Solve problems involving surface area and volume of prisms, cylinders, spheres, pyramids and composite solids; convert between units of volume and capacity and use the Trapezoidal rule to estimate areas and volumes",
         "Review Metric Units: Review metric units of mass (grams, kilograms, tonnes) and energy (calories, kilojoules) and use them to solve problems related to food, nutrition, physical activity and electricity consumption"
       ],
       "MS-M2 Working with Time": [
-        "Time Zones And Daylight Saving: Locate positions on Earth using latitude, longitude and GPS; calculate times and time differences around the world, convert between 12\u2011hour and 24\u2011hour clocks, and solve problems involving time zones and daylight saving",
+        "Time Zones And Daylight Saving: Locate positions on Earth using latitude, longitude and GPS; calculate times and time differences around the world, convert between 12‑hour and 24‑hour clocks, and solve problems involving time zones and daylight saving",
         "Interpret Timetables For: Interpret timetables for buses, trains and ferries; solve practical problems involving travel and communications across different time zones, including Coordinated Universal Time and the International Date Line"
       ]
     },
-    "Financial\u00a0Mathematics": {
+    "Financial Mathematics": {
       "MS-F1 Money Matters": [
         "Simple Interest For Different Rates: Calculate simple interest for different rates and periods and apply percentage increase or decrease to contexts such as GST, profit or loss; graph simple interest using technology",
-        "Depreciation Of An Asset: Calculate depreciation of an asset using the straight\u2011line method (Vt = V0 \u2212 Dn) and use spreadsheets to calculate and graph compound interest as a recurrence relation",
+        "Depreciation Of An Asset: Calculate depreciation of an asset using the straight‑line method (Vt = V0 − Dn) and use spreadsheets to calculate and graph compound interest as a recurrence relation",
         "Pay Rates From A Given: Calculate pay rates from a given salary, including hourly rates, penalty rates, overtime, commissions, piecework and royalties; calculate annual leave loading and government allowances",
         "Income Tax And Related Deductions:: Calculate income tax and related deductions: identify allowable deductions, determine taxable income, calculate Medicare levy, net pay and Pay As You Go tax using current tax scales",
-        "Interpret Household Bills: Interpret household bills for electricity, water or gas; plan the purchase of a car by comparing on\u2011road costs, considering sustainability and using spreadsheets to compare options",
+        "Interpret Household Bills: Interpret household bills for electricity, water or gas; plan the purchase of a car by comparing on‑road costs, considering sustainability and using spreadsheets to compare options",
         "Types Of Insurance, Investigate Running: Plan for running and maintenance of a car: describe types of insurance, investigate running costs (servicing, repairs, tyres) and compare costs using spreadsheets",
         "Prepare A Personal: Prepare a personal budget for a given income, accounting for fixed and discretionary spending"
       ]
     },
-    "Statistical\u00a0Analysis": {
+    "Statistical Analysis": {
       "MS-S1 Data Analysis": [
-        "And Use Appropriate Data Collection: Describe and use appropriate data collection methods for populations and samples; investigate sampling methods (systematic, self\u2011selected, simple random, stratified) and discuss advantages and disadvantages",
-        "Classify Data Types:: Classify data types: categorical variables as ordinal or nominal and numerical variables as discrete or continuous; organise and display data using tables, bar/Pareto charts, histograms, cumulative frequency graphs, dot plots and stem\u2011and\u2011leaf plots",
-        "Construct And Interpret: Construct and interpret tables and graphs in real\u2011world contexts (e.g., motor\u2011vehicle safety, blood\u2011alcohol content, running costs, rainfall, temperature, water usage); interpret and compare data by choosing appropriate representations and evaluating their suitability",
-        "Distinguishing Features Of A Population: Describe distinguishing features of a population and a sample; define symbols for population parameters (\u00b5, \u03c3) and sample statistics (x\u0304, s); summarise and interpret data using measures of central tendency (mode, mean, median) and measures of spread (range, quantiles, IQR, standard deviation)",
-        "Investigate The Effects: Investigate the effects of outliers on summary statistics and use criteria such as 1.5\u00d7IQR to identify outliers; interpret and compare distributions (modality, shape, central tendency, spread, outliers) and construct/interpret parallel box\u2011plots to compare groups"
+        "And Use Appropriate Data Collection: Describe and use appropriate data collection methods for populations and samples; investigate sampling methods (systematic, self‑selected, simple random, stratified) and discuss advantages and disadvantages",
+        "Classify Data Types:: Classify data types: categorical variables as ordinal or nominal and numerical variables as discrete or continuous; organise and display data using tables, bar/Pareto charts, histograms, cumulative frequency graphs, dot plots and stem‑and‑leaf plots",
+        "Construct And Interpret: Construct and interpret tables and graphs in real‑world contexts (e.g., motor‑vehicle safety, blood‑alcohol content, running costs, rainfall, temperature, water usage); interpret and compare data by choosing appropriate representations and evaluating their suitability",
+        "Distinguishing Features Of A Population: Describe distinguishing features of a population and a sample; define symbols for population parameters (µ, σ) and sample statistics (x̄, s); summarise and interpret data using measures of central tendency (mode, mean, median) and measures of spread (range, quantiles, IQR, standard deviation)",
+        "Investigate The Effects: Investigate the effects of outliers on summary statistics and use criteria such as 1.5×IQR to identify outliers; interpret and compare distributions (modality, shape, central tendency, spread, outliers) and construct/interpret parallel box‑plots to compare groups"
       ],
       "MS-S2 Relative Frequency and Probability": [
-        "Probabilities Of Simple Events And: Review and use the language of probability and relative frequency; construct sample spaces and determine the number of outcomes; understand probability scale 0 \u2264 P(E) \u2264 1 and calculate probabilities of simple events and their complements",
-        "Use Arrays: Use arrays and tree diagrams to determine outcomes and probabilities for multistage experiments; construct and use tree diagrams to solve two\u2011stage event problems",
+        "Probabilities Of Simple Events And: Review and use the language of probability and relative frequency; construct sample spaces and determine the number of outcomes; understand probability scale 0 ≤ P(E) ≤ 1 and calculate probabilities of simple events and their complements",
+        "Use Arrays: Use arrays and tree diagrams to determine outcomes and probabilities for multistage experiments; construct and use tree diagrams to solve two‑stage event problems",
         "Perform Simulations: Perform simulations of experiments using technology; use relative frequency as an estimate of probability; recognise that increasing trials yields relative frequencies approaching theoretical probability and identify factors complicating simulation",
         "Expected Frequencies In Contexts By: Solve probability problems and calculate expected frequencies in contexts by using known probabilities or estimates based on relative frequencies"
       ]
@@ -190,386 +190,409 @@
   },
   "Year 11 Advanced": {
     "Functions": {
-      "Algebraic Techniques": [
-        "Define A Relation: Define a relation as any set of ordered pairs (\ud835\udc65, \ud835\udc66) of real numbers",
-        "Understand The Formal: Understand the formal definition of a function as a set of ordered pairs (\ud835\udc65, \ud835\udc66) of real numbers",
-        "Understand And Use: Understand and use interval notation as a way of representing domain and range, eg [4, \u221e)",
-        "Know What Is: Know what is meant by one-to-one, one-to-many, many-to-one and many-to-many",
-        "Use The Vertical: Use the vertical line test to identify a function",
-        "Determine If A: Determine if a function is one-to-one (ACMSM094)",
-        "Identify The Domain: Identify the domain and range of a composite function",
-        "Explain The Geometrical: Explain the geometrical significance of \ud835\udc5a and \ud835\udc50 in the equation \ud835\udc53(\ud835\udc65) = \ud835\udc5a\ud835\udc65 + \ud835\udc50",
-        "Derive The Equation: Derive the equation of a straight line passing through a fixed point (\ud835\udc651 , \ud835\udc661 ) and having a given",
-        "Derive The Equation: Derive the equation of a straight line passing through two points (\ud835\udc651 , \ud835\udc661 ) and (\ud835\udc652 , \ud835\udc662 ) by first",
-        "Find The Equations: Find the equations of straight lines, including parallel and perpendicular lines, given sufficient",
-        "Understand The Role: Understand the role of the discriminant in relation to the position of the graph",
-        "Understand That Solving: Understand that solving \ud835\udc53(\ud835\udc65) = \ud835\udc58 corresponds to finding the values of \ud835\udc65 for which the graph",
-        "Recognise The Shape: Recognise the shape and features of the graph of \ud835\udc66 = |\ud835\udc4e\ud835\udc65 + \ud835\udc4f| and hence sketch the graph",
-        "Derive The Equation: Derive the equation of a circle, centre the origin, by considering Pythagoras\u2019 theorem and",
-        "Transform Equations: Transform equations of the form \ud835\udc65 2 + \ud835\udc66 2 + \ud835\udc4e\ud835\udc65 + \ud835\udc4f\ud835\udc66 + \ud835\udc50 = 0 into the form",
-        "Sketch Circles Given: Sketch circles given their equations and find the equation of a circle from its graph",
-        "Examine Translations: Examine translations and the graphs of \ud835\udc66 = \ud835\udc53(\ud835\udc65) + \ud835\udc50 and \ud835\udc66 = \ud835\udc53(\ud835\udc65 + \ud835\udc4f) using technology",
-        "Examine Dilations: Examine dilations and the graphs of \ud835\udc66 = \ud835\udc58\ud835\udc53(\ud835\udc65) and \ud835\udc66 = \ud835\udc53(\ud835\udc4e\ud835\udc65) using technology",
-        "Recognise That The: Recognise that the order in which transformations are applied is important in the construction",
-        "Select And Use: Select and use an appropriate method to graph a given function, including finding intercepts,",
-        "Determine Asymptotes: Determine asymptotes and discontinuities where appropriate (vertical and horizontal",
-        "Determine The Number: Determine the number of solutions of an equation by considering appropriate graphs"
-      ],
-      "Further Functions & Relations": [
-        "Recognise That A: Recognise that a direct variation relationship produces a straight-line graph"
+      "Algebraic Techniques & Introduction to Functions": [
+        "Index Laws: Use index laws to simplify expressions and solve problems involving positive, negative, zero and fractional indices",
+        "Expanding & Factorising: Expand, factorise and simplify algebraic expressions including those with surds",
+        "Algebraic Fractions: Simplify expressions involving algebraic fractions",
+        "Surds & Rationalising: Expand and simplify surd expressions, identify conjugate surds, and rationalise denominators of the form $\\frac{a}{b + \\sqrt{c}}$",
+        "Quadratic Formula: Solve quadratic equations by factorisation, completing the square, and using the quadratic formula $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$",
+        "Discriminant: Define the discriminant $\\Delta = b^2 - 4ac$ and use it to determine whether roots are real, equal, distinct or rational",
+        "Functions vs Relations: Define functions and relations; apply the vertical line test to distinguish between them",
+        "Domain & Range: Define and determine the domain and range of a function; identify zeroes and intercepts",
+        "Composite Functions: Form composite functions $f(g(x))$ and identify their domain and range"
       ],
       "Linear, Quadratic & Cubic Functions": [
-        "Recognise Features: Recognise features of the graph of a quadratic, including its parabolic nature, turning point,",
-        "Find The Vertex: Find the vertex and intercepts of a quadratic graph by either factorising, completing the square",
-        "Find The Equation: Find the equation of a quadratic given sufficient information (ACMMM009)",
-        "Solve Linear: Solve linear and quadratic inequalities by sketching appropriate graphs"
+        "Gradient-Intercept Form: Determine equations of straight lines in gradient-intercept form $y = mx + c$ and general form $ax + by + c = 0$",
+        "Point-Gradient Formula: Derive the equation of a line through $(x_1, y_1)$ with gradient $m$, and through two points using gradient formula $m = \\frac{y_2 - y_1}{x_2 - x_1}$",
+        "Parallel & Perpendicular Lines: Find equations of lines parallel ($m_1 = m_2$) and perpendicular ($m_1 m_2 = -1$) to a given line",
+        "Parabola Features: Recognise features of the parabola $y = ax^2 + bx + c$ including vertex, axis of symmetry $x = -\\frac{b}{2a}$, turning point and intercepts",
+        "Completing the Square: Rewrite $y = ax^2 + bx + c$ in the form $y = a(x - h)^2 + k$ to find the vertex",
+        "Quadratic Inequalities: Solve quadratic inequalities algebraically and by sketching appropriate graphs",
+        "Cubic Functions: Recognise and graph cubic functions of the form $y = a(x - r)(x - s)(x - t)$ and $y = ax^3 + bx^2 + cx + d$",
+        "Simultaneous Equations: Solve simultaneous equations involving a linear and a quadratic function, or two quadratic functions"
+      ],
+      "Further Functions & Relations": [
+        "Direct Variation: Develop and use the model $y = kx^n$ for direct variation, where $k$ is a non-zero constant",
+        "Inverse Variation: Develop and use the model $y = \\frac{k}{x^n}$ for inverse variation and solve related problems",
+        "Reciprocal Functions: Graph functions of the form $y = \\frac{k}{x}$, identifying hyperbolic shape for $x \\neq 0$, and describe behaviour as $x \\to \\pm \\infty$",
+        "Absolute Value Graphs: Recognise the shape and features of $y = |ax + b|$ and sketch the graph",
+        "Circles: Derive the equation of a circle centred at the origin $x^2 + y^2 = r^2$ and at $(h, k)$: $(x-h)^2 + (y-k)^2 = r^2$",
+        "Completing the Square for Circles: Transform $x^2 + y^2 + ax + by + c = 0$ into $(x-h)^2 + (y-k)^2 = r^2$ by completing the square"
+      ],
+      "Transformations": [
+        "Translations: Examine translations $y = f(x) + c$ (vertical shift) and $y = f(x + b)$ (horizontal shift) using technology",
+        "Dilations: Examine dilations $y = kf(x)$ (vertical stretch/compression) and $y = f(ax)$ (horizontal stretch/compression)",
+        "Order of Transformations: Recognise that the order in which transformations are applied is important",
+        "Asymptotes: Determine vertical and horizontal asymptotes and discontinuities of functions"
       ]
     },
     "Trigonometric Functions": {
       "Trigonometry & Measure of Angles": [
-        "Use Technology And/Or: Use technology and/or geometric construction to investigate the ambiguous case of the sine",
-        "Interpret Information About: Interpret information about a two or three-dimensional context given in diagrammatic or",
-        "Convert Between The: Convert between the two measures, using the fact that 360\u00b0 = 2\ud835\udf0b radians",
-        "Know The Difference: Know the difference between an equation and an identity"
+        "Ambiguous Case: Use technology and geometric construction to investigate the ambiguous case of the sine rule",
+        "3D Trigonometry Problems: Interpret and solve two and three-dimensional trigonometry problems from diagrams or worded descriptions",
+        "Radians: Convert between degrees and radians using $360° = 2\\pi$ radians",
+        "Exact Trig Values: Recognise and use exact values of $\\sin\\theta$, $\\cos\\theta$ and $\\tan\\theta$ for $\\theta = 0°, 30°, 45°, 60°, 90°$ and their radian equivalents",
+        "Identities vs Equations: Know the difference between a trigonometric equation and a trigonometric identity"
       ],
       "Trigonometric Functions & Graphs": [
-        "Sketch The Trigonometric: Sketch the trigonometric functions in degrees for 0\u00b0 \u2264 \ud835\udc65 \u2264 360\u00b0",
-        "Use Technology: Use technology or otherwise to examine the effect on the graphs of changing the amplitude",
-        "Use \ud835\udc58, \ud835\udc4e,: Use \ud835\udc58, \ud835\udc4e, \ud835\udc4f, \ud835\udc50 to describe transformational shifts and sketch graphs"
-      ],
-      "Radians": [
-        "Recognise And Use: Recognise and use the exact values of sin \ud835\udf03, cos \ud835\udf03 and tan \ud835\udf03 in both degrees and radians for"
+        "Basic Trig Graphs: Sketch $y = \\sin x$, $y = \\cos x$ and $y = \\tan x$ for $0° \\leq x \\leq 360°$ and in radians",
+        "Transformations of Trig Graphs: Examine the effect on trig graphs of changing amplitude $a$, period $\\frac{2\\pi}{b}$, phase shift $c$, and vertical shift $d$ in $y = a\\sin(bx + c) + d$",
+        "Solving Trig Equations: Solve trigonometric equations in a given domain using exact values, identities and technology"
       ]
     },
     "Calculus": {
+      "Introduction to Differentiation": [
+        "Continuity: Describe continuity informally and identify continuous functions from their graphs",
+        "First Principles: Understand the derivative as the limit of the difference quotient $f'(x) = \\lim_{h \\to 0}\\frac{f(x+h) - f(x)}{h}$",
+        "Power Rule: Apply the power rule $\\frac{d}{dx}(x^n) = nx^{n-1}$ and extend to sums and constant multiples",
+        "Variable Rates of Change: Examine examples of variable rates of change of non-linear functions"
+      ],
       "The Derivative Function & Its Graph": [
-        "Sketch Graphs: Sketch graphs of functions that are continuous and compare them with graphs of functions",
-        "Describe Continuity Informally,: Describe continuity informally, and identify continuous functions from their graphs",
-        "Establish That \ud835\udc53: Establish that \ud835\udc53 \u2032 (\ud835\udc65) = 0 at a stationary point, \ud835\udc53 \u2032 (\ud835\udc65) > 0 when the function is increasing and",
-        "Identify Families: Identify families of curves with the same derivative function (ACMMM121)",
-        "Use Technology: Use technology to plot functions and their gradient functions",
-        "Examine Examples: Examine examples of variable rates of change of non-linear functions (ACMMM087)",
-        "Apply The Chain: Apply the chain rule: If \u210e(\ud835\udc65) = \ud835\udc53(\ud835\udc54(\ud835\udc65)) then \u210e\u2032(\ud835\udc65) = \ud835\udc53\u2032(\ud835\udc54(\ud835\udc65)) \ud835\udc54\u2032(\ud835\udc65), or if \ud835\udc66 is a function of \ud835\udc62 and",
-        "Use The Composite: Use the composite function rule (chain rule) to establish that",
-        "Use The Composite: Use the composite function rule (chain rule) to establish and use the derivatives of sin(\ud835\udc53(\ud835\udc65)),",
-        "Deduce From The: Deduce from the sign of the first derivative whether a function is increasing, decreasing or",
-        "Use The First: Use the first derivative to find intervals over which a function is increasing or decreasing, and",
-        "Use The First: Use the first derivative to investigate a stationary point of a function over a given domain,",
-        "Determine The Greatest: Determine the greatest or least value of a function over a given domain (if the domain is not",
-        "Use The Second: Use the second derivative to determine concavity and the nature of stationary points",
-        "Understand That When: Understand that when the second derivative is equal to 0 this does not necessarily represent a",
-        "Define Variables: Define variables and construct functions to represent the relationships between variables",
-        "Examine Families: Examine families of anti-derivatives of a given function graphically",
-        "Consider Functions Which: Consider functions which cannot be integrated in the scope of this syllabus, for example",
-        "Use Symmetry Properties: Use symmetry properties of even and odd functions to simplify calculations of area"
+        "Stationary Points: Establish that $f'(x) = 0$ at a stationary point, $f'(x) > 0$ when increasing and $f'(x) < 0$ when decreasing",
+        "Increasing/Decreasing Intervals: Use the first derivative to find intervals where a function is increasing or decreasing",
+        "Nature of Stationary Points: Use the first and second derivative tests to classify stationary points as local maxima, minima, or horizontal inflections",
+        "Concavity & Inflections: Use the second derivative to determine concavity; understand that $f''(x) = 0$ does not necessarily imply a point of inflection",
+        "Optimisation: Define variables, construct functions, and use calculus to solve optimisation problems in context"
       ],
-      "Gradients of Tangents": [
-        "Apply The Product: Apply the product rule: If \u210e(\ud835\udc65) = \ud835\udc53(\ud835\udc65) \ud835\udc54(\ud835\udc65) then \u210e\u2032(\ud835\udc65) = \ud835\udc53(\ud835\udc65) \ud835\udc54\u2032(\ud835\udc65) + \ud835\udc53\u2032(\ud835\udc65) \ud835\udc54(\ud835\udc65), or if \ud835\udc62 and \ud835\udc63",
-        "Apply The Quotient: Apply the quotient rule: If \u210e(\ud835\udc65) =",
-        "Use The Logarithmic: Use the logarithmic laws to simplify an expression before differentiating",
-        "Use Calculus: Use calculus to establish the location of local and global maxima and minima, including",
-        "Evaluate Solutions: Evaluate solutions and their reasonableness given the constraints of the domain and formulate",
-        "Use Geometric Arguments: Use geometric arguments (rather than substitution into a given formula) to approximate a",
-        "Recognise And Use: Recognise and use the additivity and linearity of definite integrals (ACMMM128)",
-        "Calculate Total Change: Calculate total change by integrating instantaneous rate of change"
+      "Differentiation Rules": [
+        "Chain Rule: Apply the chain rule: if $h(x) = f(g(x))$ then $h'(x) = f'(g(x)) \\cdot g'(x)$",
+        "Product Rule: Apply the product rule: if $h(x) = f(x)g(x)$ then $h'(x) = f(x)g'(x) + f'(x)g(x)$",
+        "Quotient Rule: Apply the quotient rule: if $h(x) = \\frac{f(x)}{g(x)}$ then $h'(x) = \\frac{f'(x)g(x) - f(x)g'(x)}{[g(x)]^2}$",
+        "Derivatives of Trig Functions: Differentiate $\\sin(f(x))$, $\\cos(f(x))$ and $\\tan(f(x))$ using the chain rule",
+        "Tangents & Normals: Find equations of tangents and normals to curves at given points"
       ],
-      "Calculating with Derivatives": [
-        "Understand The Concepts: Understand the concepts of concavity and points of inflection and their relationship with the"
+      "Introduction to Integration": [
+        "Anti-Derivatives: Examine families of anti-derivatives of a given function graphically",
+        "Fundamental Theorem: Calculate total change by integrating instantaneous rate of change; apply the Fundamental Theorem of Calculus",
+        "Symmetry in Integration: Use symmetry properties of even and odd functions to simplify calculations of area",
+        "Additivity & Linearity: Recognise and use the additivity and linearity of definite integrals"
       ]
     },
     "Exponential and Logarithmic Functions": {
       "Introducing Logarithms": [
-        "Understand And Use: Understand and use the fact that log \ud835\udc4e \ud835\udc4e \ud835\udc65 = \ud835\udc65 for all real \ud835\udc65, and \ud835\udc4elog\ud835\udc4e \ud835\udc65 = \ud835\udc65 for all \ud835\udc65 > 0"
+        "Logarithm Definition: Define logarithms as the inverse of exponentiation: if $a^x = y$ then $\\log_a y = x$",
+        "Logarithm Properties: Understand and use $\\log_a(a^x) = x$ for all real $x$, and $a^{\\log_a x} = x$ for $x > 0$"
       ],
       "The Exponential Function & Natural Logarithms": [
-        "Define The Natural: Define the natural logarithm ln \ud835\udc65 = log \ud835\udc52 \ud835\udc65 from the exponential function \ud835\udc53(\ud835\udc65) = \ud835\udc52 \ud835\udc65",
-        "Recognise And Use: Recognise and use the inverse relationship of the functions \ud835\udc66 = \ud835\udc52 \ud835\udc65 and \ud835\udc66 = ln \ud835\udc65 (ACMMM160)",
-        "Use The Natural: Use the natural logarithm and the relationships \ud835\udc52 ln \ud835\udc65 = \ud835\udc65 where \ud835\udc65 > 0, and ln(\ud835\udc52 \ud835\udc65 ) = \ud835\udc65 for all",
-        "Interpret The Meaning: Interpret the meaning of the intercepts of an exponential graph and explain the circumstances"
+        "Natural Logarithm: Define the natural logarithm $\\ln x = \\log_e x$ from the exponential function $f(x) = e^x$",
+        "Inverse Relationship: Recognise and use the inverse relationship between $y = e^x$ and $y = \\ln x$",
+        "Euler's Number: Use the relationships $e^{\\ln x} = x$ for $x > 0$ and $\\ln(e^x) = x$ for all real $x$",
+        "Exponential Graph Interpretation: Interpret intercepts of exponential graphs and explain growth/decay behaviour"
       ],
       "Logarithmic Laws & Applications": [
-        "Use The Logarithmic: Use the logarithmic laws to simplify and evaluate natural logarithmic expressions and solve"
+        "Log Laws: Apply the logarithmic laws $\\log(AB) = \\log A + \\log B$, $\\log(A/B) = \\log A - \\log B$, and $\\log(A^n) = n\\log A$ to simplify expressions",
+        "Solving Exponential Equations: Use logarithmic laws to solve exponential equations and evaluate natural logarithmic expressions"
       ],
       "Graphs & Applications of Exp/Log Functions": [
-        "Recognise That The: Recognise that the graphs of \ud835\udc66 = \ud835\udc4e \ud835\udc65 and \ud835\udc66 = log \ud835\udc4e \ud835\udc65 are reflections in the line \ud835\udc66 = \ud835\udc65"
+        "Reflection Relationship: Recognise that $y = a^x$ and $y = \\log_a x$ are reflections in $y = x$",
+        "Derivatives of Exp/Log: Differentiate $e^{f(x)}$ and $\\ln(f(x))$ using the chain rule"
       ]
     },
     "Statistical Analysis": {
       "Probability & Venn Diagrams": [
-        "Identify Factors That: Identify factors that could complicate the simulation of real-world events (ACMEM153)",
-        "Use Relative Frequencies: Use relative frequencies obtained from data as point estimates of probabilities (ACMMM055)",
-        "Use Everyday Occurrences: Use everyday occurrences to illustrate set descriptions and representations of events and set",
-        "Know That A: Know that a random variable describes some aspect in a population from which samples can",
-        "Use Relative Frequencies: Use relative frequencies obtained from data to obtain point estimates of probabilities",
-        "Use Var(\ud835\udc4b) =: Use Var(\ud835\udc4b) = \ud835\udc38((\ud835\udc4b \u2212 \ud835\udf07)2 ) = \ud835\udc38(\ud835\udc4b 2 ) \u2212 \ud835\udf07 2 for a random variable and Var(\ud835\udc65) = \ud835\udf0e 2 for a dataset",
-        "Compare The Suitability: Compare the suitability of different methods of data presentation in real-world contexts",
-        "Investigate Real-World Examples: Investigate real-world examples from the media illustrating appropriate and inappropriate uses",
-        "Use Different Approaches: Use different approaches for identifying outliers, for example consideration of the distance",
-        "Investigate And Recognise: Investigate and recognise the effect of outliers on the mean, median and standard deviation",
-        "Describe Bivariate Datasets: Describe bivariate datasets in terms of form (linear/non-linear) and in the case of linear, also",
-        "Identify The Dependent: Identify the dependent and independent variables within bivariate datasets where appropriate",
-        "Describe And Interpret: Describe and interpret a variety of bivariate datasets involving two numerical variables using",
-        "Fit A Line: Fit a line of best fit to the data by eye and using technology (ACMEM141, ACMEM142)",
-        "Fit A Least-Squares: Fit a least-squares regression line to the data using technology (ACMGM057)",
-        "Interpret The Intercept: Interpret the intercept and gradient of the fitted line (ACMGM059)",
-        "Distinguish Between Interpolation: Distinguish between interpolation and extrapolation, recognising the limitations of using the",
-        "Know The Two: Know the two properties of a probability density function: \ud835\udc53(\ud835\udc65) \u2265 0 for all real \ud835\udc65 and",
-        "Explore Properties: Explore properties of a continuous random variable that is uniformly distributed",
-        "Find The Mode: Find the mode from a given probability density function",
-        "Understand The Meaning: Understand the meaning of a cumulative distribution function with respect to a given",
-        "Use A Cumulative: Use a cumulative distribution function to calculate the median and other percentiles",
-        "Identify Contexts That: Identify contexts that are suitable for modelling by normal random variables, eg the height of a",
-        "Recognise Features: Recognise features of the graph of the probability density function of the normal distribution",
-        "Visually Represent Probabilities: Visually represent probabilities by shading areas under the normal curve, eg identifying the",
-        "Use The Formula: Use the formula \ud835\udc67 =",
-        "Apply The Empirical: Apply the empirical rule to a variety of problems",
-        "Verify, Using The: Verify, using the Trapezoidal rule, the results concerning the areas under the normal curve",
-        "Use Statistical Tables: Use statistical tables to determine probabilities",
-        "Use Technology: Use technology to determine probabilities"
+        "Simulation Limitations: Identify factors that could complicate the simulation of real-world events",
+        "Relative Frequency: Use relative frequencies obtained from data as point estimates of probabilities",
+        "Set Notation for Events: Use set descriptions ($\\cup$, $\\cap$, complement) and Venn diagrams to represent events and calculate probabilities",
+        "Random Variables: Know that a random variable describes some aspect of a population from which samples can be drawn"
       ],
       "Discrete Probability Distributions": [
-        "Know The Difference: Know the difference between a discrete random variable and a continuous random variable",
-        "Recognise Uniform Discrete: Recognise uniform discrete random variables and use them to model random phenomena with",
-        "Examine Simple Examples: Examine simple examples of non-uniform discrete random variables, and recognise that for",
-        "Recognise The Mean: Recognise the mean or expected value, \ud835\udc38(\ud835\udc4b) = \ud835\udf07, of a discrete random variable \ud835\udc4b as a",
-        "Recognise The Variance,: Recognise the variance, Var(\ud835\udc4b), and standard deviation (\ud835\udf0e) of a discrete random variable as"
+        "Discrete vs Continuous: Know the difference between a discrete and a continuous random variable",
+        "Uniform Discrete RVs: Recognise uniform discrete random variables where each outcome is equally likely",
+        "Non-Uniform Discrete RVs: Examine non-uniform discrete random variables and recognise that probabilities must sum to 1",
+        "Expected Value: Recognise the mean or expected value $E(X) = \\mu = \\sum x_i P(X = x_i)$ of a discrete random variable",
+        "Variance: Calculate the variance $\\text{Var}(X) = E(X^2) - \\mu^2 = E((X - \\mu)^2)$ and standard deviation $\\sigma$ of a discrete random variable"
+      ],
+      "Continuous Random Variables & Normal Distribution": [
+        "PDF Properties: Know the two properties of a probability density function: $f(x) \\geq 0$ and $\\int_{-\\infty}^{\\infty} f(x)\\,dx = 1$",
+        "Uniform Continuous RVs: Explore properties of a continuous random variable that is uniformly distributed",
+        "CDF & Percentiles: Use a cumulative distribution function to calculate the median and other percentiles",
+        "Normal Distribution: Identify contexts suitable for modelling by normal random variables and recognise the bell-shaped curve",
+        "Z-Scores: Use the standardisation formula $z = \\frac{x - \\mu}{\\sigma}$ to convert to standard normal and find probabilities",
+        "Empirical Rule: Apply the 68-95-99.7 rule: approximately 68% within $1\\sigma$, 95% within $2\\sigma$, 99.7% within $3\\sigma$ of the mean"
+      ],
+      "Bivariate Data Analysis": [
+        "Scatter Plots: Describe bivariate datasets in terms of form (linear/non-linear), direction (positive/negative) and strength",
+        "Dependent & Independent Variables: Identify dependent and independent variables within bivariate datasets",
+        "Pearson's Correlation: Describe and interpret bivariate data using scatterplots and Pearson's correlation coefficient $r$",
+        "Line of Best Fit: Fit a least-squares regression line $\\hat{y} = a + bx$ using technology",
+        "Interpretation: Interpret the intercept and gradient of the regression line in context",
+        "Interpolation vs Extrapolation: Distinguish between interpolation and extrapolation, recognising the limitations of predictions outside the data range",
+        "Outliers: Investigate the effect of outliers on the mean, median, standard deviation and correlation coefficient"
       ]
     }
   },
   "Year 12 Advanced": {
     "Calculus": {
       "Applications of Calculus": [
-        "Find the equation of tangents and normals to curves",
-        "Derivative of trigonometric functions: sin(ax), cos(ax), tan(ax)",
-        "Derivative of exponential and logarithmic functions: e^(ax+b), ln(ax+b)",
-        "Solve problems involving rates of change and optimization",
-        "Determine stationary points (maxima, minima, inflections) and their nature",
-        "Sketch curves using calculus techniques and symmetry"
+        "Tangents & Normals: Find the equation of tangents and normals to curves at a given point",
+        "Derivatives of Trig Functions: Differentiate $\\sin(ax)$, $\\cos(ax)$, $\\tan(ax)$ and their composites using the chain rule",
+        "Derivatives of Exp/Log: Differentiate $e^{ax+b}$ and $\\ln(ax+b)$ using the chain rule",
+        "Rates of Change: Solve problems involving rates of change, related rates, and optimisation in context",
+        "Curve Sketching: Determine stationary points (maxima, minima, inflections) and their nature, and sketch curves using calculus",
+        "Motion Problems: Solve displacement-velocity-acceleration problems where $v = \\frac{ds}{dt}$ and $a = \\frac{dv}{dt} = \\frac{d^2s}{dt^2}$"
       ],
       "The Second Derivative": [
-        "Calculate and interpret the second derivative",
-        "Identify points of inflection and test for concavity",
-        "Solve displacement-velocity-acceleration problems using second derivatives"
+        "Second Derivative: Calculate and interpret the second derivative $f''(x)$",
+        "Concavity & Inflection: Identify points of inflection where $f''(x) = 0$ and concavity changes, and test for concavity",
+        "Second Derivative Test: Use the second derivative test to classify stationary points: $f''(x) > 0$ implies local min, $f''(x) < 0$ implies local max"
       ]
     },
     "Integral Calculus": {
       "Indefinite Integrals": [
-        "Understand integration as the reverse of differentiation",
-        "Calculate indefinite integrals of algebraic, trigonometric, and exponential functions",
-        "Apply linear substitution techniques for simple integrals"
+        "Integration as Anti-Differentiation: Understand integration as the reverse of differentiation and find indefinite integrals $\\int f(x)\\,dx$",
+        "Standard Integrals: Calculate indefinite integrals of $x^n$, $\\sin(ax)$, $\\cos(ax)$, $e^{ax}$, and $\\frac{1}{x}$",
+        "Linear Substitution: Apply simple linear substitution to evaluate integrals of the form $\\int f(ax+b)\\,dx$"
       ],
       "Definite Integrals & Area": [
-        "Calculate definite integrals using the Fundamental Theorem of Calculus",
-        "Find the area under a curve, between two curves, and area bounded by the y-axis",
-        "Apply integration to solve physical problems involving total displacement vs distance"
+        "Fundamental Theorem: Calculate definite integrals using the Fundamental Theorem of Calculus: $\\int_a^b f(x)\\,dx = F(b) - F(a)$",
+        "Area Under a Curve: Find the area under a curve, between two curves, and area bounded by the $y$-axis",
+        "Displacement vs Distance: Apply integration to distinguish between total displacement $\\int_a^b v(t)\\,dt$ and total distance $\\int_a^b |v(t)|\\,dt$"
       ]
     },
     "Financial Mathematics": {
       "Sequences and Series": [
-        "Use arithmetic and geometric sequences to model real-world growth",
-        "Calculate the sum of arithmetic and geometric series",
-        "Apply series to find the future and present values of annuities"
+        "Arithmetic Sequences: Use arithmetic sequences $T_n = a + (n-1)d$ and series $S_n = \\frac{n}{2}(2a + (n-1)d)$ to model linear growth",
+        "Geometric Sequences: Use geometric sequences $T_n = ar^{n-1}$ and series $S_n = \\frac{a(r^n - 1)}{r - 1}$ to model exponential growth",
+        "Limiting Sum: Calculate the limiting sum $S_\\infty = \\frac{a}{1-r}$ for $|r| < 1$ and apply to annuities and perpetuities"
       ],
       "Investments and Loans": [
-        "Solve problems involving simple and compound interest",
-        "Model reducing balance loans and calculate repayments",
-        "Understand and apply recurrence relations for loan balance and interest"
+        "Compound Interest: Solve problems using the compound interest formula $A = P(1 + r)^n$",
+        "Annuities: Calculate the future value and present value of annuities using geometric series",
+        "Reducing Balance Loans: Model reducing balance loans, calculate repayments, and use recurrence relations $A_{n+1} = A_n(1+r) - M$"
       ]
     },
     "Statistical Analysis": {
       "Continuous Random Variables": [
-        "Properties of continuous probability density functions (PDFs)",
-        "Calculate probabilities, expected value (mean), and variance for continuous distributions",
-        "The Normal Distribution: Standardising scores (z-scores) and using the empirical rule"
+        "PDF Properties: Know that for a PDF $f(x)$: $f(x) \\geq 0$ and $\\int_{-\\infty}^{\\infty} f(x)\\,dx = 1$",
+        "Expected Value & Variance: Calculate $E(X) = \\int x f(x)\\,dx$ and $\\text{Var}(X) = E(X^2) - [E(X)]^2$ for continuous distributions",
+        "Normal Distribution: Standardise using $z = \\frac{x - \\mu}{\\sigma}$ and apply the empirical rule (68-95-99.7%)"
       ],
       "Bivariate Data": [
-        "Construct and analyse scatter plots for association",
-        "Calculate and interpret Pearson's correlation coefficient (r)",
-        "Calculate the least-squares regression line and make predictions (interpolation/extrapolation)"
+        "Scatter Plots & Association: Construct and analyse scatter plots for form, direction and strength of association",
+        "Pearson's Correlation: Calculate and interpret Pearson's correlation coefficient $r$ where $-1 \\leq r \\leq 1$",
+        "Regression Line: Calculate the least-squares regression line $\\hat{y} = a + bx$ and make predictions, distinguishing interpolation from extrapolation"
       ]
     }
   },
   "Year 11 Extension 1": {
     "Functions": {
       "Inverse Functions": [
-        "Understand Why The: Understand why the graph of the inverse relation is obtained by reflecting the graph of the",
-        "Understand That Linear: Understand that linear and quadratic functions, and circles can be expressed in either"
+        "Inverse Relation by Reflection: Understand that the graph of the inverse relation is obtained by reflecting $y = f(x)$ in the line $y = x$, exchanging horizontal and vertical lines",
+        "Existence of Inverse Functions: Determine whether functions have inverse functions by applying the horizontal line test and restricting the domain if necessary",
+        "Solving with Inverse Functions: Solve problems involving the algebraic and graphical relationship between a function and its inverse"
       ],
       "Graphical Relationships": [
-        "Using The Fact: Using the fact that this reflection exchanges horizontal and vertical lines, recognise that the",
-        "Understand And Use: Understand and use terminology relating to polynomials including degree, leading term,",
-        "Review The Process: Review the process of division with remainders for integers",
-        "Describe The Process: Describe the process of division using the terms: dividend, divisor, quotient, remainder"
+        "Reciprocal Graphs: Examine the relationship between $y = f(x)$ and $y = \\frac{1}{f(x)}$ using graphing applications, identifying vertical and horizontal asymptotes",
+        "Square & Square Root Graphs: Graph $y = \\sqrt{f(x)}$ and $y = [f(x)]^2$ given $y = f(x)$, identifying domains, ranges and key features",
+        "Absolute Value Graphs: Graph $y = |f(x)|$ and $y = f(|x|)$ from a given function, identifying reflections and symmetry properties",
+        "Solving Absolute Value Equations: Solve equations and inequalities involving absolute values algebraically and graphically"
+      ],
+      "Polynomials": [
+        "Polynomial Terminology: Understand and use terminology including degree, leading term, leading coefficient and constant term of polynomials",
+        "Polynomial Division: Divide polynomials to obtain a quotient and remainder using long division, and express $P(x) = D(x)Q(x) + R(x)$",
+        "Remainder Theorem: Apply the remainder theorem: the remainder when $P(x)$ is divided by $(x - a)$ is $P(a)$",
+        "Factor Theorem: Apply the factor theorem: $(x - a)$ is a factor of $P(x)$ if and only if $P(a) = 0$, and use it to factorise polynomials",
+        "Roots & Coefficients: Derive and use relationships between the roots and coefficients of quadratic, cubic and quartic equations (sums and products of roots)",
+        "Multiplicity of Roots: Understand that if $P(x) = 0$ has a root of multiplicity $r > 1$, then $P(x)$ and $P'(x)$ share that root, and examine the graph's behaviour at roots of varying multiplicity"
       ],
       "Parametric Form of a Function": [
-        "Convert Linear: Convert linear and quadratic functions, and circles from parametric form to Cartesian form and",
-        "Sketch Linear: Sketch linear and quadratic functions, and circles expressed in parametric form",
-        "Consider Quadratic, Cubic: Consider quadratic, cubic and quartic equations, and derive formulae as appropriate for the",
-        "Prove That If: Prove that if a polynomial equation of the form \ud835\udc43(\ud835\udc65) = 0 has a root of multiplicity \ud835\udc5f > 1, then",
-        "Examine The Sign: Examine the sign change of the function and shape of the graph either side of roots of varying"
+        "Parametric to Cartesian: Convert linear and quadratic functions, and circles from parametric form to Cartesian form and vice versa",
+        "Sketching Parametric Curves: Sketch linear and quadratic functions and circles expressed in parametric form, identifying direction of travel"
       ]
     },
     "Trigonometric Functions": {
+      "Compound Angle Identities": [
+        "Sine Compound Angle: Derive and apply the compound angle formula $\\sin(A \\pm B) = \\sin A \\cos B \\pm \\cos A \\sin B$",
+        "Cosine Compound Angle: Derive and apply the compound angle formula $\\cos(A \\pm B) = \\cos A \\cos B \\mp \\sin A \\sin B$",
+        "Tangent Compound Angle: Derive and apply $\\tan(A \\pm B) = \\frac{\\tan A \\pm \\tan B}{1 \\mp \\tan A \\tan B}$",
+        "Double Angle (Sine): Derive and apply the double angle formula $\\sin 2A = 2\\sin A \\cos A$",
+        "Double Angle (Cosine): Derive and apply $\\cos 2A = \\cos^2 A - \\sin^2 A = 2\\cos^2 A - 1 = 1 - 2\\sin^2 A$",
+        "Product-to-Sum Identities: Apply product-to-sum identities, e.g., $\\cos A \\cos B = \\frac{1}{2}[\\cos(A-B) + \\cos(A+B)]$ and similar results for $\\sin A \\sin B$, $\\sin A \\cos B$, $\\cos A \\sin B$",
+        "Auxiliary Angle: Express $a\\sin x + b\\cos x$ in the form $R\\sin(x + \\alpha)$ and solve related equations"
+      ],
       "Inverse Trigonometric Functions": [
-        "Understand And Use: Understand and use the notation arcsin \ud835\udc65 and sin\u22121 \ud835\udc65 for the inverse function of sin \ud835\udc65 when",
-        "Sin (\ud835\udc34 \u00b1: Sin (\ud835\udc34 \u00b1 \ud835\udc35) = sin \ud835\udc34 cos \ud835\udc35 \u00b1 cos \ud835\udc34 sin \ud835\udc35",
-        "Cos (\ud835\udc34 \u00b1: Cos (\ud835\udc34 \u00b1 \ud835\udc35) = cos \ud835\udc34 cos \ud835\udc35 \u2213 sin \ud835\udc34 sin \ud835\udc35",
-        "Sin 2\ud835\udc34 =: Sin 2\ud835\udc34 = 2 sin \ud835\udc34 cos \ud835\udc34",
-        "Cos 2\ud835\udc34 =: Cos 2\ud835\udc34 = cos 2 \ud835\udc34 \u2212 sin2 \ud835\udc34",
-        "Cos \ud835\udc34 Cos: Cos \ud835\udc34 cos \ud835\udc35 = 12[cos(\ud835\udc34 \u2212 \ud835\udc35) + cos(\ud835\udc34 + \ud835\udc35)]",
-        "Sin \ud835\udc34 Sin: Sin \ud835\udc34 sin \ud835\udc35 = 12[cos(\ud835\udc34 \u2212 \ud835\udc35) \u2212 cos(\ud835\udc34 + \ud835\udc35)]",
-        "Sin \ud835\udc34 Cos: Sin \ud835\udc34 cos \ud835\udc35 = 12[sin(\ud835\udc34 + \ud835\udc35) + sin(\ud835\udc34 \u2212 \ud835\udc35)]",
-        "Cos \ud835\udc34 Sin: Cos \ud835\udc34 sin \ud835\udc35 = 12[sin(\ud835\udc34 + \ud835\udc35) \u2212 sin(\ud835\udc34 \u2212 \ud835\udc35)]"
+        "Inverse Trig Notation: Understand and use the notation $\\arcsin x$ (or $\\sin^{-1} x$) for the inverse function of $\\sin x$ when restricted to $[-\\frac{\\pi}{2}, \\frac{\\pi}{2}]$, and similarly for $\\arccos x$ and $\\arctan x$",
+        "Graphs of Inverse Trig: Graph $y = \\sin^{-1} x$, $y = \\cos^{-1} x$, and $y = \\tan^{-1} x$ and identify their domains and ranges"
       ]
     },
     "Calculus": {
       "Rates of Change with Respect to Time": [
-        "Investigate Examples Where: Investigate examples where the rate of change of some aspect of a given object with respect",
-        "Use Appropriate Language: Use appropriate language to describe rates of change, for example \u2018at rest\u2019, \u2018initially\u2019, \u2018change",
-        "Sketch The Curve: Sketch the curve \ud835\udc41(\ud835\udc61) = \ud835\udc43 + \ud835\udc34\ud835\udc52 \ud835\udc58\ud835\udc61 for positive and negative values of \ud835\udc58",
-        "Note That Whenever: Note that whenever \ud835\udc58 < 0, the quantity \ud835\udc41 tends to the limit \ud835\udc43 as \ud835\udc61 \u2192 \u221e, irrespective of the",
-        "Recognise That This: Recognise that this model states that the rate of change of a quantity varies directly with the"
+        "Related Rates: Solve related rates problems where the rate of change of one quantity depends on another, using the chain rule $\\frac{dQ}{dt} = \\frac{dQ}{dx} \\cdot \\frac{dx}{dt}$",
+        "Rate of Change Language: Use appropriate language to describe rates of change, e.g., 'at rest', 'initially', 'change of direction', 'increasing/decreasing'",
+        "Exponential Growth/Decay: Sketch and analyse the curve $N(t) = P + Ae^{kt}$ for positive and negative values of $k$, recognising that when $k < 0$, $N \\to P$ as $t \\to \\infty$",
+        "Differential Equation $\\frac{dN}{dt} = kN$: Recognise that exponential models satisfy $\\frac{dN}{dt} = k(N - P)$, where the rate of change is proportional to the quantity",
+        "Newton's Law of Cooling: Apply exponential models to problems including Newton's law of cooling, population growth and radioactive decay"
       ]
     },
     "Combinatorics": {
       "Permutations & Combinations": [
-        "Solve Problems Involving: Solve problems involving cases where some items are not distinct (excluding arrangements in",
-        "Understand That If: Understand that if there are \ud835\udc5b pigeonholes and \ud835\udc5b + 1 pigeons to go into them, then at least",
-        "Generalise To: If: Generalise to: If \ud835\udc5b pigeons are sitting in \ud835\udc58 pigeonholes, where \ud835\udc5b > \ud835\udc58, then there is at least one",
-        "Prove The Pigeonhole: Prove the pigeonhole principle",
-        "Understand And Use: Understand and use the notations ( ) and \ud835\udc5b \ud835\udc36\ud835\udc5f and the formula \ud835\udc5b \ud835\udc36\ud835\udc5f ="
+        "Non-Distinct Items: Solve problems involving arrangements where some items are not distinct (e.g., permutations of letters in a word with repeated letters)",
+        "Pigeonhole Principle: Understand and apply the pigeonhole principle: if $n + 1$ pigeons occupy $n$ pigeonholes, at least one pigeonhole contains $\\geq 2$ pigeons",
+        "Generalised Pigeonhole: Generalise: if $n$ pigeons sit in $k$ pigeonholes where $n > k$, at least one pigeonhole contains $\\geq \\lceil n/k \\rceil$ pigeons",
+        "Proof of Pigeonhole: Prove the pigeonhole principle using proof by contradiction",
+        "Combination Notation: Understand and use $\\binom{n}{r}$ and $^nC_r$ notation with the formula $^nC_r = \\frac{n!}{r!(n-r)!}$"
       ],
       "The Binomial Expansion & Pascal's Triangle": [
-        "Note The Pattern: Note the pattern formed by the coefficients of \ud835\udc65 in the expansion of (1 + \ud835\udc65)\ud835\udc5b and recognise",
-        "Recognise The Numbers: Recognise the numbers ( ) (also denoted \ud835\udc5b \ud835\udc36\ud835\udc5f ) as binomial coefficients (ACMMM047)",
-        "Establish Combinatorial Proofs: Establish combinatorial proofs of the Pascal\u2019s triangle relations \ud835\udc5b \ud835\udc360 = 1, \ud835\udc5b \ud835\udc36\ud835\udc5b = 1;"
+        "Binomial Coefficients in Pascal's Triangle: Note the pattern formed by coefficients in the expansion of $(1 + x)^n$ and recognise them as entries in Pascal's triangle",
+        "Binomial Coefficient Properties: Recognise $\\binom{n}{r}$ as binomial coefficients and establish $\\binom{n}{0} = 1$, $\\binom{n}{n} = 1$, and the symmetry $\\binom{n}{r} = \\binom{n}{n-r}$",
+        "Pascal's Triangle Identity: Establish and apply the identity $\\binom{n}{r} + \\binom{n}{r+1} = \\binom{n+1}{r+1}$ (Pascal's rule) using combinatorial proofs",
+        "Binomial Theorem: Apply the binomial theorem $(a + b)^n = \\sum_{r=0}^{n} \\binom{n}{r} a^{n-r} b^r$ to expand expressions and find specific terms"
       ]
     }
   },
   "Year 12 Extension 1": {
     "Proof": {
       "Mathematical Induction": [
-        "Prove Divisibility Results,: Prove divisibility results, for example 32\ud835\udc5b \u2212 1 is divisible by 8 for any positive integer \ud835\udc5b"
+        "Induction for Sums: Prove summation results using mathematical induction, e.g., $\\sum_{k=1}^{n} k^2 = \\frac{n(n+1)(2n+1)}{6}$",
+        "Induction for Divisibility: Prove divisibility results using mathematical induction, e.g., $3^{2n} - 1$ is divisible by 8 for any positive integer $n$",
+        "Induction for Inequalities: Prove inequality results using mathematical induction, e.g., $2^n > n^2$ for $n \\geq 5$"
       ]
     },
     "Vectors": {
       "Introduction to Vectors": [
-        "Explain The Distinction: Explain the distinction between a position vector and a displacement (relative) vector",
-        "Use Standard Notations: Use standard notations for vectors, for example: a~ , \u20d7\u20d7\u20d7\u20d7\u20d7",
-        "Graphically Represent A: Graphically represent a scalar multiple of a vector (ACMSM012)",
-        "Use The Triangle: Use the triangle law and the parallelogram law to find the sum and difference of two vectors",
-        "Define And Use: Define and use addition and subtraction of vectors in component form (ACMSM017)",
-        "Define And Use: Define and use multiplication by a scalar of a vector in component form (ACMSM018)",
-        "Apply The Scalar: Apply the scalar product, u\uf0d7",
-        "The Diagonals: The diagonals of a parallelogram meet at right angles if and only if it is a rhombus",
-        "The Midpoints: The midpoints of the sides of a quadrilateral join to form a parallelogram (ACMSM040)",
-        "The Sum: The sum of the squares of the lengths of the diagonals of a parallelogram is equal to the sum",
-        "The Force Due: The force due to air resistance is negligible"
+        "Position vs Displacement Vectors: Explain the distinction between a position vector and a displacement (relative) vector",
+        "Vector Notation: Use standard notations for vectors, including $\\mathbf{a}$, $\\vec{AB}$, column vectors, and component form $a\\mathbf{i} + b\\mathbf{j}$",
+        "Scalar Multiplication: Graphically represent a scalar multiple of a vector and understand that $k\\mathbf{a}$ has magnitude $|k||\\mathbf{a}|$",
+        "Vector Addition: Use the triangle law and parallelogram law to find the sum and difference of two vectors geometrically and in component form",
+        "Dot Product: Apply the scalar (dot) product $\\mathbf{u} \\cdot \\mathbf{v} = |\\mathbf{u}||\\mathbf{v}|\\cos\\theta = u_1 v_1 + u_2 v_2$ to find angles between vectors and test perpendicularity",
+        "Geometric Proofs (2D): Prove geometric results using vectors, e.g., diagonals of a parallelogram bisect each other, midpoints of a quadrilateral form a parallelogram"
       ],
       "Projectile Motion": [
-        "The Projectile Is: The projectile is a point",
-        "The Only Force: The only force acting on the projectile is the constant force due to gravity, assuming that the",
-        "Represent The Motion: Represent the motion of a projectile using vectors",
-        "Recognise That The: Recognise that the horizontal and vertical components of the motion of a projectile can be",
-        "Derive The Horizontal: Derive the horizontal and vertical equations of motion of a projectile",
-        "Understand And Explain: Understand and explain the limitations of this projectile model"
+        "Projectile Assumptions: Model a projectile as a point under constant gravitational acceleration with negligible air resistance",
+        "Vector Representation: Represent the motion of a projectile using horizontal and vertical vector components",
+        "Equations of Motion: Derive and use the horizontal and vertical equations of motion: $x = v_0 \\cos\\theta \\cdot t$, $y = v_0 \\sin\\theta \\cdot t - \\frac{1}{2}gt^2$",
+        "Cartesian Equation: Find the Cartesian equation of a projectile's path by eliminating the parameter $t$",
+        "Flight Properties: Determine time of flight, maximum height, range, and impact velocity of a projectile",
+        "Projectile Model Limitations: Understand and explain the limitations of the idealised projectile model (no air resistance, point mass, flat Earth)"
       ]
     },
     "Calculus": {
-      "Further Integration": [
-        "Change An Integrand: Change an integrand into an appropriate form using algebra",
-        "Recognise The Shape: Recognise the shape of a direction field from several alternatives given the form of a",
-        "Sketch Several Possible: Sketch several possible solution curves on a given direction field"
+      "Further Calculus Skills": [
+        "Parametric Differentiation: Find the derivative $\\frac{dy}{dx}$ of a function defined parametrically using $\\frac{dy}{dx} = \\frac{dy/dt}{dx/dt}$",
+        "Inverse Function Derivatives: Verify and use that the derivative of an inverse function is $\\frac{dx}{dy} = \\frac{1}{dy/dx}$ evaluated at the inverse",
+        "Derivatives of Inverse Trig: Apply $\\frac{d}{dx}(\\sin^{-1} x) = \\frac{1}{\\sqrt{1-x^2}}$, $\\frac{d}{dx}(\\cos^{-1} x) = \\frac{-1}{\\sqrt{1-x^2}}$, $\\frac{d}{dx}(\\tan^{-1} x) = \\frac{1}{1+x^2}$",
+        "Integration Yielding Inverse Trig: Find integrals of the form $\\int \\frac{dx}{\\sqrt{a^2 - x^2}} = \\sin^{-1}\\frac{x}{a} + C$ and $\\int \\frac{dx}{a^2 + x^2} = \\frac{1}{a}\\tan^{-1}\\frac{x}{a} + C$",
+        "Integration by Substitution: Evaluate definite and indefinite integrals using substitution, including trigonometric substitutions"
+      ],
+      "Further Applications of Calculus": [
+        "Multiplicity of Zeroes: Use the product rule to prove that if $P(x)$ has a zero of multiplicity $r$, then $P'(x)$ has a zero of multiplicity $r-1$ at the same point",
+        "Volumes of Solids of Revolution: Calculate volumes of solids of revolution about the $x$-axis and $y$-axis using $V = \\pi \\int_a^b [f(x)]^2\\,dx$",
+        "Differential Equations: Recognise and sketch direction fields (slope fields) from first-order differential equations",
+        "Solving Separable DEs: Solve first-order separable differential equations $\\frac{dy}{dx} = g(x)h(y)$ by separation of variables"
       ],
       "Modelling with First-Order Differential Equations": [
-        "Form A Direction: Form a direction field (slope field) from simple first-order differential equations"
+        "Direction Fields: Form a direction field (slope field) from simple first-order differential equations and sketch solution curves",
+        "Logistic Growth: Model and solve problems involving logistic growth $\\frac{dP}{dt} = kP(1 - \\frac{P}{C})$ and interpret the carrying capacity",
+        "Applied DE Problems: Model and solve real-world problems (mixing, heating/cooling, population) using first-order differential equations"
       ]
     },
     "Statistical Analysis": {
       "Bernoulli & Binomial Distributions": [
-        "Identify Contexts Suitable: Identify contexts suitable for modelling by Bernoulli random variables (ACMMM144)",
-        "Understand And Apply: Understand and apply the formulae for the mean, \ud835\udc38(\ud835\udc4b) = \ud835\udc65\u0305 = \ud835\udc5d, and variance,",
-        "Calculate The Expected: Calculate the expected frequencies of the various possible outcomes from a series of",
-        "Identify Contexts Suitable: Identify contexts suitable for modelling by binomial random variables (ACMMM148)",
-        "Identify The Binomial: Identify the binomial parameter \ud835\udc5d as the probability of success",
-        "Understand And Use: Understand and use the notation \ud835\udc4b~Bin(\ud835\udc5b, \ud835\udc5d) to indicate that the random variable \ud835\udc4b is",
-        "Apply The Formulae: Apply the formulae for probabilities \ud835\udc43(\ud835\udc4b = \ud835\udc5f) = \ud835\udc5b \ud835\udc36\ud835\udc5f \ud835\udc5d\ud835\udc5f (1 \u2212 \ud835\udc5d)\ud835\udc5b\u2212\ud835\udc5f associated with the binomial",
-        "Understand And Apply: Understand and apply the formulae for the mean, \ud835\udc38(\ud835\udc4b) = \ud835\udc65\u0305 = \ud835\udc5b\ud835\udc5d, and the variance,"
+        "Bernoulli Trials: Identify contexts suitable for modelling by Bernoulli random variables with $E(X) = p$ and $\\text{Var}(X) = p(1-p)$",
+        "Binomial Distribution: Identify binomial contexts and use $X \\sim \\text{Bin}(n, p)$ with $P(X = r) = \\binom{n}{r} p^r (1-p)^{n-r}$",
+        "Binomial Mean & Variance: Apply the formulae $E(X) = np$ and $\\text{Var}(X) = np(1-p)$ for a binomial random variable",
+        "Expected Frequencies: Calculate expected frequencies of outcomes from a series of Bernoulli trials"
       ],
       "Normal Approximation for the Sample Proportion": [
-        "Understand The Concept: Understand the concept of the sample proportion \ud835\udc5d\u0302 as a random variable whose value varies",
-        "Examine The Approximate: Examine the approximate normality of the distribution of \ud835\udc5d\u0302 for large samples (ACMMM175)"
+        "Sample Proportion: Understand the concept of the sample proportion $\\hat{p}$ as a random variable whose value varies between samples",
+        "CLT for Proportions: Examine the approximate normality of the distribution of $\\hat{p}$ for large samples, with mean $p$ and standard deviation $\\sqrt{\\frac{p(1-p)}{n}}$",
+        "Confidence Intervals: Construct and interpret approximate confidence intervals for population proportions using $\\hat{p} \\pm z \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}}$"
       ]
     }
   },
   "Year 12 Extension 2": {
     "Proof": {
       "Proof by Contradiction & Equivalence": [
-        "Use The Symbols: Use the symbols for implication (\u21d2), equivalence (\u21d4) and equality (=) , demonstrating a"
+        "Language of Proof: Use formal proof language including implication ($\\Rightarrow$), equivalence ($\\Leftrightarrow$), equality ($=$), and proof by contradiction to prove mathematical statements",
+        "Proof by Contradiction: Use proof by contradiction to prove the truth of mathematical statements, and use examples and counterexamples to test truth",
+        "Integer Proofs: Prove results involving integers, including odd/even properties and divisibility"
       ],
       "The Language of Proof": [
-        "Use The Phrases: Use the phrases \u2018for all\u2019 (\u2200), \u2018if and only if\u2019 (iff) and \u2018there exists\u2019 (\u2203) (ACMSM027)",
-        "Understand That A: Understand that a statement is equivalent to its contrapositive but that the converse of a true",
-        "Prove Inequalities: Prove inequalities by using the definition of \ud835\udc4e > \ud835\udc4f for real \ud835\udc4e and \ud835\udc4f",
-        "Prove Inequalities: Prove inequalities by using the property that squares of real numbers are non-negative",
-        "Prove And Use: Prove and use the triangle inequality |\ud835\udc65| + |\ud835\udc66| \u2265 |\ud835\udc65 + \ud835\udc66| and interpret the inequality",
-        "Establish And Use: Establish and use the relationship between the arithmetic mean and geometric mean for two",
-        "Prove Inequality Results,: Prove inequality results, eg 2\ud835\udc5b > \ud835\udc5b2 , for positive integers \ud835\udc5b > 4",
-        "Prove Divisibility Results,: Prove divisibility results, eg 32\ud835\udc5b+4 \u2212 22\ud835\udc5b is divisible by 5 for any positive integer \ud835\udc5b"
+        "Quantifiers & Logical Connectives: Use and interpret the universal quantifier $\\forall$ ('for all'), existential quantifier $\\exists$ ('there exists'), and biconditional 'if and only if' (iff) in formal proof statements",
+        "Contrapositive & Converse: Understand that a statement is equivalent to its contrapositive ($P \\Rightarrow Q \\equiv \\neg Q \\Rightarrow \\neg P$) but that the converse of a true statement may not be true",
+        "Inequality Proofs (Definition): Prove inequalities using the definition of $a > b$ for real $a$ and $b$ (i.e., $a - b > 0$)",
+        "Inequality Proofs (Squares): Prove inequalities using the property that squares of real numbers are non-negative, in particular $x^2 \\geq 0$",
+        "Triangle Inequality: Prove and use the triangle inequality $|x| + |y| \\geq |x + y|$ and interpret the result geometrically",
+        "AM-GM Inequality: Establish and use the relationship between the arithmetic mean and geometric mean for two non-negative numbers: $\\frac{a+b}{2} \\geq \\sqrt{ab}$",
+        "Inequality by Induction: Prove inequality results using mathematical induction, e.g., $2^n > n^2$ for positive integers $n > 4$",
+        "Divisibility by Induction: Prove divisibility results using mathematical induction, e.g., $3^{2n+4} - 2^{2n}$ is divisible by 5 for any positive integer $n$",
+        "Squeeze Theorem: Prove results using the squeeze theorem: if $g(x) \\leq f(x) \\leq h(x)$ near $c$ and $\\lim_{x \\to c} g(x) = \\lim_{x \\to c} h(x) = L$, then $\\lim_{x \\to c} f(x) = L$",
+        "Graphical & Calculus Inequality Proofs: Prove inequalities using graphical techniques, calculus techniques (e.g., showing a function is increasing/decreasing), or a combination of both"
       ]
     },
     "Vectors": {
       "3D Vectors & Geometric Proofs": [
-        "Define The Standard: Define the standard unit vectors ~i , j and k~"
+        "3D Unit Vectors: Define the standard unit vectors $\\mathbf{i}$, $\\mathbf{j}$ and $\\mathbf{k}$ and express vectors in component form in three dimensions",
+        "3D Magnitude: Establish that the magnitude of a vector in three dimensions is $|\\mathbf{v}| = \\sqrt{x^2 + y^2 + z^2}$",
+        "Scalar (Dot) Product Properties: Examine and use properties of the scalar product including commutativity ($\\mathbf{a} \\cdot \\mathbf{b} = \\mathbf{b} \\cdot \\mathbf{a}$), distributivity, and scalar multiplication",
+        "Cauchy-Schwarz Inequality: Prove and use the Cauchy\\u2013Schwarz inequality: $|\\mathbf{a} \\cdot \\mathbf{b}| \\leq |\\mathbf{a}||\\mathbf{b}|$",
+        "Geometric Proofs with Vectors: Solve problems and prove geometric results (medians, altitudes, perpendicular bisectors, angle bisectors of triangles) in 2D and 3D using vectors"
       ],
       "Vector Equation of a Line": [
-        "Establish That The: Establish that the magnitude of a vector in three dimensions can be found using:"
+        "Direction Vector: Define the direction vector of a straight line and identify that a line through two points $A$ and $B$ has $\\overrightarrow{AB}$ as a possible direction vector",
+        "Vector Equation of a Line: Use $\\mathbf{r} = \\mathbf{a} + t\\mathbf{d}$ as the vector equation of a straight line in 2D and 3D, where $\\mathbf{a}$ is a point on the line, $\\mathbf{d}$ is the direction vector, and $t$ is a scalar parameter",
+        "Parallel & Intersecting Lines: Determine when two lines in vector form are parallel, find points of intersection in 2D, and identify skew lines in 3D",
+        "Vector Equations of Curves: Express parametrically defined curves as vector equations $\\mathbf{r}(t) = x(t)\\mathbf{i} + y(t)\\mathbf{j}$, including circles with radius $r$ and centre $(h, k)$",
+        "Cartesian Conversion: Determine the Cartesian equation of a curve given its vector equation, and identify vector equations from graphs"
       ]
     },
     "Complex Numbers": {
       "Arithmetic of Complex Numbers": [
-        "Develop An Understanding: Develop an understanding of the classification of numbers and their associated properties,",
-        "Define The Number,: Define the number, \ud835\udc56, as a root of the equation \ud835\udc65 2 = \u22121 (ACMSM067)",
-        "Use The Symbol: Use the symbol \ud835\udc56 to solve quadratic equations that do not have real roots",
-        "Use Complex Numbers: Use complex numbers in the form \ud835\udc67 = \ud835\udc4e + \ud835\udc56\ud835\udc4f, where \ud835\udc4e and \ud835\udc4f are real numbers and \ud835\udc4e is the",
-        "Identify The Condition: Identify the condition for \ud835\udc671 = \ud835\udc4e + \ud835\udc56\ud835\udc4f and \ud835\udc672 = \ud835\udc50 + \ud835\udc56\ud835\udc51 to be equal",
-        "Define And Perform: Define and perform complex number addition, subtraction and multiplication (ACMSM070)",
-        "Define, Find: Define, find and use complex conjugates, and denote the complex conjugate of \ud835\udc67 as \ud835\udc67\u0305",
-        "Divide One Complex: Divide one complex number by another complex number and give the result in the form",
-        "Find The Reciprocal: Find the reciprocal and two square roots of complex numbers in the form \ud835\udc67 = \ud835\udc4e + \ud835\udc56\ud835\udc4f",
-        "Use The Fact: Use the fact that there exists a one-to-one correspondence between the complex number \ud835\udc67 =",
-        "Plot The Point: Plot the point corresponding to \ud835\udc67 = \ud835\udc4e + \ud835\udc56\ud835\udc4f",
-        "Given The Points: Given the points representing \ud835\udc671 and \ud835\udc672 , find the position of the points representing \ud835\udc671 + \ud835\udc672 and",
-        "Describe The Vector: Describe the vector representing \ud835\udc671 + \ud835\udc672 or \ud835\udc671 \u2212 \ud835\udc672 as corresponding to the relevant diagonal"
+        "Number Classification: Classify numbers as belonging to the sets $\\mathbb{N} \\subset \\mathbb{Z} \\subset \\mathbb{Q} \\subset \\mathbb{R} \\subset \\mathbb{C}$ and understand each as an extension of the previous",
+        "Imaginary Unit: Define $i$ as a root of $x^2 = -1$ and use $i$ to solve quadratic equations with no real roots",
+        "Complex Number Form: Use complex numbers in the form $z = a + ib$, where $\\text{Re}(z) = a$ and $\\text{Im}(z) = b$ are real numbers",
+        "Equality of Complex Numbers: Identify the condition for $z_1 = a + ib$ and $z_2 = c + id$ to be equal: $a = c$ and $b = d$",
+        "Complex Arithmetic: Perform addition, subtraction, multiplication and division of complex numbers, expressing results in the form $a + ib$",
+        "Complex Conjugates: Define, find and use complex conjugates; denote the conjugate of $z$ as $\\bar{z}$, and find the reciprocal $\\frac{1}{z}$",
+        "Square Roots of Complex Numbers: Find the two square roots of complex numbers in the form $z = a + ib$",
+        "Argand Diagram: Plot complex numbers on the Argand diagram and represent addition/subtraction geometrically as parallelogram diagonals"
+      ],
+      "Polar & Exponential Form": [
+        "Modulus & Argument: Define the modulus $|z| = \\sqrt{a^2 + b^2}$ and principal argument $\\text{Arg}(z)$ of a complex number $z = a + ib$",
+        "Polar Form: Express complex numbers in polar (mod-arg) form $z = r(\\cos\\theta + i\\sin\\theta) = r\\,\\text{cis}\\,\\theta$",
+        "Multiplication in Polar Form: Prove and use the result that for two complex numbers in polar form, $z_1 z_2 = r_1 r_2 \\,\\text{cis}(\\theta_1 + \\theta_2)$",
+        "Exponential Form: Use Euler's formula $e^{i\\theta} = \\cos\\theta + i\\sin\\theta$ to express complex numbers in exponential form $z = re^{i\\theta}$"
       ],
       "De Moivre's Theorem & Applications": [
-        "Prove De Moivre\u2019S: Prove De Moivre\u2019s theorem for integral powers using proof by induction (ACMSM083)",
-        "Use De Moivre\u2019S: Use De Moivre\u2019s theorem to derive trigonometric identities such as"
+        "De Moivre's Theorem: Prove by induction that $(\\cos\\theta + i\\sin\\theta)^n = \\cos(n\\theta) + i\\sin(n\\theta)$ for integer $n$",
+        "Trig Identity Derivation: Use De Moivre's theorem to derive trigonometric identities such as expressions for $\\cos(n\\theta)$ and $\\sin(n\\theta)$ in terms of powers of $\\cos\\theta$ and $\\sin\\theta$",
+        "Roots of Unity: Find the $n$th roots of unity and complex numbers, and represent them geometrically on the Argand diagram",
+        "Roots of Polynomials: Apply the conjugate root theorem \\u2014 if $z$ is a root of a polynomial with real coefficients, then $\\bar{z}$ is also a root"
       ]
     },
     "Calculus": {
-      "Integration by Parts": [
-        "Develop The Method: Develop the method for integration by parts, expressed as \u222b \ud835\udc62\ud835\udc63\u2032\ud835\udc51\ud835\udc65 = \ud835\udc62\ud835\udc63 \u2212 \u222b \ud835\udc63\ud835\udc62\u2032\ud835\udc51\ud835\udc65 or"
+      "Further Integration Techniques": [
+        "Integration by Substitution: Use appropriate substitutions including trigonometric and other substitutions to evaluate integrals",
+        "Partial Fractions: Integrate rational functions by decomposing into partial fractions with distinct linear factors, irreducible quadratic factors, and repeated factors",
+        "Completing the Square: Integrate rational functions by completing the square on a quadratic denominator, e.g., $\\int \\frac{dx}{x^2 + 2x + 5}$",
+        "Improper Fractions: Integrate rational functions where the degree of the numerator $\\geq$ degree of the denominator by polynomial long division",
+        "Integration by Parts: Derive and apply the method $\\int u\\,dv = uv - \\int v\\,du$, including problems requiring repeated application",
+        "Recurrence Relations: Derive and use recurrence relations involving integration by parts, e.g., $I_n = \\int_0^{\\pi/2} \\sin^n x\\,dx$"
       ]
     },
     "Mechanics": {
       "Simple Harmonic Motion": [
-        "Establish That Simple: Establish that simple harmonic motion is modelled by equations of the form:",
-        "Use \ud835\udc39 =: Use \ud835\udc39 = \ud835\udc5a\ud835\udc65\u0308 where \ud835\udc39 is the force acting on a mass, \ud835\udc5a, with acceleration \ud835\udc65\u0308",
-        "Interpret Graphs: Interpret graphs of displacement-time and velocity-time to describe the motion of a particle,",
-        "Derive, From Newton\u2019S: Derive, from Newton\u2019s laws of motion, the equation of motion of a particle moving in a single",
-        "Derive An Expression: Derive an expression for velocity as a function of time",
-        "Derive An Expression: Derive an expression for velocity as a function of displacement",
-        "Derive An Expression: Derive an expression for displacement as a function of time",
-        "Derive, From Newton\u2019S: Derive, from Newton\u2019s laws of motion, the equation of motion of a particle moving vertically in",
-        "Derive An Expression: Derive an expression for velocity as a function of time and for velocity as a function of",
-        "Determine The Terminal: Determine the terminal velocity of a falling particle from its equation of motion",
-        "Solve Problems: Solve problems by using the expressions derived for acceleration, velocity and displacement",
-        "Use Parametric Equations: Use parametric equations of a projectile to determine a corresponding Cartesian equation for",
-        "Use The Cartesian: Use the Cartesian equation of the trajectory of a projectile, including problems in which the"
+        "SHM Definition: Define simple harmonic motion as $\\ddot{x} = -n^2 x$, where $x$ is displacement from the centre and $n$ is a positive constant",
+        "Restoring Force: Recognise that $F = m\\ddot{x} = -mn^2 x$ is a restoring force acting towards the centre of motion",
+        "SHM Solutions: Verify that $x = a\\cos(nt + \\alpha)$, $x = a\\sin(nt + \\alpha)$, or $x = a\\cos(nt) + b\\sin(nt)$ are solutions to $\\ddot{x} = -n^2 x$",
+        "SHM Properties: Describe SHM using displacement, velocity, acceleration, amplitude $a$, and period $T = \\frac{2\\pi}{n}$",
+        "Velocity-Displacement: Derive $v^2 = n^2(a^2 - x^2)$ for a particle in SHM with amplitude $a$",
+        "SHM Graphing: Graph $x(t)$, $v(t)$ and $a(t)$ for a particle in SHM and determine equations from given graphs",
+        "SHM Problem Solving: Determine equations for displacement and velocity given initial conditions and solve applied SHM problems"
+      ],
+      "Forces & Motion in a Straight Line": [
+        "Acceleration Forms: Derive expressions for acceleration as $a = \\frac{dv}{dt}$, $a = v\\frac{dv}{dx}$, and $a = \\frac{d}{dx}\\left(\\frac{1}{2}v^2\\right)$",
+        "Newton's Laws: Apply Newton's laws ($F = ma$) to solve problems involving constant and non-constant forces in rectilinear motion",
+        "Force Resolution: Resolve concurrent forces into perpendicular components and use vector projections in 2D and 3D contexts",
+        "Inclined Planes & Pulleys: Analyse motion on smooth inclined planes by resolving forces parallel and perpendicular, including single pulley systems"
       ],
       "Resisted Motion": [
-        "Solve Problems Involving: Solve problems involving resisted motion along a horizontal line"
+        "Horizontal Resisted Motion: Derive and solve $m\\ddot{x} = -mkv^p$ for a particle moving horizontally with resistance proportional to a power of speed",
+        "Velocity as f(t) and f(x): Derive expressions for velocity as a function of time and displacement for horizontal resisted motion",
+        "Vertical Resisted Motion (Up): Derive the equation of motion $m\\ddot{x} = -mg - mkv^p$ for a particle moving vertically upwards against gravity with resistance proportional to $v$ or $v^2$",
+        "Vertical Resisted Motion (Down): Derive the equation of motion $m\\ddot{x} = mg - mkv^p$ for a particle falling under gravity with resistance proportional to $v$ or $v^2$",
+        "Terminal Velocity: Define and determine the terminal velocity $v_T$ of a falling particle where resistance equals gravitational force",
+        "Resisted Projectiles: Distinguish between trajectories with and without air resistance, and establish equations for projectiles with resistance proportional to speed"
       ]
     }
   },
@@ -608,7 +631,7 @@
         "Vector Addition: Vector addition by resolution into components",
         "Graphs and vectors",
         "Work Done: Work done and change in the kinetic energy of an object undergoing accelerated rectilinear",
-        "Changes In Gravitational: Changes in gravitational potential energy of an object in a uniform field \u0394\ud835\udc48 = \ud835\udc5a\ud835\udc54\u0394\u210e",
+        "Changes In Gravitational: Changes in gravitational potential energy of an object in a uniform field Δ𝑈 = 𝑚𝑔Δℎ",
         "Uniformly Accelerated Rectilinear: Uniformly accelerated rectilinear motion",
         "Objects Raised Against: Objects raised against the force of gravity",
         "Work Done Against: Work done against air resistance, rolling resistance and friction",
@@ -659,19 +682,19 @@
         "Orbital velocity",
         "Orbital period",
         "Acceleration, Perpendicular: Acceleration, perpendicular to the field, of charged particles",
-        "The Force On: The force on the charge \ud835\udc39 = \ud835\udc5e\ud835\udc63\u22a5 \ud835\udc35 = \ud835\udc5e\ud835\udc63\ud835\udc35sin\ud835\udf03",
+        "The Force On: The force on the charge 𝐹 = 𝑞𝑣⊥ 𝐵 = 𝑞𝑣𝐵sin𝜃",
         "The Interaction: The interaction of charged particles with electric fields",
         "Other Examples: Other examples of uniform circular motion (ACSPH108)",
         "Conditions Under Which: Conditions under which the maximum force is produced",
         "The Relationship Between: The relationship between the directions of the force, magnetic field strength and current",
         "Conditions Under Which: Conditions under which no force is produced on the conductor",
-        "The Generation: The generation of an electromotive force (emf) and evidence for Lenz\u2019s Law produced by the",
+        "The Generation: The generation of an electromotive force (emf) and evidence for Lenz’s Law produced by the",
         "The Generation: The generation of an emf produced by the relative movement or changes in current in one",
         "Incomplete flux linkage",
         "Resistive Heat Production: Resistive heat production and eddy currents",
         "The Distribution: The distribution of energy using high-voltage transmission lines",
         "The Functions: The functions of its components",
-        "Production Of A: Production of a torque \ud835\udf0f = \ud835\udc5b\ud835\udc3c\ud835\udc34\u22a5 \ud835\udc35 = \ud835\udc5b\ud835\udc3c\ud835\udc34\ud835\udc35sin\ud835\udf03",
+        "Production Of A: Production of a torque 𝜏 = 𝑛𝐼𝐴⊥ 𝐵 = 𝑛𝐼𝐴𝐵sin𝜃",
         "Effects Of Back: Effects of back emf (ACSPH108)",
         "DC motors and",
         "Magnetic braking",
@@ -685,24 +708,24 @@
         "Chemical composition",
         "The Speed: The speed of light in a vacuum is an absolute constant",
         "All Inertial Frames: All inertial frames of reference are equivalent (ACSPH131)",
-        "Observations Of Cosmic-Origin: Observations of cosmic-origin muons at the Earth\u2019s surface",
-        "Atomic Clocks (Hafele\u2013Keating: Atomic clocks (Hafele\u2013Keating experiment)",
+        "Observations Of Cosmic-Origin: Observations of cosmic-origin muons at the Earth’s surface",
+        "Atomic Clocks (Hafele–Keating: Atomic clocks (Hafele–Keating experiment)",
         "Evidence From Particle: Evidence from particle accelerators",
         "Evidence From Cosmological: Evidence from cosmological studies",
         "Production Of Energy: Production of energy by the sun",
-        "Particle\u2013Antiparticle Interactions, Eg: Particle\u2013antiparticle interactions, eg positron\u2013electron annihilation",
+        "Particle–Antiparticle Interactions, Eg: Particle–antiparticle interactions, eg positron–electron annihilation",
         "Combustion Of Conventional: Combustion of conventional fuel",
         "Characteristics And Evolutionary: Characteristics and evolutionary stage",
         "Colour",
         "Luminosity",
-        "Proton\u2013proton chain",
+        "Proton–proton chain",
         "CNO (carbon-nitrogen-oxygen) cycle",
         "Early Experiments Examining: Early experiments examining the nature of cathode rays",
-        "Thomson\u2019s charge-to-mass experiment",
+        "Thomson’s charge-to-mass experiment",
         "Millikan'S Oil Drop: Millikan's oil drop experiment (ACSPH026)",
         "The Geiger-Marsden experiment",
-        "Rutherford\u2019s atomic model",
-        "Chadwick\u2019S Discovery: Chadwick\u2019s discovery of the neutron (ACSPH026)",
+        "Rutherford’s atomic model",
+        "Chadwick’S Discovery: Chadwick’s discovery of the neutron (ACSPH026)",
         "The Law: The law of conservation of energy",
         "Mass defect",
         "Binding energy",
@@ -721,7 +744,7 @@
         "Learn To: Identify: Learn to: identify areas of engineering",
         "Learn To: Outline: Learn to: outline historical uses and appropriateness of",
         "Learn To: Historical: Learn to: historical developments of engineering",
-        "Learn To: Effect: Learn to: effect of engineering innovation on people\u2019s lives",
+        "Learn To: Effect: Learn to: effect of engineering innovation on people’s lives",
         "Learn To: Demonstrate: Learn to: demonstrate an understanding of the historical",
         "Learn To: Mass: Learn to: mass and force",
         "Learn To: Use: Learn to: use mathematical and graphical methods to",
@@ -781,7 +804,7 @@
         "Learn To: Project: Learn to: project managers",
         "Learn To: Historical: Learn to: historical development of various engineered",
         "Learn To: Recount: Learn to: recount the historical development of the",
-        "Learn To: The: Learn to: the effects of engineered products on peoples\u2019",
+        "Learn To: The: Learn to: the effects of engineered products on peoples’",
         "The Effects Of Various Engineered: Learn to: describe the effects of various engineered",
         "Learn To: The: Learn to: the environmental implications of the",
         "Learn To: Identify: Learn to: identify the social and environmental implications",
@@ -852,7 +875,7 @@
         "Learn about:",
         "Learn To: Work,: Learn to: work, power, energy (without calculations),",
         "Learn To: Fluid: Learn to: fluid mechanics",
-        "Learn To: Pascal\u2019S: Learn to: Pascal\u2019s principle",
+        "Learn To: Pascal’S: Learn to: Pascal’s principle",
         "Learn To: Hydrostatic: Learn to: hydrostatic pressure",
         "Learn To: Applications: Learn to: applications to braking systems",
         "The Basic Principles Of: Learn to: investigate and apply the basic principles of",
@@ -913,8 +936,8 @@
         "Learn to: polymers",
         "Learn to: ceramics",
         "Learn To: Explain: Learn to: explain the properties and uses of appropriate",
-        "Learn To: Ohm\u2019S: Learn to: Ohm\u2019s Law",
-        "Ohm\u2019S Law And Explain The: Learn to: apply Ohm\u2019s Law and explain the basic",
+        "Learn To: Ohm’S: Learn to: Ohm’s Law",
+        "Ohm’S Law And Explain The: Learn to: apply Ohm’s Law and explain the basic",
         "Learn To: Series: Learn to: series and parallel circuits",
         "Learn To: Discuss: Learn to: discuss the development of electronic",
         "Learn To: Power: Learn to: power source",
@@ -961,7 +984,7 @@
         "Learn To: Stress: Learn to: stress and strain",
         "Learn To: Shear,: Learn to: shear, compressive and tensile stress",
         "Learn To: Engineering: Learn to: engineering and true stress",
-        "Learn To: Yield: Learn to: yield stress, proof stress, toughness, Young\u2019s",
+        "Learn To: Yield: Learn to: yield stress, proof stress, toughness, Young’s",
         "And Graph The Bending Stress: Learn to: calculate and graph the bending stress and",
         "Mathematical Methods: Learn to: apply mathematical methods to solve",
         "Learn To: Testing: Learn to: testing of materials",
@@ -1149,10 +1172,10 @@
         "Learn To: Lift: Learn to: lift to drag ratio",
         "Learn To: Effect: Learn to: effect of angle of attack",
         "Mathematical And Graphical Methods: Learn to: apply mathematical and graphical methods to",
-        "Learn To: Bernoulli\u2019S: Learn to: Bernoulli\u2019s principle and its application to",
+        "Learn To: Bernoulli’S: Learn to: Bernoulli’s principle and its application to",
         "Learn To: Venturi: Learn to: venturi effect",
         "Learn to: lift",
-        "Learn To: Outline: Learn to: outline Bernoulli\u2019s principle as applied to",
+        "Learn To: Outline: Learn to: outline Bernoulli’s principle as applied to",
         "Learn To: Bending: Learn to: bending stress",
         "Learn to: airframes",
         "Learn To: Investigate: Learn to: investigate the nature and effect of bending",
@@ -1163,7 +1186,7 @@
         "Learn to: rockets",
         "The Operational Principles And Use: Learn to: describe the operational principles and use of",
         "Learn To: Fluid: Learn to: fluid mechanics",
-        "Learn To: Pascal\u2019S: Learn to: Pascal\u2019s principle",
+        "Learn To: Pascal’S: Learn to: Pascal’s principle",
         "Learn To: Hydrostatic: Learn to: hydrostatic and dynamic pressure",
         "Learn To: Applications: Learn to: applications to aircraft components and",
         "Mathematical Methods: Learn to: apply mathematical methods to solve",
