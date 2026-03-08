@@ -232,7 +232,8 @@ ${contentString}
                                 We've copied your highly specific prompt to your clipboard.
                             </p>
                             <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4">
-                                <p className="text-sm font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
+                                <p className="text-[13px] font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
+                                <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full rounded-xl border border-surface-3/50 shadow-md object-cover" />
                                 <p className="text-xs">
                                     Use <span className="text-primary font-bold">'Thinking'</span> for fast and <span className="text-accent font-bold">'Pro'</span> for quality. Canvas feature also allows editing with highlight to ask
                                 </p>
