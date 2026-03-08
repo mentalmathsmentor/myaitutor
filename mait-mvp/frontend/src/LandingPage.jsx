@@ -111,6 +111,12 @@ function ScrollReveal({ children, delay = 0, className = '' }) {
     )
 }
 
+function ordinalSuffix(n) {
+    const s = ['th', 'st', 'nd', 'rd']
+    const v = n % 100
+    return n.toLocaleString() + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
 export default function LandingPage({ navigate, onLoginClick }) {
     const [visitCount, setVisitCount] = useState(null)
 
@@ -390,9 +396,12 @@ export default function LandingPage({ navigate, onLoginClick }) {
                             © 2026 MAIT. All rights reserved.
                         </p>
                         {visitCount !== null && (
-                            <p className="text-muted-foreground/30 text-[10px] font-mono tabular-nums">
-                                {visitCount.toLocaleString()} visits
-                            </p>
+                            <div className="flex items-center gap-2 mt-1 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/15">
+                                <Users size={12} className="text-primary" />
+                                <p className="text-xs font-display">
+                                    You are the <span className="text-primary font-bold tabular-nums">{ordinalSuffix(visitCount)}</span> visitor
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
