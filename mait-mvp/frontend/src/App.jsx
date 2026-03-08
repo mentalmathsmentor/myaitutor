@@ -18,6 +18,7 @@ import TopicSidebar from './components/TopicSidebar'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 import useAuth from './hooks/useAuth'
+import AvatarDisplay from './components/AvatarDisplay'
 
 const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo', 'privacy'];
 
@@ -1404,6 +1405,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     </div>
                 </div>
             )}
+
+            <AvatarDisplay />
         </>
     )
 }
