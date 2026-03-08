@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, Users } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList } from 'lucide-react'
 
 const SYLLABI = [
     { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
@@ -11,11 +11,36 @@ const SYLLABI = [
 // Math symbols for floating particles
 const MATH_SYMBOLS = [
     // Core Symbols
-    'π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴',
-    // NESA Syllabus Formulae (Standard, Advanced, Extension 1 & 2)
-    'd/dx', 'dy/dx', 'ax²+bx+c=0', 'sin²θ+cos²θ=1', 'x=(-b±√∆)/2a',
-    'FV=PV(1+r)ⁿ', 'z=(x-μ)/σ', 'ⁿCᵣ', 'ⁿPᵣ', 'a·b=|a||b|cosθ',
-    'z=r(cosθ+isinθ)', '∫eˣdx=eˣ', 'y-y₁=m(x-x₁)', 'a²+b²=c²'
+    'π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴', 'α', 'β', 'γ', 'φ', 'ω', 'ε', 'μ', 'σ',
+    // Standard & Advanced — Algebra & Functions
+    'ax²+bx+c=0', 'x=(-b±√∆)/2a', 'y-y₁=m(x-x₁)', 'a²+b²=c²', 'logₐx', '|x|',
+    'f(g(x))', 'f⁻¹(x)', 'Σxᵢ/n', 'A=½bh', 'V=⅓πr²h',
+    // Standard — Financial & Statistics
+    'FV=PV(1+r)ⁿ', 'z=(x-μ)/σ', 'A=P(1+r/n)ⁿᵗ', 'σ²', 'x̄',
+    // Advanced — Calculus
+    'd/dx', 'dy/dx', 'f\'(x)', 'f\'\'(x)', '∫eˣdx=eˣ', '∫xⁿdx', 'lim x→∞',
+    'd/dx(sin x)=cos x', 'd/dx(eˣ)=eˣ', 'd/dx(ln x)=1/x', '∫₀¹ f(x)dx',
+    'A=∫ₐᵇ f(x)dx', 'dy/dx=dy/du·du/dx',
+    // Advanced — Trigonometry
+    'sin²θ+cos²θ=1', 'tan θ=sin θ/cos θ', 'sin(A±B)', 'cos 2θ=2cos²θ−1',
+    'a/sin A=b/sin B', 'c²=a²+b²−2ab cos C',
+    // Advanced — Probability
+    'ⁿCᵣ', 'ⁿPᵣ', 'P(A∪B)', 'P(A|B)', 'E(X)=Σxᵢpᵢ', 'Var(X)',
+    // Extension 1 — Inverse Trig & Induction
+    'sin⁻¹x', 'cos⁻¹x', 'tan⁻¹x', '∫dx/√(1−x²)', 'n! ', 'P(n)→P(n+1)',
+    'x=a cos θ', 'v²=u²+2as', 'ẍ=−n²x',
+    // Extension 1 — Vectors
+    'a·b=|a||b|cosθ', '|a×b|', 'r=a+tb',
+    // Extension 2 — Complex Numbers
+    'z=a+bi', '|z|=√(a²+b²)', 'z=r·cis θ', 'zⁿ=rⁿcis(nθ)', 'z̄', 'Re(z)', 'Im(z)',
+    'e^(iθ)=cosθ+isinθ',
+    // Extension 2 — Mechanics & Integration
+    '∫sec²x dx', '∫dx/(a²+x²)', '∮', 'ẍ=F/m', 'T=2π/ω',
+    // Physics
+    'F=ma', 'E=mc²', 'v=fλ', 'W=Fd', 'p=mv', 'KE=½mv²',
+    'V=IR', 'P=IV', 'F=kQq/r²', 'Φ=BA',
+    // Engineering Studies
+    'σ=F/A', 'τ=Tr/J', 'ε=∆L/L', 'η=Pout/Pin'
 ]
 
 function MathParticles() {
@@ -107,7 +132,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
     }, [])
 
     return (
-        <div className="min-h-screen bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
+        <div className="min-h-screen pt-14 bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
             {/* Floating Orbs Background */}
             <div className="orb-container">
                 <div className="orb orb-1" />
@@ -129,12 +154,15 @@ export default function LandingPage({ navigate, onLoginClick }) {
 
             {/* Hero */}
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-8 pb-16 min-h-[70vh]">
-                <div className="tag animate-reveal animate-reveal-2 animate-float mb-8">
+                {/* Hero Text Backdrop Blur for Readability */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[140%] bg-cosmic/80 blur-[120px] rounded-[100%] pointer-events-none z-0" />
+
+                <div className="tag animate-reveal animate-reveal-2 animate-float mb-8 relative">
                     <Sparkles size={12} className="animate-sparkle" />
                     COMING 2026
                 </div>
 
-                <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1]">
+                <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1] relative">
                     <span className="gradient-text-primary">Your AI Study Mate</span>
                     <br />
                     <span className="text-foreground inline-block">for HSC Maths</span>
@@ -245,7 +273,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
                         </p>
                     </ScrollReveal>
                 </div>
-                <div className="grid md:grid-cols-3 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <ScrollReveal delay={300}>
                         <ResourcePreviewCard
                             icon={<GraduationCap className="text-primary" size={20} />}
@@ -277,6 +305,36 @@ export default function LandingPage({ navigate, onLoginClick }) {
                             View All Resources
                             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
                         </button>
+                    </div>
+                </ScrollReveal>
+            </section>
+
+            {/* Worksheet Generator CTA */}
+            <section className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-20">
+                <ScrollReveal>
+                    <div className="divider-glow mb-8" />
+                </ScrollReveal>
+                <ScrollReveal delay={100}>
+                    <div className="glass-card card-shine rounded-2xl overflow-hidden">
+                        <div className="flex flex-col md:flex-row items-center gap-6 p-8">
+                            <div className="flex-shrink-0 w-16 h-16 bg-primary/15 rounded-2xl flex items-center justify-center border border-primary/20">
+                                <ClipboardList size={32} className="text-primary" />
+                            </div>
+                            <div className="text-center md:text-left flex-1">
+                                <span className="text-xs font-display uppercase tracking-widest text-primary font-bold mb-2 block">✦ Try it now — free</span>
+                                <h3 className="font-display text-2xl font-bold mb-2">HSC Worksheet Generator</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">
+                                    Generate professional, NESA-aligned LaTeX worksheets in seconds. Select specific syllabus dot-points, set your spacing, and get a production-ready prompt for Gemini Canvas.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate('worksheets')}
+                                className="btn-primary btn-glow px-6 py-3 rounded-xl flex items-center gap-2 group whitespace-nowrap flex-shrink-0"
+                            >
+                                Open Generator
+                                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                            </button>
+                        </div>
                     </div>
                 </ScrollReveal>
             </section>
@@ -367,15 +425,17 @@ function FeatureCard({ icon, title, desc }) {
 
 function ResourcePreviewCard({ icon, title, items }) {
     return (
-        <div className="glass-card card-shine p-5 rounded-xl group">
-            <div className="flex items-center gap-2 mb-3">
-                <span className="icon-hover-rotate">{icon}</span>
-                <h4 className="font-display text-sm font-bold">{title}</h4>
+        <div className="glass-card card-shine p-6 rounded-2xl group flex flex-col items-center text-center">
+            <div className="flex flex-col items-center gap-2 mb-4">
+                <div className="icon-hover-lift bg-surface-1 w-12 h-12 rounded-full flex items-center justify-center border border-surface-3 mb-1">
+                    {icon}
+                </div>
+                <h4 className="font-display text-sm font-bold text-foreground">{title}</h4>
             </div>
-            <ul className="space-y-1.5">
+            <ul className="space-y-2 w-full">
                 {items.map(item => (
-                    <li key={item} className="text-muted-foreground text-xs flex items-start gap-2">
-                        <span className="text-primary mt-0.5">&#8250;</span>
+                    <li key={item} className="text-muted-foreground text-xs flex items-center justify-center gap-2">
+                        <span className="text-primary/60">•</span>
                         {item}
                     </li>
                 ))}

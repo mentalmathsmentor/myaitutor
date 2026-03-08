@@ -6,3 +6,9 @@ __pycache__/
 node_modules/
 dist/
 venv/
+**/node_modules/
+**/.vite/
+mait-mvp/frontend 2/
+mait-mvp/mait-mvp 2/
+.git_corrupt/
+.claude/
