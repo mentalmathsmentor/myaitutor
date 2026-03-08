@@ -25,9 +25,18 @@ function buildMergedSyllabus(yearLevel) {
     for (const parentLevel of parents) {
         const parentData = syllabusData[parentLevel]
         if (!parentData) continue
-        // Add parent content under a labelled section like "Advanced (Prerequisite)"
+
+        // The prerequisite syllabus has structure: {Module: {Subtopic: [points]}}
+        // Our UI tree expects: {TopLevelModule: {Subtopic: [points]}}
+        // Flatten prerequisite into: {"[ParentLevel] (Prerequisite)": {"Module → Subtopic": [points]}}
         const label = `${parentLevel} (Prerequisite)`
-        merged[label] = JSON.parse(JSON.stringify(parentData))
+        const flatSubtopics = {}
+        for (const [mod, subtopics] of Object.entries(parentData)) {
+            for (const [subt, points] of Object.entries(subtopics)) {
+                flatSubtopics[`${mod} → ${subt}`] = points
+            }
+        }
+        merged[label] = flatSubtopics
     }
 
     return merged
