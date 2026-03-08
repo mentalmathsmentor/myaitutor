@@ -126,7 +126,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
     }, [])
 
     return (
-        <div className="min-h-screen bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
+        <div className="min-h-screen pt-14 bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
             {/* Floating Orbs Background */}
             <div className="orb-container">
                 <div className="orb orb-1" />
@@ -149,7 +149,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
             {/* Hero */}
             <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-8 pb-16 min-h-[70vh]">
                 {/* Hero Text Backdrop Blur for Readability */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[140%] bg-cosmic/80 blur-[120px] rounded-[100%] pointer-events-none -z-10" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[140%] bg-cosmic/80 blur-[120px] rounded-[100%] pointer-events-none z-0" />
 
                 <div className="tag animate-reveal animate-reveal-2 animate-float mb-8 relative">
                     <Sparkles size={12} className="animate-sparkle" />

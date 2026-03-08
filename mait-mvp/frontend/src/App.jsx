@@ -841,9 +841,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return (
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <div className="pt-14">
-                    <LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} />
-                </div>
+                <LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} />
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
