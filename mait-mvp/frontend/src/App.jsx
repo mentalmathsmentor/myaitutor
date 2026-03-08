@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
+import ErrorBoundary from './components/ErrorBoundary'
 import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X, ListPlus, Clock, BookOpen } from 'lucide-react'
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
@@ -16,6 +17,7 @@ import PastPapers from './PastPapers'
 import TopicSidebar from './components/TopicSidebar'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
+import useAuth from './hooks/useAuth'
 
 const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo', 'privacy'];
 
@@ -74,13 +76,30 @@ function App() {
         return () => window.removeEventListener('popstate', onNav);
     }, []);
 
-    // Auth state — persisted to localStorage
-    const [authUser, setAuthUser] = useState(getSavedAuthUser);
-    const [studentId, setStudentId] = useState(() => {
-        const saved = getSavedAuthUser();
-        return saved?.student_id || getStudentId();
+    // Auth (extracted to useAuth hook)
+    const {
+        authUser,
+        studentId,
+        authLoading,
+        handleLoginSubmit: authLoginSubmit,
+        handleGoogleSuccess: authGoogleSuccess,
+        handleLogout: authLogout,
+    } = useAuth(API_URL, {
+        onLoginSuccess: () => {
+            setShowLoginModal(false);
+            navigateTo('app');
+        },
+        onLogout: () => {
+            setMessages([
+                { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
+            ]);
+            navigateTo('landing');
+        },
     });
-    const [authLoading, setAuthLoading] = useState(false);
+
+    const handleLoginSubmit = authLoginSubmit;
+    const handleGoogleSuccess = authGoogleSuccess;
+    const handleLogout = authLogout;
 
     const [context, setContext] = useState(null)
     const [messages, setMessages] = useState([
@@ -747,101 +766,13 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         setShowLoginModal(true);
     };
 
-    // Access code login (legacy fallback)
-    const handleLoginSubmit = async (code) => {
-        const normalizedCode = code.trim().toUpperCase();
-        const FALLBACK_CODE = "HSCMATE2026";
-
-        try {
-            const res = await fetch(`${API_URL}/auth/verify-access`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code }),
-            });
-            if (res.ok) {
-                setShowLoginModal(false);
-                navigateTo('app');
-                return true;
-            }
-        } catch (e) {
-            console.warn('Backend verification failed, trying client-side fallback...', e);
-            // Client-side fallback for UI testing if backend is unreachable
-            if (normalizedCode === FALLBACK_CODE) {
-                console.info('Logged in via client-side fallback.');
-                setShowLoginModal(false);
-                navigateTo('app');
-                return true;
-            }
-        }
-        return false;
-    };
-
-    // Google login handler
-    const handleGoogleSuccess = async (credentialResponse) => {
-        setAuthLoading(true);
-        try {
-            const res = await fetch(`${API_URL}/auth/google`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: credentialResponse.credential }),
-            });
-            if (!res.ok) throw new Error('Auth failed');
-            const data = await res.json();
-
-            const user = {
-                student_id: data.student_id,
-                name: data.user.name,
-                email: data.user.email,
-                picture: data.user.picture,
-            };
-
-            // If this is a new Google user and we had anonymous data, migrate it
-            const oldId = localStorage.getItem('mait_student_id');
-            if (data.status === 'new' && oldId && oldId !== data.student_id) {
-                try {
-                    await fetch(`${API_URL}/auth/migrate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ old_student_id: oldId, new_student_id: data.student_id }),
-                    });
-                } catch (e) {
-                    console.warn('Migration failed (non-fatal):', e);
-                }
-            }
-
-            // Persist auth state
-            localStorage.setItem('mait_auth_user', JSON.stringify(user));
-            localStorage.setItem('mait_student_id', data.student_id);
-            setAuthUser(user);
-            setStudentId(data.student_id);
-            setShowLoginModal(false);
-            navigateTo('app');
-        } catch (e) {
-            console.error('Google login error:', e);
-        } finally {
-            setAuthLoading(false);
-        }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('mait_auth_user');
-        // Generate a new anonymous ID
-        const newId = `student_${crypto.randomUUID()}`;
-        localStorage.setItem('mait_student_id', newId);
-        setAuthUser(null);
-        setStudentId(newId);
-        setMessages([
-            { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
-        ]);
-        navigateTo('landing');
-    };
 
     // Non-chat pages: NavBar + page content
     if (page === 'landing') {
         return (
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} />
+                <ErrorBoundary><LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -852,7 +783,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
-                    <AIResources />
+                    <ErrorBoundary><AIResources /></ErrorBoundary>
                 </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
@@ -864,7 +795,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
-                    <WorksheetGenerator />
+                    <ErrorBoundary><WorksheetGenerator /></ErrorBoundary>
                 </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
@@ -876,7 +807,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14">
-                    <PrivacyPolicy navigate={navigateTo} />
+                    <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
                 </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
@@ -888,7 +819,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             <>
                 <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <div className="pt-14 h-screen">
-                    <PastPapers />
+                    <ErrorBoundary><PastPapers /></ErrorBoundary>
                 </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>

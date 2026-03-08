@@ -42,8 +42,10 @@ function buildMergedSyllabus(yearLevel) {
     return merged
 }
 
-// ─── LaTeX inline renderer: converts $...$ segments to KaTeX HTML ───
+// ─── LaTeX inline renderer with memoization cache ───
+const latexCache = new Map()
 function renderLatex(text) {
+    if (latexCache.has(text)) return latexCache.get(text)
     const parts = text.split(/(\$[^$]+\$)/g)
     const k = window.katex
     const html = parts.map(part => {
@@ -55,17 +57,24 @@ function renderLatex(text) {
                 return part
             }
         }
-        // Escape HTML in non-LaTeX parts
         return part.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     }).join('')
+    latexCache.set(text, html)
     return html
 }
+
+const DIFFICULTY_OPTIONS = ['Mixed', 'Easy → Hard Progression', 'Mostly Easy', 'Mostly Hard', 'Exam-Style']
 
 export default function WorksheetGenerator() {
     // State
     const [schoolName, setSchoolName] = useState('')
     const [classYear, setClassYear] = useState(YEAR_LEVELS[2]) // Year 12 Advanced
-    const [selectedPoints, setSelectedPoints] = useState([])
+    const [selectedPoints, setSelectedPoints] = useState(() => {
+        try {
+            const saved = localStorage.getItem(`mait_ws_pts_${YEAR_LEVELS[2]}`);
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    })
     const [includeName, setIncludeName] = useState(true)
     const [includeDate, setIncludeDate] = useState(true)
     const [mode, setMode] = useState('A')
@@ -76,15 +85,24 @@ export default function WorksheetGenerator() {
     const [generateAnswerKey, setGenerateAnswerKey] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [showReference, setShowReference] = useState(false)
+    const [difficulty, setDifficulty] = useState(DIFFICULTY_OPTIONS[0])
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
     const [expandedModules, setExpandedModules] = useState({})
     const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
-    // Reset points on class change
+    // Persist selected points to localStorage
     useEffect(() => {
-        setSelectedPoints([]);
+        localStorage.setItem(`mait_ws_pts_${classYear}`, JSON.stringify(selectedPoints));
+    }, [selectedPoints, classYear]);
+
+    // Load saved points on class change
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(`mait_ws_pts_${classYear}`);
+            setSelectedPoints(saved ? JSON.parse(saved) : []);
+        } catch { setSelectedPoints([]); }
     }, [classYear]);
 
     // Hierarchy Helpers
@@ -201,7 +219,12 @@ export default function WorksheetGenerator() {
             const pointsText = selectedPoints.length > 0
                 ? `strictly targeting these specific syllabus dot-points and topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
                 : `targeting the general curriculum for ${classYear}`;
-            contentString = `Please generate ${numQuestions} professional-level exam questions ${pointsText}.`;
+            const difficultyText = difficulty === 'Mixed' ? 'Use a balanced mix of easy, medium, and hard questions.' :
+                difficulty === 'Easy → Hard Progression' ? 'Start with easy questions and progressively increase difficulty to hard.' :
+                    difficulty === 'Mostly Easy' ? 'Keep most questions easy/accessible, with 1-2 challenging ones at the end.' :
+                        difficulty === 'Mostly Hard' ? 'Focus on challenging, exam-level questions with minimal easy questions.' :
+                            'Match the difficulty and style of real HSC exam questions.';
+            contentString = `Please generate ${numQuestions} professional-level exam questions ${pointsText}.\n\n**DIFFICULTY:** ${difficultyText}`;
         } else {
             contentString = `Please format these exact questions into a professional worksheet: ${rawQuestions}`;
         }
@@ -209,14 +232,14 @@ export default function WorksheetGenerator() {
         // Generate dynamic title
         let promptTitle = `${classYear} Worksheet`;
         if (mode === 'A' && selectedPoints.length > 0) {
-            // Find the most frequent module/subtopic among selected points or just take the first one's module
-            // For simplicity, let's just find which module has the most points selected
             const modCounts = {};
             selectedPoints.forEach(p => {
                 for (const mod in currentSyllabus) {
                     for (const subt in currentSyllabus[mod]) {
                         if (currentSyllabus[mod][subt].includes(p)) {
-                            modCounts[mod] = (modCounts[mod] || 0) + 1;
+                            // Strip '(Prerequisite)' from module names for clean titles
+                            const cleanMod = mod.replace(/\s*\(Prerequisite\)$/i, '');
+                            modCounts[cleanMod] = (modCounts[cleanMod] || 0) + 1;
                         }
                     }
                 }
@@ -384,6 +407,7 @@ ${contentString}
                                 value={schoolName}
                                 onChange={(e) => setSchoolName(e.target.value)}
                                 className="input-base w-full text-sm font-display py-3"
+                                aria-label="School or institution name"
                             />
                         </div>
 
@@ -396,6 +420,7 @@ ${contentString}
                                     value={classYear}
                                     onChange={(e) => setClassYear(e.target.value)}
                                     className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
+                                    aria-label="Select class or year level"
                                 >
                                     {YEAR_LEVELS.map(y => <option key={y} value={y}>{y}</option>)}
                                 </select>
@@ -573,6 +598,22 @@ ${contentString}
                                     className="input-base w-16 text-center text-sm font-mono py-1 cursor-default focus:ring-0"
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                Difficulty
+                            </label>
+                            <select
+                                value={difficulty}
+                                onChange={(e) => setDifficulty(e.target.value)}
+                                className="input-base w-full text-sm py-2 cursor-pointer"
+                                aria-label="Select difficulty level"
+                            >
+                                {DIFFICULTY_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="flex flex-wrap gap-4">
