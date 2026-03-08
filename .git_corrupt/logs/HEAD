@@ -1,0 +1,39 @@
+0000000000000000000000000000000000000000 ea5157e444893884b228831c8784611e02066938 Darayat <z5421968@ad.unsw.edu.au> 1771835641 +1100	commit (initial): first commit
+ea5157e444893884b228831c8784611e02066938 0000000000000000000000000000000000000000 Darayat <z5421968@ad.unsw.edu.au> 1771835641 +1100	Branch: renamed refs/heads/master to refs/heads/main
+0000000000000000000000000000000000000000 ea5157e444893884b228831c8784611e02066938 Darayat <z5421968@ad.unsw.edu.au> 1771835641 +1100	Branch: renamed refs/heads/master to refs/heads/main
+ea5157e444893884b228831c8784611e02066938 0000000000000000000000000000000000000000 Darayat <z5421968@ad.unsw.edu.au> 1771835680 +1100	Branch: renamed refs/heads/main to refs/heads/main
+ea5157e444893884b228831c8784611e02066938 ea5157e444893884b228831c8784611e02066938 Darayat <z5421968@ad.unsw.edu.au> 1771835680 +1100	Branch: renamed refs/heads/main to refs/heads/main
+ea5157e444893884b228831c8784611e02066938 6557b12c6760ca6840ac0124d2ad11bceb818ff4 Darayat <z5421968@ad.unsw.edu.au> 1771839331 +1100	commit: Initial commit
+6557b12c6760ca6840ac0124d2ad11bceb818ff4 d96fa5f660afc68b62a7b533d5ee21b572176db0 Darayat <z5421968@ad.unsw.edu.au> 1771841871 +1100	pull: Fast-forward
+d96fa5f660afc68b62a7b533d5ee21b572176db0 3b10cdb2ce9d1ba65d11e46e17adf5e653ed521b Darayat <z5421968@ad.unsw.edu.au> 1771846445 +1100	commit: Fixed loading
+3b10cdb2ce9d1ba65d11e46e17adf5e653ed521b 2b6bc10d5f05fd76b3d57541b855832aee6f36d1 Darayat <z5421968@ad.unsw.edu.au> 1772775657 +1100	merge origin/main: Fast-forward
+2b6bc10d5f05fd76b3d57541b855832aee6f36d1 ad4a3bc3a4eef0b6c6807b069cfd1d46e92ad793 Darayat <z5421968@ad.unsw.edu.au> 1772778287 +1100	commit: Security fixes, fatigue tuning, RAG cleanup, and documentation
+ad4a3bc3a4eef0b6c6807b069cfd1d46e92ad793 1520d8dc04c5f0216ccce1723f02b2d2d2ea0cf6 Darayat <z5421968@ad.unsw.edu.au> 1772783817 +1100	commit: chore: secure codebase, remove exec(), replace chroma with faiss, secure access string, update reviews
+1520d8dc04c5f0216ccce1723f02b2d2d2ea0cf6 c0cdda78f8d70b38eb56ac3dda9049f430b6cf6d Darayat <z5421968@ad.unsw.edu.au> 1772784886 +1100	commit: fix: robust access code verification (trim and case-insensitive)
+c0cdda78f8d70b38eb56ac3dda9049f430b6cf6d 95743811dc14f4a2acd73766f9f96127478887c1 Darayat <z5421968@ad.unsw.edu.au> 1772784974 +1100	commit: feat: update logo to MAIT Logo 2
+95743811dc14f4a2acd73766f9f96127478887c1 43dbc16612839b892f0566c822fd0d92fe81b912 Darayat <z5421968@ad.unsw.edu.au> 1772785260 +1100	commit: feat: update branding favicons and upgrade SLM models to 2026 specs (Gemma 3 & Phi-4 Mini)
+43dbc16612839b892f0566c822fd0d92fe81b912 3754b8712f28acc4182bcc0444a134f2e66ffcaf Darayat <z5421968@ad.unsw.edu.au> 1772785398 +1100	commit: fix: force refresh favicon with new logo and versioning
+3754b8712f28acc4182bcc0444a134f2e66ffcaf b7724cbca8321a90b99b46640b9bbf2dafbc3abe Darayat <z5421968@ad.unsw.edu.au> 1772785558 +1100	commit: fix: revert SLM models to stable versions (Gemma 2 & Phi 3.5) for compatibility
+b7724cbca8321a90b99b46640b9bbf2dafbc3abe 25a9ab7ee590fd599239d3a365244b70e4e7616c Darayat <z5421968@ad.unsw.edu.au> 1772785880 +1100	commit: fix: resolve double-verification bug in access code login flow
+25a9ab7ee590fd599239d3a365244b70e4e7616c b286d125b9c24fb1de2e96a8dca8c0892c0bd1ea Darayat <z5421968@ad.unsw.edu.au> 1772785984 +1100	commit: debug: add verbose logging to access code verification
+b286d125b9c24fb1de2e96a8dca8c0892c0bd1ea bed1bb8deb3968796426e66ec88d0ff05e0cf87b Darayat <z5421968@ad.unsw.edu.au> 1772786204 +1100	commit: fix: production-smart API_URL logic for myaitutor.au
+bed1bb8deb3968796426e66ec88d0ff05e0cf87b f1bc24fd0c93cf5f7e3c5ae8b11bd57e47040667 Darayat <z5421968@ad.unsw.edu.au> 1772786589 +1100	commit: feat: add backend deployment config (Docker & GitHub Actions) and client-side auth fallback
+f1bc24fd0c93cf5f7e3c5ae8b11bd57e47040667 0a097f9dc3cefbdf29568bc8d0e51463a9498ed6 Darayat <z5421968@ad.unsw.edu.au> 1772789402 +1100	commit: Implement Privacy Policy, API Auth, and Mobile Syllabus Toggle.
+0a097f9dc3cefbdf29568bc8d0e51463a9498ed6 641b265bbfeeb2c86261022d0c451d023e95c7a5 Darayat <z5421968@ad.unsw.edu.au> 1772790012 +1100	commit: Rename mait-mvp-glitch to mait-mvp and update references
+641b265bbfeeb2c86261022d0c451d023e95c7a5 242aca5fa6f657c9aaf41356e35b0afd210b090d Darayat <z5421968@ad.unsw.edu.au> 1772790936 +1100	commit: Rename project to mait-mvp and update references
+242aca5fa6f657c9aaf41356e35b0afd210b090d 0a097f9dc3cefbdf29568bc8d0e51463a9498ed6 Darayat <z5421968@ad.unsw.edu.au> 1772792720 +1100	reset: moving to 0a097f9
+0a097f9dc3cefbdf29568bc8d0e51463a9498ed6 580b4714d5e93e8b3e9af4b2393a77429d85155e Darayat <z5421968@ad.unsw.edu.au> 1772793565 +1100	commit: chore: complete project rename to mait-mvp and update references
+580b4714d5e93e8b3e9af4b2393a77429d85155e 641b265bbfeeb2c86261022d0c451d023e95c7a5 Darayat <z5421968@ad.unsw.edu.au> 1772793587 +1100	rebase (abort): returning to refs/heads/main
+641b265bbfeeb2c86261022d0c451d023e95c7a5 641b265bbfeeb2c86261022d0c451d023e95c7a5 Darayat <z5421968@ad.unsw.edu.au> 1772793587 +1100	rebase (abort): returning to refs/heads/main
+641b265bbfeeb2c86261022d0c451d023e95c7a5 20748e1657e538d02d9759b98b979fcefbe9f9d8 Darayat <z5421968@ad.unsw.edu.au> 1772793590 +1100	pull origin main --no-rebase: Merge made by the 'ort' strategy.
+20748e1657e538d02d9759b98b979fcefbe9f9d8 7e459919efc396169dd54dd2fdd13373b016e4d9 Darayat <z5421968@ad.unsw.edu.au> 1772801904 +1100	commit: Merge Kimi Redesign: Integrated premium visual enhancements, atmospheric background effects, and scroll-aware navigation into main branch.
+7e459919efc396169dd54dd2fdd13373b016e4d9 36b54bee7c9a35d4afd07038ca2f73a6d0d37d60 Darayat <z5421968@ad.unsw.edu.au> 1772802933 +1100	commit: fix(frontend): resolve demo black screen - restored index.html, fixed icons & toUpperCase typo
+36b54bee7c9a35d4afd07038ca2f73a6d0d37d60 36b54bee7c9a35d4afd07038ca2f73a6d0d37d60 Darayat <z5421968@ad.unsw.edu.au> 1772803114 +1100	reset: moving to HEAD
+36b54bee7c9a35d4afd07038ca2f73a6d0d37d60 c042cf5e92fe9631464bedc19d09e343f5196df7 Darayat <z5421968@ad.unsw.edu.au> 1772803114 +1100	rebase (start): checkout origin/main
+c042cf5e92fe9631464bedc19d09e343f5196df7 bf43a61869bbc929326db6cb03b6d636027bcd0c Darayat <z5421968@ad.unsw.edu.au> 1772803114 +1100	rebase (pick): fix(frontend): resolve demo black screen - restored index.html, fixed icons & toUpperCase typo
+bf43a61869bbc929326db6cb03b6d636027bcd0c bf43a61869bbc929326db6cb03b6d636027bcd0c Darayat <z5421968@ad.unsw.edu.au> 1772803114 +1100	rebase (finish): returning to refs/heads/main
+bf43a61869bbc929326db6cb03b6d636027bcd0c 2c385aae7114fc03991655d8da601f3c2959c6fc Darayat <z5421968@ad.unsw.edu.au> 1772803114 +1100	commit (amend): fix(frontend): resolve demo black screen - restored index.html, fixed icons & toUpperCase typo
+2c385aae7114fc03991655d8da601f3c2959c6fc 221208dba5c0c696e23a30b3b892609302916252 Darayat <z5421968@ad.unsw.edu.au> 1772844161 +1100	commit: fix(frontend): update package-lock.json for tailwindcss-animate to fix cloud build
+221208dba5c0c696e23a30b3b892609302916252 4956ffcdf2cf40831b3c3e3d6b5e2a2f0307ca43 Darayat <z5421968@ad.unsw.edu.au> 1772844646 +1100	commit: fix(frontend): add missing useEffect import to NavBar.jsx causing global black screen
+4956ffcdf2cf40831b3c3e3d6b5e2a2f0307ca43 a392d84d2762a886475395d34ec3edca3979a772 Darayat <z5421968@ad.unsw.edu.au> 1772845515 +1100	commit: fix(frontend): add animation-fill-mode both to math particles so they start hidden at bottom
+a392d84d2762a886475395d34ec3edca3979a772 aeeaa026380da3f71e439672f4de8d31a2ac4a6c Darayat <z5421968@ad.unsw.edu.au> 1772850357 +1100	commit: feat(frontend): add NESA HSC specific formulae to floating math particles

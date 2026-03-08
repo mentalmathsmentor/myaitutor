@@ -1,0 +1,22 @@
+/Users/darayeet/Documents/personal don't open/ALL/MAIT/mait-mvp-glitch/backend/app/services/gemini_client.py:2: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+--- Testing Concurrency ---
+3 requests took 1.00 seconds.
+SUCCESS: Requests processed successfully in parallel (approx).
+
+--- Testing State Isolation ---
+User A Status: FatigueStatus.LOCKOUT
+Gemini API Error: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+User B Status: FatigueStatus.FRESH
+SUCCESS: User B is FRESH despite User A being LOCKED OUT.

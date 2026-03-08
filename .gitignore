@@ -1,0 +1,14 @@
+.DS_Store
+**/.DS_Store
+.env
+__pycache__/
+*.pyc
+node_modules/
+dist/
+venv/
+**/node_modules/
+**/.vite/
+mait-mvp/frontend 2/
+mait-mvp/mait-mvp 2/
+.git_corrupt/
+.claude/

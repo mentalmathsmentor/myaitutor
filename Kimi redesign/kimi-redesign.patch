@@ -1,0 +1,1103 @@
+From d8c0309c98ba1e540e892e5213b626b98416345f Mon Sep 17 00:00:00 2001
+From: Kimi AI Designer <kimi@ai.design>
+Date: Fri, 6 Mar 2026 18:25:19 +0800
+Subject: [PATCH] Kimi Redesign: Enhanced landing page with beautiful visual
+ improvements
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Added floating math particles (π, ∑, √, ∫, ∞, etc.) for immersive atmosphere
+- Implemented animated gradient orbs with organic floating motion
+- Enhanced hero section with glowing CTA button and pulse animation
+- Added scroll-triggered reveal animations with staggered delays
+- Improved glassmorphism cards with hover lift and shine effects
+- Created interactive course cards with unique color themes per HSC level
+- Added icon hover animations (lift, rotate effects)
+- Implemented gradient border waitlist card with success animation
+- Enhanced navbar with scroll-aware glassmorphism effect
+- Added new CSS animations: sparkle, success-pop, orb-float
+- Extended Tailwind config with surface color variables
+---
+ mait-mvp-glitch/frontend/src/AIResources.jsx  |  10 +-
+ mait-mvp-glitch/frontend/src/LandingPage.jsx  | 319 +++++++++++------
+ .../frontend/src/components/NavBar.jsx        |  13 +-
+ mait-mvp-glitch/frontend/src/index.css        | 324 +++++++++++++++++-
+ mait-mvp-glitch/frontend/tailwind.config.js   | 193 +++++------
+ 5 files changed, 628 insertions(+), 231 deletions(-)
+
+diff --git a/mait-mvp-glitch/frontend/src/AIResources.jsx b/mait-mvp-glitch/frontend/src/AIResources.jsx
+index 6b9d0b9..28f2eec 100644
+--- a/mait-mvp-glitch/frontend/src/AIResources.jsx
++++ b/mait-mvp-glitch/frontend/src/AIResources.jsx
+@@ -19,23 +19,23 @@ function CopyButton({ text }) {
+ function PromptCard({ title, description, prompt, icon }) {
+     const [expanded, setExpanded] = useState(false)
+     return (
+-        <div className="glass-card rounded-xl p-5 hover:border-primary/30 transition-all duration-300">
++        <div className="glass-card card-shine rounded-xl p-5 group">
+             <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+                 <div className="flex items-start gap-3 flex-1">
+-                    <div className="bg-surface-1 w-10 h-10 rounded-lg flex items-center justify-center border border-surface-3 shrink-0 mt-0.5">
++                    <div className="bg-surface-1 w-10 h-10 rounded-lg flex items-center justify-center border border-surface-3 shrink-0 mt-0.5 icon-hover-lift">
+                         {icon}
+                     </div>
+                     <div>
+-                        <h4 className="font-display text-sm font-bold text-foreground">{title}</h4>
++                        <h4 className="font-display text-sm font-bold text-foreground group-hover:text-primary transition-colors">{title}</h4>
+                         <p className="text-muted-foreground text-xs mt-1 leading-relaxed">{description}</p>
+                     </div>
+                 </div>
+-                <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-1">
++                <button className="text-muted-foreground hover:text-primary transition-colors shrink-0 mt-1">
+                     {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                 </button>
+             </div>
+             {expanded && (
+-                <div className="mt-4 pt-4 border-t border-surface-2">
++                <div className="mt-4 pt-4 border-t border-surface-2 animate-reveal">
+                     <div className="flex justify-between items-center mb-2">
+                         <span className="text-[10px] font-display text-muted-foreground uppercase tracking-wider">Prompt</span>
+                         <CopyButton text={prompt} />
+diff --git a/mait-mvp-glitch/frontend/src/LandingPage.jsx b/mait-mvp-glitch/frontend/src/LandingPage.jsx
+index 209e473..93c8cee 100644
+--- a/mait-mvp-glitch/frontend/src/LandingPage.jsx
++++ b/mait-mvp-glitch/frontend/src/LandingPage.jsx
+@@ -1,13 +1,84 @@
+-import { useState, useEffect } from 'react'
+-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText } from 'lucide-react'
++import { useState, useEffect, useRef } from 'react'
++import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check } from 'lucide-react'
+ 
+ const SYLLABI = [
+-    { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-secondary' },
+-    { label: 'Advanced', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-advanced-11-12-2024/overview', color: 'text-primary' },
+-    { label: 'Extension 1', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-1-11-12-2024/overview', color: 'text-accent' },
+-    { label: 'Extension 2', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-2-12/overview', color: 'text-accent' },
++    { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
++    { label: 'Advanced', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-advanced-11-12-2024/overview', color: 'text-primary', className: 'course-card-advanced' },
++    { label: 'Extension 1', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-1-11-12-2024/overview', color: 'text-orange-400', className: 'course-card-extension-1' },
++    { label: 'Extension 2', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-extension-2-12/overview', color: 'text-purple-400', className: 'course-card-extension-2' },
+ ]
+ 
++// Math symbols for floating particles
++const MATH_SYMBOLS = ['π', '∑', '√', '∫', '∞', '≈', '≠', '≤', '≥', '÷', '×', '±', '∆', 'θ', 'λ', '∇', '∂', '∴']
++
++function MathParticles() {
++    const [particles, setParticles] = useState([])
++
++    useEffect(() => {
++        const newParticles = Array.from({ length: 15 }, (_, i) => ({
++            id: i,
++            symbol: MATH_SYMBOLS[Math.floor(Math.random() * MATH_SYMBOLS.length)],
++            left: `${Math.random() * 100}%`,
++            delay: `${Math.random() * 15}s`,
++            duration: `${12 + Math.random() * 8}s`,
++            size: `${0.8 + Math.random() * 0.6}rem`,
++        }))
++        setParticles(newParticles)
++    }, [])
++
++    return (
++        <div className="math-particles">
++            {particles.map((p) => (
++                <span
++                    key={p.id}
++                    className="math-particle"
++                    style={{
++                        left: p.left,
++                        animationDelay: p.delay,
++                        animationDuration: p.duration,
++                        fontSize: p.size,
++                    }}
++                >
++                    {p.symbol}
++                </span>
++            ))}
++        </div>
++    )
++}
++
++function ScrollReveal({ children, delay = 0, className = '' }) {
++    const [isVisible, setIsVisible] = useState(false)
++    const ref = useRef(null)
++
++    useEffect(() => {
++        const observer = new IntersectionObserver(
++            ([entry]) => {
++                if (entry.isIntersecting) {
++                    setTimeout(() => setIsVisible(true), delay)
++                    observer.disconnect()
++                }
++            },
++            { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
++        )
++
++        if (ref.current) {
++            observer.observe(ref.current)
++        }
++
++        return () => observer.disconnect()
++    }, [delay])
++
++    return (
++        <div
++            ref={ref}
++            className={`${className} transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
++            style={{ transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)' }}
++        >
++            {children}
++        </div>
++    )
++}
++
+ export default function LandingPage({ navigate, onLoginClick }) {
+     const [visitCount, setVisitCount] = useState(null)
+ 
+@@ -24,6 +95,16 @@ export default function LandingPage({ navigate, onLoginClick }) {
+ 
+     return (
+         <div className="min-h-screen bg-cosmic noise-overlay flex flex-col selection:bg-primary/30">
++            {/* Floating Orbs Background */}
++            <div className="orb-container">
++                <div className="orb orb-1" />
++                <div className="orb orb-2" />
++                <div className="orb orb-3" />
++            </div>
++
++            {/* Math Particles */}
++            <MathParticles />
++
+             {/* Decorative grid overlay */}
+             <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
+                 style={{
+@@ -34,16 +115,16 @@ export default function LandingPage({ navigate, onLoginClick }) {
+             />
+ 
+             {/* Hero */}
+-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-4">
++            <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 pt-8 pb-16 min-h-[70vh]">
+                 <div className="tag animate-reveal animate-reveal-2 animate-float mb-8">
+-                    <Sparkles size={12} />
++                    <Sparkles size={12} className="animate-sparkle" />
+                     COMING 2026
+                 </div>
+ 
+                 <h2 className="animate-reveal animate-reveal-3 text-4xl md:text-6xl lg:text-7xl font-display font-bold tracking-tight mb-6 max-w-3xl leading-[1.1]">
+                     <span className="gradient-text-primary">Your AI Study Mate</span>
+                     <br />
+-                    <span className="text-foreground animate-glitch inline-block">for HSC Maths</span>
++                    <span className="text-foreground inline-block">for HSC Maths</span>
+                 </h2>
+ 
+                 <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg md:text-xl mb-10 max-w-lg leading-relaxed">
+@@ -55,15 +136,15 @@ export default function LandingPage({ navigate, onLoginClick }) {
+                 <div className="animate-reveal animate-reveal-5 flex flex-col sm:flex-row items-center gap-4">
+                     <button
+                         onClick={() => navigate('demo')}
+-                        className="btn-primary px-8 py-4 rounded-xl flex items-center gap-3 group"
++                        className="btn-primary btn-glow px-8 py-4 rounded-xl flex items-center gap-3 group"
+                     >
+-                        <Play size={18} />
++                        <Play size={18} className="group-hover:scale-110 transition-transform" />
+                         Try Free Demo
+                         <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                     </button>
+                     <button
+                         onClick={onLoginClick}
+-                        className="px-8 py-4 rounded-xl flex items-center gap-3 font-display text-sm tracking-wide border border-surface-3 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all duration-300 group"
++                        className="btn-secondary"
+                     >
+                         <Lock size={16} />
+                         Full Access
+@@ -75,104 +156,134 @@ export default function LandingPage({ navigate, onLoginClick }) {
+             </main>
+ 
+             {/* Features */}
+-            <section className="relative z-10 grid md:grid-cols-3 gap-6 px-6 pb-16 max-w-5xl mx-auto w-full">
+-                <FeatureCard
+-                    icon={<BrainCircuit className="text-primary" size={24} />}
+-                    title="NSW Syllabus Aligned"
+-                    desc="Built for Advanced, Extension 1 and Extension 2 outcomes."
+-                    delay="animate-reveal-1"
+-                />
+-                <FeatureCard
+-                    icon={<Battery className="text-accent" size={24} />}
+-                    title="Fatigue-Aware"
+-                    desc="Detects burnout and adjusts interaction complexity in real-time."
+-                    delay="animate-reveal-2"
+-                />
+-                <FeatureCard
+-                    icon={<Moon className="text-secondary" size={24} />}
+-                    title="Available 24/7"
+-                    desc="Late night study panic? Mate is always awake and ready."
+-                    delay="animate-reveal-3"
+-                />
++            <section className="relative z-10 grid md:grid-cols-3 gap-6 px-6 pb-20 max-w-5xl mx-auto w-full">
++                <ScrollReveal delay={0}>
++                    <FeatureCard
++                        icon={<BrainCircuit className="text-primary" size={24} />}
++                        title="NSW Syllabus Aligned"
++                        desc="Built for Advanced, Extension 1 and Extension 2 outcomes."
++                    />
++                </ScrollReveal>
++                <ScrollReveal delay={100}>
++                    <FeatureCard
++                        icon={<Battery className="text-accent" size={24} />}
++                        title="Fatigue-Aware"
++                        desc="Detects burnout and adjusts interaction complexity in real-time."
++                    />
++                </ScrollReveal>
++                <ScrollReveal delay={200}>
++                    <FeatureCard
++                        icon={<Moon className="text-secondary" size={24} />}
++                        title="Available 24/7"
++                        desc="Late night study panic? Mate is always awake and ready."
++                    />
++                </ScrollReveal>
+             </section>
+ 
+             {/* NSW Syllabus Links */}
+-            <section className="relative z-10 w-full max-w-3xl mx-auto px-6 pb-16">
+-                <div className="divider-glow mb-8" />
++            <section className="relative z-10 w-full max-w-3xl mx-auto px-6 pb-20">
++                <ScrollReveal>
++                    <div className="divider-glow mb-8" />
++                </ScrollReveal>
+                 <div className="text-center mb-6">
+-                    <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">
+-                        <span className="gradient-text-primary">NSW HSC Syllabi</span>
+-                    </h3>
+-                    <p className="text-muted-foreground animate-reveal animate-reveal-2">
+-                        Official NESA curriculum documents for each course.
+-                    </p>
+-                </div>
+-                <div className="flex flex-wrap items-center justify-center gap-3 animate-reveal animate-reveal-3">
+-                    {SYLLABI.map(s => (
+-                        <a
+-                            key={s.label}
+-                            href={s.url}
+-                            target="_blank"
+-                            rel="noopener noreferrer"
+-                            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm border border-surface-3 hover:border-primary/40 transition-all duration-300 group ${s.color}`}
+-                        >
+-                            <FileText size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+-                            {s.label}
+-                        </a>
+-                    ))}
++                    <ScrollReveal delay={100}>
++                        <h3 className="font-display text-2xl font-bold mb-3">
++                            <span className="gradient-text-primary">NSW HSC Syllabi</span>
++                        </h3>
++                    </ScrollReveal>
++                    <ScrollReveal delay={200}>
++                        <p className="text-muted-foreground">
++                            Official NESA curriculum documents for each course.
++                        </p>
++                    </ScrollReveal>
+                 </div>
++                <ScrollReveal delay={300}>
++                    <div className="flex flex-wrap items-center justify-center gap-3">
++                        {SYLLABI.map(s => (
++                            <a
++                                key={s.label}
++                                href={s.url}
++                                target="_blank"
++                                rel="noopener noreferrer"
++                                className={`course-card ${s.className} inline-flex items-center gap-2 ${s.color}`}
++                            >
++                                <FileText size={14} className="opacity-60 group-hover:opacity-100 transition-opacity" />
++                                {s.label}
++                            </a>
++                        ))}
++                    </div>
++                </ScrollReveal>
+             </section>
+ 
+             {/* AI Resources Preview */}
+-            <section className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-16">
+-                <div className="divider-glow mb-8" />
++            <section className="relative z-10 w-full max-w-5xl mx-auto px-6 pb-20">
++                <ScrollReveal>
++                    <div className="divider-glow mb-8" />
++                </ScrollReveal>
+                 <div className="text-center mb-8">
+-                    <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">
+-                        <span className="gradient-text-primary">Free AI Resources</span>
+-                    </h3>
+-                    <p className="text-muted-foreground animate-reveal animate-reveal-2">
+-                        Prompts, guides, and system prompts for students, teachers, and anyone curious about AI.
+-                    </p>
++                    <ScrollReveal delay={100}>
++                        <h3 className="font-display text-2xl font-bold mb-3">
++                            <span className="gradient-text-primary">Free AI Resources</span>
++                        </h3>
++                    </ScrollReveal>
++                    <ScrollReveal delay={200}>
++                        <p className="text-muted-foreground">
++                            Prompts, guides, and system prompts for students, teachers, and anyone curious about AI.
++                        </p>
++                    </ScrollReveal>
+                 </div>
+                 <div className="grid md:grid-cols-3 gap-4 mb-8">
+-                    <ResourcePreviewCard
+-                        icon={<GraduationCap className="text-primary" size={20} />}
+-                        title="For Students"
+-                        items={["Homework helper prompts", "Exam study summariser", "Practice question generator"]}
+-                        delay="animate-reveal-3"
+-                    />
+-                    <ResourcePreviewCard
+-                        icon={<BookOpen className="text-accent" size={20} />}
+-                        title="For Teachers"
+-                        items={["LaTeX worksheet generator", "Lesson plan builder", "Marking rubric creator"]}
+-                        delay="animate-reveal-4"
+-                    />
+-                    <ResourcePreviewCard
+-                        icon={<Lightbulb className="text-secondary" size={20} />}
+-                        title="For Everyone"
+-                        items={["Personal AI tutor setup", "Study planner prompts", "What can AI actually do?"]}
+-                        delay="animate-reveal-5"
+-                    />
+-                </div>
+-                <div className="text-center animate-reveal animate-reveal-6">
+-                    <button
+-                        onClick={() => navigate('resources')}
+-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm border border-primary/30 text-primary hover:bg-primary/10 transition-all duration-300 group"
+-                    >
+-                        View All Resources
+-                        <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+-                    </button>
++                    <ScrollReveal delay={300}>
++                        <ResourcePreviewCard
++                            icon={<GraduationCap className="text-primary" size={20} />}
++                            title="For Students"
++                            items={["Homework helper prompts", "Exam study summariser", "Practice question generator"]}
++                        />
++                    </ScrollReveal>
++                    <ScrollReveal delay={400}>
++                        <ResourcePreviewCard
++                            icon={<BookOpen className="text-accent" size={20} />}
++                            title="For Teachers"
++                            items={["LaTeX worksheet generator", "Lesson plan builder", "Marking rubric creator"]}
++                        />
++                    </ScrollReveal>
++                    <ScrollReveal delay={500}>
++                        <ResourcePreviewCard
++                            icon={<Lightbulb className="text-secondary" size={20} />}
++                            title="For Everyone"
++                            items={["Personal AI tutor setup", "Study planner prompts", "What can AI actually do?"]}
++                        />
++                    </ScrollReveal>
+                 </div>
++                <ScrollReveal delay={600}>
++                    <div className="text-center">
++                        <button
++                            onClick={() => navigate('resources')}
++                            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-display text-sm border border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50 transition-all duration-300 group"
++                        >
++                            View All Resources
++                            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
++                        </button>
++                    </div>
++                </ScrollReveal>
+             </section>
+ 
+             {/* Waitlist Section */}
+-            <section className="relative z-10 w-full max-w-xl mx-auto px-6 pb-16 text-center">
+-                <div className="divider-glow mb-8" />
+-                <h3 className="font-display text-2xl font-bold mb-3 animate-reveal animate-reveal-1">Get Early Access</h3>
+-                <p className="text-muted-foreground mb-6 animate-reveal animate-reveal-2">Join the waitlist. Be first when we launch.</p>
+-                <div className="animate-reveal animate-reveal-3">
+-                    <WaitlistForm />
+-                </div>
++            <section className="relative z-10 w-full max-w-xl mx-auto px-6 pb-20 text-center">
++                <ScrollReveal>
++                    <div className="divider-glow mb-8" />
++                </ScrollReveal>
++                <ScrollReveal delay={100}>
++                    <h3 className="font-display text-2xl font-bold mb-3">Get Early Access</h3>
++                </ScrollReveal>
++                <ScrollReveal delay={200}>
++                    <p className="text-muted-foreground mb-6">Join the waitlist. Be first when we launch.</p>
++                </ScrollReveal>
++                <ScrollReveal delay={300}>
++                    <div className="gradient-border-card p-6 rounded-2xl">
++                        <WaitlistForm />
++                    </div>
++                </ScrollReveal>
+             </section>
+ 
+             {/* Footer */}
+@@ -226,10 +337,10 @@ export default function LandingPage({ navigate, onLoginClick }) {
+     )
+ }
+ 
+-function FeatureCard({ icon, title, desc, delay }) {
++function FeatureCard({ icon, title, desc }) {
+     return (
+-        <div className={`glass-card p-6 rounded-2xl text-center hover:border-primary/30 transition-all duration-500 group animate-reveal ${delay}`}>
+-            <div className="bg-surface-1 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform duration-300 border border-surface-3">
++        <div className="glass-card card-shine p-6 rounded-2xl text-center group">
++            <div className="bg-surface-1 w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-5 icon-hover-lift border border-surface-3">
+                 {icon}
+             </div>
+             <h3 className="font-display font-bold mb-2 text-foreground">{title}</h3>
+@@ -238,11 +349,11 @@ function FeatureCard({ icon, title, desc, delay }) {
+     )
+ }
+ 
+-function ResourcePreviewCard({ icon, title, items, delay }) {
++function ResourcePreviewCard({ icon, title, items }) {
+     return (
+-        <div className={`glass-card p-5 rounded-xl hover:border-primary/30 transition-all duration-500 animate-reveal ${delay}`}>
++        <div className="glass-card card-shine p-5 rounded-xl group">
+             <div className="flex items-center gap-2 mb-3">
+-                {icon}
++                <span className="icon-hover-rotate">{icon}</span>
+                 <h4 className="font-display text-sm font-bold">{title}</h4>
+             </div>
+             <ul className="space-y-1.5">
+@@ -286,8 +397,10 @@ function WaitlistForm() {
+ 
+     if (status === 'success') {
+         return (
+-            <div className="glass-card border-primary/30 text-primary p-5 rounded-xl flex items-center justify-center gap-2">
+-                <Sparkles size={16} />
++            <div className="glass-card border-primary/30 text-primary p-5 rounded-xl flex items-center justify-center gap-3 animate-success">
++                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
++                    <Check size={16} className="text-primary" />
++                </div>
+                 <span className="font-display">You're on the list! We'll be in touch.</span>
+             </div>
+         )
+diff --git a/mait-mvp-glitch/frontend/src/components/NavBar.jsx b/mait-mvp-glitch/frontend/src/components/NavBar.jsx
+index 00b46e1..fb97728 100644
+--- a/mait-mvp-glitch/frontend/src/components/NavBar.jsx
++++ b/mait-mvp-glitch/frontend/src/components/NavBar.jsx
+@@ -1,5 +1,5 @@
+ import { BrainCircuit, Home, BookOpen, FileText, Play, Lock, Menu, X, GraduationCap, LogOut } from 'lucide-react'
+-import { useState } from 'react'
++import { useState, useEffect } from 'react'
+ 
+ const NAV_ITEMS = [
+     { id: 'landing', label: 'Home', icon: Home },
+@@ -11,11 +11,20 @@ const NAV_ITEMS = [
+ 
+ export default function NavBar({ currentPage, navigate, onLoginClick, authUser, onLogout }) {
+     const [mobileOpen, setMobileOpen] = useState(false)
++    const [scrolled, setScrolled] = useState(false)
++
++    useEffect(() => {
++        const handleScroll = () => {
++            setScrolled(window.scrollY > 20)
++        }
++        window.addEventListener('scroll', handleScroll)
++        return () => window.removeEventListener('scroll', handleScroll)
++    }, [])
+ 
+     const isActive = (id) => currentPage === id
+ 
+     return (
+-        <nav className="fixed top-0 left-0 right-0 z-50 glass-card backdrop-blur-xl border-b border-surface-2">
++        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-card backdrop-blur-xl border-b border-surface-2 shadow-lg shadow-primary/5' : 'bg-transparent'}`}>
+             <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+                 {/* Logo */}
+                 <button
+diff --git a/mait-mvp-glitch/frontend/src/index.css b/mait-mvp-glitch/frontend/src/index.css
+index 6af60bd..d0d8484 100644
+--- a/mait-mvp-glitch/frontend/src/index.css
++++ b/mait-mvp-glitch/frontend/src/index.css
+@@ -71,6 +71,100 @@ body {
+     hsl(var(--background));
+ }
+ 
++/* ENHANCED ORB BACKGROUND EFFECTS */
++.orb-container {
++  position: fixed;
++  inset: 0;
++  pointer-events: none;
++  overflow: hidden;
++  z-index: 0;
++}
++
++.orb {
++  position: absolute;
++  border-radius: 50%;
++  filter: blur(80px);
++  opacity: 0.4;
++  animation: orb-float 20s ease-in-out infinite;
++}
++
++.orb-1 {
++  width: 600px;
++  height: 600px;
++  background: radial-gradient(circle, hsla(var(--primary), 0.3) 0%, transparent 70%);
++  top: -200px;
++  right: -100px;
++  animation-delay: 0s;
++}
++
++.orb-2 {
++  width: 500px;
++  height: 500px;
++  background: radial-gradient(circle, hsla(var(--accent), 0.2) 0%, transparent 70%);
++  bottom: 10%;
++  left: -150px;
++  animation-delay: -7s;
++}
++
++.orb-3 {
++  width: 400px;
++  height: 400px;
++  background: radial-gradient(circle, hsla(var(--secondary), 0.25) 0%, transparent 70%);
++  top: 40%;
++  right: 10%;
++  animation-delay: -14s;
++}
++
++@keyframes orb-float {
++  0%, 100% {
++    transform: translate(0, 0) scale(1);
++  }
++  25% {
++    transform: translate(30px, -30px) scale(1.05);
++  }
++  50% {
++    transform: translate(-20px, 20px) scale(0.95);
++  }
++  75% {
++    transform: translate(-30px, -20px) scale(1.02);
++  }
++}
++
++/* MATH PARTICLES */
++.math-particles {
++  position: fixed;
++  inset: 0;
++  pointer-events: none;
++  z-index: 1;
++  overflow: hidden;
++}
++
++.math-particle {
++  position: absolute;
++  font-family: 'JetBrains Mono', monospace;
++  font-size: 1.2rem;
++  color: hsla(var(--primary), 0.08);
++  animation: particle-float 15s linear infinite;
++  user-select: none;
++}
++
++@keyframes particle-float {
++  0% {
++    transform: translateY(100vh) rotate(0deg);
++    opacity: 0;
++  }
++  10% {
++    opacity: 1;
++  }
++  90% {
++    opacity: 1;
++  }
++  100% {
++    transform: translateY(-100px) rotate(360deg);
++    opacity: 0;
++  }
++}
++
+ /* Noise texture overlay */
+ .noise-overlay {
+   position: relative;
+@@ -140,25 +234,117 @@ body {
+ @keyframes reveal-up {
+   0% {
+     opacity: 0;
+-    transform: translateY(20px);
++    transform: translateY(30px) scale(0.98);
+   }
+   100% {
+     opacity: 1;
+-    transform: translateY(0);
++    transform: translateY(0) scale(1);
+   }
+ }
+ 
+ .animate-reveal {
+-  animation: reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
++  animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+   opacity: 0;
+ }
+ 
+ .animate-reveal-1 { animation-delay: 0ms; }
+-.animate-reveal-2 { animation-delay: 80ms; }
+-.animate-reveal-3 { animation-delay: 160ms; }
+-.animate-reveal-4 { animation-delay: 240ms; }
+-.animate-reveal-5 { animation-delay: 320ms; }
+-.animate-reveal-6 { animation-delay: 400ms; }
++.animate-reveal-2 { animation-delay: 100ms; }
++.animate-reveal-3 { animation-delay: 200ms; }
++.animate-reveal-4 { animation-delay: 300ms; }
++.animate-reveal-5 { animation-delay: 400ms; }
++.animate-reveal-6 { animation-delay: 500ms; }
++
++/* SCROLL-TRIGGERED REVEAL */
++.scroll-reveal {
++  opacity: 0;
++  transform: translateY(40px);
++  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
++}
++
++.scroll-reveal.visible {
++  opacity: 1;
++  transform: translateY(0);
++}
++
++/* ICON HOVER ANIMATIONS */
++.icon-hover-lift {
++  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
++}
++
++.icon-hover-lift:hover {
++  transform: translateY(-4px) scale(1.1);
++  filter: drop-shadow(0 8px 16px hsla(var(--primary), 0.3));
++}
++
++.icon-hover-rotate {
++  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
++}
++
++.icon-hover-rotate:hover {
++  transform: rotate(15deg) scale(1.1);
++}
++
++/* CARD SHINE EFFECT */
++.card-shine {
++  position: relative;
++  overflow: hidden;
++}
++
++.card-shine::after {
++  content: '';
++  position: absolute;
++  top: -50%;
++  left: -50%;
++  width: 200%;
++  height: 200%;
++  background: linear-gradient(
++    45deg,
++    transparent 40%,
++    hsla(var(--primary), 0.08) 50%,
++    transparent 60%
++  );
++  transform: translateX(-100%) rotate(45deg);
++  transition: transform 0.6s ease;
++}
++
++.card-shine:hover::after {
++  transform: translateX(100%) rotate(45deg);
++}
++
++/* SUCCESS ANIMATION */
++@keyframes success-pop {
++  0% {
++    transform: scale(0.8);
++    opacity: 0;
++  }
++  50% {
++    transform: scale(1.05);
++  }
++  100% {
++    transform: scale(1);
++    opacity: 1;
++  }
++}
++
++.animate-success {
++  animation: success-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
++}
++
++/* SPARKLE ANIMATION */
++@keyframes sparkle {
++  0%, 100% {
++    opacity: 1;
++    transform: scale(1);
++  }
++  50% {
++    opacity: 0.5;
++    transform: scale(1.2);
++  }
++}
++
++.animate-sparkle {
++  animation: sparkle 1.5s ease-in-out infinite;
++}
+ 
+ /* Float animation */
+ @keyframes float {
+@@ -258,12 +444,13 @@ body {
+ /* COMPONENT STYLES — wrapped in @layer so Tailwind utilities (fixed, absolute, etc.) always win */
+ @layer components {
+ 
+-/* Glass morphism card */
++/* Glass morphism card - ENHANCED */
+ .glass-card {
+   @apply relative overflow-hidden;
+   background: hsla(var(--surface-2), 0.6);
+   backdrop-filter: blur(12px);
+   border: 1px solid hsla(var(--primary), 0.1);
++  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+ }
+ 
+ .glass-card::before {
+@@ -279,7 +466,77 @@ body {
+   pointer-events: none;
+ }
+ 
+-/* Button base */
++.glass-card:hover {
++  border-color: hsla(var(--primary), 0.25);
++  box-shadow:
++    0 20px 40px -15px hsla(var(--primary), 0.15),
++    0 0 30px -10px hsla(var(--primary), 0.1);
++  transform: translateY(-4px);
++}
++
++/* ENHANCED GRADIENT BORDER CARD */
++.gradient-border-card {
++  @apply relative;
++  background: hsl(var(--surface-1));
++  border-radius: var(--radius);
++}
++
++.gradient-border-card::before {
++  content: '';
++  position: absolute;
++  inset: 0;
++  border-radius: inherit;
++  padding: 1px;
++  background: linear-gradient(135deg, hsla(var(--primary), 0.5), hsla(var(--accent), 0.3), hsla(var(--secondary), 0.4));
++  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
++  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
++  -webkit-mask-composite: xor;
++  mask-composite: exclude;
++  opacity: 0.6;
++  transition: opacity 0.3s ease;
++}
++
++.gradient-border-card:hover::before {
++  opacity: 1;
++}
++
++/* SYLLABUS COURSE CARDS */
++.course-card {
++  @apply relative overflow-hidden px-5 py-3 rounded-xl font-display text-sm border transition-all duration-300;
++  background: hsla(var(--surface-1), 0.8);
++  border-color: hsla(var(--primary), 0.15);
++}
++
++.course-card::before {
++  content: '';
++  position: absolute;
++  inset: 0;
++  background: linear-gradient(135deg, transparent 0%, hsla(var(--primary), 0.05) 100%);
++  opacity: 0;
++  transition: opacity 0.3s ease;
++}
++
++.course-card:hover {
++  transform: translateY(-2px) scale(1.02);
++  border-color: hsla(var(--primary), 0.4);
++  box-shadow: 0 10px 30px -10px hsla(var(--primary), 0.2);
++}
++
++.course-card:hover::before {
++  opacity: 1;
++}
++
++.course-card-standard { --course-color: 200 80% 55%; }
++.course-card-advanced { --course-color: 172 80% 45%; }
++.course-card-extension-1 { --course-color: 25 90% 58%; }
++.course-card-extension-2 { --course-color: 260 60% 60%; }
++
++.course-card-standard:hover { border-color: hsla(200, 80%, 55%, 0.5); box-shadow: 0 10px 30px -10px hsla(200, 80%, 55%, 0.2); }
++.course-card-advanced:hover { border-color: hsla(172, 80%, 45%, 0.5); box-shadow: 0 10px 30px -10px hsla(172, 80%, 45%, 0.2); }
++.course-card-extension-1:hover { border-color: hsla(25, 90%, 58%, 0.5); box-shadow: 0 10px 30px -10px hsla(25, 90%, 58%, 0.2); }
++.course-card-extension-2:hover { border-color: hsla(260, 60%, 60%, 0.5); box-shadow: 0 10px 30px -10px hsla(260, 60%, 60%, 0.2); }
++
++/* Button base - ENHANCED */
+ .btn-primary {
+   @apply relative overflow-hidden font-display text-sm tracking-wide;
+   background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(172, 70%, 35%) 100%);
+@@ -288,17 +545,22 @@ body {
+ }
+ 
+ .btn-primary:hover {
+-  transform: translateY(-2px);
++  transform: translateY(-2px) scale(1.02);
+   box-shadow:
+-    0 10px 30px -10px hsla(var(--primary), 0.5),
+-    0 0 20px -5px hsla(var(--primary), 0.3);
++    0 15px 35px -10px hsla(var(--primary), 0.6),
++    0 0 30px -5px hsla(var(--primary), 0.4),
++    inset 0 1px 0 hsla(255, 100%, 100%, 0.1);
++}
++
++.btn-primary:active {
++  transform: translateY(0) scale(0.98);
+ }
+ 
+ .btn-primary::after {
+   content: '';
+   position: absolute;
+   inset: 0;
+-  background: linear-gradient(135deg, transparent 0%, hsla(255, 100%, 100%, 0.1) 100%);
++  background: linear-gradient(135deg, transparent 0%, hsla(255, 100%, 100%, 0.15) 100%);
+   opacity: 0;
+   transition: opacity 0.3s;
+ }
+@@ -307,6 +569,40 @@ body {
+   opacity: 1;
+ }
+ 
++/* GLOWING BUTTON VARIANT */
++.btn-glow {
++  animation: btn-pulse-glow 2s ease-in-out infinite;
++}
++
++@keyframes btn-pulse-glow {
++  0%, 100% {
++    box-shadow:
++      0 10px 30px -10px hsla(var(--primary), 0.5),
++      0 0 20px -5px hsla(var(--primary), 0.3);
++  }
++  50% {
++    box-shadow:
++      0 15px 40px -10px hsla(var(--primary), 0.7),
++      0 0 30px -5px hsla(var(--primary), 0.5);
++  }
++}
++
++/* SECONDARY BUTTON */
++.btn-secondary {
++  @apply relative overflow-hidden font-display text-sm tracking-wide px-8 py-4 rounded-xl flex items-center gap-3;
++  background: transparent;
++  border: 1px solid hsla(var(--primary), 0.25);
++  color: hsl(var(--foreground));
++  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
++}
++
++.btn-secondary:hover {
++  border-color: hsla(var(--primary), 0.5);
++  background: hsla(var(--primary), 0.08);
++  transform: translateY(-2px);
++  box-shadow: 0 10px 30px -10px hsla(var(--primary), 0.2);
++}
++
+ /* Input base */
+ .input-base {
+   @apply w-full rounded-xl px-4 py-3 transition-all duration-300;
+diff --git a/mait-mvp-glitch/frontend/tailwind.config.js b/mait-mvp-glitch/frontend/tailwind.config.js
+index 34e5fdd..c6d11b7 100644
+--- a/mait-mvp-glitch/frontend/tailwind.config.js
++++ b/mait-mvp-glitch/frontend/tailwind.config.js
+@@ -1,110 +1,89 @@
+ /** @type {import('tailwindcss').Config} */
+-export default {
+-    content: [
+-        "./index.html",
+-        "./src/**/*.{js,ts,jsx,tsx}",
+-    ],
+-    theme: {
+-        extend: {
+-            fontFamily: {
+-                sans: ['Outfit', 'system-ui', 'sans-serif'],
+-                display: ['JetBrains Mono', 'monospace'],
+-                mono: ['JetBrains Mono', 'monospace'],
+-            },
+-            colors: {
+-                background: "hsl(var(--background))",
+-                foreground: "hsl(var(--foreground))",
+-                primary: {
+-                    DEFAULT: "hsl(var(--primary))",
+-                    foreground: "hsl(var(--primary-foreground))",
+-                },
+-                secondary: {
+-                    DEFAULT: "hsl(var(--secondary))",
+-                    foreground: "hsl(var(--secondary-foreground))",
+-                },
+-                accent: {
+-                    DEFAULT: "hsl(var(--accent))",
+-                    foreground: "hsl(var(--accent-foreground))",
+-                },
+-                destructive: {
+-                    DEFAULT: "hsl(var(--destructive))",
+-                    foreground: "hsl(var(--destructive-foreground))",
+-                },
+-                muted: {
+-                    DEFAULT: "hsl(var(--muted))",
+-                    foreground: "hsl(var(--muted-foreground))",
+-                },
+-                surface: {
+-                    1: "hsl(var(--surface-1))",
+-                    2: "hsl(var(--surface-2))",
+-                    3: "hsl(var(--surface-3))",
+-                },
+-            },
+-            borderRadius: {
+-                lg: "var(--radius)",
+-                md: "calc(var(--radius) - 2px)",
+-                sm: "calc(var(--radius) - 4px)",
+-            },
+-            animation: {
+-                'glitch': 'glitch 3s ease-in-out infinite',
+-                'reveal': 'reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+-                'float': 'float 4s ease-in-out infinite',
+-                'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+-                'shimmer': 'shimmer 2s linear infinite',
+-            },
+-            keyframes: {
+-                glitch: {
+-                    '0%, 90%, 100%': {
+-                        transform: 'translate(0)',
+-                        textShadow: 'none',
+-                    },
+-                    '92%': {
+-                        transform: 'translate(-2px, 1px)',
+-                        textShadow: '2px 0 hsl(var(--accent)), -2px 0 hsl(var(--primary))',
+-                    },
+-                    '94%': {
+-                        transform: 'translate(2px, -1px)',
+-                        textShadow: '-2px 0 hsl(var(--accent)), 2px 0 hsl(var(--primary))',
+-                    },
+-                    '96%': {
+-                        transform: 'translate(-1px, 2px)',
+-                        textShadow: '1px 0 hsl(var(--accent)), -1px 0 hsl(var(--primary))',
+-                    },
+-                },
+-                'reveal-up': {
+-                    '0%': {
+-                        opacity: '0',
+-                        transform: 'translateY(20px)',
+-                    },
+-                    '100%': {
+-                        opacity: '1',
+-                        transform: 'translateY(0)',
+-                    },
+-                },
+-                float: {
+-                    '0%, 100%': { transform: 'translateY(0px)' },
+-                    '50%': { transform: 'translateY(-8px)' },
+-                },
+-                'pulse-glow': {
+-                    '0%, 100%': {
+-                        boxShadow: '0 0 20px -5px hsla(var(--glow-primary), 0.4)',
+-                    },
+-                    '50%': {
+-                        boxShadow: '0 0 30px -5px hsla(var(--glow-primary), 0.6)',
+-                    },
+-                },
+-                shimmer: {
+-                    '0%': { backgroundPosition: '-200% 0' },
+-                    '100%': { backgroundPosition: '200% 0' },
+-                },
+-            },
+-            boxShadow: {
+-                'glow-sm': '0 0 10px -3px hsla(var(--primary), 0.3)',
+-                'glow': '0 0 20px -5px hsla(var(--primary), 0.4)',
+-                'glow-lg': '0 0 40px -10px hsla(var(--primary), 0.5)',
+-                'glow-accent': '0 0 20px -5px hsla(var(--accent), 0.4)',
+-            },
++module.exports = {
++  darkMode: ["class"],
++  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
++  theme: {
++    extend: {
++      colors: {
++        border: "hsl(var(--border))",
++        input: "hsl(var(--input))",
++        ring: "hsl(var(--ring))",
++        background: "hsl(var(--background))",
++        foreground: "hsl(var(--foreground))",
++        primary: {
++          DEFAULT: "hsl(var(--primary))",
++          foreground: "hsl(var(--primary-foreground))",
+         },
++        secondary: {
++          DEFAULT: "hsl(var(--secondary))",
++          foreground: "hsl(var(--secondary-foreground))",
++        },
++        destructive: {
++          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
++          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
++        },
++        muted: {
++          DEFAULT: "hsl(var(--muted))",
++          foreground: "hsl(var(--muted-foreground))",
++        },
++        accent: {
++          DEFAULT: "hsl(var(--accent))",
++          foreground: "hsl(var(--accent-foreground))",
++        },
++        popover: {
++          DEFAULT: "hsl(var(--popover))",
++          foreground: "hsl(var(--popover-foreground))",
++        },
++        card: {
++          DEFAULT: "hsl(var(--card))",
++          foreground: "hsl(var(--card-foreground))",
++        },
++        surface: {
++          1: "hsl(var(--surface-1))",
++          2: "hsl(var(--surface-2))",
++          3: "hsl(var(--surface-3))",
++        },
++        sidebar: {
++          DEFAULT: "hsl(var(--sidebar-background))",
++          foreground: "hsl(var(--sidebar-foreground))",
++          primary: "hsl(var(--sidebar-primary))",
++          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
++          accent: "hsl(var(--sidebar-accent))",
++          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
++          border: "hsl(var(--sidebar-border))",
++          ring: "hsl(var(--sidebar-ring))",
++        },
++      },
++      borderRadius: {
++        xl: "calc(var(--radius) + 4px)",
++        lg: "var(--radius)",
++        md: "calc(var(--radius) - 2px)",
++        sm: "calc(var(--radius) - 4px)",
++        xs: "calc(var(--radius) - 6px)",
++      },
++      boxShadow: {
++        xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
++      },
++      keyframes: {
++        "accordion-down": {
++          from: { height: "0" },
++          to: { height: "var(--radix-accordion-content-height)" },
++        },
++        "accordion-up": {
++          from: { height: "var(--radix-accordion-content-height)" },
++          to: { height: "0" },
++        },
++        "caret-blink": {
++          "0%,70%,100%": { opacity: "1" },
++          "20%,50%": { opacity: "0" },
++        },
++      },
++      animation: {
++        "accordion-down": "accordion-down 0.2s ease-out",
++        "accordion-up": "accordion-up 0.2s ease-out",
++        "caret-blink": "caret-blink 1.25s ease-out infinite",
++      },
+     },
+-    plugins: [],
+-}
++  },
++  plugins: [require("tailwindcss-animate")],
++}
+\ No newline at end of file
+-- 
+2.39.5
+

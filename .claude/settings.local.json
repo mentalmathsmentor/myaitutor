@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof:*)",
+      "Bash(cd /Users/darayeet/Documents/personal don''t open/ALL/MAIT/mait-mvp-glitch/backend)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(uvicorn app.main:app:*)",
+      "Bash(cd /Users/darayeet/Documents/personal don''t open/ALL/MAIT/mait-mvp-glitch/frontend)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vite build)",
+      "Bash(git pull origin claude/review-codebase-sqhR2 --rebase)",
+      "Bash(git push -u origin claude/review-codebase-sqhR2)",
+      "Bash(git add mait-mvp-glitch/backend/app/services/storage.py)",
+      "Bash(git stash)",
+      "Bash(git stash pop)"
+    ]
+  }
+}
