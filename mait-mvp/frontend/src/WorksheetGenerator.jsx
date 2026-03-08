@@ -1,10 +1,56 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
+// KaTeX is loaded via CDN in index.html — use window.katex
 import syllabusData from './syllabus_data.json'
 import canvasHint from './assets/canvas-hint.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
 const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)']
+
+// ─── Syllabus Hierarchy: higher subjects include lower subjects' dot-points ───
+const HIERARCHY_MAP = {
+    'Year 11 Extension 1': ['Year 11 Advanced'],
+    'Year 12 Extension 1': ['Year 12 Advanced'],
+    'Year 12 Extension 2': ['Year 12 Advanced', 'Year 12 Extension 1'],
+}
+
+function buildMergedSyllabus(yearLevel) {
+    const base = syllabusData[yearLevel] || {}
+    const parents = HIERARCHY_MAP[yearLevel]
+    if (!parents) return base
+
+    // Deep-clone the base so we don't mutate the original
+    const merged = JSON.parse(JSON.stringify(base))
+
+    for (const parentLevel of parents) {
+        const parentData = syllabusData[parentLevel]
+        if (!parentData) continue
+        // Add parent content under a labelled section like "Advanced (Prerequisite)"
+        const label = `${parentLevel} (Prerequisite)`
+        merged[label] = JSON.parse(JSON.stringify(parentData))
+    }
+
+    return merged
+}
+
+// ─── LaTeX inline renderer: converts $...$ segments to KaTeX HTML ───
+function renderLatex(text) {
+    const parts = text.split(/(\$[^$]+\$)/g)
+    const k = window.katex
+    const html = parts.map(part => {
+        if (k && part.startsWith('$') && part.endsWith('$')) {
+            const tex = part.slice(1, -1)
+            try {
+                return k.renderToString(tex, { throwOnError: false, displayMode: false })
+            } catch {
+                return part
+            }
+        }
+        // Escape HTML in non-LaTeX parts
+        return part.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }).join('')
+    return html
+}
 
 export default function WorksheetGenerator() {
     // State
@@ -33,8 +79,43 @@ export default function WorksheetGenerator() {
     }, [classYear]);
 
     // Hierarchy Helpers
-    const currentSyllabus = syllabusData[classYear] || {};
-    const modules = Object.keys(currentSyllabus);
+    const currentSyllabus = useMemo(() => buildMergedSyllabus(classYear), [classYear]);
+
+    // ─── Search filtering ───
+    const filteredModules = useMemo(() => {
+        const q = searchQuery.toLowerCase().trim()
+        if (!q) return Object.keys(currentSyllabus)
+
+        return Object.keys(currentSyllabus).filter(mod => {
+            if (mod.toLowerCase().includes(q)) return true
+            const subtopics = currentSyllabus[mod] || {}
+            return Object.keys(subtopics).some(subt => {
+                if (subt.toLowerCase().includes(q)) return true
+                return subtopics[subt].some(pt => pt.toLowerCase().includes(q))
+            })
+        })
+    }, [currentSyllabus, searchQuery])
+
+    // Auto-expand modules/subtopics when searching
+    useEffect(() => {
+        const q = searchQuery.toLowerCase().trim()
+        if (!q) return
+        const mods = {}
+        const subs = {}
+        for (const mod of filteredModules) {
+            mods[mod] = true
+            const subtopics = currentSyllabus[mod] || {}
+            for (const subt of Object.keys(subtopics)) {
+                if (subt.toLowerCase().includes(q) || subtopics[subt].some(pt => pt.toLowerCase().includes(q))) {
+                    subs[subt] = true
+                }
+            }
+        }
+        setExpandedModules(prev => ({ ...prev, ...mods }))
+        setExpandedSubtopics(prev => ({ ...prev, ...subs }))
+    }, [searchQuery, filteredModules, currentSyllabus])
+
+    const modules = filteredModules;
 
     const toggleModule = (mod) => {
         setExpandedModules(prev => ({ ...prev, [mod]: !prev[mod] }));
@@ -426,7 +507,7 @@ ${contentString}
                                                                                     onChange={() => handlePointToggle(point)}
                                                                                     className="mt-0.5 w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
                                                                                 />
-                                                                                <span className="text-[11px] font-display leading-relaxed">{point}</span>
+                                                                                <span className="text-[11px] font-display leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
                                                                             </label>
                                                                         ))}
                                                                     </div>
