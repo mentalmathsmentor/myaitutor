@@ -119,16 +119,19 @@ function ordinalSuffix(n) {
 
 export default function LandingPage({ navigate, onLoginClick }) {
     const [visitCount, setVisitCount] = useState(null)
+    const [visitLoaded, setVisitLoaded] = useState(false)
 
     useEffect(() => {
         const API_URL = import.meta.env.VITE_API_URL ||
             (window.location.hostname === 'myaitutor.au' || window.location.hostname === 'www.myaitutor.au'
                 ? 'https://api.myaitutor.au'
                 : 'http://localhost:8000')
+        const timeout = setTimeout(() => setVisitLoaded(true), 3000)
         fetch(`${API_URL}/visit`, { method: 'POST' })
             .then(r => r.json())
-            .then(d => setVisitCount(d.count))
-            .catch(() => { })
+            .then(d => { setVisitCount(d.count); setVisitLoaded(true) })
+            .catch(() => setVisitLoaded(true))
+        return () => clearTimeout(timeout)
     }, [])
 
     return (
@@ -400,8 +403,10 @@ export default function LandingPage({ navigate, onLoginClick }) {
                             <p className="text-sm font-display text-foreground">
                                 {visitCount !== null ? (
                                     <>You are the <span className="text-primary font-bold tabular-nums">{ordinalSuffix(visitCount)}</span> visitor</>
+                                ) : visitLoaded ? (
+                                    <span className="text-muted-foreground">Welcome, visitor!</span>
                                 ) : (
-                                    <span className="text-muted-foreground">Counting visitors...</span>
+                                    <span className="text-muted-foreground animate-pulse">Counting visitors...</span>
                                 )}
                             </p>
                         </div>
