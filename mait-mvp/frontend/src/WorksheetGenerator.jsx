@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
 // KaTeX is loaded via CDN in index.html — use window.katex
 import syllabusData from './syllabus_data.json'
@@ -69,12 +69,22 @@ function renderLatex(text) {
 const DIFFICULTY_OPTIONS = ['Mixed', 'Easy → Hard Progression', 'Mostly Easy', 'Mostly Hard', 'Exam-Style']
 
 export default function WorksheetGenerator() {
+    // Refs for mount tracking
+    const isInitialMount = useRef(true);
+
     // State
     const [schoolName, setSchoolName] = useState('')
 
     // New Stage/Subject State
-    const [selectedStage, setSelectedStage] = useState(STAGES[4]) // Default to Stage 4 (Yr 7-8)
-    const [selectedSubject, setSelectedSubject] = useState(stageSubjects[STAGES[4]] ? Object.keys(stageSubjects[STAGES[4]])[0] : 'Mathematics')
+    const [selectedStage, setSelectedStage] = useState(() => localStorage.getItem('mait_ws_stage') || STAGES[4])
+    const [selectedSubject, setSelectedSubject] = useState(() => {
+        const savedStage = localStorage.getItem('mait_ws_stage') || STAGES[4];
+        const savedSubject = localStorage.getItem('mait_ws_subject');
+        if (savedSubject && (savedSubject === 'Other' || (stageSubjects[savedStage] && stageSubjects[savedStage][savedSubject]))) {
+            return savedSubject;
+        }
+        return stageSubjects[savedStage] ? Object.keys(stageSubjects[savedStage])[0] : 'Mathematics';
+    })
     const [customSubject, setCustomSubject] = useState('')
     const [syllabusProvided, setSyllabusProvided] = useState(false)
     const [textbooksProvided, setTextbooksProvided] = useState(false)
@@ -82,29 +92,54 @@ export default function WorksheetGenerator() {
 
     const [selectedPoints, setSelectedPoints] = useState(() => {
         try {
-            const saved = localStorage.getItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`);
+            const savedStage = localStorage.getItem('mait_ws_stage') || STAGES[4];
+            const savedSubject = localStorage.getItem('mait_ws_subject') || (stageSubjects[savedStage] ? Object.keys(stageSubjects[savedStage])[0] : 'Mathematics');
+            const saved = localStorage.getItem(`mait_ws_pts_${savedStage}_${savedSubject}`);
             return saved ? JSON.parse(saved) : [];
         } catch { return []; }
     })
-    const [includeName, setIncludeName] = useState(true)
-    const [includeDate, setIncludeDate] = useState(true)
+    const [includeName, setIncludeName] = useState(() => {
+        const saved = localStorage.getItem('mait_ws_name');
+        return saved !== null ? saved === 'true' : true;
+    })
+    const [includeDate, setIncludeDate] = useState(() => {
+        const saved = localStorage.getItem('mait_ws_date');
+        return saved !== null ? saved === 'true' : true;
+    })
     const [mode, setMode] = useState('A')
-    const [numQuestions, setNumQuestions] = useState(10)
+    const [numQuestions, setNumQuestions] = useState(() => parseInt(localStorage.getItem('mait_ws_numQuestions') || '10'))
     const [rawQuestions, setRawQuestions] = useState('')
-    const [workingSpace, setWorkingSpace] = useState(SPACING_OPTIONS[0])
-    const [includeMarks, setIncludeMarks] = useState(false)
-    const [generateAnswerKey, setGenerateAnswerKey] = useState(false)
+    const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || SPACING_OPTIONS[0])
+    const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true')
+    const [generateAnswerKey, setGenerateAnswerKey] = useState(() => localStorage.getItem('mait_ws_answerKey') === 'true')
     const [searchQuery, setSearchQuery] = useState('')
     const [showReference, setShowReference] = useState(false)
-    const [difficulty, setDifficulty] = useState(DIFFICULTY_OPTIONS[0])
+    const [difficulty, setDifficulty] = useState(() => localStorage.getItem('mait_ws_difficulty') || DIFFICULTY_OPTIONS[0])
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
     const [expandedModules, setExpandedModules] = useState({})
     const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
+    // Save state to localStorage
+    useEffect(() => {
+        localStorage.setItem('mait_ws_stage', selectedStage);
+        localStorage.setItem('mait_ws_subject', selectedSubject);
+        localStorage.setItem('mait_ws_numQuestions', numQuestions.toString());
+        localStorage.setItem('mait_ws_workingSpace', workingSpace);
+        localStorage.setItem('mait_ws_difficulty', difficulty);
+        localStorage.setItem('mait_ws_marks', includeMarks.toString());
+        localStorage.setItem('mait_ws_answerKey', generateAnswerKey.toString());
+        localStorage.setItem('mait_ws_name', includeName.toString());
+        localStorage.setItem('mait_ws_date', includeDate.toString());
+    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate]);
+
     // Update subject list when stage changes
     useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
         const subjectsForStage = stageSubjects[selectedStage];
         if (subjectsForStage) {
             const firstSubject = Object.keys(subjectsForStage)[0];
@@ -266,9 +301,10 @@ export default function WorksheetGenerator() {
         else if (includeDate) headerString = '\\noindent\\textbf{Date:} \\makebox[3cm]{\\hrulefill}';
 
         let marksLogic = includeMarks ? '\\unskip\\hfill\\textbf{[X Marks]}' : 'Do not assign marks';
+        let dynamicSpacing = numQuestions > 20 ? '2cm' : (numQuestions > 10 ? '4cm' : '6cm');
         let spacingLogic = workingSpace === 'Two-column Compact'
             ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\begin{multicols}{2} ... \\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
-            : `Apply spacing style: ${workingSpace}.`;
+            : `Use \\vspace{${dynamicSpacing}} between questions.`;
 
         let answerKeyLogic = generateAnswerKey
             ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\begin{multicols}{2}` and `\\end{multicols}`, separated by the vertical rule.'
@@ -331,10 +367,8 @@ export default function WorksheetGenerator() {
 
 Your job is to create a professional, compile-ready PDF worksheet. 
 
-**CRITICAL UI DIRECTIVE (THE GAG ORDER):** 
-1. Output the entire LaTeX script inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`.
-2. Do NOT output any conversational text before or after the code block. 
-3. Output ONLY the raw code block to trigger the UI Canvas preview.
+**CRITICAL DIRECTIVE:** 
+You must structure your output exactly like this. First, output this exact message: 'Reminder: Click the dotted box arrow button in the bottom right to highlight and edit sections. Feel free to ask me to make changes!' Second, output the complete, compile-ready LaTeX code inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`. Do not output any other conversational text.
 
 **CRITICAL REASONING DIRECTIVE (INTERNAL VERIFICATION):**
 Before generating the final LaTeX code block, you MUST use your internal thinking/scratchpad phase to rigorously construct and verify every single question and answer. 
@@ -350,6 +384,7 @@ For every question you generate:
 \\documentclass[12pt, a4paper]{article}
 \\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
 \\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
+\\usepackage[none]{hyphenat}
 \\usepackage[hidelinks]{hyperref} 
 \\setlength{\\columnsep}{1cm}
 \\setlength{\\columnseprule}{0.4pt}
@@ -363,6 +398,7 @@ For every question you generate:
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\setlength{\\headheight}{30pt}
 \\begin{document}
+\\sloppy
 ${headerString ? `\n${headerString}\n\\vspace{0.8cm}\n` : ''}
 \\begin{center}
     {\\Large \\textbf{ ${mode === 'A' ? 'Syllabus Focus: Mixed Topics' : 'Custom Worksheet'} }}
@@ -426,14 +462,19 @@ ${contentString}
                         <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                             <Sparkles className="text-primary w-10 h-10" />
                         </div>
-                        <h3 className="text-xl md:text-2xl font-display font-bold tracking-tight">
-                            Opening Gemini!
+                        <h3 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
+                            Copied!
                         </h3>
                         <div className="space-y-4 text-muted-foreground">
-                            <p className="text-base leading-relaxed">
-                                <span>Copied! We've copied your highly specific prompt to your clipboard.</span>
-                            </p>
-                            <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4">
+                            <div className="flex flex-col items-center gap-1">
+                                <p className="text-xl leading-relaxed text-foreground font-semibold">
+                                    Paste into Gemini
+                                </p>
+                                <p className="text-sm italic text-muted-foreground">
+                                    (Press Ctrl+V or Cmd+V to paste)
+                                </p>
+                            </div>
+                            <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]">
                                 <p className="text-[13px] font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
                                 <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full rounded-xl border border-surface-3/50 shadow-md object-cover" />
                                 <p className="text-xs">
@@ -442,10 +483,10 @@ ${contentString}
                             </div>
                         </div>
                         <div className="pt-4">
-                            <div className="h-1.5 w-full bg-surface-3 rounded-full overflow-hidden">
+                            <div className="h-3 w-full bg-surface-3 rounded-full overflow-hidden">
                                 <div className="h-full bg-primary animate-progress-shrink origin-left" />
                             </div>
-                            <p className="text-[10px] uppercase font-display tracking-widest text-muted-foreground mt-4">Launching in 3 seconds...</p>
+                            <p className="text-sm md:text-base font-bold uppercase font-display tracking-widest text-primary animate-pulse mt-4">Launching in 3 seconds...</p>
                         </div>
                     </div>
                 </div>
@@ -787,7 +828,10 @@ ${contentString}
                                     <input
                                         type="checkbox"
                                         checked={syllabusProvided}
-                                        onChange={(e) => setSyllabusProvided(e.target.checked)}
+                                        onChange={(e) => {
+                                            setSyllabusProvided(e.target.checked);
+                                            if (e.target.checked) setSearchSyllabus(false);
+                                        }}
                                         className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
                                     />
                                     <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Syllabus Provided</span>
@@ -805,7 +849,10 @@ ${contentString}
                                     <input
                                         type="checkbox"
                                         checked={searchSyllabus}
-                                        onChange={(e) => setSearchSyllabus(e.target.checked)}
+                                        onChange={(e) => {
+                                            setSearchSyllabus(e.target.checked);
+                                            if (e.target.checked) setSyllabusProvided(false);
+                                        }}
                                         className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                     />
                                     <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Search for NESA syllabus</span>
@@ -873,7 +920,7 @@ ${contentString}
                             ) : (
                                 <>
                                     <Sparkles size={18} className="animate-pulse" />
-                                    <span>Generate Worksheet</span>
+                                    <span>Generate Worksheet & Launch Gemini</span>
                                     <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
