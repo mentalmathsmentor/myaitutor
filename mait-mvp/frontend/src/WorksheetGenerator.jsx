@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
 // KaTeX is loaded via CDN in index.html — use window.katex
 import syllabusData from './syllabus_data.json'
-import canvasHint from './assets/gemini-canvas-mockup.png'
+import canvasHint from './assets/gemini-horizontal-mockup.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
 import stageSubjects from './stage_subjects.json'
@@ -421,17 +421,16 @@ ${contentString}
         <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30 flex flex-col items-center">
             {/* Centered Warning Modal */}
             {showWarning && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-cosmic/80 backdrop-blur-xl animate-in fade-in duration-300">
-                    <div className="glass-card rounded-3xl p-8 md:p-12 max-w-lg w-full text-center space-y-6 border-primary/30 shadow-[0_0_50px_rgba(var(--primary-rgb),0.2)] animate-in zoom-in-95 duration-300">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-cosmic/80 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-4 border-primary/30 shadow-[0_0_50px_rgba(var(--primary-rgb),0.2)] animate-in zoom-in-95 duration-300">
                         <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                             <Sparkles className="text-primary w-10 h-10" />
                         </div>
-                        <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
+                        <h3 className="text-xl md:text-2xl font-display font-bold tracking-tight">
                             Opening Gemini!
                         </h3>
                         <div className="space-y-4 text-muted-foreground">
-                            <p className="text-lg leading-relaxed flex items-center justify-center gap-2">
-                                <CheckCircle2 size={20} className="text-green-500" />
+                            <p className="text-base leading-relaxed">
                                 <span>Copied! We've copied your highly specific prompt to your clipboard.</span>
                             </p>
                             <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4">
