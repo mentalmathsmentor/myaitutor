@@ -734,126 +734,127 @@ ${contentString}
                                 ))}
                             </select>
                         </div>
+                    </div>
 
-                        <div className="grid md:grid-cols-2 gap-6 items-end">
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                    Header Configuration
-                                </label>
-                                <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
-                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={includeName}
-                                            onChange={(e) => setIncludeName(e.target.checked)}
-                                            className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                        />
-                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Name</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                        <input
-                                            type="checkbox"
-                                            checked={includeDate}
-                                            onChange={(e) => setIncludeDate(e.target.checked)}
-                                            className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                        />
-                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Date</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                    Attached Context
-                                </label>
-                                <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
-                                    <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
-                                        <input
-                                            type="checkbox"
-                                            checked={syllabusProvided}
-                                            onChange={(e) => setSyllabusProvided(e.target.checked)}
-                                            className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
-                                        />
-                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Syllabus Provided</span>
-                                    </label>
-                                    <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
-                                        <input
-                                            type="checkbox"
-                                            checked={textbooksProvided}
-                                            onChange={(e) => setTextbooksProvided(e.target.checked)}
-                                            className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
-                                        />
-                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Textbooks Provided</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-6 items-end">
-                            <div className="space-y-2">
-                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                    Working Space / Pagination
-                                </label>
-                                <div className="relative">
-                                    <select
-                                        value={workingSpace}
-                                        onChange={(e) => setWorkingSpace(e.target.value)}
-                                        className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
-                                    >
-                                        {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                    </select>
-                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-4 pb-1">
+                    <div className="grid md:grid-cols-2 gap-6 items-end">
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                Header Configuration
+                            </label>
+                            <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input
                                         type="checkbox"
-                                        checked={includeMarks}
-                                        onChange={(e) => setIncludeMarks(e.target.checked)}
+                                        checked={includeName}
+                                        onChange={(e) => setIncludeName(e.target.checked)}
                                         className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                     />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Marks?</span>
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Name</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input
                                         type="checkbox"
-                                        checked={generateAnswerKey}
-                                        onChange={(e) => setGenerateAnswerKey(e.target.checked)}
+                                        checked={includeDate}
+                                        onChange={(e) => setIncludeDate(e.target.checked)}
                                         className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                     />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Answer Key</span>
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Date</span>
                                 </label>
                             </div>
                         </div>
 
-                        {/* Final Action */}
-                        <div className="pt-6 relative">
-                            <button
-                                type="submit"
-                                disabled={isCopied}
-                                className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
-                                    ? 'bg-green-500/10 text-green-500 border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
-                                    : 'bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98]'
-                                    }`}
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
-                                <div className={`absolute inset-0 bg-green-500/10 transition-transform ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} style={{ transitionDuration: '3s' }} />
-                                {isCopied ? (
-                                    <>
-                                        <CheckCircle2 size={18} className="relative z-10" />
-                                        <span className="relative z-10">Copied! Launching Gemini...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles size={18} className="animate-pulse" />
-                                        <span>Generate Worksheet</span>
-                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                Attached Context
+                            </label>
+                            <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
+                                <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
+                                    <input
+                                        type="checkbox"
+                                        checked={syllabusProvided}
+                                        onChange={(e) => setSyllabusProvided(e.target.checked)}
+                                        className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Syllabus Provided</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
+                                    <input
+                                        type="checkbox"
+                                        checked={textbooksProvided}
+                                        onChange={(e) => setTextbooksProvided(e.target.checked)}
+                                        className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Textbooks Provided</span>
+                                </label>
+                            </div>
                         </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6 items-end">
+                        <div className="space-y-2">
+                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                Working Space / Pagination
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={workingSpace}
+                                    onChange={(e) => setWorkingSpace(e.target.value)}
+                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
+                                >
+                                    {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-4 pb-1">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeMarks}
+                                    onChange={(e) => setIncludeMarks(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Marks?</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={generateAnswerKey}
+                                    onChange={(e) => setGenerateAnswerKey(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Answer Key</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {/* Final Action */}
+                    <div className="pt-6 relative">
+                        <button
+                            type="submit"
+                            disabled={isCopied}
+                            className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
+                                ? 'bg-green-500/10 text-green-500 border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
+                                : 'bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98]'
+                                }`}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                            <div className={`absolute inset-0 bg-green-500/10 transition-transform ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} style={{ transitionDuration: '3s' }} />
+                            {isCopied ? (
+                                <>
+                                    <CheckCircle2 size={18} className="relative z-10" />
+                                    <span className="relative z-10">Copied! Launching Gemini...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Sparkles size={18} className="animate-pulse" />
+                                    <span>Generate Worksheet</span>
+                                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                    </div>
 
                 </form>
             </div>
