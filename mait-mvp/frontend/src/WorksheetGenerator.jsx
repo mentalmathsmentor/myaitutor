@@ -317,7 +317,7 @@ export default function WorksheetGenerator() {
         else if (includeName) headerString = '\\noindent\\textbf{Name:} \\makebox[6cm]{\\hrulefill}';
         else if (includeDate) headerString = '\\noindent\\textbf{Date:} \\makebox[3cm]{\\hrulefill}';
 
-        let marksLogic = includeMarks ? '\\unskip\\hfill\\textbf{\\mbox{[X Marks]}}' : 'Do not assign marks';
+        let marksLogic = includeMarks ? '\\hfill\\quad\\textbf{[X Marks]}' : 'Do not assign marks';
         let dynamicSpacing = numQuestions > 20 ? '2cm' : (numQuestions > 10 ? '4cm' : '6cm');
         let spacingLogic = workingSpace === 'Two-column Compact'
             ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\begin{multicols}{2} ... \\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
@@ -397,6 +397,9 @@ Your job is to create a professional, compile-ready PDF worksheet.
 
 **CRITICAL DIRECTIVE:** 
 You must structure your output exactly like this. First, output this exact message: '${reminderText}' Second, output the complete, compile-ready LaTeX code inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`. Do not output any other conversational text.
+
+${includeMarks ? '**LATEX DIRECTIVE FOR MARKS:** Always place the marks (e.g., [2 Marks]) at the very end of the question text line, separated by `\\hfill\\quad`. Ensure they are strictly right-aligned to the margin to maintain a professional exam layout.\n' : ''}
+${workingSpace === 'Dynamic Space' ? '**LATEX DIRECTIVE FOR SPACING:** For your Dynamic Space implementation, ensure `\\hrulefill` is used whenever a written response is expected, and leave at least 3-4cm of vertical space for calculation-intensive questions.\n' : ''}
 
 **CRITICAL REASONING DIRECTIVE (INTERNAL VERIFICATION):**
 Before generating the final LaTeX code block, you MUST use your internal thinking/scratchpad phase to rigorously construct and verify every single question and answer. 
