@@ -55,6 +55,13 @@ body {
   overflow-x: hidden;
   overflow-y: overlay;
   /* Prevents scrollbar from shifting content and helps with double scrollbars */
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* DEMO INACTIVITY TRACKER */
+.idle-dim {
+  opacity: 0.25;
+  transition: opacity 1.5s ease-in-out;
 }
 
 /* Display/Heading Font */

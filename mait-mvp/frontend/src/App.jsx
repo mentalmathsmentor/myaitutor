@@ -130,9 +130,12 @@ function App() {
     const [loadedModelName, setLoadedModelName] = useState(null) // actual model name once loaded
     const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false)
     const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem('mait_autosave') === 'true')
-    const autoSavePromptShown = useRef(false)
-    const [pendingQueue, setPendingQueue] = useState([])
     const [showQueueConfirm, setShowQueueConfirm] = useState(null) // string (pending text) or null
+
+    // Inactivity Tracker State
+    const [isIdle, setIsIdle] = useState(false)
+    const idleTimeoutRef = useRef(null)
+    const currentTimeoutDelay = useRef(30000)
 
     const isDemoMode = page === 'demo'
 
@@ -445,6 +448,41 @@ function App() {
         return () => clearInterval(timer);
     }, []);
 
+    // Idle Timer (Active Cognitive Engagement)
+    const resetIdleTimer = () => {
+        if (!isDemoMode) return;
+        setIsIdle(false);
+        if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+
+        idleTimeoutRef.current = setTimeout(() => {
+            setIsIdle(true);
+        }, currentTimeoutDelay.current);
+    };
+
+    useEffect(() => {
+        if (isDemoMode) {
+            // Initial Start
+            resetIdleTimer();
+
+            const handleActivity = () => resetIdleTimer();
+            // Listen on capture phase for all interaction types
+            window.addEventListener('mousemove', handleActivity, true);
+            window.addEventListener('keydown', handleActivity, true);
+            window.addEventListener('touchstart', handleActivity, true);
+            window.addEventListener('scroll', handleActivity, true);
+            window.addEventListener('click', handleActivity, true);
+
+            return () => {
+                if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+                window.removeEventListener('mousemove', handleActivity, true);
+                window.removeEventListener('keydown', handleActivity, true);
+                window.removeEventListener('touchstart', handleActivity, true);
+                window.removeEventListener('scroll', handleActivity, true);
+                window.removeEventListener('click', handleActivity, true);
+            }
+        }
+    }, [isDemoMode]);
+
     // Study timer
     useEffect(() => {
         if (!studyTimerRunning) return;
@@ -595,6 +633,12 @@ function App() {
 
         try {
             setMessages(prev => [...prev, { role: 'bot', text: 'typing', source: 'typing' }]);
+
+            // Context Dependent Extension mapping for AI reasoning processing time
+            if (isDemoMode && currentTimeoutDelay.current !== 180000) {
+                currentTimeoutDelay.current = 180000;
+                resetIdleTimer();
+            }
 
             let fullResponse = "";
 
@@ -828,7 +872,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     return (
         <>
             <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-            <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30">
+            <div className={`h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30 ${(isDemoMode && isIdle) ? 'idle-dim' : ''}`}>
                 {/* Decorative grid overlay */}
                 <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0"
                     style={{
