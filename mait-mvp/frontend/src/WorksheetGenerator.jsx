@@ -118,6 +118,7 @@ export default function WorksheetGenerator() {
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
+    const [showCloseButton, setShowCloseButton] = useState(false)
     const [showErrorToast, setShowErrorToast] = useState(false)
     const [isShaking, setIsShaking] = useState(false)
     const [expandedModules, setExpandedModules] = useState({})
@@ -455,15 +456,14 @@ ${contentString}
 
             // Warning is centered and blocks UI
             setTimeout(() => {
-                setShowWarning(false);
-                setIsCopied(false);
+                setShowCloseButton(true);
                 window.open('https://gemini.google.com/app', '_blank');
             }, 3000);
         } catch (err) {
             console.error('Failed to copy text: ', err);
             setShowWarning(true);
             setTimeout(() => {
-                setShowWarning(false);
+                setShowCloseButton(true);
                 window.open('https://gemini.google.com/app', '_blank');
             }, 3000);
         }
@@ -929,29 +929,16 @@ ${contentString}
                     </div>
 
                     {/* Final Action */}
-                    <div className="pt-6 relative">
+                    <div className="pt-6 relative group">
                         <button
                             type="submit"
-                            disabled={isCopied}
-                            className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
-                                ? 'bg-green-500/10 text-green-500 border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
-                                : 'bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98]'
-                                }`}
+                            disabled={isCopied || showWarning}
+                            className="w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-300 overflow-hidden relative shadow-lg bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
-                            <div className={`absolute inset-0 bg-green-500/10 transition-transform ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} style={{ transitionDuration: '3s' }} />
-                            {isCopied ? (
-                                <>
-                                    <CheckCircle2 size={18} className="relative z-10" />
-                                    <span className="relative z-10">Copied! Launching Gemini...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles size={18} className="animate-pulse" />
-                                    <span>Generate Worksheet & Launch Gemini</span>
-                                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
+                            <Sparkles size={18} className="animate-pulse relative z-10" />
+                            <span className="relative z-10">Generate Prompt & Launch Gemini</span>
+                            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform relative z-10" />
                         </button>
                     </div>
 
