@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
 // KaTeX is loaded via CDN in index.html — use window.katex
 import syllabusData from './syllabus_data.json'
-import canvasHint from './assets/canvas-hint.png'
+import canvasHint from './assets/gemini-canvas-mockup.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
 import stageSubjects from './stage_subjects.json'
@@ -126,6 +126,13 @@ export default function WorksheetGenerator() {
             setSelectedPoints(saved ? JSON.parse(saved) : []);
         } catch { setSelectedPoints([]); }
     }, [selectedStage, selectedSubject]);
+
+    // Auto-switch to Question/Topic Specification (Mode B) if Subject is 'Other'
+    useEffect(() => {
+        if (selectedSubject === 'Other') {
+            setMode('B');
+        }
+    }, [selectedSubject]);
 
     // Determine current legacy syllabus year equivalent for matching data in syllabus_data.json
     // Only applies to mathematics for Stage 4+ in the old structure
@@ -412,11 +419,12 @@ ${contentString}
                             <Sparkles className="text-primary w-10 h-10" />
                         </div>
                         <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight">
-                            Ready to Generate?
+                            Opening Gemini!
                         </h3>
                         <div className="space-y-4 text-muted-foreground">
-                            <p className="text-lg leading-relaxed">
-                                We've copied your highly specific prompt to your clipboard.
+                            <p className="text-lg leading-relaxed flex items-center justify-center gap-2">
+                                <CheckCircle2 size={20} className="text-green-500" />
+                                <span>Copied! We've copied your highly specific prompt to your clipboard.</span>
                             </p>
                             <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4">
                                 <p className="text-[13px] font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
@@ -682,7 +690,7 @@ ${contentString}
                                 <textarea
                                     required={mode === 'B'}
                                     rows={10}
-                                    placeholder="Paste questions here for automatic LaTeX formatting & layout adjustments..."
+                                    placeholder="type in the topics and any specific dot-points or general aim of the worksheet."
                                     value={rawQuestions}
                                     onChange={(e) => setRawQuestions(e.target.value)}
                                     className="input-base w-full text-sm font-display resize-y py-3 min-h-[300px]"
