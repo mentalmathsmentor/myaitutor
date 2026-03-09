@@ -8,7 +8,7 @@ const YEAR_LEVELS = Object.keys(syllabusData);
 import stageSubjects from './stage_subjects.json'
 const STAGES = Object.keys(stageSubjects);
 
-const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)']
+const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)', 'Dynamic Space']
 
 // ─── Syllabus Hierarchy (Legacy Maths retained for compatibility) ───
 const HIERARCHY_MAP = {
@@ -321,7 +321,9 @@ export default function WorksheetGenerator() {
         let dynamicSpacing = numQuestions > 20 ? '2cm' : (numQuestions > 10 ? '4cm' : '6cm');
         let spacingLogic = workingSpace === 'Two-column Compact'
             ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\begin{multicols}{2} ... \\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
-            : `Use \\vspace{${dynamicSpacing}} between questions.`;
+            : workingSpace === 'Dynamic Space'
+                ? 'LAYOUT DIRECTIVE: Use dynamic spacing. Where worded or written explanations are required, insert ruled lines (\\hrulefill). For pure mathematical calculations, leave blank working space.'
+                : `Use \\vspace{${dynamicSpacing}} between questions.`;
 
         let answerKeyLogic = generateAnswerKey
             ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\begin{multicols}{2}` and `\\end{multicols}`, separated by the vertical rule.'
@@ -529,7 +531,7 @@ ${contentString}
         <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30 flex flex-col items-center">
             {/* Error Toast */}
             {showErrorToast && (
-                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-top-4 fade-in duration-300">
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-top-4 fade-in duration-300">
                     <div className="bg-destructive/10 border border-destructive/30 backdrop-blur-md rounded-xl px-6 py-4 shadow-[0_0_30px_rgba(239,68,68,0.2)] flex items-center gap-3">
                         <AlertTriangle className="text-destructive w-5 h-5" />
                         <span className="text-destructive font-medium tracking-wide">Please select at least one topic to guide the AI.</span>
@@ -846,51 +848,71 @@ ${contentString}
                         )}
                     </div>
 
-                    {/* Question Count and Toggles */}
-                    <div className="grid md:grid-cols-2 gap-8 items-end">
-                        <div className="space-y-4">
+                    {/* Row 1: Number of Questions (Full Width) */}
+                    <div className="space-y-4 p-4 bg-surface-1/30 rounded-2xl border border-surface-3/50 shadow-sm transition-all duration-300 hover:border-primary/30">
+                        <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                            <span>Number of Questions</span>
+                            {numQuestions > 15 && (
+                                <span className="text-secondary/80 font-bold lowercase italic tracking-normal">(Note: Large worksheets use compact spacing)</span>
+                            )}
+                        </label>
+                        <div className="flex items-center gap-6">
+                            <input
+                                type="range"
+                                min={1}
+                                max={50}
+                                value={numQuestions > 50 ? 50 : numQuestions}
+                                onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
+                                className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                                style={{
+                                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) 100%)`,
+                                }}
+                            />
+                            <input
+                                type="number"
+                                value={numInput}
+                                onChange={(e) => setNumInput(e.target.value)}
+                                onBlur={() => {
+                                    const val = parseInt(numInput, 10);
+                                    if (isNaN(val) || val < 1) {
+                                        setNumQuestions(1);
+                                        setNumInput('1');
+                                    } else {
+                                        setNumQuestions(val);
+                                        setNumInput(val.toString());
+                                    }
+                                }}
+                                className="input-base w-20 text-center text-base font-mono py-2 bg-surface-2 border-surface-4 shadow-inner"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Row 2: Split 50/50 */}
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
                             <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Number of Questions
+                                Working Space / Page Layout
                             </label>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="range"
-                                    min={1}
-                                    max={50}
-                                    value={numQuestions > 50 ? 50 : numQuestions}
-                                    onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
-                                    className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
-                                    style={{
-                                        background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) 100%)`,
-                                    }}
-                                />
-                                <input
-                                    type="number"
-                                    value={numInput}
-                                    onChange={(e) => setNumInput(e.target.value)}
-                                    onBlur={() => {
-                                        const val = parseInt(numInput, 10);
-                                        if (isNaN(val) || val < 1) {
-                                            setNumQuestions(1);
-                                            setNumInput('1');
-                                        } else {
-                                            setNumQuestions(val);
-                                            setNumInput(val.toString());
-                                        }
-                                    }}
-                                    className="input-base w-16 text-center text-sm font-mono py-1 cursor-default focus:ring-0"
-                                />
+                            <div className="relative">
+                                <select
+                                    value={workingSpace}
+                                    onChange={(e) => setWorkingSpace(e.target.value)}
+                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3 bg-surface-1/50"
+                                >
+                                    {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Difficulty
+                                Question Difficulty
                             </label>
                             <select
                                 value={difficulty}
                                 onChange={(e) => setDifficulty(e.target.value)}
-                                className="input-base w-full text-sm py-2 cursor-pointer"
+                                className="input-base w-full text-sm py-3 cursor-pointer bg-surface-1/50"
                                 aria-label="Select difficulty level"
                             >
                                 {DIFFICULTY_OPTIONS.map(opt => (
@@ -900,102 +922,81 @@ ${contentString}
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 items-end">
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Header Configuration
+                    {/* Row 3: Attached Context (Full Width, 4-col Grid) */}
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                            Attached Context / Syllabus
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
+                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
+                                <input
+                                    type="checkbox"
+                                    checked={syllabusProvided}
+                                    onChange={(e) => {
+                                        setSyllabusProvided(e.target.checked);
+                                        if (e.target.checked) setSearchSyllabus(false);
+                                    }}
+                                    className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Syllabus Provided</span>
                             </label>
-                            <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={includeName}
-                                        onChange={(e) => setIncludeName(e.target.checked)}
-                                        className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                    />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Name</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={includeDate}
-                                        onChange={(e) => setIncludeDate(e.target.checked)}
-                                        className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                    />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Date</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Attached Context
+                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
+                                <input
+                                    type="checkbox"
+                                    checked={textbooksProvided}
+                                    onChange={(e) => setTextbooksProvided(e.target.checked)}
+                                    className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Textbooks Provided</span>
                             </label>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
-                                <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
-                                    <input
-                                        type="checkbox"
-                                        checked={syllabusProvided}
-                                        onChange={(e) => {
-                                            setSyllabusProvided(e.target.checked);
-                                            if (e.target.checked) setSearchSyllabus(false);
-                                        }}
-                                        className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
-                                    />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Syllabus Provided</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
-                                    <input
-                                        type="checkbox"
-                                        checked={textbooksProvided}
-                                        onChange={(e) => setTextbooksProvided(e.target.checked)}
-                                        className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
-                                    />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Textbooks Provided</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini to search/verify against NESA syllabus standards">
-                                    <input
-                                        type="checkbox"
-                                        checked={searchSyllabus}
-                                        onChange={(e) => {
-                                            setSearchSyllabus(e.target.checked);
-                                            if (e.target.checked) setSyllabusProvided(false);
-                                        }}
-                                        className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                    />
-                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Search for NESA syllabus</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group" title="Directive to include flawed step-by-step working for error identification">
-                                    <input
-                                        type="checkbox"
-                                        checked={spotTheError}
-                                        onChange={(e) => setSpotTheError(e.target.checked)}
-                                        className="w-4 h-4 rounded border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer"
-                                    />
-                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wide">Spot the Error Task</span>
-                                </label>
-                            </div>
+                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini to search/verify against NESA syllabus standards">
+                                <input
+                                    type="checkbox"
+                                    checked={searchSyllabus}
+                                    onChange={(e) => {
+                                        setSearchSyllabus(e.target.checked);
+                                        if (e.target.checked) setSyllabusProvided(false);
+                                    }}
+                                    className="w-5 h-5 rounded-lg border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Search NESA</span>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer group" title="Directive to include flawed step-by-step working for error identification">
+                                <input
+                                    type="checkbox"
+                                    checked={spotTheError}
+                                    onChange={(e) => setSpotTheError(e.target.checked)}
+                                    className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                />
+                                <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Spot Error Task</span>
+                            </label>
                         </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 items-end">
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Working Space / Pagination
+                    {/* Row 4: Configuration / Output Settings (Full Width, 5-col Grid) */}
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                            Configuration / Output Settings
+                        </label>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeName}
+                                    onChange={(e) => setIncludeName(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Include Name</span>
                             </label>
-                            <div className="relative">
-                                <select
-                                    value={workingSpace}
-                                    onChange={(e) => setWorkingSpace(e.target.value)}
-                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
-                                >
-                                    {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 pb-1">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeDate}
+                                    onChange={(e) => setIncludeDate(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Include Date</span>
+                            </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -1003,7 +1004,7 @@ ${contentString}
                                     onChange={(e) => setIncludeMarks(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Marks?</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Include Marks?</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -1012,7 +1013,7 @@ ${contentString}
                                     onChange={(e) => setGenerateAnswerKey(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Answer Key</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Answer Key</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -1021,7 +1022,7 @@ ${contentString}
                                     onChange={(e) => setIncludeCanvasSetup(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide" title="Include first-time setup instructions for Gemini Canvas">First Time?</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include first-time setup instructions for Gemini Canvas">First Time?</span>
                             </label>
                         </div>
                     </div>
