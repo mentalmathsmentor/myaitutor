@@ -135,7 +135,7 @@ function App() {
     // Inactivity Tracker State
     const [isIdle, setIsIdle] = useState(false)
     const idleTimeoutRef = useRef(null)
-    const currentTimeoutDelay = useRef(30000)
+    const currentTimeoutDelay = useRef(5000)
 
     const isDemoMode = page === 'demo'
 

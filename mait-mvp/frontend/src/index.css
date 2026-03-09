@@ -61,7 +61,7 @@ body {
 /* DEMO INACTIVITY TRACKER */
 .idle-dim {
   opacity: 0.25;
-  transition: opacity 1.5s ease-in-out;
+  transition: opacity 30s ease-in-out;
 }
 
 /* Display/Heading Font */
