@@ -698,7 +698,7 @@ ${contentString}
                                 <textarea
                                     required={mode === 'B'}
                                     rows={10}
-                                    placeholder="type in the topics and any specific dot-points or general aim of the worksheet."
+                                    placeholder="Type in the topics and any specific dot-points or general aim of the worksheet."
                                     value={rawQuestions}
                                     onChange={(e) => setRawQuestions(e.target.value)}
                                     className="input-base w-full text-sm font-display resize-y py-3 min-h-[300px]"
