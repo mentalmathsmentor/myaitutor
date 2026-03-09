@@ -372,7 +372,7 @@ export default function WorksheetGenerator() {
 
         let reminderText = "Reminder: Click the dotted box arrow button in the bottom right to highlight and edit sections. Feel free to ask me to make changes!";
         if (includeCanvasSetup) {
-            reminderText += " No Code/Preview window? Press Tools then Canvas and send the message again! :D";
+            reminderText += "\n\n No Code/Preview window? Press **Tools** then **Canvas** and send the message again! :D";
         }
 
         return `**${promptTitle}**\n\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
