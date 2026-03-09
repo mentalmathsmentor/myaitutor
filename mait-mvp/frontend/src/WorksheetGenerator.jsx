@@ -989,7 +989,7 @@ ${contentString}
                                     onChange={(e) => setIncludeCanvasSetup(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide" title="Include first-time setup instructions for Gemini Canvas">Canvas Setup</span>
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide" title="Include first-time setup instructions for Gemini Canvas">First Time?</span>
                             </label>
                         </div>
                     </div>
