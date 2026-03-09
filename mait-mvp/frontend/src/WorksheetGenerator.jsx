@@ -89,6 +89,8 @@ export default function WorksheetGenerator() {
     const [syllabusProvided, setSyllabusProvided] = useState(false)
     const [textbooksProvided, setTextbooksProvided] = useState(false)
     const [searchSyllabus, setSearchSyllabus] = useState(false)
+    const [spotTheError, setSpotTheError] = useState(() => localStorage.getItem('mait_ws_spotError') === 'true')
+    const [numInput, setNumInput] = useState('') // Local state for raw input string
 
     const [selectedPoints, setSelectedPoints] = useState(() => {
         try {
@@ -139,7 +141,15 @@ export default function WorksheetGenerator() {
         localStorage.setItem('mait_ws_name', includeName.toString());
         localStorage.setItem('mait_ws_date', includeDate.toString());
         localStorage.setItem('mait_ws_canvasSetup', includeCanvasSetup.toString());
-    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup]);
+        localStorage.setItem('mait_ws_spotError', spotTheError.toString());
+    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup, spotTheError]);
+
+    // Sync numInput when numQuestions changes (except when numInput is actively being edited)
+    useEffect(() => {
+        if (numInput === '' || parseInt(numInput, 10) !== numQuestions) {
+            setNumInput(numQuestions.toString());
+        }
+    }, [numQuestions]);
 
     // Update subject list when stage changes
     useEffect(() => {
@@ -328,6 +338,10 @@ export default function WorksheetGenerator() {
 
         if (searchSyllabus) {
             contextPrefix += 'CRITICAL: You are authorized and encouraged to Search/Reference the official NESA NSW Syllabus requirements for the selected Stage and Subject to ensure 100% curriculum alignment.\n\n';
+        }
+
+        if (spotTheError) {
+            contextPrefix += 'PEDAGOGY DIRECTIVE: You must include at least one "Spot the Error" question. For this question, provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the logical or arithmetic error occurred and explain why it is incorrect.\n\n';
         }
 
         let contentString = '';
@@ -852,9 +866,18 @@ ${contentString}
                                 />
                                 <input
                                     type="number"
-                                    min={1}
-                                    value={numQuestions}
-                                    onChange={(e) => setNumQuestions(parseInt(e.target.value, 10) || 1)}
+                                    value={numInput}
+                                    onChange={(e) => setNumInput(e.target.value)}
+                                    onBlur={() => {
+                                        const val = parseInt(numInput, 10);
+                                        if (isNaN(val) || val < 1) {
+                                            setNumQuestions(1);
+                                            setNumInput('1');
+                                        } else {
+                                            setNumQuestions(val);
+                                            setNumInput(val.toString());
+                                        }
+                                    }}
                                     className="input-base w-16 text-center text-sm font-mono py-1 cursor-default focus:ring-0"
                                 />
                             </div>
@@ -908,7 +931,7 @@ ${contentString}
                             <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
                                 Attached Context
                             </label>
-                            <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
                                 <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
                                     <input
                                         type="checkbox"
@@ -941,6 +964,15 @@ ${contentString}
                                         className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                     />
                                     <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Search for NESA syllabus</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer group" title="Directive to include flawed step-by-step working for error identification">
+                                    <input
+                                        type="checkbox"
+                                        checked={spotTheError}
+                                        onChange={(e) => setSpotTheError(e.target.checked)}
+                                        className="w-4 h-4 rounded border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wide">Spot the Error Task</span>
                                 </label>
                             </div>
                         </div>
