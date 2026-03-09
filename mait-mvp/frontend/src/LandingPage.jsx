@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList } from 'lucide-react'
+import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList, Users } from 'lucide-react'
 
 const SYLLABI = [
     { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
@@ -111,18 +111,24 @@ function ScrollReveal({ children, delay = 0, className = '' }) {
     )
 }
 
+function ordinalSuffix(n) {
+    const s = ['th', 'st', 'nd', 'rd']
+    const v = n % 100
+    return n.toLocaleString() + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
 export default function LandingPage({ navigate, onLoginClick }) {
     const [visitCount, setVisitCount] = useState(null)
+    const [visitLoaded, setVisitLoaded] = useState(false)
 
     useEffect(() => {
-        const API_URL = import.meta.env.VITE_API_URL ||
-            (window.location.hostname === 'myaitutor.au' || window.location.hostname === 'www.myaitutor.au'
-                ? 'https://api.myaitutor.au'
-                : 'http://localhost:8000')
+        const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com'
+        const timeout = setTimeout(() => setVisitLoaded(true), 3000)
         fetch(`${API_URL}/visit`, { method: 'POST' })
             .then(r => r.json())
-            .then(d => setVisitCount(d.count))
-            .catch(() => { })
+            .then(d => { setVisitCount(d.count); setVisitLoaded(true) })
+            .catch(() => setVisitLoaded(true))
+        return () => clearTimeout(timeout)
     }, [])
 
     return (
@@ -389,11 +395,18 @@ export default function LandingPage({ navigate, onLoginClick }) {
                         <p className="text-muted-foreground text-xs font-display">
                             © 2026 MAIT. All rights reserved.
                         </p>
-                        {visitCount !== null && (
-                            <p className="text-muted-foreground/30 text-[10px] font-mono tabular-nums">
-                                {visitCount.toLocaleString()} visits
+                        <div className="flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-primary/10 border border-primary/25">
+                            <Users size={14} className="text-primary flex-shrink-0" />
+                            <p className="text-sm font-display text-foreground">
+                                {visitCount !== null ? (
+                                    <>You are the <span className="text-primary font-bold tabular-nums">{ordinalSuffix(visitCount)}</span> visitor</>
+                                ) : visitLoaded ? (
+                                    <span className="text-muted-foreground">Welcome, visitor!</span>
+                                ) : (
+                                    <span className="text-muted-foreground animate-pulse">Counting visitors...</span>
+                                )}
                             </p>
-                        )}
+                        </div>
                     </div>
                 </div>
             </footer>
@@ -445,7 +458,7 @@ function WaitlistForm() {
 
         setStatus('loading')
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
             const res = await fetch(`${API_URL}/subscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

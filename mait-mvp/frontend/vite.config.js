@@ -8,6 +8,17 @@ export default defineConfig({
     server: {
         watch: {
             usePolling: true,
+        },
+        proxy: {
+            '/visit': 'http://localhost:8000',
+            '/subscribe': 'http://localhost:8000',
+            '/query': 'http://localhost:8000',
+            '/context': 'http://localhost:8000',
+            '/history': 'http://localhost:8000',
+            '/reset': 'http://localhost:8000',
+            '/keystroke-metrics': 'http://localhost:8000',
+            '/keystroke-profile': 'http://localhost:8000',
+            '/auth': 'http://localhost:8000',
         }
     },
     optimizeDeps: {
