@@ -1,0 +1,177 @@
+{
+    "Early Stage 1 (Kindy)": {
+        "English": [
+            "Phonics",
+            "Decodables",
+            "Reading Comprehension",
+            "Handwriting",
+            "Speaking and Listening"
+        ],
+        "Mathematics": [
+            "Counting to 30",
+            "Addition and Subtraction (1-digit)",
+            "Length and Mass",
+            "2D Shapes and 3D Objects",
+            "Time (Days of the week, Hours)"
+        ]
+    },
+    "Stage 1 (Yr 1-2)": {
+        "English": [
+            "Phonics and Word Knowledge",
+            "Fluency and Comprehension",
+            "Creating Texts",
+            "Grammar and Punctuation"
+        ],
+        "Mathematics": [
+            "Addition and Subtraction (2-digit)",
+            "Multiplication and Division (Basics)",
+            "Fractions (Halves, Quarters)",
+            "Length, Area, Volume and Mass",
+            "Position and 2D/3D Space"
+        ]
+    },
+    "Stage 2 (Yr 3-4)": {
+        "English": [
+            "Reading Fluency and Comprehension",
+            "Spelling Rules and Morphology",
+            "Creating Written Texts",
+            "Understanding Literature Contexts"
+        ],
+        "Mathematics": [
+            "Base-10 and Place Value",
+            "Multiplication (Up to 10x10)",
+            "Fractions & Decimals (Tenths, Hundredths)",
+            "Measurement & Geometry",
+            "Data Representation (Graphs)"
+        ]
+    },
+    "Stage 3 (Yr 5-6)": {
+        "English": [
+            "Advanced Comprehension Strategies",
+            "Literary Analysis",
+            "Persuasive and Informative Writing",
+            "Advanced Grammar & Sentence Structure"
+        ],
+        "Mathematics": [
+            "Operations with Fractions & Decimals",
+            "Percentages and Financial Mathematics",
+            "Angles, Symmetry and Transformation",
+            "Volume, Capacity and Mass",
+            "Probability and Data Analysis"
+        ]
+    },
+    "Stage 4 (Yr 7-8)": {
+        "Mathematics": [
+            "Fractions, Decimals and Percentages",
+            "Linear Relationships",
+            "Area and Volume",
+            "Trigonometry and Pythagoras",
+            "Statistics and Probability"
+        ],
+        "English": [
+            "Textual Concepts",
+            "Responding to Literature",
+            "Composing Texts",
+            "Grammar, Punctuation and Vocabulary"
+        ],
+        "Science": [
+            "Physical World",
+            "Earth and Space",
+            "Living World",
+            "Chemical World"
+        ],
+        "HSIE": [
+            "History",
+            "Geography"
+        ]
+    },
+    "Stage 5 (Yr 9-10)": {
+        "Mathematics": [
+            "Financial Mathematics",
+            "Linear Relationships and Graphing",
+            "Non-Linear Relationships",
+            "Trigonometry and Pythagoras",
+            "Data Analysis and Probability"
+        ],
+        "English": [
+            "Analysing Literature Contexts",
+            "Creative and Analytical Writing",
+            "Visual and Multimodal Texts"
+        ],
+        "Science": [
+            "Physical World",
+            "Earth and Space",
+            "Living World",
+            "Chemical World"
+        ]
+    },
+    "Year 11": {
+        "Mathematics Standard": [
+            "Algebra",
+            "Measurement",
+            "Financial Mathematics",
+            "Statistical Analysis"
+        ],
+        "Mathematics Advanced": [
+            "Functions",
+            "Trigonometric Functions",
+            "Calculus",
+            "Exponential and Logarithmic Functions",
+            "Statistical Analysis"
+        ],
+        "Mathematics Extension 1": [
+            "Functions and Polynomials",
+            "Trigonometry",
+            "Calculus",
+            "Combinatorics"
+        ]
+    },
+    "Year 12": {
+        "Mathematics Standard 1": [
+            "Algebra",
+            "Measurement",
+            "Financial Mathematics",
+            "Statistical Analysis"
+        ],
+        "Mathematics Standard 2": [
+            "Algebra",
+            "Measurement",
+            "Financial Mathematics",
+            "Statistical Analysis",
+            "Networks"
+        ],
+        "Mathematics Advanced": [
+            "Functions",
+            "Trigonometric Functions",
+            "Calculus",
+            "Financial Mathematics",
+            "Statistical Analysis"
+        ],
+        "Mathematics Extension 1": [
+            "Proof",
+            "Vectors",
+            "Trigonometric Functions",
+            "Calculus",
+            "Statistical Analysis"
+        ],
+        "Mathematics Extension 2": [
+            "Proof",
+            "Vectors",
+            "Complex Numbers",
+            "Calculus",
+            "Mechanics"
+        ],
+        "Physics": [
+            "Advanced Mechanics",
+            "Electromagnetism",
+            "The Nature of Light",
+            "From the Universe to the Atom"
+        ],
+        "Engineering Studies": [
+            "Civil Structures",
+            "Personal and Public Transport",
+            "Aeronautical Engineering",
+            "Telecommunications Engineering"
+        ]
+    }
+}

@@ -5,9 +5,12 @@ import syllabusData from './syllabus_data.json'
 import canvasHint from './assets/canvas-hint.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
+import stageSubjects from './stage_subjects.json'
+const STAGES = Object.keys(stageSubjects);
+
 const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)']
 
-// ─── Syllabus Hierarchy: higher subjects include lower subjects' dot-points ───
+// ─── Syllabus Hierarchy (Legacy Maths retained for compatibility) ───
 const HIERARCHY_MAP = {
     'Year 11 Extension 1': ['Year 11 Advanced'],
     'Year 12 Extension 1': ['Year 12 Advanced'],
@@ -68,10 +71,17 @@ const DIFFICULTY_OPTIONS = ['Mixed', 'Easy → Hard Progression', 'Mostly Easy',
 export default function WorksheetGenerator() {
     // State
     const [schoolName, setSchoolName] = useState('')
-    const [classYear, setClassYear] = useState(YEAR_LEVELS[2]) // Year 12 Advanced
+
+    // New Stage/Subject State
+    const [selectedStage, setSelectedStage] = useState(STAGES[4]) // Default to Stage 4 (Yr 7-8)
+    const [selectedSubject, setSelectedSubject] = useState(stageSubjects[STAGES[4]] ? Object.keys(stageSubjects[STAGES[4]])[0] : 'Mathematics')
+    const [customSubject, setCustomSubject] = useState('')
+    const [syllabusProvided, setSyllabusProvided] = useState(false)
+    const [textbooksProvided, setTextbooksProvided] = useState(false)
+
     const [selectedPoints, setSelectedPoints] = useState(() => {
         try {
-            const saved = localStorage.getItem(`mait_ws_pts_${YEAR_LEVELS[2]}`);
+            const saved = localStorage.getItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`);
             return saved ? JSON.parse(saved) : [];
         } catch { return []; }
     })
@@ -92,21 +102,61 @@ export default function WorksheetGenerator() {
     const [expandedModules, setExpandedModules] = useState({})
     const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
-    // Persist selected points to localStorage
+    // Update subject list when stage changes
     useEffect(() => {
-        localStorage.setItem(`mait_ws_pts_${classYear}`, JSON.stringify(selectedPoints));
-    }, [selectedPoints, classYear]);
+        const subjectsForStage = stageSubjects[selectedStage];
+        if (subjectsForStage) {
+            const firstSubject = Object.keys(subjectsForStage)[0];
+            setSelectedSubject(firstSubject);
+            setCustomSubject('');
+        } else {
+            setSelectedSubject('Other');
+        }
+    }, [selectedStage]);
 
-    // Load saved points on class change
+    // Persist selected points to localStorage based on Stage and Subject
+    useEffect(() => {
+        localStorage.setItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`, JSON.stringify(selectedPoints));
+    }, [selectedPoints, selectedStage, selectedSubject]);
+
+    // Load saved points on Stage/Subject change
     useEffect(() => {
         try {
-            const saved = localStorage.getItem(`mait_ws_pts_${classYear}`);
+            const saved = localStorage.getItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`);
             setSelectedPoints(saved ? JSON.parse(saved) : []);
         } catch { setSelectedPoints([]); }
-    }, [classYear]);
+    }, [selectedStage, selectedSubject]);
 
-    // Hierarchy Helpers
-    const currentSyllabus = useMemo(() => buildMergedSyllabus(classYear), [classYear]);
+    // Determine current legacy syllabus year equivalent for matching data in syllabus_data.json
+    // Only applies to mathematics for Stage 4+ in the old structure
+    const legacySyllabusYear = useMemo(() => {
+        if (selectedStage === 'Stage 4 (Yr 7-8)') return 'Year 7'; // fallback approximation
+        if (selectedStage === 'Stage 5 (Yr 9-10)') return 'Year 9';
+        if (selectedStage === 'Year 11') {
+            if (selectedSubject === 'Mathematics Advanced') return 'Year 11 Advanced';
+            if (selectedSubject === 'Mathematics Extension 1') return 'Year 11 Extension 1';
+            return 'Year 11 Standard';
+        }
+        if (selectedStage === 'Year 12') {
+            if (selectedSubject === 'Mathematics Advanced') return 'Year 12 Advanced';
+            if (selectedSubject === 'Mathematics Extension 1') return 'Year 12 Extension 1';
+            if (selectedSubject === 'Mathematics Extension 2') return 'Year 12 Extension 2';
+            if (selectedSubject === 'Physics') return 'Year 12 Physics';
+            if (selectedSubject === 'Engineering Studies') return 'Year 12 Engineering Studies';
+        }
+        return null;
+    }, [selectedStage, selectedSubject]);
+
+    // Hierarchy Helpers (Only used if legacy match found)
+    const currentSyllabus = useMemo(() => legacySyllabusYear ? buildMergedSyllabus(legacySyllabusYear) : {}, [legacySyllabusYear]);
+
+    // Topic list for Non-legacy subjects
+    const currentTopicsList = useMemo(() => {
+        if (legacySyllabusYear) return null; // Use currentSyllabus instead
+        if (selectedSubject === 'Other') return [];
+        return stageSubjects[selectedStage]?.[selectedSubject] || [];
+    }, [selectedStage, selectedSubject, legacySyllabusYear]);
+
 
     // ─── Search filtering ───
     const filteredModules = useMemo(() => {
@@ -194,10 +244,12 @@ export default function WorksheetGenerator() {
     };
 
     const generatePrompt = () => {
+        const displaySubject = selectedSubject === 'Other' && customSubject.trim() ? customSubject : selectedSubject;
+
         // Header Logic
-        let lheadContent = `\\textbf{ ${classYear} }`;
+        let lheadContent = `\\textbf{ ${selectedStage} - ${displaySubject} }`;
         if (schoolName.trim()) {
-            lheadContent = `\\textbf{ ${schoolName} - ${classYear} }`;
+            lheadContent = `\\textbf{ ${schoolName} - ${selectedStage} - ${displaySubject} }`;
         }
 
         let headerString = '';
@@ -214,24 +266,36 @@ export default function WorksheetGenerator() {
             ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\begin{multicols}{2}` and `\\end{multicols}`, separated by the vertical rule.'
             : 'Do not generate an answer key';
 
+        // Context Logic
+        let contextPrefix = '';
+        if (syllabusProvided || textbooksProvided) {
+            contextPrefix += 'Using the context files attached to this prompt:\n';
+            if (syllabusProvided) contextPrefix += '- Strictly adhere to the scope and constraints of the attached Syllabus.\n';
+            if (textbooksProvided) contextPrefix += '- Strongly model the questions on the style, structure, and difficulty found in the attached Textbook/Resources.\n';
+            contextPrefix += '\n';
+        }
+
         let contentString = '';
         if (mode === 'A') {
-            const pointsText = selectedPoints.length > 0
-                ? `strictly targeting these specific syllabus dot-points and topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
-                : `targeting the general curriculum for ${classYear}`;
+            const explicitTopics = (currentTopicsList && currentTopicsList.length > 0 && selectedPoints.length > 0)
+                ? `strictly targeting these specific topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
+                : selectedPoints.length > 0
+                    ? `strictly targeting these specific syllabus dot-points and topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
+                    : `targeting the general curriculum for ${displaySubject}`;
+
             const difficultyText = difficulty === 'Mixed' ? 'Use a balanced mix of easy, medium, and hard questions.' :
                 difficulty === 'Easy → Hard Progression' ? 'Start with easy questions and progressively increase difficulty to hard.' :
                     difficulty === 'Mostly Easy' ? 'Keep most questions easy/accessible, with 1-2 challenging ones at the end.' :
                         difficulty === 'Mostly Hard' ? 'Focus on challenging, exam-level questions with minimal easy questions.' :
-                            'Match the difficulty and style of real HSC exam questions.';
-            contentString = `Please generate ${numQuestions} professional-level exam questions ${pointsText}.\n\n**DIFFICULTY:** ${difficultyText}`;
+                            'Match the difficulty and style of real exam questions.';
+            contentString = `${contextPrefix}Please generate ${numQuestions} professional-level exam questions ${explicitTopics} for ${selectedStage} ${displaySubject}.\n\n**DIFFICULTY:** ${difficultyText}`;
         } else {
-            contentString = `Please format these exact questions into a professional worksheet: ${rawQuestions}`;
+            contentString = `${contextPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}`;
         }
 
         // Generate dynamic title
-        let promptTitle = `${classYear} Worksheet`;
-        if (mode === 'A' && selectedPoints.length > 0) {
+        let promptTitle = `${selectedStage} ${displaySubject} Worksheet`;
+        if (mode === 'A' && selectedPoints.length > 0 && legacySyllabusYear) {
             const modCounts = {};
             selectedPoints.forEach(p => {
                 for (const mod in currentSyllabus) {
@@ -245,7 +309,7 @@ export default function WorksheetGenerator() {
                 }
             });
             const topMod = Object.keys(modCounts).reduce((a, b) => modCounts[a] > modCounts[b] ? a : b, '');
-            if (topMod) promptTitle = `${topMod} ${classYear} Worksheet`;
+            if (topMod) promptTitle = `${topMod} ${displaySubject} Worksheet`;
         }
 
         return `**${promptTitle}**\n\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
@@ -399,33 +463,62 @@ ${contentString}
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="block text-[10px] font-display uppercase tracking-[0.2em] text-muted-foreground">
-                                School / Institution Name
+                                Stage / Year Level
                             </label>
-                            <input
-                                type="text"
-                                placeholder="Optional"
-                                value={schoolName}
-                                onChange={(e) => setSchoolName(e.target.value)}
-                                className="input-base w-full text-sm font-display py-3"
-                                aria-label="School or institution name"
-                            />
+                            <div className="relative">
+                                <select
+                                    value={selectedStage}
+                                    onChange={(e) => setSelectedStage(e.target.value)}
+                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3 truncate"
+                                    aria-label="Select stage or year level"
+                                >
+                                    {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="block text-[10px] font-display uppercase tracking-[0.2em] text-muted-foreground">
-                                Class / Year Level
+                                Subject
                             </label>
-                            <div className="relative">
-                                <select
-                                    value={classYear}
-                                    onChange={(e) => setClassYear(e.target.value)}
-                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
-                                    aria-label="Select class or year level"
-                                >
-                                    {YEAR_LEVELS.map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            </div>
+                            {selectedSubject === 'Other' ? (
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="text"
+                                        placeholder="Type custom subject..."
+                                        value={customSubject}
+                                        onChange={(e) => setCustomSubject(e.target.value)}
+                                        className="input-base w-full text-sm font-display py-3 pr-10"
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const options = Object.keys(stageSubjects[selectedStage] || {});
+                                            if (options.length > 0) setSelectedSubject(options[0]);
+                                        }}
+                                        className="absolute right-3 p-1 hover:bg-surface-3 rounded-md text-muted-foreground"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <select
+                                        value={selectedSubject}
+                                        onChange={(e) => setSelectedSubject(e.target.value)}
+                                        className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3 truncate"
+                                        aria-label="Select subject"
+                                    >
+                                        {(stageSubjects[selectedStage] ? Object.keys(stageSubjects[selectedStage]) : []).map(sub => (
+                                            <option key={sub} value={sub}>{sub}</option>
+                                        ))}
+                                        <option value="Other">Other (Custom)</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -443,7 +536,7 @@ ${contentString}
                             onClick={() => setMode('B')}
                             className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                         >
-                            BYO Questions
+                            Question/Topic Specification
                         </button>
                     </div>
 
@@ -481,77 +574,103 @@ ${contentString}
                                 {/* Scrollable Tree View */}
                                 <div className="flex-1 overflow-y-auto max-h-[500px] p-4 custom-scrollbar">
                                     <div className="space-y-4">
-                                        {modules.map(mod => (
-                                            <div key={mod} className="space-y-1">
-                                                {/* Module row */}
-                                                <div className="flex items-center gap-2 group p-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleModule(mod)}
-                                                        className="p-1 hover:bg-surface-3 rounded transition-colors"
-                                                    >
-                                                        {expandedModules[mod] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                                    </button>
-                                                    <label className="flex items-center gap-2 cursor-pointer flex-1">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isModuleSelected(mod)}
-                                                            onChange={() => toggleModuleSelection(mod)}
-                                                            className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
-                                                        />
-                                                        <span className="text-xs font-display font-bold text-foreground group-hover:text-primary transition-colors">{mod}</span>
-                                                    </label>
-                                                </div>
-
-                                                {/* Module Children (Subtopics) */}
-                                                {expandedModules[mod] && (
-                                                    <div className="ml-6 space-y-3 border-l border-surface-3 pl-4 py-2">
-                                                        {Object.keys(currentSyllabus[mod] || {}).map(subt => (
-                                                            <div key={subt} className="space-y-1">
-                                                                <div className="flex items-center gap-2 group p-1">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => toggleSubtopic(subt)}
-                                                                        className="p-1 hover:bg-surface-3 rounded transition-colors flex-shrink-0"
-                                                                    >
-                                                                        {expandedSubtopics[subt] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                                                    </button>
-                                                                    <label className="flex items-center gap-2 cursor-pointer flex-1 overflow-hidden">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={isSubtopicSelected(mod, subt)}
-                                                                            onChange={() => toggleSubtopicSelection(mod, subt)}
-                                                                            className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer flex-shrink-0"
-                                                                        />
-                                                                        <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide truncate">{subt}</span>
-                                                                    </label>
-                                                                </div>
-
-                                                                {/* Subtopic Children (Dot Points) */}
-                                                                {expandedSubtopics[subt] && (
-                                                                    <div className="ml-6 grid gap-2 py-1">
-                                                                        {currentSyllabus[mod][subt].map((point, idx) => (
-                                                                            <label
-                                                                                key={idx}
-                                                                                className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(point) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
-                                                                            >
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    checked={selectedPoints.includes(point)}
-                                                                                    onChange={() => handlePointToggle(point)}
-                                                                                    className="mt-0.5 w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
-                                                                                />
-                                                                                <span className="text-[11px] font-display leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
-                                                                            </label>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
+                                        {legacySyllabusYear ? (
+                                            modules.map(mod => (
+                                                <div key={mod} className="space-y-1">
+                                                    {/* Module row */}
+                                                    <div className="flex items-center gap-2 group p-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleModule(mod)}
+                                                            className="p-1 hover:bg-surface-3 rounded transition-colors"
+                                                        >
+                                                            {expandedModules[mod] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                        </button>
+                                                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isModuleSelected(mod)}
+                                                                onChange={() => toggleModuleSelection(mod)}
+                                                                className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                                            />
+                                                            <span className="text-xs font-display font-bold text-foreground group-hover:text-primary transition-colors">{mod}</span>
+                                                        </label>
                                                     </div>
-                                                )}
-                                            </div>
-                                        ))}
+
+                                                    {/* Module Children (Subtopics) */}
+                                                    {expandedModules[mod] && (
+                                                        <div className="ml-6 space-y-3 border-l border-surface-3 pl-4 py-2">
+                                                            {Object.keys(currentSyllabus[mod] || {}).map(subt => (
+                                                                <div key={subt} className="space-y-1">
+                                                                    <div className="flex items-center gap-2 group p-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => toggleSubtopic(subt)}
+                                                                            className="p-1 hover:bg-surface-3 rounded transition-colors flex-shrink-0"
+                                                                        >
+                                                                            {expandedSubtopics[subt] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                                                        </button>
+                                                                        <label className="flex items-center gap-2 cursor-pointer flex-1 overflow-hidden">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isSubtopicSelected(mod, subt)}
+                                                                                onChange={() => toggleSubtopicSelection(mod, subt)}
+                                                                                className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer flex-shrink-0"
+                                                                            />
+                                                                            <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide truncate">{subt}</span>
+                                                                        </label>
+                                                                    </div>
+
+                                                                    {/* Subtopic Children (Dot Points) */}
+                                                                    {expandedSubtopics[subt] && (
+                                                                        <div className="ml-6 grid gap-2 py-1">
+                                                                            {currentSyllabus[mod][subt].map((point, idx) => (
+                                                                                <label
+                                                                                    key={idx}
+                                                                                    className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(point) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
+                                                                                >
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={selectedPoints.includes(point)}
+                                                                                        onChange={() => handlePointToggle(point)}
+                                                                                        className="mt-0.5 w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                                                                    />
+                                                                                    <span className="text-[11px] font-display leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
+                                                                                </label>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            /* Simple list for newer stages (K-10 non-legacy) */
+                                            currentTopicsList && currentTopicsList.length > 0 ? (
+                                                <div className="grid gap-3">
+                                                    {currentTopicsList.map((topic, idx) => (
+                                                        <label
+                                                            key={idx}
+                                                            className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(topic) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedPoints.includes(topic)}
+                                                                onChange={() => handlePointToggle(topic)}
+                                                                className="mt-0.5 w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                                            />
+                                                            <span className="text-sm font-display leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(topic) }} />
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center p-8 text-muted-foreground text-sm">
+                                                    No predefined topics for {selectedSubject === 'Other' ? (customSubject || 'this subject') : selectedSubject}. <br />Switch to "Question/Topic Specification" to manually prescribe topics.
+                                                </div>
+                                            )
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -616,93 +735,125 @@ ${contentString}
                             </select>
                         </div>
 
-                        <div className="flex flex-wrap gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeName}
-                                    onChange={(e) => setIncludeName(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Name</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeDate}
-                                    onChange={(e) => setIncludeDate(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Date</span>
-                            </label>
-                        </div>
-                    </div>
+                        <div className="grid md:grid-cols-2 gap-6 items-end">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                    Header Configuration
+                                </label>
+                                <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={includeName}
+                                            onChange={(e) => setIncludeName(e.target.checked)}
+                                            className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                        />
+                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Name</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={includeDate}
+                                            onChange={(e) => setIncludeDate(e.target.checked)}
+                                            className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                        />
+                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Date</span>
+                                    </label>
+                                </div>
+                            </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 items-end">
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Working Space / Pagination
-                            </label>
-                            <div className="relative">
-                                <select
-                                    value={workingSpace}
-                                    onChange={(e) => setWorkingSpace(e.target.value)}
-                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
-                                >
-                                    {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                    Attached Context
+                                </label>
+                                <div className="flex flex-wrap gap-4 p-3 bg-surface-1/50 rounded-xl border border-surface-3">
+                                    <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
+                                        <input
+                                            type="checkbox"
+                                            checked={syllabusProvided}
+                                            onChange={(e) => setSyllabusProvided(e.target.checked)}
+                                            className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
+                                        />
+                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Syllabus Provided</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
+                                        <input
+                                            type="checkbox"
+                                            checked={textbooksProvided}
+                                            onChange={(e) => setTextbooksProvided(e.target.checked)}
+                                            className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
+                                        />
+                                        <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Textbooks Provided</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-4 pb-1">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeMarks}
-                                    onChange={(e) => setIncludeMarks(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Marks?</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={generateAnswerKey}
-                                    onChange={(e) => setGenerateAnswerKey(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Answer Key</span>
-                            </label>
-                        </div>
-                    </div>
+                        <div className="grid md:grid-cols-2 gap-6 items-end">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                    Working Space / Pagination
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={workingSpace}
+                                        onChange={(e) => setWorkingSpace(e.target.value)}
+                                        className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3"
+                                    >
+                                        {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                                </div>
+                            </div>
 
-                    {/* Final Action */}
-                    <div className="pt-6 relative">
-                        <button
-                            type="submit"
-                            disabled={isCopied}
-                            className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
-                                ? 'bg-green-500/10 text-green-500 border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
-                                : 'bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98]'
-                                }`}
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
-                            <div className={`absolute inset-0 bg-green-500/10 transition-transform ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} style={{ transitionDuration: '3s' }} />
-                            {isCopied ? (
-                                <>
-                                    <CheckCircle2 size={18} className="relative z-10" />
-                                    <span className="relative z-10">Copied! Launching Gemini...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Sparkles size={18} className="animate-pulse" />
-                                    <span>Generate Worksheet</span>
-                                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
-                        </button>
-                    </div>
+                            <div className="flex flex-wrap gap-4 pb-1">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={includeMarks}
+                                        onChange={(e) => setIncludeMarks(e.target.checked)}
+                                        className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Include Marks?</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={generateAnswerKey}
+                                        onChange={(e) => setGenerateAnswerKey(e.target.checked)}
+                                        className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Answer Key</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Final Action */}
+                        <div className="pt-6 relative">
+                            <button
+                                type="submit"
+                                disabled={isCopied}
+                                className={`w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-500 overflow-hidden relative shadow-lg ${isCopied
+                                    ? 'bg-green-500/10 text-green-500 border border-green-500/40 shadow-[0_0_30px_rgba(34,197,94,0.2)]'
+                                    : 'bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98]'
+                                    }`}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
+                                <div className={`absolute inset-0 bg-green-500/10 transition-transform ${isCopied ? 'translate-x-0' : '-translate-x-full'}`} style={{ transitionDuration: '3s' }} />
+                                {isCopied ? (
+                                    <>
+                                        <CheckCircle2 size={18} className="relative z-10" />
+                                        <span className="relative z-10">Copied! Launching Gemini...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={18} className="animate-pulse" />
+                                        <span>Generate Worksheet</span>
+                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
 
                 </form>
             </div>
