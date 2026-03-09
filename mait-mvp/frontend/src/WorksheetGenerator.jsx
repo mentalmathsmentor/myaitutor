@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
 // KaTeX is loaded via CDN in index.html — use window.katex
 import syllabusData from './syllabus_data.json'
-import canvasHint from './assets/gemini-horizontal-mockup.png'
+import canvasHint from './assets/gemini-canvas-final.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
 import stageSubjects from './stage_subjects.json'
