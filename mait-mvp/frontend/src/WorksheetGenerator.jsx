@@ -343,7 +343,7 @@ export default function WorksheetGenerator() {
         }
 
         if (spotTheError) {
-            contextPrefix += 'PEDAGOGY DIRECTIVE: You must include at least one "Spot the Error" question. For this question, provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the logical or arithmetic error occurred and explain why it is incorrect.\n\n';
+            contextPrefix += 'PEDAGOGY DIRECTIVE: You must include at least one "Spot the Error" question. For this question, provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the logical or arithmetic error occurred and explain why it is incorrect. IMPORTANT: This specific question must be worth exactly 1 mark.\n\n';
         }
 
         let contentString = '';
@@ -943,15 +943,6 @@ ${contentString}
                                 />
                                 <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Syllabus Provided</span>
                             </label>
-                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
-                                <input
-                                    type="checkbox"
-                                    checked={textbooksProvided}
-                                    onChange={(e) => setTextbooksProvided(e.target.checked)}
-                                    className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Textbooks Provided</span>
-                            </label>
                             <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini to search/verify against NESA syllabus standards">
                                 <input
                                     type="checkbox"
@@ -963,6 +954,15 @@ ${contentString}
                                     className="w-5 h-5 rounded-lg border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer transition-all duration-300"
                                 />
                                 <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Search NESA</span>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
+                                <input
+                                    type="checkbox"
+                                    checked={textbooksProvided}
+                                    onChange={(e) => setTextbooksProvided(e.target.checked)}
+                                    className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Textbooks Provided</span>
                             </label>
                             <label className="flex items-center gap-3 cursor-pointer group" title="Directive to include flawed step-by-step working for error identification">
                                 <input
