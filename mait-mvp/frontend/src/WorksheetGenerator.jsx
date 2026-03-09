@@ -115,6 +115,7 @@ export default function WorksheetGenerator() {
     const [searchQuery, setSearchQuery] = useState('')
     const [showReference, setShowReference] = useState(false)
     const [difficulty, setDifficulty] = useState(() => localStorage.getItem('mait_ws_difficulty') || DIFFICULTY_OPTIONS[0])
+    const [includeCanvasSetup, setIncludeCanvasSetup] = useState(() => localStorage.getItem('mait_ws_canvasSetup') === 'true')
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
@@ -135,7 +136,8 @@ export default function WorksheetGenerator() {
         localStorage.setItem('mait_ws_answerKey', generateAnswerKey.toString());
         localStorage.setItem('mait_ws_name', includeName.toString());
         localStorage.setItem('mait_ws_date', includeDate.toString());
-    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate]);
+        localStorage.setItem('mait_ws_canvasSetup', includeCanvasSetup.toString());
+    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup]);
 
     // Update subject list when stage changes
     useEffect(() => {
@@ -366,12 +368,17 @@ export default function WorksheetGenerator() {
             if (topMod) promptTitle = `${topMod} ${displaySubject} Worksheet`;
         }
 
+        let reminderText = "Reminder: Click the dotted box arrow button in the bottom right to highlight and edit sections. Feel free to ask me to make changes!";
+        if (includeCanvasSetup) {
+            reminderText += " No Code/Preview window? Press Tools then Canvas and send the message again! :D";
+        }
+
         return `**${promptTitle}**\n\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
 
 Your job is to create a professional, compile-ready PDF worksheet. 
 
 **CRITICAL DIRECTIVE:** 
-You must structure your output exactly like this. First, output this exact message: 'Reminder: Click the dotted box arrow button in the bottom right to highlight and edit sections. Feel free to ask me to make changes!' Second, output the complete, compile-ready LaTeX code inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`. Do not output any other conversational text.
+You must structure your output exactly like this. First, output this exact message: '${reminderText}' Second, output the complete, compile-ready LaTeX code inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`. Do not output any other conversational text.
 
 **CRITICAL REASONING DIRECTIVE (INTERNAL VERIFICATION):**
 Before generating the final LaTeX code block, you MUST use your internal thinking/scratchpad phase to rigorously construct and verify every single question and answer. 
@@ -435,6 +442,12 @@ ${contentString}
 `;
     }
 
+    const closeModal = () => {
+        setShowWarning(false);
+        setShowCloseButton(false);
+        setIsCopied(false);
+    }
+
     const handleGenerate = async (e) => {
         e.preventDefault()
 
@@ -454,7 +467,7 @@ ${contentString}
             setIsCopied(true);
             setShowWarning(true);
 
-            // Warning is centered and blocks UI
+            // Warning is centered, timer only shows close button but does not hide modal
             setTimeout(() => {
                 setShowCloseButton(true);
                 window.open('https://gemini.google.com/app', '_blank');
@@ -483,8 +496,23 @@ ${contentString}
 
             {/* Centered Warning Modal */}
             {showWarning && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-cosmic/80 backdrop-blur-xl animate-in fade-in duration-300">
-                    <div className="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-4 border-green-500/40 shadow-[0_0_80px_rgba(34,197,94,0.3)] animate-success">
+                <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-cosmic/80 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer"
+                    onClick={closeModal}
+                >
+                    <div
+                        className="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-4 border-green-500/40 shadow-[0_0_80px_rgba(34,197,94,0.3)] animate-success cursor-auto relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Top Right Close Button */}
+                        <button
+                            onClick={closeModal}
+                            className={`absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-surface-3 rounded-full transition-all duration-500 ${showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                            title="Dismiss"
+                        >
+                            <X size={20} />
+                        </button>
+
                         <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
                             <CheckCircle2 className="text-green-500 w-10 h-10 drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
                         </div>
@@ -508,7 +536,7 @@ ${contentString}
                                 </p>
                             </div>
                         </div>
-                        <div className="pt-4">
+                        <div className={`pt-4 transition-all duration-500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'}`}>
                             <div className="h-4 w-full bg-surface-3 rounded-full overflow-hidden">
                                 <div className="h-full bg-green-500 animate-progress-shrink origin-left" />
                             </div>
@@ -924,6 +952,15 @@ ${contentString}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
                                 <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Answer Key</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeCanvasSetup}
+                                    onChange={(e) => setIncludeCanvasSetup(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide" title="Include first-time setup instructions for Gemini Canvas">Canvas Setup</span>
                             </label>
                         </div>
                     </div>
