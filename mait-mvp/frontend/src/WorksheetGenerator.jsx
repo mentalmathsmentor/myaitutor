@@ -78,6 +78,7 @@ export default function WorksheetGenerator() {
     const [customSubject, setCustomSubject] = useState('')
     const [syllabusProvided, setSyllabusProvided] = useState(false)
     const [textbooksProvided, setTextbooksProvided] = useState(false)
+    const [searchSyllabus, setSearchSyllabus] = useState(false)
 
     const [selectedPoints, setSelectedPoints] = useState(() => {
         try {
@@ -282,6 +283,10 @@ export default function WorksheetGenerator() {
             contextPrefix += '\n';
         }
 
+        if (searchSyllabus) {
+            contextPrefix += 'CRITICAL: You are authorized and encouraged to Search/Reference the official NESA NSW Syllabus requirements for the selected Stage and Subject to ensure 100% curriculum alignment.\n\n';
+        }
+
         let contentString = '';
         if (mode === 'A') {
             const explicitTopics = (currentTopicsList && currentTopicsList.length > 0 && selectedPoints.length > 0)
@@ -297,7 +302,10 @@ export default function WorksheetGenerator() {
                             'Match the difficulty and style of real exam questions.';
             contentString = `${contextPrefix}Please generate ${numQuestions} professional-level exam questions ${explicitTopics} for ${selectedStage} ${displaySubject}.\n\n**DIFFICULTY:** ${difficultyText}`;
         } else {
-            contentString = `${contextPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}`;
+            const syllabusContext = selectedPoints.length > 0
+                ? `\n\nReference Syllabus Points selected by user:\n${selectedPoints.map(p => `- ${p}`).join('\n')}`
+                : '';
+            contentString = `${contextPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}${syllabusContext}`;
         }
 
         // Generate dynamic title
@@ -793,6 +801,15 @@ ${contentString}
                                         className="w-4 h-4 rounded border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer"
                                     />
                                     <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Textbooks Provided</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer group" title="Inform Gemini to search/verify against NESA syllabus standards">
+                                    <input
+                                        type="checkbox"
+                                        checked={searchSyllabus}
+                                        onChange={(e) => setSearchSyllabus(e.target.checked)}
+                                        className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                    />
+                                    <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wide">Search for NESA syllabus</span>
                                 </label>
                             </div>
                         </div>
