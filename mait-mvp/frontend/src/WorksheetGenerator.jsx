@@ -125,6 +125,8 @@ export default function WorksheetGenerator() {
     const [expandedModules, setExpandedModules] = useState({})
     const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
+    const launchTimeoutRef = useRef(null);
+
     // Save state to localStorage
     useEffect(() => {
         localStorage.setItem('mait_ws_stage', selectedStage);
@@ -443,10 +445,35 @@ ${contentString}
     }
 
     const closeModal = () => {
+        if (launchTimeoutRef.current) {
+            clearTimeout(launchTimeoutRef.current);
+            launchTimeoutRef.current = null;
+        }
         setShowWarning(false);
         setShowCloseButton(false);
         setIsCopied(false);
     }
+
+    // Modal Pro Tools Keydown Listener
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (!showWarning) return;
+
+            if (e.key === 'Escape') {
+                closeModal();
+            } else if (e.key === 'Enter') {
+                if (launchTimeoutRef.current) {
+                    clearTimeout(launchTimeoutRef.current);
+                    launchTimeoutRef.current = null;
+                }
+                setShowCloseButton(true);
+                window.open('https://gemini.google.com/app', '_blank');
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showWarning]);
 
     const handleGenerate = async (e) => {
         e.preventDefault()
@@ -468,16 +495,18 @@ ${contentString}
             setShowWarning(true);
 
             // Warning is centered, timer only shows close button but does not hide modal
-            setTimeout(() => {
+            launchTimeoutRef.current = setTimeout(() => {
                 setShowCloseButton(true);
                 window.open('https://gemini.google.com/app', '_blank');
+                launchTimeoutRef.current = null;
             }, 3000);
         } catch (err) {
             console.error('Failed to copy text: ', err);
             setShowWarning(true);
-            setTimeout(() => {
+            launchTimeoutRef.current = setTimeout(() => {
                 setShowCloseButton(true);
                 window.open('https://gemini.google.com/app', '_blank');
+                launchTimeoutRef.current = null;
             }, 3000);
         }
     }
