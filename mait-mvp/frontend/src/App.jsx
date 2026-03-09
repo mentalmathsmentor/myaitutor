@@ -130,6 +130,8 @@ function App() {
     const [loadedModelName, setLoadedModelName] = useState(null) // actual model name once loaded
     const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false)
     const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem('mait_autosave') === 'true')
+    const autoSavePromptShown = useRef(false)
+    const [pendingQueue, setPendingQueue] = useState([])
     const [showQueueConfirm, setShowQueueConfirm] = useState(null) // string (pending text) or null
 
     // Inactivity Tracker State
@@ -697,6 +699,11 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
             );
 
             setMessages(prev => prev.filter(m => m.source !== 'typing'));
+
+            if (isDemoMode) {
+                currentTimeoutDelay.current = 5000;
+                resetIdleTimer();
+            }
 
             if (fullResponse) {
                 const chunks = splitIntoChunks(fullResponse);
