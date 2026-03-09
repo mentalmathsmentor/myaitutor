@@ -118,6 +118,8 @@ export default function WorksheetGenerator() {
 
     const [isCopied, setIsCopied] = useState(false)
     const [showWarning, setShowWarning] = useState(false)
+    const [showErrorToast, setShowErrorToast] = useState(false)
+    const [isShaking, setIsShaking] = useState(false)
     const [expandedModules, setExpandedModules] = useState({})
     const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
@@ -380,6 +382,10 @@ For every question you generate:
 4. ONLY proceed to LaTeX formatting once the math/logic is 100% verified.
 5. Keep all verification strictly internal. Do NOT leak these thinking steps into the final output.
 
+**CRITICAL LATEX QUALITY CONTROLS:**
+1. Never use Unicode characters for math (like √ or α). Always use standard LaTeX syntax (like \\sqrt{} or \\alpha).
+2. Ensure every \\begin{enumerate} has a strictly matching \\end{enumerate} tag to prevent compilation failures.
+
 **1. THE PREAMBLE:**
 \\documentclass[12pt, a4paper]{article}
 \\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
@@ -430,6 +436,16 @@ ${contentString}
 
     const handleGenerate = async (e) => {
         e.preventDefault()
+
+        // Validation: Ensure topics are selected or questions exist
+        if ((mode === 'A' && selectedPoints.length === 0) || (mode === 'B' && rawQuestions.trim().length === 0)) {
+            setIsShaking(true);
+            setShowErrorToast(true);
+            setTimeout(() => setIsShaking(false), 500); // Shake duration
+            setTimeout(() => setShowErrorToast(false), 3000); // Toast duration
+            return;
+        }
+
         const promptText = generatePrompt();
 
         try {
@@ -455,14 +471,24 @@ ${contentString}
 
     return (
         <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30 flex flex-col items-center">
+            {/* Error Toast */}
+            {showErrorToast && (
+                <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[110] animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="bg-destructive/10 border border-destructive/30 backdrop-blur-md rounded-xl px-6 py-4 shadow-[0_0_30px_rgba(239,68,68,0.2)] flex items-center gap-3">
+                        <AlertTriangle className="text-destructive w-5 h-5" />
+                        <span className="text-destructive font-medium tracking-wide">Please select at least one topic to guide the AI.</span>
+                    </div>
+                </div>
+            )}
+
             {/* Centered Warning Modal */}
             {showWarning && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-cosmic/80 backdrop-blur-xl animate-in fade-in duration-300">
-                    <div className="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-4 border-primary/30 shadow-[0_0_50px_rgba(var(--primary-rgb),0.2)] animate-in zoom-in-95 duration-300">
-                        <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                            <Sparkles className="text-primary w-10 h-10" />
+                    <div className="glass-card rounded-3xl p-6 md:p-8 max-w-sm w-full text-center space-y-4 border-green-500/40 shadow-[0_0_80px_rgba(34,197,94,0.3)] animate-success">
+                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                            <CheckCircle2 className="text-green-500 w-10 h-10 drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
                         </div>
-                        <h3 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
+                        <h3 className="text-4xl md:text-5xl font-display font-bold tracking-tight text-green-400 drop-shadow-[0_0_15px_rgba(34,197,94,0.5)]">
                             Copied!
                         </h3>
                         <div className="space-y-4 text-muted-foreground">
@@ -483,10 +509,10 @@ ${contentString}
                             </div>
                         </div>
                         <div className="pt-4">
-                            <div className="h-3 w-full bg-surface-3 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary animate-progress-shrink origin-left" />
+                            <div className="h-4 w-full bg-surface-3 rounded-full overflow-hidden">
+                                <div className="h-full bg-green-500 animate-progress-shrink origin-left" />
                             </div>
-                            <p className="text-sm md:text-base font-bold uppercase font-display tracking-widest text-primary animate-pulse mt-4">Launching in 3 seconds...</p>
+                            <p className="text-sm md:text-base font-bold uppercase font-display tracking-widest text-green-400 animate-pulse mt-4 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">Launching in 3 seconds...</p>
                         </div>
                     </div>
                 </div>
@@ -597,7 +623,7 @@ ${contentString}
                     </div>
 
                     {/* Hierarchical Tree Checklist or Manual Area */}
-                    <div className="bg-surface-1/30 rounded-2xl border border-surface-3/50 min-h-[400px] overflow-hidden flex flex-col">
+                    <div className={`bg-surface-1/30 rounded-2xl border border-surface-3/50 min-h-[400px] overflow-hidden flex flex-col ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both] shadow-[0_0_15px_rgba(239,68,68,0.2)] border-destructive/40' : ''}`}>
                         {mode === 'A' ? (
                             <div className="flex flex-col h-full animate-reveal">
                                 {/* Search & Selected Header */}
@@ -735,14 +761,16 @@ ${contentString}
                                 <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
                                     Paste Your Raw Questions
                                 </label>
-                                <textarea
-                                    required={mode === 'B'}
-                                    rows={10}
-                                    placeholder="Type in the topics and any specific dot-points or general aim of the worksheet."
-                                    value={rawQuestions}
-                                    onChange={(e) => setRawQuestions(e.target.value)}
-                                    className="input-base w-full text-sm font-display resize-y py-3 min-h-[300px]"
-                                />
+                                <div className={isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}>
+                                    <textarea
+                                        required={mode === 'B'}
+                                        rows={10}
+                                        placeholder="Type in the topics and any specific dot-points or general aim of the worksheet."
+                                        value={rawQuestions}
+                                        onChange={(e) => setRawQuestions(e.target.value)}
+                                        className={`input-base w-full text-sm font-display resize-y py-3 min-h-[300px] ${isShaking ? 'border-destructive/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : ''}`}
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>
@@ -989,6 +1017,12 @@ ${contentString}
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                     background: hsl(var(--primary) / 0.5);
+                }
+                @keyframes shake {
+                    10%, 90% { transform: translate3d(-1px, 0, 0); }
+                    20%, 80% { transform: translate3d(2px, 0, 0); }
+                    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+                    40%, 60% { transform: translate3d(4px, 0, 0); }
                 }
                 input[type=number]::-webkit-inner-spin-button, 
                 input[type=number]::-webkit-outer-spin-button { 
