@@ -3,6 +3,7 @@ import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, 
 // KaTeX is loaded via CDN in index.html — use window.katex
 import syllabusData from './syllabus_data.json'
 import canvasHint from './assets/gemini-canvas-final.png'
+import modelSelectorHint from './assets/gemini-model-selector.png'
 
 const YEAR_LEVELS = Object.keys(syllabusData);
 import stageSubjects from './stage_subjects.json'
@@ -86,11 +87,11 @@ export default function WorksheetGenerator() {
         return stageSubjects[savedStage] ? Object.keys(stageSubjects[savedStage])[0] : 'Mathematics';
     })
     const [customSubject, setCustomSubject] = useState('')
-    const [syllabusProvided, setSyllabusProvided] = useState(false)
+    const [syllabusContextMode, setSyllabusContextMode] = useState('Off') // 'Off', 'Provide', 'Search'
     const [textbooksProvided, setTextbooksProvided] = useState(false)
-    const [searchSyllabus, setSearchSyllabus] = useState(false)
     const [spotTheError, setSpotTheError] = useState(() => localStorage.getItem('mait_ws_spotError') === 'true')
     const [numInput, setNumInput] = useState('') // Local state for raw input string
+    const [firstTimeMode, setFirstTimeMode] = useState(false)
 
     const [selectedPoints, setSelectedPoints] = useState(() => {
         try {
@@ -111,7 +112,7 @@ export default function WorksheetGenerator() {
     const [mode, setMode] = useState('A')
     const [numQuestions, setNumQuestions] = useState(() => parseInt(localStorage.getItem('mait_ws_numQuestions') || '10'))
     const [rawQuestions, setRawQuestions] = useState('')
-    const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || SPACING_OPTIONS[0])
+    const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || 'Dynamic Space')
     const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true')
     const [generateAnswerKey, setGenerateAnswerKey] = useState(() => localStorage.getItem('mait_ws_answerKey') === 'true')
     const [searchQuery, setSearchQuery] = useState('')
@@ -172,12 +173,18 @@ export default function WorksheetGenerator() {
         localStorage.setItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`, JSON.stringify(selectedPoints));
     }, [selectedPoints, selectedStage, selectedSubject]);
 
-    // Load saved points on Stage/Subject change
+    const isFirstPointsLoad = useRef(true);
+    // Load saved points initially, then clear on Stage/Subject change
     useEffect(() => {
-        try {
-            const saved = localStorage.getItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`);
-            setSelectedPoints(saved ? JSON.parse(saved) : []);
-        } catch { setSelectedPoints([]); }
+        if (isFirstPointsLoad.current) {
+            isFirstPointsLoad.current = false;
+            try {
+                const saved = localStorage.getItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`);
+                setSelectedPoints(saved ? JSON.parse(saved) : []);
+            } catch { setSelectedPoints([]); }
+            return;
+        }
+        setSelectedPoints([]);
     }, [selectedStage, selectedSubject]);
 
     // Auto-switch to Question/Topic Specification (Mode B) if Subject is 'Other'
@@ -322,7 +329,7 @@ export default function WorksheetGenerator() {
         let spacingLogic = workingSpace === 'Two-column Compact'
             ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\begin{multicols}{2} ... \\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
             : workingSpace === 'Dynamic Space'
-                ? 'LAYOUT DIRECTIVE: Use dynamic spacing. Where worded or written explanations are required, insert ruled lines (\\hrulefill). For pure mathematical calculations, leave blank working space.'
+                ? 'LAYOUT DIRECTIVE: Use dynamic spacing. If math graphing, add axes. If trig graph, shift axes appropriately. If worded question, add ruled lines of appropriate density using \\vspace{0.5cm} followed by \\noindent\\rule{\\linewidth}{0.4pt}\\\\[0.5cm] for each line needed. For pure mathematical calculations, leave blank working space using \\vspace{4cm}.'
                 : `Use \\vspace{${dynamicSpacing}} between questions.`;
 
         let answerKeyLogic = generateAnswerKey
@@ -331,14 +338,14 @@ export default function WorksheetGenerator() {
 
         // Context Logic
         let contextPrefix = '';
-        if (syllabusProvided || textbooksProvided) {
+        if (syllabusContextMode === 'Provide' || textbooksProvided) {
             contextPrefix += 'Using the context files attached to this prompt:\n';
-            if (syllabusProvided) contextPrefix += '- Strictly adhere to the scope and constraints of the attached Syllabus.\n';
+            if (syllabusContextMode === 'Provide') contextPrefix += '- Strictly adhere to the scope and constraints of the attached Syllabus.\n';
             if (textbooksProvided) contextPrefix += '- Strongly model the questions on the style, structure, and difficulty found in the attached Textbook/Resources.\n';
             contextPrefix += '\n';
         }
 
-        if (searchSyllabus) {
+        if (syllabusContextMode === 'Search') {
             contextPrefix += 'CRITICAL: You are authorized and encouraged to Search/Reference the official NESA NSW Syllabus requirements for the selected Stage and Subject to ensure 100% curriculum alignment.\n\n';
         }
 
@@ -386,10 +393,17 @@ export default function WorksheetGenerator() {
             if (topMod) promptTitle = `${topMod} ${displaySubject} Worksheet`;
         }
 
-        let reminderText = "Reminder: Click the dotted box arrow button in the bottom right to highlight and edit sections. Feel free to ask me to make changes!";
-        if (includeCanvasSetup) {
-            reminderText += "\n\n No Code/Preview window? Press **Tools** then **Canvas** and send the message again! :D";
+        let reminderText = "Reminder: Feel free to ask me to make changes! You can highlight sections in the Canvas window to ask for specific edits.";
+
+        if (firstTimeMode) {
+            reminderText += "\n\n**Welcome!** I am the Universal Artifact Architect. I can generate complete worksheets for you. Simply ask me to tweak the difficulty, change the topic focus, or add more visual diagrams. Once rendered, you can click the canvas window to highlight and edit specific questions on the fly!";
         }
+
+        if (includeCanvasSetup) {
+            reminderText += "\n\n**Debug Guide / Canvas Setup:**\nNo Code/Preview window? Click **Tools**, select **Canvas**, and ask me to output in Canvas! :D";
+        }
+
+        reminderText += "\n\n**Disclaimer:** I'm just a robot, so I can get things wrong - check the questions! You can also copy-paste the code into another chat and ask to check.";
 
         return `**${promptTitle}**\n\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
 
@@ -399,7 +413,6 @@ Your job is to create a professional, compile-ready PDF worksheet.
 You must structure your output exactly like this. First, output this exact message: '${reminderText}' Second, output the complete, compile-ready LaTeX code inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`. Do not output any other conversational text.
 
 ${includeMarks ? '**LATEX DIRECTIVE FOR MARKS:** Always place the marks (e.g., [2 Marks]) at the very end of the question text line, separated by `\\hfill\\quad`. Ensure they are strictly right-aligned to the margin to maintain a professional exam layout.\n' : ''}
-${workingSpace === 'Dynamic Space' ? '**LATEX DIRECTIVE FOR SPACING:** For your Dynamic Space implementation, ensure `\\hrulefill` is used whenever a written response is expected, and leave at least 3-4cm of vertical space for calculation-intensive questions.\n' : ''}
 
 **CRITICAL REASONING DIRECTIVE (INTERNAL VERIFICATION):**
 Before generating the final LaTeX code block, you MUST use your internal thinking/scratchpad phase to rigorously construct and verify every single question and answer. 
@@ -428,7 +441,7 @@ For every question you generate:
 \\fancyhf{}
 \\lhead{ ${lheadContent} }
 \\rhead{}
-\\cfoot{Page \\thepage}
+\\cfoot{Page \\thepage \\\\[0.2cm] \\footnotesize \\textbf{AI SELF-CHECK:} \\textit{Ask AI for a hint, not the answer.}}
 \\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\setlength{\\headheight}{30pt}
@@ -449,7 +462,6 @@ ${headerString ? `\n${headerString}\n\\vspace{0.8cm}\n` : ''}
 
 **3. PAGINATION & FOOTER:**
 * Before every new \\item, insert \\needspace{6cm}.
-* Insert this footer: \\vfill \\hrule \\vspace{0.2cm} \\footnotesize \\textbf{AI SELF-CHECK:} \\textit{Ask AI for a hint, not the answer.}
 
 **4. SCALING FOR 30+ QUESTIONS:**
 If the request is for more than 20 questions, ensure you maintain high quality and varied task difficulty. For 30+ questions, you may use smaller spacing segments to fit the content while maintaining readability.
@@ -579,9 +591,7 @@ ${contentString}
                             <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]">
                                 <p className="text-[13px] font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
                                 <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full rounded-xl border border-surface-3/50 shadow-md object-cover" />
-                                <p className="text-xs">
-                                    Use <span className="text-primary font-bold">'Thinking'</span> for fast and <span className="text-accent font-bold">'Pro'</span> for quality. Canvas feature also allows editing with highlight to ask
-                                </p>
+                                <img src={modelSelectorHint} alt="Gemini Model Selector" className="w-full rounded-xl border border-surface-3/50 shadow-md object-cover mt-2" />
                             </div>
                         </div>
                         <div className={`pt-4 transition-all duration-500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'}`}>
@@ -925,36 +935,36 @@ ${contentString}
                         </div>
                     </div>
 
-                    {/* Row 3: Attached Context (Full Width, 4-col Grid) */}
-                    <div className="space-y-2">
+                    {/* Row 3: Attached Context & Segmented Syllabus Control */}
+                    <div className="space-y-4">
                         <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                            Attached Context / Syllabus
+                            Syllabus Injection Context
                         </label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
-                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Syllabus document has been uploaded to chat">
-                                <input
-                                    type="checkbox"
-                                    checked={syllabusProvided}
-                                    onChange={(e) => {
-                                        setSyllabusProvided(e.target.checked);
-                                        if (e.target.checked) setSearchSyllabus(false);
-                                    }}
-                                    className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Syllabus Provided</span>
-                            </label>
-                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini to search/verify against NESA syllabus standards">
-                                <input
-                                    type="checkbox"
-                                    checked={searchSyllabus}
-                                    onChange={(e) => {
-                                        setSearchSyllabus(e.target.checked);
-                                        if (e.target.checked) setSyllabusProvided(false);
-                                    }}
-                                    className="w-5 h-5 rounded-lg border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Search NESA</span>
-                            </label>
+                        <div className="flex bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3">
+                            <button
+                                type="button"
+                                onClick={() => setSyllabusContextMode('Off')}
+                                className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${syllabusContextMode === 'Off' ? 'bg-surface-3 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Off
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSyllabusContextMode('Provide')}
+                                className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${syllabusContextMode === 'Provide' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                I'll provide syllabus
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSyllabusContextMode('Search')}
+                                className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${syllabusContextMode === 'Search' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Find NESA Syllabus ⚠️
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
                             <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
                                 <input
                                     type="checkbox"
@@ -962,7 +972,7 @@ ${contentString}
                                     onChange={(e) => setTextbooksProvided(e.target.checked)}
                                     className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
                                 />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">Textbooks Provided</span>
+                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">I'll add Textbooks/Resources</span>
                             </label>
                             <label className="flex items-center gap-3 cursor-pointer group" title="Directive to include flawed step-by-step working for error identification">
                                 <input
@@ -981,7 +991,7 @@ ${contentString}
                         <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
                             Configuration / Output Settings
                         </label>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4">
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -1025,7 +1035,16 @@ ${contentString}
                                     onChange={(e) => setIncludeCanvasSetup(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include first-time setup instructions for Gemini Canvas">First Time?</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include Debug / Setup Guide for Canvas UI">Debug Guide</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={firstTimeMode}
+                                    onChange={(e) => setFirstTimeMode(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include comprehensive intro for new users in the prompt">First Time?</span>
                             </label>
                         </div>
                     </div>
