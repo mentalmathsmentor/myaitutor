@@ -194,7 +194,9 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
                  await asyncio.sleep(base_delay * (2 ** attempt))
             else:
                  if attempt == max_retries - 1:
-                     return {"text": f"Error: {str(e)}", "sections": [f"Error: {str(e)}"], "source": "api"}
+                     import logging
+                     logging.error(f"Gemini API error: {str(e)}")
+                     return {"text": "Something went wrong processing your question. Please try again.", "sections": ["Something went wrong processing your question. Please try again."], "source": "api"}
                  await asyncio.sleep(1)
 
     return {"text": "Failed to get response.", "sections": ["Failed to get response."], "source": "api"}

@@ -89,7 +89,14 @@ export default function WorksheetGenerator() {
     const [customSubject, setCustomSubject] = useState('')
     const [syllabusContextMode, setSyllabusContextMode] = useState('Off') // 'Off', 'Provide', 'Search'
     const [textbooksProvided, setTextbooksProvided] = useState(false)
-    const [spotTheError, setSpotTheError] = useState(() => localStorage.getItem('mait_ws_spotError') === 'true')
+    const [pedagogicalSpotError, setPedagogicalSpotError] = useState(() => localStorage.getItem('mait_ws_pedagogicalSpotError') === 'true')
+    const [pedagogicalParameterShift, setPedagogicalParameterShift] = useState(() => localStorage.getItem('mait_ws_pedagogicalParameterShift') === 'true')
+    const [pedagogicalLimitCase, setPedagogicalLimitCase] = useState(() => localStorage.getItem('mait_ws_pedagogicalLimitCase') === 'true')
+    const [removeWatermark, setRemoveWatermark] = useState(() => localStorage.getItem('mait_ws_removeWatermark') === 'true')
+    const [showHints, setShowHints] = useState(() => {
+        const saved = localStorage.getItem('mait_ws_showHints');
+        return saved !== null ? saved === 'true' : true;
+    })
     const [numInput, setNumInput] = useState('') // Local state for raw input string
     const [firstTimeMode, setFirstTimeMode] = useState(false)
 
@@ -142,8 +149,12 @@ export default function WorksheetGenerator() {
         localStorage.setItem('mait_ws_name', includeName.toString());
         localStorage.setItem('mait_ws_date', includeDate.toString());
         localStorage.setItem('mait_ws_canvasSetup', includeCanvasSetup.toString());
-        localStorage.setItem('mait_ws_spotError', spotTheError.toString());
-    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup, spotTheError]);
+        localStorage.setItem('mait_ws_pedagogicalSpotError', pedagogicalSpotError.toString());
+        localStorage.setItem('mait_ws_pedagogicalParameterShift', pedagogicalParameterShift.toString());
+        localStorage.setItem('mait_ws_pedagogicalLimitCase', pedagogicalLimitCase.toString());
+        localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
+        localStorage.setItem('mait_ws_showHints', showHints.toString());
+    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup, pedagogicalSpotError, pedagogicalParameterShift, pedagogicalLimitCase, removeWatermark, showHints]);
 
     // Sync numInput when numQuestions changes (except when numInput is actively being edited)
     useEffect(() => {
@@ -329,12 +340,12 @@ export default function WorksheetGenerator() {
         let spacingLogic = workingSpace === 'Two-column Compact'
             ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\begin{multicols}{2} ... \\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
             : workingSpace === 'Dynamic Space'
-                ? 'LAYOUT DIRECTIVE: Use dynamic spacing. If math graphing, add axes. If trig graph, shift axes appropriately. If worded question, add ruled lines of appropriate density using \\vspace{0.5cm} followed by \\noindent\\rule{\\linewidth}{0.4pt}\\\\[0.5cm] for each line needed. For pure mathematical calculations, leave blank working space using \\vspace{4cm}.'
+                ? 'LAYOUT DIRECTIVE: Use dynamic spacing. If math graphing, add axes. If trig graph, shift axes appropriately and enforce strict domain bounds (e.g. 0 to 2pi). If worded question, add ruled lines of appropriate density using `\\vspace{0.8cm}\\noindent\\rule{\\linewidth}{0.4pt}` repeated for each line needed. For pure mathematical calculations, leave blank working space using \\vspace{4cm}.'
                 : `Use \\vspace{${dynamicSpacing}} between questions.`;
 
         let answerKeyLogic = generateAnswerKey
             ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\begin{multicols}{2}` and `\\end{multicols}`, separated by the vertical rule.'
-            : 'Do not generate an answer key';
+            : '';
 
         // Context Logic
         let contextPrefix = '';
@@ -349,8 +360,13 @@ export default function WorksheetGenerator() {
             contextPrefix += 'CRITICAL: You are authorized and encouraged to Search/Reference the official NESA NSW Syllabus requirements for the selected Stage and Subject to ensure 100% curriculum alignment.\n\n';
         }
 
-        if (spotTheError) {
-            contextPrefix += 'PEDAGOGY DIRECTIVE: You must include at least one "Spot the Error" question. For this question, provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the logical or arithmetic error occurred and explain why it is incorrect. IMPORTANT: This specific question must be worth exactly 1 mark.\n\n';
+        let pedagogyPrefix = '';
+        if (pedagogicalSpotError || pedagogicalParameterShift || pedagogicalLimitCase) {
+            pedagogyPrefix += 'PEDAGOGY DIRECTIVE: You must include the following special question types in your worksheet:\n';
+            if (pedagogicalSpotError) pedagogyPrefix += '- **Spot the Error:** Provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the error occurred and explain why. Wrap this specific question in a `\\begin{tcolorbox} ... \\end{tcolorbox}` environment. This must be worth exactly 1 mark.\n';
+            if (pedagogicalParameterShift) pedagogyPrefix += '- **Parameter Shift:** Ask the student to explain how changing a specific constant or parameter in the system/equation alters the overall behavior or graph, without requiring a full algebraic re-solve.\n';
+            if (pedagogicalLimitCase) pedagogyPrefix += '- **Limit Case Analysis:** Ask the student to evaluate the system/equation at an extreme boundary condition (e.g., as x approaches infinity, or as a physical mass approaches zero) and interpret the qualitative meaning of that result.\n';
+            pedagogyPrefix += '\n';
         }
 
         let contentString = '';
@@ -366,12 +382,12 @@ export default function WorksheetGenerator() {
                     difficulty === 'Mostly Easy' ? 'Keep most questions easy/accessible, with 1-2 challenging ones at the end.' :
                         difficulty === 'Mostly Hard' ? 'Focus on challenging, exam-level questions with minimal easy questions.' :
                             'Match the difficulty and style of real exam questions.';
-            contentString = `${contextPrefix}Please generate ${numQuestions} professional-level exam questions ${explicitTopics} for ${selectedStage} ${displaySubject}.\n\n**DIFFICULTY:** ${difficultyText}`;
+            contentString = `${contextPrefix}${pedagogyPrefix}Please generate ${numQuestions} professional-level exam questions ${explicitTopics} for ${selectedStage} ${displaySubject}.\n\n**DIFFICULTY:** ${difficultyText}`;
         } else {
             const syllabusContext = selectedPoints.length > 0
                 ? `\n\nReference Syllabus Points selected by user:\n${selectedPoints.map(p => `- ${p}`).join('\n')}`
                 : '';
-            contentString = `${contextPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}${syllabusContext}`;
+            contentString = `${contextPrefix}${pedagogyPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}${syllabusContext}`;
         }
 
         // Generate dynamic title
@@ -393,17 +409,27 @@ export default function WorksheetGenerator() {
             if (topMod) promptTitle = `${topMod} ${displaySubject} Worksheet`;
         }
 
-        let reminderText = "Reminder: Feel free to ask me to make changes! You can highlight sections in the Canvas window to ask for specific edits.";
+        let reminderText = "";
 
         if (firstTimeMode) {
-            reminderText += "\n\n**Welcome!** I am the Universal Artifact Architect. I can generate complete worksheets for you. Simply ask me to tweak the difficulty, change the topic focus, or add more visual diagrams. Once rendered, you can click the canvas window to highlight and edit specific questions on the fly!";
+            reminderText += "**Welcome!** I am the Universal Artifact Architect. I can generate complete worksheets for you. Simply ask me to tweak the difficulty, change the topic focus, or add more visual diagrams. Once rendered, you can click the canvas window to highlight and edit specific questions on the fly!\n\n";
         }
+
+        reminderText += "Reminder: Feel free to ask me to make changes! You can highlight sections in the Canvas window by clicking the dotted box with the arrow to ask for specific edits.";
 
         if (includeCanvasSetup) {
             reminderText += "\n\n**Debug Guide / Canvas Setup:**\nNo Code/Preview window? Click **Tools**, select **Canvas**, and ask me to output in Canvas! :D";
         }
 
-        reminderText += "\n\n**Disclaimer:** I'm just a robot, so I can get things wrong - check the questions! You can also copy-paste the code into another chat and ask to check.";
+        if (syllabusContextMode === 'Provide') {
+            reminderText += "\n\n*(Please paste/upload your syllabus document now.)*";
+        }
+
+        if (textbooksProvided) {
+            reminderText += "\n\n*(Please paste/upload your textbooks or reference resources now.)*";
+        }
+
+        reminderText += "\n\n**Disclaimer:** I'm just a robot, so I can get things wrong - check the questions! You can also copy-paste the code into another chat and ask it to check.";
 
         return `**${promptTitle}**\n\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer. 
 
@@ -427,10 +453,11 @@ For every question you generate:
 **CRITICAL LATEX QUALITY CONTROLS:**
 1. Never use Unicode characters for math (like √ or α). Always use standard LaTeX syntax (like \\sqrt{} or \\alpha).
 2. Ensure every \\begin{enumerate} has a strictly matching \\end{enumerate} tag to prevent compilation failures.
+3. If a question involves Pythagoras, Trigonometry, Circular Measure, or Geometry, you MUST generate a corresponding TikZ diagram.
 
 **1. THE PREAMBLE:**
 \\documentclass[12pt, a4paper]{article}
-\\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
+\\usepackage[top=1.5cm, bottom=2.5cm, left=1.5cm, right=1.5cm, headheight=30pt, footskip=30pt]{geometry}
 \\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
 \\usepackage[none]{hyphenat}
 \\usepackage[hidelinks]{hyperref} 
@@ -441,8 +468,8 @@ For every question you generate:
 \\fancyhf{}
 \\lhead{ ${lheadContent} }
 \\rhead{}
-\\cfoot{Page \\thepage \\\\[0.2cm] \\footnotesize \\textbf{AI SELF-CHECK:} \\textit{Ask AI for a hint, not the answer.}}
-\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}
+\\cfoot{Page \\thepage}
+${removeWatermark ? '\\rfoot{}' : '\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}'}
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\setlength{\\headheight}{30pt}
 \\begin{document}
@@ -453,12 +480,22 @@ ${headerString ? `\n${headerString}\n\\vspace{0.8cm}\n` : ''}
 \\end{center}
 \\vspace{0.5cm}
 
+${contentString}
+
+${spacingLogic}
+
+${marksLogic}
+
+${answerKeyLogic}
+
 **2. LAYOUT & FORMATTING RULES:**
 * NATIVE NUMBERING ONLY: Use the standard enumerate environment. Let LaTeX handle numbering. Do NOT use custom labels like \\item[\\textbf{Question 1:}].
 * LINE BREAKS: Do NOT use \\\\ for line breaks within questions. Use a blank line (double return) to ensure text aligns to the left margin perfectly.
 * Spacing: ${spacingLogic}
 * **MARKS ALIGNMENT (CRITICAL):** ${marksLogic === 'Do not assign marks' ? marksLogic : `If assigning marks, you MUST use \`${marksLogic}\` at the very end of the question text. The \\mbox{} is critical to prevent the number and the word 'Marks' from being split across two lines. Do NOT let the marks wrap to a new line awkwardly. Ensure they are pushed completely flush-right.`}
 * **MANDATORY DIAGRAMS & SHAPES:** If a question mentions a shape, graph, diagram, angle relationship (e.g., "vertically opposite", "transversal"), or geometric property, you MUST generate the corresponding TikZ code to draw a clean, professional diagram below the question text.
+* **PREAMBLE & GEOMETRY RULE:** When setting up the document geometry, you MUST explicitly define bottom=2.5cm, footskip=30pt, and headheight=30pt. Do not use a bottom margin smaller than 2.5cm. This is strictly required to prevent multicols content and vertical rules from crashing into the custom multi-line footer. Use exact geometry: \\usepackage[top=1.5cm, bottom=2.5cm, left=1.5cm, right=1.5cm, headheight=30pt, footskip=30pt]{geometry}
+* **FOOTER RESTRAINT RULE:** Do not include multi-line footers or the "AI SELF-CHECK" text. Keep the center footer strictly to the page number using \\cfoot{Page \\thepage}. This is crucial to prevent the footer from colliding with the multicols vertical divider at the bottom of the page.
 
 **3. PAGINATION & FOOTER:**
 * Before every new \\item, insert \\needspace{6cm}.
@@ -567,7 +604,7 @@ ${contentString}
                         {/* Top Right Close Button */}
                         <button
                             onClick={closeModal}
-                            className={`absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-surface-3 rounded-full transition-all duration-500 ${showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                            className={`absolute top - 4 right - 4 p - 2 text - muted - foreground hover: text - foreground hover: bg - surface - 3 rounded - full transition - all duration - 500 ${showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} `}
                             title="Dismiss"
                         >
                             <X size={20} />
@@ -589,12 +626,14 @@ ${contentString}
                                 </p>
                             </div>
                             <div className="p-4 bg-surface-1/50 rounded-2xl border border-surface-3 space-y-4 transition-all duration-300 hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]">
-                                <p className="text-[13px] font-bold text-foreground">🚀 Pro-Tip for Gemini:</p>
-                                <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full rounded-xl border border-surface-3/50 shadow-md object-cover" />
-                                <img src={modelSelectorHint} alt="Gemini Model Selector" className="w-full rounded-xl border border-surface-3/50 shadow-md object-cover mt-2" />
+                                <p className="text-[13px] font-bold text-foreground">🚀 Pro-Tip: Select 'Thinking' for best mathematical reasoning!</p>
+                                <div className="flex flex-col md:flex-row gap-4 items-center">
+                                    <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full md:w-1/2 rounded-xl border border-surface-3/50 shadow-md object-cover" />
+                                    <img src={modelSelectorHint} alt="Gemini Model Selector" className="w-full md:w-1/2 rounded-xl border border-surface-3/50 shadow-md object-cover" />
+                                </div>
                             </div>
                         </div>
-                        <div className={`pt-4 transition-all duration-500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'}`}>
+                        <div className={`pt - 4 transition - all duration - 500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'} `}>
                             <div className="h-4 w-full bg-surface-3 rounded-full overflow-hidden">
                                 <div className="h-full bg-green-500 animate-progress-shrink origin-left" />
                             </div>
@@ -607,8 +646,8 @@ ${contentString}
             {/* Decorative background components */}
             <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
                 style={{
-                    backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
-                                     linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
+                    backgroundImage: `linear - gradient(hsl(var(--primary)) 1px, transparent 1px),
+    linear - gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
                     backgroundSize: '60px 60px'
                 }}
             />
@@ -691,18 +730,18 @@ ${contentString}
                     </div>
 
                     {/* Mode Selection */}
-                    <div className="flex bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3">
+                    <div className="flex w-full bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3 gap-2">
                         <button
                             type="button"
                             onClick={() => setMode('A')}
-                            className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${mode === 'A' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`flex-[0.5] py-3 px-4 rounded-xl font-display text-[11px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${mode === 'A' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                         >
                             Syllabus Mode (Generative)
                         </button>
                         <button
                             type="button"
                             onClick={() => setMode('B')}
-                            className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`flex-[0.5] py-3 px-4 rounded-xl font-display text-[11px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                         >
                             Question/Topic Specification
                         </button>
@@ -940,31 +979,32 @@ ${contentString}
                         <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
                             Syllabus Injection Context
                         </label>
-                        <div className="flex bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3">
+                        <div className="flex w-full bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3 gap-2">
                             <button
                                 type="button"
                                 onClick={() => setSyllabusContextMode('Off')}
-                                className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${syllabusContextMode === 'Off' ? 'bg-surface-3 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Off' ? 'bg-surface-3 text-foreground shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                             >
-                                Off
+                                AI general knowledge
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSyllabusContextMode('Provide')}
-                                className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${syllabusContextMode === 'Provide' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Provide' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                             >
-                                I'll provide syllabus
+                                I'll upload the syllabus
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSyllabusContextMode('Search')}
-                                className={`flex-1 py-3 rounded-xl font-display text-xs transition-all ${syllabusContextMode === 'Search' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Search' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
+                                title="Experimental Feature: AI performs a proactive search of the published NESA website to infer syllabus dot points."
                             >
-                                Find NESA Syllabus ⚠️
+                                Search NESA Website ⚠️
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
                             <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
                                 <input
                                     type="checkbox"
@@ -974,15 +1014,42 @@ ${contentString}
                                 />
                                 <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">I'll add Textbooks/Resources</span>
                             </label>
-                            <label className="flex items-center gap-3 cursor-pointer group" title="Directive to include flawed step-by-step working for error identification">
-                                <input
-                                    type="checkbox"
-                                    checked={spotTheError}
-                                    onChange={(e) => setSpotTheError(e.target.checked)}
-                                    className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                />
-                                <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Spot Error Task</span>
+                        </div>
+
+                        {/* Pedagogical Tools Checklist */}
+                        <div className="space-y-4 pt-2">
+                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
+                                Pedagogical Requirements
                             </label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
+                                <label className="flex items-center gap-3 cursor-pointer group" title="Provides deliberately flawed step-by-step working (1 mark max).">
+                                    <input
+                                        type="checkbox"
+                                        checked={pedagogicalSpotError}
+                                        onChange={(e) => setPedagogicalSpotError(e.target.checked)}
+                                        className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                    />
+                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Spot the error</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer group" title="Tests systems thinking without fully solving.">
+                                    <input
+                                        type="checkbox"
+                                        checked={pedagogicalParameterShift}
+                                        onChange={(e) => setPedagogicalParameterShift(e.target.checked)}
+                                        className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                    />
+                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Parameter Shift</span>
+                                </label>
+                                <label className="flex items-center gap-3 cursor-pointer group" title="Tests engineering logic as variables approach extreme bounds.">
+                                    <input
+                                        type="checkbox"
+                                        checked={pedagogicalLimitCase}
+                                        onChange={(e) => setPedagogicalLimitCase(e.target.checked)}
+                                        className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
+                                    />
+                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Limit Case Analysis</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -991,7 +1058,7 @@ ${contentString}
                         <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
                             Configuration / Output Settings
                         </label>
-                        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4 mb-4">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -999,7 +1066,7 @@ ${contentString}
                                     onChange={(e) => setIncludeName(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Include Name</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Name space</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -1008,7 +1075,7 @@ ${contentString}
                                     onChange={(e) => setIncludeDate(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Include Date</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Date space</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -1017,7 +1084,7 @@ ${contentString}
                                     onChange={(e) => setIncludeMarks(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Include Marks?</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Allocate Marks (experimental)</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -1028,6 +1095,8 @@ ${contentString}
                                 />
                                 <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Answer Key</span>
                             </label>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4">
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
                                     type="checkbox"
@@ -1035,7 +1104,7 @@ ${contentString}
                                     onChange={(e) => setIncludeCanvasSetup(e.target.checked)}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include Debug / Setup Guide for Canvas UI">Debug Guide</span>
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include Setup Guide for Canvas UI">Setup guide</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input
@@ -1045,6 +1114,24 @@ ${contentString}
                                     className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
                                 />
                                 <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include comprehensive intro for new users in the prompt">First Time?</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={removeWatermark}
+                                    onChange={(e) => setRemoveWatermark(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Remove small watermark</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={showHints}
+                                    onChange={(e) => setShowHints(e.target.checked)}
+                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
+                                />
+                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Show Hints?</span>
                             </label>
                         </div>
                     </div>
@@ -1110,41 +1197,193 @@ ${contentString}
                 </div>
             </div>
 
+            {/* Showcase Backdrop & FAQ Section */}
+            <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-24 top-[-2rem]">
+                <div className="grid lg:grid-cols-2 gap-12 items-start">
+
+                    {/* Left: Exemplar PDF Preview */}
+                    <div className="glass-card rounded-3xl p-6 md:p-8 space-y-6 flex flex-col items-center">
+                        <div className="text-center space-y-2 w-full">
+                            <h3 className="font-display text-2xl font-bold">Exemplar Worksheet</h3>
+                            <p className="text-muted-foreground text-sm">A preview of a Masterclass Diagnostic Exam.</p>
+                        </div>
+                        <div className="w-full aspect-[1/1.4] bg-surface-2 rounded-xl border border-surface-3/50 shadow-inner flex items-center justify-center p-2 overflow-hidden">
+                            {/* Static PDF Preview Image */}
+                            <img src="/exemplar-placeholder.png" alt="Exemplar Preview" className="w-full h-full object-cover rounded-lg" />
+                        </div>
+                    </div>
+
+                    {/* Right: FAQ & Tips Expandable Accordion */}
+                    <div className="glass-card rounded-3xl p-6 md:p-8 space-y-6">
+                        <div className="text-left space-y-2 w-full mb-6">
+                            <h3 className="font-display text-2xl font-bold">FAQ AND Tips & Tricks</h3>
+                            <p className="text-muted-foreground text-sm">Getting the most out of MAIT's Worksheet Generator.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* FAQ 1 */}
+                            <details className="group border border-surface-3/50 rounded-2xl open:bg-surface-2/30 transition-colors">
+                                <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 font-display text-sm focus:outline-none">
+                                    <span>How does the 'Search NESA Website' work? ⚠️</span>
+                                    <span className="transition group-open:rotate-180">
+                                        <ChevronDown size={18} className="text-muted-foreground" />
+                                    </span>
+                                </summary>
+                                <div className="text-muted-foreground text-sm p-5 pt-0 leading-relaxed border-t border-surface-3/30 mt-2">
+                                    When selected, the AI will attempt an autonomous search of the published NESA website to infer topics. *Warning: It is highly experimental and prone to hallucination. Double-check output.*
+                                </div>
+                            </details>
+
+                            {/* FAQ 2 */}
+                            <details className="group border border-surface-3/50 rounded-2xl open:bg-surface-2/30 transition-colors">
+                                <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 font-display text-sm focus:outline-none">
+                                    <span>Why is 'Thinking' recommended for the Model?</span>
+                                    <span className="transition group-open:rotate-180">
+                                        <ChevronDown size={18} className="text-muted-foreground" />
+                                    </span>
+                                </summary>
+                                <div className="text-muted-foreground text-sm p-5 pt-0 leading-relaxed border-t border-surface-3/30 mt-2">
+                                    Models with Chain-of-Thought (like Gemini Pro Thinking) dedicate compute time to deeply reason through mathematical logic <i>before</i> outputting the final LaTeX snippet. This drastically reduces algebraic and geometrical errors.
+                                </div>
+                            </details>
+
+                            {/* FAQ 3 */}
+                            <details className="group border border-surface-3/50 rounded-2xl open:bg-surface-2/30 transition-colors">
+                                <summary className="flex justify-between items-center font-medium cursor-pointer list-none p-5 font-display text-sm focus:outline-none">
+                                    <span>What are the Pedagogical Requirements?</span>
+                                    <span className="transition group-open:rotate-180">
+                                        <ChevronDown size={18} className="text-muted-foreground" />
+                                    </span>
+                                </summary>
+                                <div className="text-muted-foreground text-sm p-5 pt-0 leading-relaxed border-t border-surface-3/30 mt-2">
+                                    Checking these boxes injects specific instructions to generate non-standard questions. <b>Spot the error</b> asks students to find a mistake in a provided solution. <b>Parameter shift</b> tests what happens when constants change. <b>Limit cases</b> probe boundary conditions.
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Feedback & Support Section */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-12">
+                <div className="glass-card rounded-3xl p-6 md:p-8 border border-surface-3/50 hover:border-primary/20 transition-all duration-300">
+                    <div className="text-center space-y-2 mb-6">
+                        <h3 className="font-display text-xl font-bold">Feedback & Support</h3>
+                        <p className="text-muted-foreground text-sm">Found a bug or have a suggestion? Let us know!</p>
+                    </div>
+                    <form
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.target);
+                            // Honeypot check
+                            if (formData.get('website')) return;
+
+                            const btn = e.target.querySelector('button[type="submit"]');
+                            const originalText = btn.innerHTML;
+                            btn.innerHTML = 'Sending...';
+                            btn.disabled = true;
+
+                            try {
+                                const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                                const response = await fetch(`${API_BASE_URL} /api/feedback`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        message: formData.get('message'),
+                                        email: formData.get('email') || 'anonymous',
+                                        context: 'Worksheet Generator'
+                                    })
+                                });
+
+                                if (response.ok) {
+                                    btn.innerHTML = 'Sent Successfully! ✓';
+                                    btn.classList.add('bg-green-500/20', 'text-green-500', 'border-green-500/50');
+                                    e.target.reset();
+                                    setTimeout(() => {
+                                        btn.innerHTML = originalText;
+                                        btn.classList.remove('bg-green-500/20', 'text-green-500', 'border-green-500/50');
+                                        btn.disabled = false;
+                                    }, 3000);
+                                } else {
+                                    throw new Error('Failed to send');
+                                }
+                            } catch (err) {
+                                btn.innerHTML = 'Error Sending';
+                                btn.classList.add('bg-destructive/20', 'text-destructive', 'border-destructive/50');
+                                setTimeout(() => {
+                                    btn.innerHTML = originalText;
+                                    btn.classList.remove('bg-destructive/20', 'text-destructive', 'border-destructive/50');
+                                    btn.disabled = false;
+                                }, 3000);
+                            }
+                        }}
+                        className="space-y-4 max-w-lg mx-auto"
+                    >
+                        {/* Honeypot field (hidden from real users) */}
+                        <div className="opacity-0 absolute -left-[9999px]" aria-hidden="true">
+                            <label htmlFor="website">Website</label>
+                            <input type="text" name="website" id="website" tabIndex="-1" autoComplete="off" />
+                        </div>
+
+                        <div>
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="Email (optional)"
+                                className="w-full input-base py-3 bg-surface-1/50"
+                            />
+                        </div>
+                        <div>
+                            <textarea
+                                name="message"
+                                required
+                                rows={3}
+                                placeholder="What's on your mind? Found a bug in the LaTeX generation?"
+                                className="w-full input-base py-3 bg-surface-1/50 resize-y"
+                            />
+                        </div>
+                        <button type="submit" className="w-full py-3 rounded-xl font-display text-sm font-bold tracking-wider uppercase transition-all duration-300 border border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-white">
+                            Send Feedback
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             {/* Global Styled Scrollbar */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: hsl(var(--surface-4) / 0.5);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: hsl(var(--primary) / 0.5);
-                }
-                @keyframes shake {
-                    10%, 90% { transform: translate3d(-1px, 0, 0); }
-                    20%, 80% { transform: translate3d(2px, 0, 0); }
-                    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-                    40%, 60% { transform: translate3d(4px, 0, 0); }
-                }
-                input[type=number]::-webkit-inner-spin-button, 
-                input[type=number]::-webkit-outer-spin-button { 
-                    -webkit-appearance: none; 
-                    margin: 0; 
-                }
-                @keyframes progress-shrink {
+        .custom - scrollbar:: -webkit - scrollbar {
+        width: 6px;
+    }
+                .custom - scrollbar:: -webkit - scrollbar - track {
+        background: transparent;
+    }
+                .custom - scrollbar:: -webkit - scrollbar - thumb {
+        background: hsl(var(--surface - 4) / 0.5);
+        border - radius: 10px;
+    }
+                .custom - scrollbar:: -webkit - scrollbar - thumb:hover {
+        background: hsl(var(--primary) / 0.5);
+    }
+    @keyframes shake {
+        10 %, 90 % { transform: translate3d(-1px, 0, 0); }
+        20 %, 80 % { transform: translate3d(2px, 0, 0); }
+        30 %, 50 %, 70 % { transform: translate3d(-4px, 0, 0); }
+        40 %, 60 % { transform: translate3d(4px, 0, 0); }
+    }
+    input[type = number]:: -webkit - inner - spin - button,
+        input[type = number]:: -webkit - outer - spin - button {
+        -webkit - appearance: none;
+        margin: 0;
+    }
+    @keyframes progress - shrink {
                     from { transform: scaleX(1); }
                     to { transform: scaleX(0); }
-                }
-                .animate-progress-shrink {
-                    animation: progress-shrink 3s linear forwards;
-                }
-            `}} />
+    }
+                .animate - progress - shrink {
+        animation: progress - shrink 3s linear forwards;
+    }
+    `}} />
 
             {/* Footer */}
             <footer className="relative z-10 py-10 text-center w-full bg-cosmic/50 backdrop-blur-sm mt-auto border-t border-surface-3/30">

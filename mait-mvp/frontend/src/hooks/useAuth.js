@@ -10,7 +10,7 @@ const getSavedAuthUser = () => {
 const getStudentId = () => {
     let id = localStorage.getItem('mait_student_id');
     if (!id) {
-        id = `student_${crypto.randomUUID()}`;
+        id = `student_${crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)}`;
         localStorage.setItem('mait_student_id', id);
     }
     return id;
@@ -32,9 +32,6 @@ export default function useAuth(apiUrl, callbacks = {}) {
     const [authLoading, setAuthLoading] = useState(false);
 
     const handleLoginSubmit = useCallback(async (code) => {
-        const normalizedCode = code.trim().toUpperCase();
-        const FALLBACK_CODE = "HSCMATE2026";
-
         try {
             const res = await fetch(`${apiUrl}/auth/verify-access`, {
                 method: 'POST',
@@ -45,15 +42,11 @@ export default function useAuth(apiUrl, callbacks = {}) {
                 callbacks.onLoginSuccess?.();
                 return true;
             }
+            return false;
         } catch (e) {
-            console.warn('Backend verification failed, trying client-side fallback...', e);
-            if (normalizedCode === FALLBACK_CODE) {
-                console.info('Logged in via client-side fallback.');
-                callbacks.onLoginSuccess?.();
-                return true;
-            }
+            console.warn('Backend verification failed:', e);
+            return false;
         }
-        return false;
     }, [apiUrl, callbacks]);
 
     const handleGoogleSuccess = useCallback(async (credentialResponse) => {

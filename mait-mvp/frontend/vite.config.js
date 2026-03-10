@@ -24,8 +24,8 @@ export default defineConfig({
     optimizeDeps: {
         // Don't block page loads waiting for dep scan to finish
         holdUntilCrawlEnd: false,
-        // Exclude web-llm from esbuild scanning (huge WASM package freezes scanner)
-        exclude: ['@mlc-ai/web-llm'],
+        // Exclude huge WASM packages that esbuild can't handle if necessary
+        exclude: [],
         // Pre-include known deps so esbuild doesn't need to discover them
         include: [
             'react',
@@ -38,6 +38,10 @@ export default defineConfig({
             'clsx',
             'tailwind-merge',
             'framer-motion',
-        ]
+            '@mlc-ai/web-llm',
+        ],
+        esbuildOptions: {
+            target: 'esnext'
+        }
     }
 })
