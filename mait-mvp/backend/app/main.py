@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file immediately
 load_dotenv()
 
+import resend
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -65,8 +66,7 @@ async def startup_event():
     print("Application startup complete.")
 
 # CORS - environment-based origins
-# For production: CORS_ORIGINS=https://myaitutor.au,https://www.myaitutor.au
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -606,6 +606,60 @@ async def record_visit():
     except Exception as e:
         return {"count": 0}
 
+
+@app.get("/visits")
+async def get_visits():
+    if not os.path.exists("data/visits.log"):
+        return {"count": 0}
+    with open("data/visits.log") as f:
+        return {"count": len(f.readlines())}
+
+
+# ============================================
+# FEEDBACK ENDPOINTS
+# ============================================
+
+class FeedbackRequest(BaseModel):
+    message: str
+    email: Optional[str] = "anonymous"
+    context: Optional[str] = "unknown"
+
+@app.post("/api/feedback")
+@limiter.limit("5/minute")
+async def submit_feedback(request: Request, body: FeedbackRequest):
+    """
+    Handle user feedback via the frontend forms.
+    Uses Resend to dispatch an email.
+    """
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    if not resend_api_key:
+        print("[Feedback] RESEND_API_KEY is not set.")
+        raise HTTPException(status_code=500, detail="Email service configuration error")
+
+    resend.api_key = resend_api_key
+
+    try:
+        html_content = f"""
+        <h2>New MAIT Feedback Received</h2>
+        <p><strong>Context:</strong> {body.context}</p>
+        <p><strong>User Email:</strong> {body.email}</p>
+        <hr>
+        <h3>Message:</h3>
+        <p>{body.message.replace(chr(10), '<br>')}</p>
+        """
+
+        # Send email via Resend
+        r = resend.Emails.send({
+            "from": "MAIT System <onboarding@resend.dev>", # Use a verified domain in production
+            "to": "mentor@mentalmaths.au",
+            "subject": f"MAIT Feedback: {body.context}",
+            "html": html_content
+        })
+        
+        return {"status": "success", "id": r.get('id')}
+    except Exception as e:
+        print(f"[Feedback] Failed to send email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to dispatch feedback email")
 
 @app.post("/subscribe")
 async def subscribe_waitlist(request: SubscribeRequest):

@@ -1,4 +1,5 @@
-import { CreateMLCEngine } from "@mlc-ai/web-llm";
+// Dynamic import for web-llm to speed up initial page load
+// import { CreateMLCEngine } from "@mlc-ai/web-llm";
 
 // Model options - small for demo (fast download), large for full quality
 const MODELS = {
@@ -199,6 +200,7 @@ class ModelService {
         // WebLLM initialization
         wrapProgress(`Initializing WebLLM (${modelConfig.name})...`);
         try {
+            const { CreateMLCEngine } = await import("@mlc-ai/web-llm");
             this.engine = await CreateMLCEngine(
                 modelConfig.id,
                 {
