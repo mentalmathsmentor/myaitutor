@@ -457,18 +457,18 @@ For every question you generate:
 
 **1. THE PREAMBLE:**
 \\documentclass[12pt, a4paper]{article}
-\\usepackage[top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
+\\usepackage[top=1.5cm, bottom=2.5cm, left=1.5cm, right=1.5cm, headheight=30pt, footskip=30pt]{geometry}
 \\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
 \\usepackage[none]{hyphenat}
 \\usepackage[hidelinks]{hyperref} 
 \\setlength{\\columnsep}{1cm}
 \\setlength{\\columnseprule}{0.4pt}
 
-\\\pagestyle{fancy}
+\\pagestyle{fancy}
 \\fancyhf{}
 \\lhead{ ${lheadContent} }
 \\rhead{}
-\\cfoot{Page \\thepage \\\\[0.2cm] \\footnotesize \\textbf{AI SELF-CHECK:} \\textit{Ask AI for a hint, not the answer.}}
+\\cfoot{Page \\thepage}
 ${removeWatermark ? '\\rfoot{}' : '\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}'}
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\setlength{\\headheight}{30pt}
@@ -494,6 +494,8 @@ ${answerKeyLogic}
 * Spacing: ${spacingLogic}
 * **MARKS ALIGNMENT (CRITICAL):** ${marksLogic === 'Do not assign marks' ? marksLogic : `If assigning marks, you MUST use \`${marksLogic}\` at the very end of the question text. The \\mbox{} is critical to prevent the number and the word 'Marks' from being split across two lines. Do NOT let the marks wrap to a new line awkwardly. Ensure they are pushed completely flush-right.`}
 * **MANDATORY DIAGRAMS & SHAPES:** If a question mentions a shape, graph, diagram, angle relationship (e.g., "vertically opposite", "transversal"), or geometric property, you MUST generate the corresponding TikZ code to draw a clean, professional diagram below the question text.
+* **PREAMBLE & GEOMETRY RULE:** When setting up the document geometry, you MUST explicitly define bottom=2.5cm, footskip=30pt, and headheight=30pt. Do not use a bottom margin smaller than 2.5cm. This is strictly required to prevent multicols content and vertical rules from crashing into the custom multi-line footer. Use exact geometry: \\usepackage[top=1.5cm, bottom=2.5cm, left=1.5cm, right=1.5cm, headheight=30pt, footskip=30pt]{geometry}
+* **FOOTER RESTRAINT RULE:** Do not include multi-line footers or the "AI SELF-CHECK" text. Keep the center footer strictly to the page number using \\cfoot{Page \\thepage}. This is crucial to prevent the footer from colliding with the multicols vertical divider at the bottom of the page.
 
 **3. PAGINATION & FOOTER:**
 * Before every new \\item, insert \\needspace{6cm}.
@@ -602,7 +604,7 @@ ${contentString}
                         {/* Top Right Close Button */}
                         <button
                             onClick={closeModal}
-                            className={`absolute top - 4 right - 4 p - 2 text - muted - foreground hover: text - foreground hover: bg - surface - 3 rounded - full transition - all duration - 500 ${ showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none' } `}
+                            className={`absolute top - 4 right - 4 p - 2 text - muted - foreground hover: text - foreground hover: bg - surface - 3 rounded - full transition - all duration - 500 ${showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} `}
                             title="Dismiss"
                         >
                             <X size={20} />
@@ -631,7 +633,7 @@ ${contentString}
                                 </div>
                             </div>
                         </div>
-                        <div className={`pt - 4 transition - all duration - 500 ${ showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100' } `}>
+                        <div className={`pt - 4 transition - all duration - 500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'} `}>
                             <div className="h-4 w-full bg-surface-3 rounded-full overflow-hidden">
                                 <div className="h-full bg-green-500 animate-progress-shrink origin-left" />
                             </div>
@@ -728,25 +730,25 @@ ${contentString}
                     </div>
 
                     {/* Mode Selection */}
-                    <div className="flex bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3">
+                    <div className="flex w-full bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3 gap-2">
                         <button
                             type="button"
                             onClick={() => setMode('A')}
-                            className={`flex - 1 py - 3 rounded - xl font - display text - xs transition - all ${ mode === 'A' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground' } `}
+                            className={`flex-[0.5] py-3 px-4 rounded-xl font-display text-[11px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${mode === 'A' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                         >
                             Syllabus Mode (Generative)
                         </button>
                         <button
                             type="button"
                             onClick={() => setMode('B')}
-                            className={`flex - 1 py - 3 rounded - xl font - display text - xs transition - all ${ mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground' } `}
+                            className={`flex-[0.5] py-3 px-4 rounded-xl font-display text-[11px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                         >
                             Question/Topic Specification
                         </button>
                     </div>
 
                     {/* Hierarchical Tree Checklist or Manual Area */}
-                    <div className={`bg - surface - 1 / 30 rounded - 2xl border border - surface - 3 / 50 min - h - [400px] overflow - hidden flex flex - col ${ isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both] shadow-[0_0_15px_rgba(239,68,68,0.2)] border-destructive/40' : '' } `}>
+                    <div className={`bg-surface-1/30 rounded-2xl border border-surface-3/50 min-h-[400px] overflow-hidden flex flex-col ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both] shadow-[0_0_15px_rgba(239,68,68,0.2)] border-destructive/40' : ''}`}>
                         {mode === 'A' ? (
                             <div className="flex flex-col h-full animate-reveal">
                                 {/* Search & Selected Header */}
@@ -832,7 +834,7 @@ ${contentString}
                                                                             {currentSyllabus[mod][subt].map((point, idx) => (
                                                                                 <label
                                                                                     key={idx}
-                                                                                    className={`flex items - start gap - 3 p - 3 rounded - xl border border - surface - 3 transition - all cursor - pointer select - none ${ selectedPoints.includes(point) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10' } `}
+                                                                                    className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(point) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
                                                                                 >
                                                                                     <input
                                                                                         type="checkbox"
@@ -858,7 +860,7 @@ ${contentString}
                                                     {currentTopicsList.map((topic, idx) => (
                                                         <label
                                                             key={idx}
-                                                            className={`flex items - start gap - 3 p - 3 rounded - xl border border - surface - 3 transition - all cursor - pointer select - none ${ selectedPoints.includes(topic) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10' } `}
+                                                            className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(topic) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
                                                         >
                                                             <input
                                                                 type="checkbox"
@@ -891,7 +893,7 @@ ${contentString}
                                         placeholder="Type in the topics and any specific dot-points or general aim of the worksheet."
                                         value={rawQuestions}
                                         onChange={(e) => setRawQuestions(e.target.value)}
-                                        className={`input - base w - full text - sm font - display resize - y py - 3 min - h - [300px] ${ isShaking ? 'border-destructive/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : '' } `}
+                                        className={`input-base w-full text-sm font-display resize-y py-3 min-h-[300px] ${isShaking ? 'border-destructive/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : ''}`}
                                     />
                                 </div>
                             </div>
@@ -915,7 +917,7 @@ ${contentString}
                                 onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
                                 className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
                                 style={{
-                                    background: `linear - gradient(to right, hsl(var(--primary)) 0 %, hsl(var(--primary)) ${ ((Math.min(numQuestions, 50) - 1) / 49) * 100 }%, hsl(var(--surface - 3)) ${ ((Math.min(numQuestions, 50) - 1) / 49) * 100 }%, hsl(var(--surface - 3)) 100 %)`,
+                                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) 100%)`,
                                 }}
                             />
                             <input
@@ -977,25 +979,25 @@ ${contentString}
                         <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
                             Syllabus Injection Context
                         </label>
-                        <div className="flex bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3">
+                        <div className="flex w-full bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3 gap-2">
                             <button
                                 type="button"
                                 onClick={() => setSyllabusContextMode('Off')}
-                                className={`flex - 1 py - 3 rounded - xl font - display text - xs transition - all ${ syllabusContextMode === 'Off' ? 'bg-surface-3 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground' } `}
+                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Off' ? 'bg-surface-3 text-foreground shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                             >
                                 AI general knowledge
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSyllabusContextMode('Provide')}
-                                className={`flex - 1 py - 3 rounded - xl font - display text - xs transition - all ${ syllabusContextMode === 'Provide' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:text-foreground' } `}
+                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Provide' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                             >
                                 I'll upload the syllabus
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setSyllabusContextMode('Search')}
-                                className={`flex - 1 py - 3 rounded - xl font - display text - xs transition - all ${ syllabusContextMode === 'Search' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm' : 'text-muted-foreground hover:text-foreground' } `}
+                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Search' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
                                 title="Experimental Feature: AI performs a proactive search of the published NESA website to infer syllabus dot points."
                             >
                                 Search NESA Website ⚠️
@@ -1206,10 +1208,8 @@ ${contentString}
                             <p className="text-muted-foreground text-sm">A preview of a Masterclass Diagnostic Exam.</p>
                         </div>
                         <div className="w-full aspect-[1/1.4] bg-surface-2 rounded-xl border border-surface-3/50 shadow-inner flex items-center justify-center p-2 overflow-hidden">
-                            {/* Static PDF Preview Object */}
-                            <object data="/Masterclass Diagnostic Exam.pdf" type="application/pdf" className="w-full h-full rounded-lg">
-                                <p className="text-muted-foreground text-sm text-center">PDF Preview Unavailable. Download <a href="/Masterclass Diagnostic Exam.pdf" className="text-primary hover:underline">here</a>.</p>
-                            </object>
+                            {/* Static PDF Preview Image */}
+                            <img src="/exemplar-placeholder.png" alt="Exemplar Preview" className="w-full h-full object-cover rounded-lg" />
                         </div>
                     </div>
 
@@ -1285,7 +1285,7 @@ ${contentString}
 
                             try {
                                 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-                                const response = await fetch(`${ API_BASE_URL } /api/feedback`, {
+                                const response = await fetch(`${API_BASE_URL} /api/feedback`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
