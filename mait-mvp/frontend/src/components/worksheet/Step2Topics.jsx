@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Search, CheckCircle2, ChevronRight, ChevronDown, ListPlus, Edit3 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 export default function Step2Topics({
     mode,
@@ -209,11 +213,20 @@ export default function Step2Topics({
     };
 
     // Filter Logic for Search Query
-    const renderLatex = (text) => {
-        let parsed = text.replace(/\\\\/g, '\\');
-        // Simple faux-render for inline preview so users don't see raw \text{} blobs
-        parsed = parsed.replace(/\\text\{([^}]+)\}/g, '$1');
-        return parsed;
+    const SyllabusPoint = ({ text, isSelected }) => {
+        return (
+            <div className={`text-[11px] leading-relaxed markdown-math ${isSelected ? 'text-white' : 'text-white/60'}`}>
+                <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                        p: ({ node, ...props }) => <span {...props} />, // Use span to avoid line breaks in the label
+                    }}
+                >
+                    {text}
+                </ReactMarkdown>
+            </div>
+        );
     };
 
     return (
@@ -379,9 +392,9 @@ export default function Step2Topics({
                                                                                 onChange={() => handlePointToggle(point)}
                                                                                 className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 accent-mait-cyan cursor-pointer flex-shrink-0"
                                                                             />
-                                                                            <span 
-                                                                                className="text-[11px] leading-relaxed" 
-                                                                                dangerouslySetInnerHTML={{ __html: renderLatex(point) }} 
+                                                                            <SyllabusPoint 
+                                                                                text={point} 
+                                                                                isSelected={selectedPoints.includes(point)} 
                                                                             />
                                                                         </label>
                                                                     );
