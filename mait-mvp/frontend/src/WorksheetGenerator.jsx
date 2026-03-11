@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Step1YearLevel from './components/worksheet/Step1YearLevel';
 import Step2Topics from './components/worksheet/Step2Topics';
-import syllabusData from './features/slm/syllabusData';
+import syllabusData from './syllabus_data.json';
 import { 
   FileText, 
   ChevronLeft, 
@@ -23,6 +23,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import canvasHint from './assets/gemini-canvas-final.png';
+import thinkingHint from './assets/gemini-model-selector.png';
 
 export default function WorksheetGenerator({ navigate }) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -59,7 +60,7 @@ export default function WorksheetGenerator({ navigate }) {
   ];
 
   const yearLevels = [
-    { value: 'k', label: 'Kindergarten' },
+    { value: 'k', label: 'Kindy' },
     { value: '1', label: 'Year 1' },
     { value: '2', label: 'Year 2' },
     { value: '3', label: 'Year 3' },
@@ -389,7 +390,7 @@ ${contentString}
               <FileText className="w-8 h-8 text-mait-cyan" />
               Worksheet Studio
             </h1>
-            <p className="text-white/60">A.G.E. Pipeline — Artifact Generation Engine</p>
+            <p className="text-white/60">Artifact Generation Engine — High Performance Syllabus Alignment</p>
           </div>
           
 
@@ -826,16 +827,25 @@ ${contentString}
                             </p>
                         </div>
                         <div className="glass-card p-4 rounded-2xl border border-white/10 space-y-4 transition-all duration-300 hover:border-mait-cyan/50 hover:shadow-[0_0_20px_rgba(0,255,255,0.1)]">
-                            <p className="text-[13px] font-bold text-white">🚀 Pro-Tip for Gemini:</p>
-                            <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full rounded-xl border border-white/10 shadow-md object-cover" />
-                            <p className="text-xs">
-                                Use <span className="text-mait-cyan font-bold">'Thinking'</span> for best reasoning. Canvas feature also allows editing by highlighting text.
+                            <p className="text-[13px] font-bold text-white">🚀 Gemini Optimization Guide:</p>
+                            <div className="grid grid-cols-2 gap-3 pb-2">
+                                <div className="space-y-2">
+                                    <p className="text-[10px] uppercase tracking-wider text-mait-cyan font-bold">1. Enable Thinking</p>
+                                    <img src={thinkingHint} alt="Gemini Thinking Mode" className="w-full aspect-[4/3] rounded-xl border border-white/10 shadow-md object-cover" />
+                                </div>
+                                <div className="space-y-2">
+                                    <p className="text-[10px] uppercase tracking-wider text-mait-cyan font-bold">2. Use Canvas</p>
+                                    <img src={canvasHint} alt="Gemini Canvas Feature" className="w-full aspect-[4/3] rounded-xl border border-white/10 shadow-md object-cover" />
+                                </div>
+                            </div>
+                            <p className="text-[11px] leading-relaxed text-white/70 italic">
+                                Use <span className="text-mait-cyan font-bold">'Thinking'</span> (Flash/Pro) for best reasoning. Highlight text in Canvas to edit specific sections.
                             </p>
                         </div>
                     </div>
                     <div className={`pt-4 transition-all duration-500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'}`}>
                         <div className="h-4 w-full bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500 animate-[progress_3s_linear_forwards] origin-left" />
+                            <div className="h-full bg-green-500 animate-progress origin-left" />
                         </div>
                         <p className="text-sm md:text-base font-bold uppercase tracking-widest text-green-400 animate-pulse mt-4 drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]">Launching in 3 seconds...</p>
                     </div>
@@ -866,12 +876,12 @@ ${contentString}
 
             {/* Right: FAQ & Tips Expandable Accordion */}
             <div className="glass-card-strong rounded-2xl p-6 lg:p-8 space-y-6">
-                <div className="text-left space-y-2 w-full mb-6">
+                <div className="text-left space-y-2 w-full mb-4">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">FAQ and Tips & Tricks</h3>
                     <p className="text-white/60 text-sm">Getting the most out of MAIT's Worksheet Generator.</p>
                 </div>
                 
-                <hr className="border-white/10 -mt-2" />
+                <hr className="border-white/10" />
 
                 <div className="space-y-4">
                     {/* FAQ 1 */}

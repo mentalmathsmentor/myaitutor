@@ -354,7 +354,7 @@ export default function PastPapers({ navigate }) {
     }
 
     return (
-        <div className="min-h-screen pt-20 flex flex-col bg-cosmic noise-overlay">
+        <div className="min-h-screen pt-24 pb-12 flex flex-col bg-cosmic noise-overlay">
 
             {/* Body: sidebar + viewer */}
             <div className="flex flex-1 max-w-7xl mx-auto w-full">

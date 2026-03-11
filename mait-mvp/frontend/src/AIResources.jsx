@@ -385,8 +385,32 @@ export default function AIResources() {
     }
 
     return (
-        <div className="min-h-screen bg-cosmic noise-overlay text-white selection:bg-mait-cyan/30">
-            <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
+        <div className="min-h-screen bg-cosmic noise-overlay text-white selection:bg-mait-cyan/30 overflow-hidden relative pt-24 pb-12">
+            {/* Background orbs */}
+            <div className="orb-container">
+                <div className="orb orb-1" />
+                <div className="orb orb-2" />
+                <div className="orb orb-3" />
+            </div>
+
+            {/* Math particle background */}
+            <div className="math-particles" aria-hidden="true">
+                {['∫', '∂', 'Σ', '∇', 'π', 'θ', 'λ', '∞', '√', '≈', 'Δ', 'φ'].map((symbol, i) => (
+                    <div
+                        key={i}
+                        className="math-particle"
+                        style={{
+                            left: `${(i * 37 + 11) % 90}%`,
+                            animationDelay: `${i * 1.2}s`,
+                            fontSize: `${1 + (i % 3) * 0.4}rem`,
+                        }}
+                    >
+                        {symbol}
+                    </div>
+                ))}
+            </div>
+
+            <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
                 style={{
                     backgroundImage: `linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
                                      linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px)`,

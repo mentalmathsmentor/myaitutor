@@ -42,15 +42,8 @@ export default function Navigation({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const isOnLanding = currentPage === 'landing';
 
-  const scrollItems = [
-    { id: 'problem', label: 'The Problem' },
-    { id: 'solution', label: 'The Solution' },
-    { id: 'demo', label: 'A.G.E. Demo' },
-    { id: 'features', label: 'Features' },
-    { id: 'architecture', label: 'Architecture' },
-  ];
+  const isOnLanding = currentPage === 'landing';
 
   return (
     <>

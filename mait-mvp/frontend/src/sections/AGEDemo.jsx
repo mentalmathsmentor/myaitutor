@@ -219,45 +219,23 @@ export default function AGEDemo({ navigate }) {
             <div className="relative">
               <div className="absolute -inset-4 bg-gradient-to-r from-mait-cosmic/20 to-mait-cyan/20 rounded-3xl blur-xl" />
               
-              <div className="relative bg-white rounded-lg shadow-2xl overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-500">
-                {/* PDF Header */}
-                <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+              <div className="relative bg-white rounded-lg shadow-2xl overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-500 aspect-[1/1.414] group-hover:scale-[1.02]">
+                {/* PDF Header overlay */}
+                <div className="absolute top-0 left-0 right-0 bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center gap-2 z-10 opacity-70 group-hover:opacity-100 transition-opacity">
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
-                  <span className="ml-4 text-xs text-gray-500 font-mono">Year12_Calculus_Worksheet.pdf</span>
+                  <span className="ml-4 text-[10px] text-gray-500 font-mono">Universal_Worksheet.pdf</span>
                 </div>
                 
-                {/* PDF Content */}
-                <div className="p-6 bg-white">
-                  <div className="text-center mb-6">
-                    <h4 className="text-lg font-bold text-gray-800">Mathematics Advanced</h4>
-                    <p className="text-sm text-gray-500">Year 12 — Integration by Parts</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((num) => (
-                      <div key={num} className="border-b border-gray-100 pb-4">
-                        <p className="text-sm text-gray-700 mb-2">
-                          <span className="font-bold">{num}.</span> Find the integral of:
-                        </p>
-                        <div className="bg-gray-50 p-3 rounded text-center">
-                          <span className="font-mono text-gray-800">
-                            {num === 1 && '∫ x · eˣ dx'}
-                            {num === 2 && '∫ x² · ln(x) dx'}
-                            {num === 3 && '∫ eˣ · sin(x) dx'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-                    <span className="text-xs text-gray-400">End of Worksheet — 15 Questions Total</span>
-                  </div>
-                </div>
+                {/* PDF Content - Actual iframe */}
+                <iframe 
+                  src="/Universal_Worksheet.pdf#toolbar=0&navpanes=0&scrollbar=0" 
+                  className="w-full h-full border-none pointer-events-none"
+                  title="Universal Worksheet Preview"
+                />
               </div>
               
               {/* Floating Badge */}

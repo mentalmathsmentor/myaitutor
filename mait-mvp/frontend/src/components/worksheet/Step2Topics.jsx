@@ -23,72 +23,52 @@ export default function Step2Topics({
     const getSyllabusContent = () => {
         if (!SYLLABUS_DATA) return null;
 
+        // Senior Years (11-12) Breakdown
         if (selectedYear === 'Year 11' || selectedYear === 'Year 12') {
-            const subjectKeyMap = {
-                'Mathematics Standard': 'Standard 2',
-                'Mathematics Advanced': 'Mathematics Advanced',
-                'Mathematics Extension 1': 'Extension 1',
-                'Mathematics Extension 2': 'Extension 2',
-                'Physics': 'Physics',
-                'Chemistry': 'Chemistry',
-                'Biology': 'Biology',
-                'Engineering Studies': 'Engineering Studies'
+            // Helper to get raw data for a specific subject string
+            const getRawData = (year, subject) => {
+                // Formatting: "Year 12 Advanced", "Year 11 Extension 1", etc.
+                const suffix = subject.replace('Mathematics ', '');
+                const key = `${year} ${suffix}`;
+                return SYLLABUS_DATA[key] || null;
             };
 
-            const mappedSubject = subjectKeyMap[selectedSubject] || selectedSubject;
-            
-            // Extract the data for the specific year
-            const getYearData = (subjectName) => {
-                const subjData = SYLLABUS_DATA[subjectName];
-                if (!subjData || !subjData.years) return {};
-                
-                const yearData = subjData.years[selectedYear] || [];
-                // Convert array of modules into an object mapping for the current logic
-                const formatted = {};
-                yearData.forEach(mod => {
-                    formatted[mod.name] = {};
-                    (mod.subtopics || []).forEach(subt => {
-                        // In the old system, points were an array of strings. We only have code & name now.
-                        formatted[mod.name][subt.name] = [subt.code + ": " + subt.name];
-                    });
-                });
-                return formatted;
-            };
-
-            const baseData = getYearData(mappedSubject);
+            const baseData = getRawData(selectedYear, selectedSubject) || {};
 
             // Mathematics Extension Dependencies Rules
-            if (selectedSubject === 'Mathematics Extension 2') {
-                const advData = getYearData('Mathematics Advanced');
-                const ext1Data = getYearData('Extension 1');
-                return { ...advData, ...ext1Data, ...baseData };
+            // Extension 1 includes Advanced prerequisites
+            if (selectedSubject === 'Mathematics Extension 1') {
+                const advData = getRawData(selectedYear, 'Mathematics Advanced') || {};
+                // Prepend Advanced modules to names so they are distinct or group naturally
+                const merged = {};
+                Object.keys(advData).forEach(mod => { merged[`[Adv] ${mod}`] = advData[mod]; });
+                Object.keys(baseData).forEach(mod => { merged[mod] = baseData[mod]; });
+                return merged;
             }
 
-            if (selectedSubject === 'Mathematics Extension 1') {
-                const advData = getYearData('Mathematics Advanced');
-                return { ...advData, ...baseData };
+            // Extension 2 includes Advanced and Extension 1 prerequisites
+            if (selectedSubject === 'Mathematics Extension 2') {
+                const advData = getRawData(selectedYear, 'Mathematics Advanced') || {};
+                const ext1Data = getRawData(selectedYear, 'Mathematics Extension 1') || {};
+                const merged = {};
+                Object.keys(advData).forEach(mod => { merged[`[Adv] ${mod}`] = advData[mod]; });
+                Object.keys(ext1Data).forEach(mod => { merged[`[Ext 1] ${mod}`] = ext1Data[mod]; });
+                Object.keys(baseData).forEach(mod => { merged[mod] = baseData[mod]; });
+                return merged;
             }
 
             return baseData;
         }
 
-        // For Year 7-10, the data is usually keyed just by the Year string
-        const yearKey = selectedYear.split(' (')[0]; // Handle 'Stage 4 (Year 7-8)' -> 'Stage 4'
-        // Wait, looking at syllabus_data.json, keys are "Year 7", "Year 8" etc.
-        // Let's resolve the actual year from the label
-        const stageToYearMap = {
-            'Early Stage 1 (Kindy)': 'Year 1', // Placeholder or as per data
-            'Stage 1 (Year 1-2)': 'Year 1',
-            'Stage 2 (Year 3-4)': 'Year 3',
-            'Stage 3 (Year 5-6)': 'Year 5',
-            'Stage 4 (Year 7-8)': 'Year 7',
-            'Stage 5 (Year 9-10)': 'Year 9',
-            'Year 11': 'Year 11',
-            'Year 12': 'Year 12'
-        };
+        // For Year 7-10, the data is keyed by simple "Year X"
+        const yearMatch = selectedYear.match(/Year (\d+)/);
+        const yearKey = yearMatch ? `Year ${yearMatch[1]}` : selectedYear;
+        
+        const yearData = SYLLABUS_DATA[yearKey];
+        if (!yearData) return null;
 
-        const resolvedYear = stageToYearMap[selectedYear] || selectedYear;
-        return SYLLABUS_DATA[resolvedYear]?.[selectedSubject] || SYLLABUS_DATA[resolvedYear];
+        // Match subject (Mathematics, English, etc.)
+        return yearData[selectedSubject] || yearData;
     };
 
     const currentSyllabus = getSyllabusContent();

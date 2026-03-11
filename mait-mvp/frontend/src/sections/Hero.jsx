@@ -87,13 +87,13 @@ export default function Hero({ scrollToSection, navigate, onLoginClick }) {
               top: `${Math.random() * 100}%`,
             }}
             animate={{
-              opacity: [0.2, 1, 0.2],
-              scale: [1, 1.5, 1],
+              opacity: [0.1, 0.4, 0.1],
+              scale: [1, 1.2, 1],
             }}
             transition={{
-              duration: 2 + Math.random() * 2,
+              duration: 4 + Math.random() * 6,
               repeat: Infinity,
-              delay: Math.random() * 2,
+              delay: Math.random() * 5,
             }}
           />
         ))}

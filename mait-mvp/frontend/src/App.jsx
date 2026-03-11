@@ -849,9 +849,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return (
             <>
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
-                <div className="pt-14">
-                    <ErrorBoundary><AIResources /></ErrorBoundary>
-                </div>
+                <ErrorBoundary><AIResources /></ErrorBoundary>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -861,9 +859,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return (
             <>
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
-                <div className="pt-14">
-                    <ErrorBoundary><WorksheetGenerator navigate={navigateTo} /></ErrorBoundary>
-                </div>
+                <ErrorBoundary><WorksheetGenerator navigate={navigateTo} /></ErrorBoundary>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -885,9 +881,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return (
             <>
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
-                <div className="pt-14 h-screen">
-                    <ErrorBoundary><PastPapers /></ErrorBoundary>
-                </div>
+                <ErrorBoundary><PastPapers /></ErrorBoundary>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )

@@ -1104,3 +1104,14 @@ body {
 }
 
 /* end @layer components / global additions */
+
+@keyframes progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@layer utilities {
+  .animate-progress {
+    animation: progress 3s linear forwards;
+  }
+}
