@@ -10,5 +10,10 @@
 			"path": "../../../../!Tutoring"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python.defaultInterpreterPath": "${workspaceFolder:ALL}/MAIT/mait-mvp/backend/venv/bin/python3",
+		"python.analysis.extraPaths": [
+			"${workspaceFolder:ALL}/MAIT/mait-mvp/backend"
+		]
+	}
 }
