@@ -817,6 +817,195 @@ body {
         transparent 100%);
   }
 
+  /* ========================================================
+   * KIMI DESIGN SYSTEM ADDITIONS
+   * ======================================================== */
+
+  /* Strong glassmorphism card (used in WorksheetStudio, Hero terminal) */
+  .glass-card-strong {
+    @apply backdrop-blur-2xl border border-white/15 rounded-xl;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow:
+      0 8px 32px -4px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* Cosmic gradient backgrounds */
+  .cosmic-gradient {
+    background:
+      radial-gradient(ellipse at 20% 20%, hsl(265 85% 60% / 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, hsl(180 85% 55% / 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, hsl(280 60% 25% / 0.08) 0%, transparent 70%),
+      hsl(var(--background));
+  }
+
+  /* Terminal / IDE pane styling */
+  .terminal-window {
+    @apply rounded-lg overflow-hidden;
+    background: #0d1117;
+    border: 1px solid #30363d;
+  }
+
+  .terminal-header {
+    @apply px-4 py-2 flex items-center gap-2;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .terminal-dot {
+    @apply w-3 h-3 rounded-full;
+  }
+
+  .terminal-content {
+    @apply p-4 font-mono text-sm;
+    color: #e6edf3;
+  }
+
+  /* Animated gradient text (used by Hero H1) */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg,
+      hsl(265 85% 70%) 0%,
+      hsl(180 85% 55%) 50%,
+      hsl(265 85% 70%) 100%);
+  }
+
+  .gradient-text-animated {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg,
+      hsl(265 85% 70%) 0%,
+      hsl(180 85% 55%) 25%,
+      hsl(265 85% 70%) 50%,
+      hsl(180 85% 55%) 75%,
+      hsl(265 85% 70%) 100%);
+    background-size: 200% auto;
+    animation: gradient-shift 3s linear infinite;
+  }
+
+  /* Kimi cosmic button (replaces btn-primary for new sections) */
+  .btn-cosmic {
+    @apply relative px-6 py-3 rounded-lg font-medium transition-all duration-300;
+    background: linear-gradient(135deg, hsl(265 85% 60%) 0%, hsl(270 100% 50%) 100%);
+    box-shadow: 0 4px 20px hsl(265 85% 60% / 0.4);
+    color: white;
+  }
+
+  .btn-cosmic:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px hsl(265 85% 60% / 0.6);
+  }
+
+  .btn-cosmic:active {
+    transform: translateY(0);
+  }
+
+  /* Glass button */
+  .btn-glass {
+    @apply relative px-6 py-3 rounded-lg font-medium backdrop-blur-md bg-white/10 border border-white/20 transition-all duration-300;
+    color: white;
+  }
+
+  .btn-glass:hover {
+    @apply bg-white/15 border-white/30;
+    transform: translateY(-2px);
+  }
+
+  /* Grid pattern overlay (Hero background) */
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* Section divider */
+  .section-divider {
+    @apply w-full h-px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      hsl(265 85% 60% / 0.3) 20%,
+      hsl(180 85% 55% / 0.3) 50%,
+      hsl(265 85% 60% / 0.3) 80%,
+      transparent 100%);
+  }
+
+  /* Floating orb decoration */
+  .floating-orb {
+    @apply absolute rounded-full blur-3xl opacity-30;
+    animation: float-orb 15s ease-in-out infinite;
+  }
+
+  /* Feature card hover */
+  .feature-card {
+    @apply transition-all duration-500;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow:
+      0 20px 40px -10px rgba(0, 0, 0, 0.5),
+      0 0 30px hsl(265 85% 60% / 0.2);
+  }
+
+  /* Step active glow ring */
+  .step-active::after {
+    content: '';
+    @apply absolute inset-0 rounded-full;
+    box-shadow: 0 0 20px hsl(265 85% 60% / 0.6);
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Neon glow utilities */
+  .neon-glow-purple {
+    box-shadow:
+      0 0 20px hsl(265 85% 60% / 0.4),
+      0 0 40px hsl(265 85% 60% / 0.2),
+      0 0 60px hsl(265 85% 60% / 0.1);
+  }
+
+  .neon-glow-cyan {
+    box-shadow:
+      0 0 20px hsl(180 85% 55% / 0.4),
+      0 0 40px hsl(180 85% 55% / 0.2),
+      0 0 60px hsl(180 85% 55% / 0.1);
+  }
 }
 
-/* end @layer components */
+/* Animate typing cursor */
+.animate-typing-cursor {
+  animation: typing-cursor 1s step-end infinite;
+}
+
+/* Keyframe: typing-cursor */
+@keyframes typing-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Gradient-shift for animated gradient text */
+@keyframes gradient-shift {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Float-orb for floating decoration blobs */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -30px) scale(1.1); }
+  50% { transform: translate(-20px, 20px) scale(0.9); }
+  75% { transform: translate(20px, 10px) scale(1.05); }
+}
+
+/* Slide-up for section reveals */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scale-in for modals / badges */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* end @layer components / global additions */

@@ -8,6 +8,8 @@ import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Ac
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
 import NavBar from './components/NavBar'
+import NewLandingPage from './NewLandingPage'
+import Navigation from './components/Navigation'
 import LandingPage from './LandingPage'
 import AIResources from './AIResources'
 import WorksheetGenerator from './WorksheetGenerator'
@@ -821,12 +823,24 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     };
 
 
+    const scrollToSection = (sectionId) => {
+        const el = document.getElementById(sectionId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     // Non-chat pages: NavBar + page content
     if (page === 'landing') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <ErrorBoundary><LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
+                <Navigation
+                    currentPage={page}
+                    navigate={navigateTo}
+                    onLoginClick={handleLoginClick}
+                    authUser={authUser}
+                    onLogout={handleLogout}
+                    scrollToSection={scrollToSection}
+                />
+                <ErrorBoundary><NewLandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
