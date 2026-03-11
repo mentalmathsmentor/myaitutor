@@ -9,7 +9,7 @@ function CopyButton({ text }) {
         setTimeout(() => setCopied(false), 2000)
     }
     return (
-        <button onClick={handleCopy} className="flex items-center gap-1.5 text-xs font-display text-primary hover:text-accent transition-colors">
+        <button onClick={handleCopy} className="flex items-center gap-1.5 text-xs font-display text-mait-cyan hover:text-accent transition-colors">
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? 'Copied!' : 'Copy'}
         </button>
@@ -22,25 +22,25 @@ function PromptCard({ title, description, prompt, icon }) {
         <div className="glass-card rounded-xl p-5 hover:border-primary/30 transition-all duration-300">
             <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
                 <div className="flex items-start gap-3 flex-1">
-                    <div className="bg-surface-1 w-10 h-10 rounded-lg flex items-center justify-center border border-surface-3 shrink-0 mt-0.5">
+                    <div className="bg-white/5 w-10 h-10 rounded-lg flex items-center justify-center border border-white/10 shrink-0 mt-0.5">
                         {icon}
                     </div>
                     <div>
-                        <h4 className="font-display text-sm font-bold text-foreground">{title}</h4>
-                        <p className="text-muted-foreground text-xs mt-1 leading-relaxed">{description}</p>
+                        <h4 className="font-display text-sm font-bold text-white">{title}</h4>
+                        <p className="text-white/60 text-xs mt-1 leading-relaxed">{description}</p>
                     </div>
                 </div>
-                <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-1">
+                <button className="text-white/60 hover:text-white transition-colors shrink-0 mt-1">
                     {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </button>
             </div>
             {expanded && (
-                <div className="mt-4 pt-4 border-t border-surface-2">
+                <div className="mt-4 pt-4 border-t border-white/5">
                     <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] font-display text-muted-foreground uppercase tracking-wider">Prompt</span>
+                        <span className="text-[10px] font-display text-white/60 uppercase tracking-wider">Prompt</span>
                         <CopyButton text={prompt} />
                     </div>
-                    <pre className="bg-surface-1 border border-surface-3 rounded-lg p-4 text-xs text-foreground/90 whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto max-h-80 overflow-y-auto">
+                    <pre className="bg-white/5 border border-white/10 rounded-lg p-4 text-xs text-white/90 whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto max-h-80 overflow-y-auto">
                         {prompt}
                     </pre>
                 </div>
@@ -53,7 +53,7 @@ const STUDENT_PROMPTS = [
     {
         title: "Homework Helper",
         description: "Paste any homework question and get step-by-step guidance without being given the answer directly.",
-        icon: <GraduationCap size={18} className="text-primary" />,
+        icon: <GraduationCap size={18} className="text-mait-cyan" />,
         prompt: `I'm a high school student working on homework. Here is a question I need help with:
 
 [PASTE YOUR QUESTION HERE]
@@ -102,7 +102,7 @@ Rules:
     {
         title: "Essay Structure Coach",
         description: "Get help structuring an essay with a clear thesis, arguments, and evidence plan.",
-        icon: <BookOpen size={18} className="text-primary" />,
+        icon: <BookOpen size={18} className="text-mait-cyan" />,
         prompt: `I need to write an essay and want help with structure (NOT writing it for me).
 
 Essay question: [PASTE YOUR ESSAY QUESTION]
@@ -142,7 +142,7 @@ const TEACHER_PROMPTS = [
     {
         title: "LaTeX Worksheet Generator",
         description: "Generate professional, print-ready maths worksheets with proper equation formatting.",
-        icon: <Code2 size={18} className="text-primary" />,
+        icon: <Code2 size={18} className="text-mait-cyan" />,
         prompt: `You are a LaTeX document generator for high school mathematics. Generate a clean, printable worksheet.
 
 Topic: [TOPIC, e.g. "Differentiation - Chain Rule"]
@@ -222,7 +222,7 @@ Format as a clean table I can paste into Word or Google Docs.`
     {
         title: "Differentiated Task Modifier",
         description: "Take any existing task and create scaffolded, standard, and extension versions.",
-        icon: <Users size={18} className="text-primary" />,
+        icon: <Users size={18} className="text-mait-cyan" />,
         prompt: `I have an existing task/question that I need to differentiate for my class.
 
 Original task: [PASTE THE TASK OR QUESTION HERE]
@@ -252,7 +252,7 @@ const GENERAL_PROMPTS = [
     {
         title: "Personal AI Tutor Setup",
         description: "Turn any AI chatbot into a patient, personalised tutor for any subject.",
-        icon: <Sparkles size={18} className="text-primary" />,
+        icon: <Sparkles size={18} className="text-mait-cyan" />,
         prompt: `You are my personal tutor. Here are your rules:
 
 MY DETAILS:
@@ -319,7 +319,7 @@ IMPORTANT: If you're not sure about something, say so. Don't make up facts. I'd 
     {
         title: "Weekly Study Planner",
         description: "Create a personalised study schedule that accounts for your energy levels and commitments.",
-        icon: <FileText size={18} className="text-primary" />,
+        icon: <FileText size={18} className="text-mait-cyan" />,
         prompt: `Help me create a realistic weekly study plan.
 
 My subjects: [LIST ALL YOUR SUBJECTS]
@@ -367,9 +367,9 @@ export default function AIResources() {
     const [activeTab, setActiveTab] = useState('students')
 
     const tabs = [
-        { id: 'students', label: 'Students', icon: <GraduationCap size={16} />, color: 'text-primary' },
-        { id: 'teachers', label: 'Teachers', icon: <BookOpen size={16} />, color: 'text-accent' },
-        { id: 'general', label: 'Everyone', icon: <Sparkles size={16} />, color: 'text-secondary' },
+        { id: 'students', label: 'Students', icon: <GraduationCap size={16} />, color: 'text-mait-cyan' },
+        { id: 'teachers', label: 'Teachers', icon: <BookOpen size={16} />, color: 'text-mait-cosmic' },
+        { id: 'general', label: 'Everyone', icon: <Sparkles size={16} />, color: 'text-mait-neon' },
     ]
 
     const prompts = {
@@ -385,11 +385,11 @@ export default function AIResources() {
     }
 
     return (
-        <div className="min-h-screen bg-cosmic noise-overlay selection:bg-primary/30">
+        <div className="min-h-screen bg-cosmic noise-overlay text-white selection:bg-mait-cyan/30">
             <div className="fixed inset-0 pointer-events-none opacity-[0.02]"
                 style={{
-                    backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
-                                     linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
+                    backgroundImage: `linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+                                     linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px)`,
                     backgroundSize: '60px 60px'
                 }}
             />
@@ -401,9 +401,9 @@ export default function AIResources() {
                     FREE RESOURCES
                 </div>
                 <h2 className="animate-reveal animate-reveal-3 text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">
-                    <span className="gradient-text-primary">AI Resources</span>
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-mait-cyan to-mait-neon">AI Resources</span>
                 </h2>
-                <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed">
+                <p className="animate-reveal animate-reveal-4 text-white/60 text-lg max-w-lg mx-auto leading-relaxed">
                     Free prompts, system prompts, and guides. Copy, paste, and start using AI effectively.
                 </p>
             </div>
@@ -415,8 +415,8 @@ export default function AIResources() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-display text-sm transition-all duration-300 border ${activeTab === tab.id
-                            ? 'bg-primary/15 border-primary/40 text-primary'
-                            : 'bg-surface-1 border-surface-3 text-muted-foreground hover:border-primary/20 hover:text-foreground'
+                            ? 'bg-primary/15 border-primary/40 text-mait-cyan'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:border-primary/20 hover:text-white'
                             }`}
                     >
                         {tab.icon}
@@ -427,7 +427,7 @@ export default function AIResources() {
 
             {/* Tab Description */}
             <div className="relative z-10 text-center px-6 mb-8">
-                <p className="text-muted-foreground text-sm max-w-xl mx-auto">
+                <p className="text-white/60 text-sm max-w-xl mx-auto">
                     {descriptions[activeTab]}
                 </p>
             </div>
@@ -447,27 +447,27 @@ export default function AIResources() {
                 <h3 className="font-display text-xl font-bold mb-6 text-center">How to Use These Prompts</h3>
                 <div className="grid md:grid-cols-3 gap-4">
                     <div className="glass-card rounded-xl p-5 text-center">
-                        <div className="text-3xl font-display font-bold text-primary mb-2">1</div>
+                        <div className="text-3xl font-display font-bold text-mait-cyan mb-2">1</div>
                         <h4 className="font-display text-sm font-bold mb-1">Copy</h4>
-                        <p className="text-muted-foreground text-xs">Click the copy button on any prompt above</p>
+                        <p className="text-white/60 text-xs">Click the copy button on any prompt above</p>
                     </div>
                     <div className="glass-card rounded-xl p-5 text-center">
                         <div className="text-3xl font-display font-bold text-accent mb-2">2</div>
                         <h4 className="font-display text-sm font-bold mb-1">Paste</h4>
-                        <p className="text-muted-foreground text-xs">Open any AI chatbot and paste the prompt</p>
+                        <p className="text-white/60 text-xs">Open any AI chatbot and paste the prompt</p>
                     </div>
                     <div className="glass-card rounded-xl p-5 text-center">
                         <div className="text-3xl font-display font-bold text-secondary mb-2">3</div>
                         <h4 className="font-display text-sm font-bold mb-1">Customise</h4>
-                        <p className="text-muted-foreground text-xs">Replace the [BRACKETS] with your details</p>
+                        <p className="text-white/60 text-xs">Replace the [BRACKETS] with your details</p>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="relative z-10 py-6 text-center border-t border-surface-2">
-                <p className="text-muted-foreground text-sm font-display">
-                    Built by <a href="https://mentalmaths.au" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-accent transition-colors">Mental Maths Mentor</a> · Free for everyone
+            <footer className="relative z-10 py-6 text-center border-t border-white/5">
+                <p className="text-white/60 text-sm font-display">
+                    Built by <a href="https://mentalmaths.au" target="_blank" rel="noopener noreferrer" className="text-mait-cyan hover:text-accent transition-colors">Mental Maths Mentor</a> · Free for everyone
                 </p>
             </footer>
         </div>

@@ -4,32 +4,32 @@ import { BookOpen } from 'lucide-react';
 
 const YEAR_LEVELS = [
     {
-        label: 'Kindergarten',
+        label: 'Kindy',
         value: 'es1',
         subjects: ['Mathematics', 'English', 'Science', 'HSIE', 'Other']
     },
     {
-        label: 'Stage 1 (Yr 1 & 2)',
+        label: 'Stage 1 (Yr 1-2)',
         value: 's1',
         subjects: ['Mathematics', 'English', 'Science', 'HSIE', 'Other']
     },
     {
-        label: 'Stage 2 (Yr 3 & 4)',
+        label: 'Stage 2 (Yr 3-4)',
         value: 's2',
         subjects: ['Mathematics', 'English', 'Science', 'HSIE', 'Other']
     },
     {
-        label: 'Stage 3 (Yr 5 & 6)',
+        label: 'Stage 3 (Yr 5-6)',
         value: 's3',
         subjects: ['Mathematics', 'English', 'Science', 'HSIE', 'Other']
     },
     {
-        label: 'Stage 4 (Yr 7 & 8)',
+        label: 'Stage 4 (Yr 7-8)',
         value: 's4',
         subjects: ['Mathematics', 'English', 'Science', 'HSIE', 'Other']
     },
     {
-        label: 'Stage 5 (Yr 9 & 10)',
+        label: 'Stage 5 (Yr 9-10)',
         value: 's5',
         subjects: ['Mathematics', 'English', 'Science', 'HSIE', 'Other']
     },
@@ -92,10 +92,10 @@ export default function Step1YearLevel({
         >
             <div className="space-y-4">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                    <div className="w-8 h-8 rounded-full bg-mait-cyan/20 text-mait-cyan flex items-center justify-center font-bold text-sm">
                         1
                     </div>
-                    <h3 className="text-xl font-display font-bold">Select Year & Subject</h3>
+                    <h3 className="text-xl font-bold text-white">Select Year & Subject</h3>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -104,18 +104,18 @@ export default function Step1YearLevel({
                             key={level.label}
                             type="button"
                             onClick={() => handleYearChange(level.label)}
-                            className={`p-4 rounded-2xl border-2 transition-all text-center flex flex-col items-center justify-center gap-1 min-h-[100px] ${
+                            className={`p-4 rounded-xl transition-all text-center flex flex-col items-center justify-center gap-1 min-h-[80px] ${
                                 selectedYear === level.label
-                                    ? 'border-primary bg-primary/10 shadow-sm shadow-primary/5'
-                                    : 'border-surface-3 bg-surface-1/50 hover:border-primary/40 hover:bg-surface-2'
+                                    ? 'bg-mait-cosmic text-white shadow-neon-purple border border-mait-cosmic/50'
+                                    : 'glass-card text-white/70 hover:text-white hover:bg-white/10'
                             }`}
                         >
-                            <span className={`font-display font-medium ${selectedYear === level.label ? 'text-primary' : 'text-foreground'}`}>
+                            <span className={`font-medium ${selectedYear === level.label ? 'text-white' : 'text-white/80'}`}>
                                 {level.label.split('(')[0].trim()}
                             </span>
                             {level.label.includes('(') && (
-                                <span className={`text-xs font-medium ${selectedYear === level.label ? 'text-primary/80' : 'text-muted-foreground'}`}>
-                                    {level.label.match(/\\(([^)]+)\\)/)?.[1]}
+                                <span className={`text-xs font-medium ${selectedYear === level.label ? 'text-white/80' : 'text-white/50'}`}>
+                                    {level.label.match(/\(([^)]+)\)/)?.[1]}
                                 </span>
                             )}
                         </button>
@@ -123,9 +123,9 @@ export default function Step1YearLevel({
                 </div>
             </div>
 
-            <div className="space-y-4 pt-4 border-t border-surface-3/50">
-                <label className="block text-sm font-display font-medium text-foreground flex items-center gap-2">
-                    <BookOpen size={16} className="text-muted-foreground" />
+            <div className="space-y-4 pt-4 border-t border-white/10">
+                <label className="text-sm font-medium text-white/80 flex items-center gap-2">
+                    <BookOpen size={16} className="text-mait-cyan" />
                     Focus Subject
                 </label>
                 
@@ -135,10 +135,10 @@ export default function Step1YearLevel({
                             key={subj}
                             type="button"
                             onClick={() => handleSubjectChange(subj)}
-                            className={`p-3 rounded-xl border text-sm font-display transition-all ${
+                            className={`p-3 rounded-xl transition-all ${
                                 selectedSubject === subj
-                                    ? 'border-secondary bg-secondary/10 text-secondary shadow-sm shadow-secondary/5 font-semibold'
-                                    : 'border-surface-3 bg-surface-1/50 text-muted-foreground hover:border-secondary/40 hover:text-foreground'
+                                    ? 'bg-mait-cosmic/20 border border-mait-cosmic/50 text-white shadow-neon-purple font-semibold'
+                                    : 'glass-card text-white/70 hover:text-white'
                             }`}
                         >
                             {subj}
@@ -152,8 +152,8 @@ export default function Step1YearLevel({
                         animate={{ opacity: 1, height: 'auto' }}
                         className="mt-4 animate-reveal"
                     >
-                        <div className="bg-surface-2/40 p-4 rounded-xl border border-surface-3/50 space-y-3">
-                            <label className="block text-xs font-display uppercase tracking-wider text-muted-foreground">
+                        <div className="glass-card p-4 rounded-xl border border-white/10 space-y-3">
+                            <label className="block text-xs uppercase tracking-wider text-white/60">
                                 Custom Subject Name
                             </label>
                             <input
@@ -161,11 +161,11 @@ export default function Step1YearLevel({
                                 value={customSubject}
                                 onChange={(e) => setCustomSubject(e.target.value)}
                                 placeholder="e.g. Software Engineering..."
-                                className="input-base w-full py-3"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-mait-cyan/50 outline-none transition-all placeholder:text-white/30"
                                 autoFocus
                             />
-                            <p className="text-[11px] text-muted-foreground italic flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-secondary inline-block"></span>
+                            <p className="text-[11px] text-white/50 italic flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-mait-cyan inline-block"></span>
                                 Entering a custom subject automatically switches the generator to "Topic Specification" mode (Manual Entry).
                             </p>
                         </div>

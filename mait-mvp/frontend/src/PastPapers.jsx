@@ -354,13 +354,13 @@ export default function PastPapers({ navigate }) {
     }
 
     return (
-        <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay">
+        <div className="min-h-screen pt-20 flex flex-col bg-cosmic noise-overlay">
 
             {/* Body: sidebar + viewer */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 max-w-7xl mx-auto w-full">
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
-                <aside className="w-64 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
+                <aside className="w-64 shrink-0 flex flex-col sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto border-r border-surface-2/50 bg-black/20 backdrop-blur-xl rounded-l-2xl shadow-neon-purple/10">
 
                     {/* Exam Timer */}
                     <ExamTimer suggestedDuration={suggestedDuration} />
@@ -473,7 +473,7 @@ export default function PastPapers({ navigate }) {
 
                 {/* ── Viewer ──────────────────────────────────────────────── */}
                 {/* ── Resource Dashboard ────────────────────────────────────────── */}
-                <main className="flex-1 overflow-y-auto custom-scrollbar bg-background/20">
+                <main className="flex-1 overflow-y-auto custom-scrollbar bg-black/10 backdrop-blur-sm rounded-r-2xl border-y border-r border-surface-2/50 shadow-neon-purple/5">
                     <div className="max-w-5xl mx-auto px-6 py-12">
                         {/* Intro Section */}
                         <div className="mb-12">
@@ -486,7 +486,7 @@ export default function PastPapers({ navigate }) {
                         {/* Primary Resource Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
                             {/* THSC Card */}
-                            <div className="glass-card card-shine rounded-2xl p-8 flex flex-col group border border-surface-3/50 hover:border-primary/40 transition-all duration-500">
+                            <div className="glass-card-strong card-shine rounded-2xl p-8 flex flex-col group border border-primary/20 hover:border-primary/40 transition-all duration-500 hover:shadow-neon-purple">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                                         <FileText className="text-primary" size={24} />
@@ -520,7 +520,7 @@ export default function PastPapers({ navigate }) {
                             </div>
 
                             {/* First Education Card */}
-                            <div className="glass-card card-shine rounded-2xl p-8 flex flex-col group border border-surface-3/50 hover:border-secondary/40 transition-all duration-500">
+                            <div className="glass-card-strong card-shine rounded-2xl p-8 flex flex-col group border border-secondary/20 hover:border-secondary/40 transition-all duration-500 hover:shadow-neon-blue">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center border border-secondary/20">
                                         <ClipboardList className="text-secondary" size={24} />
@@ -563,7 +563,7 @@ export default function PastPapers({ navigate }) {
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="glass-card p-6 rounded-xl border border-surface-3/30 hover:bg-surface-2/20 transition-all group">
+                                <div className="glass-card-strong p-6 rounded-xl border border-primary/20 hover:border-primary/40 transition-all group hover:shadow-neon-purple/50">
                                     <h4 className="font-display text-base font-bold mb-2 flex items-center gap-2">
                                         <Sparkles size={16} className="text-primary" />
                                         AI Worksheet Generator
@@ -579,7 +579,7 @@ export default function PastPapers({ navigate }) {
                                     </button>
                                 </div>
 
-                                <div className="glass-card p-6 rounded-xl border border-surface-3/30 hover:bg-surface-2/20 transition-all group">
+                                <div className="glass-card-strong p-6 rounded-xl border border-accent/20 hover:border-accent/40 transition-all group hover:shadow-[0_0_20px_rgba(var(--accent-rgb),0.3)]">
                                     <h4 className="font-display text-base font-bold mb-2 flex items-center gap-2">
                                         <Timer size={16} className="text-accent" />
                                         Exam Timer

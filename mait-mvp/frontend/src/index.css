@@ -43,6 +43,16 @@
     --primary-rgb: 0, 242, 219;
     --secondary-rgb: 167, 139, 250;
     --accent-rgb: 255, 87, 51;
+
+    /* MAIT Cosmic Kimi Colors */
+    --mait-cosmic-purple: 265 85% 60%;
+    --mait-neon-cyan: 180 85% 55%;
+    --mait-electric-violet: 270 100% 65%;
+    --mait-deep-space: 230 25% 5%;
+    --mait-nebula: 280 60% 25%;
+    --mait-aurora: 170 80% 45%;
+    --mait-solar: 45 100% 55%;
+    --mait-mars: 15 85% 55%;
   }
 }
 
@@ -969,6 +979,91 @@ body {
       0 0 40px hsl(180 85% 55% / 0.2),
       0 0 60px hsl(180 85% 55% / 0.1);
   }
+
+  .neon-text-purple {
+    text-shadow: 
+      0 0 10px hsl(265 85% 60% / 0.8),
+      0 0 20px hsl(265 85% 60% / 0.5),
+      0 0 30px hsl(265 85% 60% / 0.3);
+  }
+  
+  .neon-text-cyan {
+    text-shadow: 
+      0 0 10px hsl(180 85% 55% / 0.8),
+      0 0 20px hsl(180 85% 55% / 0.5),
+      0 0 30px hsl(180 85% 55% / 0.3);
+  }
+
+  /* Scrollbar Styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(230 15% 10%);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(265 85% 60% / 0.4);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(265 85% 60% / 0.6);
+  }
+  
+  /* Loading/Processing States */
+  .processing-pulse {
+    animation: processing-pulse 1.5s ease-in-out infinite;
+  }
+}
+
+/* Stagger Animation Delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Animate shimmer */
+.animate-shimmer {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.1) 50%, 
+    transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes processing-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes cosmic-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 /* Animate typing cursor */

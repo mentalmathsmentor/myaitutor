@@ -23,11 +23,10 @@ export default function Step2Topics({
     const getSyllabusContent = () => {
         if (!SYLLABUS_DATA) return null;
 
-        // Base mapping for subjects that have distinct syllabus files in Y11/Y12
         if (selectedYear === 'Year 11' || selectedYear === 'Year 12') {
             const subjectKeyMap = {
-                'Mathematics Standard': 'Standard',
-                'Mathematics Advanced': 'Advanced',
+                'Mathematics Standard': 'Standard 2',
+                'Mathematics Advanced': 'Mathematics Advanced',
                 'Mathematics Extension 1': 'Extension 1',
                 'Mathematics Extension 2': 'Extension 2',
                 'Physics': 'Physics',
@@ -36,24 +35,37 @@ export default function Step2Topics({
                 'Engineering Studies': 'Engineering Studies'
             };
 
-            const keySuffix = subjectKeyMap[selectedSubject];
-            if (!keySuffix) return SYLLABUS_DATA[selectedYear]?.[selectedSubject];
+            const mappedSubject = subjectKeyMap[selectedSubject] || selectedSubject;
+            
+            // Extract the data for the specific year
+            const getYearData = (subjectName) => {
+                const subjData = SYLLABUS_DATA[subjectName];
+                if (!subjData || !subjData.years) return {};
+                
+                const yearData = subjData.years[selectedYear] || [];
+                // Convert array of modules into an object mapping for the current logic
+                const formatted = {};
+                yearData.forEach(mod => {
+                    formatted[mod.name] = {};
+                    (mod.subtopics || []).forEach(subt => {
+                        // In the old system, points were an array of strings. We only have code & name now.
+                        formatted[mod.name][subt.name] = [subt.code + ": " + subt.name];
+                    });
+                });
+                return formatted;
+            };
 
-            const primaryKey = `${selectedYear} ${keySuffix}`;
-            let baseData = SYLLABUS_DATA[primaryKey] || {};
+            const baseData = getYearData(mappedSubject);
 
             // Mathematics Extension Dependencies Rules
             if (selectedSubject === 'Mathematics Extension 2') {
-                const advKey = `${selectedYear} Advanced`;
-                const ext1Key = `${selectedYear} Extension 1`;
-                const advData = SYLLABUS_DATA[advKey] || {};
-                const ext1Data = SYLLABUS_DATA[ext1Key] || {};
+                const advData = getYearData('Mathematics Advanced');
+                const ext1Data = getYearData('Extension 1');
                 return { ...advData, ...ext1Data, ...baseData };
             }
 
             if (selectedSubject === 'Mathematics Extension 1') {
-                const advKey = `${selectedYear} Advanced`;
-                const advData = SYLLABUS_DATA[advKey] || {};
+                const advData = getYearData('Mathematics Advanced');
                 return { ...advData, ...baseData };
             }
 
@@ -95,15 +107,15 @@ export default function Step2Topics({
                 <div className="flex items-start justify-between">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                            <div className="w-8 h-8 rounded-full bg-mait-cyan/20 text-mait-cyan flex items-center justify-center font-bold text-sm">
                                 2
                             </div>
-                            <h3 className="text-xl font-display font-bold flex items-center gap-2">
-                                <Edit3 className="text-primary" size={20} />
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Edit3 className="text-mait-cyan" size={20} />
                                 Manual Topic Specification
                             </h3>
                         </div>
-                        <p className="text-sm text-muted-foreground pr-4">
+                        <p className="text-sm text-white/50 pr-4">
                             {selectedSubject === 'Other' 
                                 ? `You've selected a custom subject (${customSubject || 'Other'}). Please type or paste your specific topics.`
                                 : `Type or paste your specific topics, question types, or syllabus dot-points below.`}
@@ -111,16 +123,16 @@ export default function Step2Topics({
                     </div>
 
                     {hasModeToggle && (
-                        <div className="flex bg-surface-2/50 rounded-lg p-1 border border-surface-3 mt-1 shrink-0">
+                        <div className="flex glass-card rounded-lg p-1 mt-1 shrink-0">
                             <button 
                                 onClick={() => setMode('A')}
-                                className={`px-4 py-1.5 rounded-md text-xs font-display font-medium transition-all ${mode === 'A' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-3/50'}`}
+                                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'A' ? 'bg-mait-cosmic text-white shadow-neon-purple' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
                             >
                                 Official Syllabus
                             </button>
                             <button 
                                 onClick={() => setMode('B')}
-                                className={`px-4 py-1.5 rounded-md text-xs font-display font-medium transition-all ${mode === 'B' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-3/50'}`}
+                                className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'B' ? 'bg-mait-cosmic text-white shadow-neon-purple' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
                             >
                                 Manual Entry
                             </button>
@@ -133,7 +145,7 @@ export default function Step2Topics({
                         value={rawQuestions}
                         onChange={(e) => setRawQuestions(e.target.value)}
                         placeholder="e.g. Generate 5 limits questions, 3 differentiation chain rule questions, and 2 word problems involving rates of change..."
-                        className="w-full h-full min-h-[400px] bg-surface-1/30 border border-surface-3/50 rounded-2xl p-4 text-sm font-display focus:border-primary/50 outline-none resize-none transition-all placeholder:text-surface-4"
+                        className="w-full h-full min-h-[400px] bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-mait-cyan/50 outline-none resize-none transition-all placeholder:text-white/30"
                     />
                 </div>
             </motion.div>
@@ -145,19 +157,19 @@ export default function Step2Topics({
         return (
             <motion.div className="space-y-6 animate-reveal">
                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">2</div>
-                    <h3 className="text-xl font-display font-bold flex items-center gap-2">
-                        <ListPlus className="text-primary" size={20} />
+                    <div className="w-8 h-8 rounded-full bg-mait-cyan/20 text-mait-cyan flex items-center justify-center font-bold text-sm">2</div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <ListPlus className="text-mait-cyan" size={20} />
                         Select Syllabus Topics
                     </h3>
                 </div>
-                <div className="bg-surface-2/20 border border-amber-500/20 p-6 rounded-2xl text-center">
-                    <p className="text-amber-500/80 font-display">
+                <div className="glass-card border-yellow-500/20 p-6 rounded-2xl text-center">
+                    <p className="text-yellow-400 font-medium">
                         We don't have the official syllabus mapped for <strong>{selectedSubject}</strong> ({selectedYear}) yet.
                     </p>
                     <button 
                         onClick={() => setMode('B')}
-                        className="mt-4 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 rounded-lg text-sm font-medium transition-colors"
+                        className="mt-4 px-4 py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 rounded-lg text-sm font-medium transition-colors"
                     >
                         Switch to Manual Entry
                     </button>
@@ -235,30 +247,30 @@ export default function Step2Topics({
             <div className="flex items-start justify-between">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                        <div className="w-8 h-8 rounded-full bg-mait-cyan/20 text-mait-cyan flex items-center justify-center font-bold text-sm">
                             2
                         </div>
-                        <h3 className="text-xl font-display font-bold flex items-center gap-2">
-                            <ListPlus className="text-primary" size={20} />
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <ListPlus className="text-mait-cyan" size={20} />
                             Select Syllabus Topics
                         </h3>
                     </div>
-                    <p className="text-sm text-muted-foreground pr-4">
+                    <p className="text-sm text-white/50 pr-4">
                         Select specific dot-points from the {selectedSubject} syllabus to perfectly align the generated questions.
                     </p>
                 </div>
                 
                 {selectedSubject !== 'Other' && (
-                    <div className="flex bg-surface-2/50 rounded-lg p-1 border border-surface-3 mt-1 shrink-0">
+                    <div className="flex glass-card rounded-lg p-1 mt-1 shrink-0">
                         <button 
                             onClick={() => setMode('A')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-display font-medium transition-all ${mode === 'A' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-3/50'}`}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'A' ? 'bg-mait-cosmic text-white shadow-neon-purple' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
                         >
                             Official Syllabus
                         </button>
                         <button 
                             onClick={() => setMode('B')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-display font-medium transition-all ${mode === 'B' ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface-3/50'}`}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${mode === 'B' ? 'bg-mait-cosmic text-white shadow-neon-purple' : 'text-white/50 hover:text-white hover:bg-white/10'}`}
                         >
                             Manual Entry
                         </button>
@@ -266,20 +278,20 @@ export default function Step2Topics({
                 )}
             </div>
 
-            <div className={`bg-surface-1/30 rounded-2xl border border-surface-3/50 min-h-[400px] overflow-hidden flex flex-col flex-1`}>
+            <div className={`glass-card rounded-2xl min-h-[400px] overflow-hidden flex flex-col flex-1`}>
                 {/* Search & Selected Header */}
-                <div className="p-4 border-b border-surface-3/50 flex flex-wrap items-center gap-4 bg-surface-2/20">
+                <div className="p-4 border-b border-white/10 flex flex-wrap items-center gap-4 bg-white/5">
                     <div className="relative flex-1 min-w-[200px]">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                         <input
                             type="text"
                             placeholder="Find a topic or point..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-surface-1 border border-surface-3 rounded-xl pl-9 pr-4 py-2 text-xs font-display focus:border-primary/50 outline-none transition-all"
+                            className="w-full bg-black/20 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:border-mait-cyan/50 outline-none transition-all"
                         />
                     </div>
-                    <div className="text-[10px] font-display uppercase tracking-widest text-primary font-bold flex items-center gap-2">
+                    <div className="text-[10px] uppercase tracking-widest text-mait-cyan font-bold flex items-center gap-2">
                         <CheckCircle2 size={12} />
                         {selectedPoints.length} Points Selected
                     </div>
@@ -287,7 +299,7 @@ export default function Step2Topics({
                         <button
                             type="button"
                             onClick={() => setSelectedPoints([])}
-                            className="text-[10px] font-display uppercase tracking-widest hover:text-foreground transition-colors text-muted-foreground"
+                            className="text-[10px] uppercase tracking-widest hover:text-white transition-colors text-white/50"
                         >
                             Clear All
                         </button>
@@ -315,7 +327,7 @@ export default function Step2Topics({
                                         <button
                                             type="button"
                                             onClick={() => toggleModule(mod)}
-                                            className="p-1 hover:bg-surface-3 rounded transition-colors"
+                                            className="p-1 hover:bg-white/10 rounded transition-colors text-white"
                                         >
                                             {expandedModules[mod] || searchQuery ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                         </button>
@@ -324,15 +336,15 @@ export default function Step2Topics({
                                                 type="checkbox"
                                                 checked={isModuleSelected(mod)}
                                                 onChange={() => toggleModuleSelection(mod)}
-                                                className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
+                                                className="w-3.5 h-3.5 rounded border-white/20 accent-mait-cyan cursor-pointer"
                                             />
-                                            <span className="text-xs font-display font-bold text-foreground group-hover:text-primary transition-colors">{mod}</span>
+                                            <span className="text-xs font-bold text-white group-hover:text-mait-cyan transition-colors">{mod}</span>
                                         </label>
                                     </div>
 
                                     {/* Subtopics */}
                                     {(expandedModules[mod] || searchQuery) && (
-                                        <div className="ml-6 space-y-3 border-l border-surface-3 pl-4 py-2">
+                                        <div className="ml-6 space-y-3 border-l border-white/10 pl-4 py-2">
                                             {Object.keys(currentSyllabus[mod] || {}).map(subt => {
                                                 const points = currentSyllabus[mod][subt];
                                                 const hasPointMatch = points.some(p => p.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -347,7 +359,7 @@ export default function Step2Topics({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => toggleSubtopic(subt)}
-                                                                className="p-1 hover:bg-surface-3 rounded transition-colors flex-shrink-0"
+                                                                className="p-1 hover:bg-white/10 text-white/80 rounded transition-colors flex-shrink-0"
                                                             >
                                                                 {expandedSubtopics[subt] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                                             </button>
@@ -356,9 +368,9 @@ export default function Step2Topics({
                                                                     type="checkbox"
                                                                     checked={isSubtopicSelected(mod, subt)}
                                                                     onChange={() => toggleSubtopicSelection(mod, subt)}
-                                                                    className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer flex-shrink-0"
+                                                                    className="w-3.5 h-3.5 rounded border-white/20 accent-mait-cyan cursor-pointer flex-shrink-0"
                                                                 />
-                                                                <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide truncate">
+                                                                <span className="text-[11px] text-white/70 font-semibold group-hover:text-white tracking-wide truncate">
                                                                     {subt}
                                                                 </span>
                                                             </label>
@@ -375,20 +387,20 @@ export default function Step2Topics({
                                                                     return (
                                                                         <label
                                                                             key={idx}
-                                                                            className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${
+                                                                            className={`flex items-start gap-3 p-3 rounded-xl border border-white/5 transition-all cursor-pointer select-none ${
                                                                                 selectedPoints.includes(point) 
-                                                                                ? 'bg-primary/5 border-primary/20 text-foreground' 
-                                                                                : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'
+                                                                                ? 'bg-mait-cyan/10 border-mait-cyan/30 text-white shadow-neon-blue' 
+                                                                                : 'bg-black/20 text-white/60 hover:border-mait-cyan/20'
                                                                             }`}
                                                                         >
                                                                             <input
                                                                                 type="checkbox"
                                                                                 checked={selectedPoints.includes(point)}
                                                                                 onChange={() => handlePointToggle(point)}
-                                                                                className="mt-0.5 w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer flex-shrink-0"
+                                                                                className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 accent-mait-cyan cursor-pointer flex-shrink-0"
                                                                             />
                                                                             <span 
-                                                                                className="text-[11px] font-display leading-relaxed" 
+                                                                                className="text-[11px] leading-relaxed" 
                                                                                 dangerouslySetInnerHTML={{ __html: renderLatex(point) }} 
                                                                             />
                                                                         </label>

@@ -7,7 +7,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X, ListPlus, Clock, BookOpen } from 'lucide-react'
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
-import NavBar from './components/NavBar'
 import NewLandingPage from './NewLandingPage'
 import Navigation from './components/Navigation'
 import LandingPage from './LandingPage'
@@ -849,7 +848,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'resources') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
                 <div className="pt-14">
                     <ErrorBoundary><AIResources /></ErrorBoundary>
                 </div>
@@ -861,9 +860,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'worksheets') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
                 <div className="pt-14">
-                    <ErrorBoundary><WorksheetGenerator /></ErrorBoundary>
+                    <ErrorBoundary><WorksheetGenerator navigate={navigateTo} /></ErrorBoundary>
                 </div>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
@@ -873,7 +872,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'privacy') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
                 <div className="pt-14">
                     <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
                 </div>
@@ -885,7 +884,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'pastpapers') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
                 <div className="pt-14 h-screen">
                     <ErrorBoundary><PastPapers /></ErrorBoundary>
                 </div>
@@ -897,7 +896,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     // Chat pages (app / demo) — NavBar + HUD toolbar + chat
     return (
         <>
-            <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+            <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} scrollToSection={scrollToSection} />
             <div className={`h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30 ${(isDemoMode && isIdle) ? 'idle-dim' : ''}`}>
                 {/* Decorative grid overlay */}
                 <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0"
