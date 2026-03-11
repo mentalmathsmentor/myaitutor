@@ -17,9 +17,11 @@ import KeystrokeAnalytics from './components/KeystrokeAnalytics'
 import PastPapers from './PastPapers'
 import TopicSidebar from './components/TopicSidebar'
 import PrivacyPolicy from './pages/PrivacyPolicy'
+import MathInput from './components/MathInput'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 import useAuth from './hooks/useAuth'
 import AvatarDisplay from './components/AvatarDisplay'
+import { sanitizeForCloudQuery, formatPrivacyWarning } from './utils/privacy'
 
 const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo', 'privacy'];
 
@@ -79,7 +81,9 @@ function App() {
     const {
         authUser,
         studentId,
+        sessionToken,
         authLoading,
+        authReady,
         handleLoginSubmit: authLoginSubmit,
         handleGoogleSuccess: authGoogleSuccess,
         handleLogout: authLogout,
@@ -89,6 +93,7 @@ function App() {
             navigateTo('app');
         },
         onLogout: () => {
+            setPendingGuessFlow(null);
             setMessages([
                 { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
             ]);
@@ -99,6 +104,7 @@ function App() {
     const handleLoginSubmit = authLoginSubmit;
     const handleGoogleSuccess = authGoogleSuccess;
     const handleLogout = authLogout;
+    const getAuthHeaders = () => (sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {});
 
     const [context, setContext] = useState(null)
     const [messages, setMessages] = useState([
@@ -134,6 +140,7 @@ function App() {
     const autoSavePromptShown = useRef(false)
     const [pendingQueue, setPendingQueue] = useState([])
     const [showQueueConfirm, setShowQueueConfirm] = useState(null) // string (pending text) or null
+    const [pendingGuessFlow, setPendingGuessFlow] = useState(null)
 
     // Inactivity Tracker State
     const [isIdle, setIsIdle] = useState(false)
@@ -156,13 +163,13 @@ function App() {
     });
 
     const fetchContext = async () => {
-        if (isDemoMode) {
+        if (isDemoMode || !authReady || !studentId || !sessionToken) {
             setContext({ fatigue_metric: { current_score: 0, status: 'FRESH' } });
             return;
         }
         try {
             const res = await fetch(`${API_URL}/context/${studentId}`, {
-                headers: { 'X-Student-Id': studentId }
+                headers: getAuthHeaders()
             });
             if (!res.ok) throw new Error("Backend unreachable");
             const data = await res.json();
@@ -287,6 +294,14 @@ function App() {
         });
     }, [userProfile.nickname, userProfile.subject]);
 
+    useEffect(() => {
+        if (!authUser?.name) return;
+        setUserProfile(prev => ({
+            ...prev,
+            nickname: authUser.name.split(' ')[0] || prev.nickname,
+        }));
+    }, [authUser]);
+
     // Lock body scroll on chat pages to prevent double scrollbar
     useEffect(() => {
         if (page === 'app' || page === 'demo') {
@@ -298,10 +313,10 @@ function App() {
     }, [page]);
 
     const fetchHistory = async () => {
-        if (isDemoMode) return;
+        if (isDemoMode || !authReady || !studentId || !sessionToken) return;
         try {
             const res = await fetch(`${API_URL}/history/${studentId}?limit=50`, {
-                headers: { 'X-Student-Id': studentId }
+                headers: getAuthHeaders()
             });
             if (!res.ok) return;
             const data = await res.json();
@@ -309,6 +324,7 @@ function App() {
                 const historyMessages = data.messages.map(msg => ({
                     role: msg.role === 'user' ? 'user' : 'bot',
                     text: msg.content,
+                    structured: msg.structured_response,
                     source: 'history',
                     timestamp: msg.timestamp
                 }));
@@ -326,11 +342,12 @@ function App() {
         try {
             await fetch(`${API_URL}/reset/${studentId}`, {
                 method: 'POST',
-                headers: { 'X-Student-Id': studentId }
+                headers: getAuthHeaders()
             });
             setMessages([
                 { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
             ]);
+            setPendingGuessFlow(null);
             fetchContext();
         } catch (e) {
             console.warn("Failed to clear history:", e);
@@ -421,11 +438,11 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (page === 'app' || page === 'demo') {
+        if ((page === 'app' || page === 'demo') && authReady) {
             fetchContext();
             fetchHistory();
         }
-    }, [page, studentId])
+    }, [page, studentId, authReady, sessionToken])
 
     // Auto-scroll logic
     const isNearBottom = useRef(true);
@@ -536,6 +553,142 @@ function App() {
         }
     }, [isDemoMode]);
 
+    const splitIntoChunks = (text) => {
+        const isInsideLatex = (str) => {
+            const dollarCount = (str.match(/(?<!\\)\$/g) || []).length;
+            return dollarCount % 2 !== 0;
+        };
+
+        const rawChunks = text.split(/\n\n+/).filter(c => c.trim());
+        const finalChunks = [];
+        let currentBuilder = "";
+
+        rawChunks.forEach(chunk => {
+            if (currentBuilder) {
+                currentBuilder += "\n\n" + chunk;
+                if (!isInsideLatex(currentBuilder)) {
+                    finalChunks.push(currentBuilder);
+                    currentBuilder = "";
+                }
+                return;
+            }
+            if (isInsideLatex(chunk)) { currentBuilder = chunk; return; }
+            if (chunk.includes('$$')) { finalChunks.push(chunk.trim()); return; }
+
+            const sentences = chunk.split(/(?<=[.!?])\s+(?=[A-Z])/);
+            let currentSubChunk = '';
+
+            sentences.forEach((sentence) => {
+                if (isInsideLatex(sentence) || isInsideLatex(currentSubChunk + (currentSubChunk ? ' ' : '') + sentence)) {
+                    currentSubChunk += (currentSubChunk ? ' ' : '') + sentence;
+                    return;
+                }
+                if (currentSubChunk && (currentSubChunk.split(/[.!?]/).length > 2 || currentSubChunk.length > 150)) {
+                    finalChunks.push(currentSubChunk.trim());
+                    currentSubChunk = sentence;
+                } else {
+                    currentSubChunk += (currentSubChunk ? ' ' : '') + sentence;
+                }
+            });
+            if (currentSubChunk.trim()) finalChunks.push(currentSubChunk.trim());
+        });
+
+        if (currentBuilder) finalChunks.push(currentBuilder);
+        return finalChunks.filter(c => c.trim());
+    };
+
+    const appendCloudResponse = (data, options = {}) => {
+        const nextMessages = [...(options.prefixMessages || [])];
+
+        if (options.guessText) {
+            nextMessages.push({
+                role: 'bot',
+                text: `Nice first pass. You thought:\n\n${options.guessText}\n\nNow here is the verified breakdown.`,
+                source: 'guess-review'
+            });
+        }
+
+        if (data?.structured_response) {
+            nextMessages.push({
+                role: 'bot',
+                text: data.structured_response.explanation,
+                source: 'api',
+                structured: data.structured_response
+            });
+        } else if (data?.sections?.length > 0) {
+            data.sections.forEach((section, index) => {
+                nextMessages.push({ role: 'bot', text: section, source: 'api', sectionIndex: index });
+            });
+        } else if (data?.response) {
+            nextMessages.push({ role: 'bot', text: data.response, source: 'api' });
+        } else {
+            nextMessages.push({ role: 'bot', text: "Hmm, the cloud couldn't find an answer.", source: 'api' });
+        }
+
+        setMessages(prev => [...prev.filter(m => m.source !== 'loading' && m.source !== 'typing'), ...nextMessages]);
+        if (data?.context) {
+            setContext(data.context);
+        }
+    };
+
+    const requestCloudTutor = async (question, options = {}) => {
+        if (!studentId || !sessionToken) {
+            throw new Error('Session is still initializing. Try again in a moment.');
+        }
+
+        const airlock = sanitizeForCloudQuery(question);
+        const safeQuery = airlock.sanitizedText || question.trim();
+        const response = await fetch(`${API_URL}/query`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                query: safeQuery,
+                sanitized_query: safeQuery,
+                guess_text: options.guessText || undefined,
+                complexity: options.complexity ?? 5
+            })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            const detail = data?.detail;
+            const message = typeof detail === 'string'
+                ? detail
+                : detail?.message || 'Cloud connection failed. Try again?';
+            throw new Error(message);
+        }
+
+        return {
+            data,
+            privacyNotice: formatPrivacyWarning(airlock.findings),
+        };
+    };
+
+    const shouldUseGuessFirst = (text) => {
+        if (isDemoMode || !shouldQueryAPI(text)) {
+            return false;
+        }
+        return text.trim().split(/\s+/).length >= 4;
+    };
+
+    useEffect(() => {
+        if (!pendingGuessFlow?.guessSubmitted || !pendingGuessFlow?.response) {
+            return;
+        }
+
+        appendCloudResponse(pendingGuessFlow.response, {
+            prefixMessages: pendingGuessFlow.privacyNotice
+                ? [{ role: 'bot', text: pendingGuessFlow.privacyNotice, source: 'privacy' }]
+                : [],
+            guessText: pendingGuessFlow.guessText,
+        });
+        setPendingGuessFlow(null);
+    }, [pendingGuessFlow]);
+
     const processUserMessage = async (userText) => {
         if (!isModelReady && downloadProgress) {
             setMessages(prev => [...prev, { role: 'user', text: userText, source: 'queued' }]);
@@ -554,95 +707,58 @@ function App() {
             return;
         }
 
+        if (shouldUseGuessFirst(userText)) {
+            setMessages(prev => [...prev, {
+                role: 'bot',
+                text: "Before I show the verified method, what's your first instinct or next step?",
+                source: 'guess-first'
+            }]);
+            setPendingGuessFlow({
+                question: userText,
+                guessSubmitted: false,
+                guessText: '',
+                response: null,
+                privacyNotice: null,
+            });
+
+            requestCloudTutor(userText)
+                .then(({ data, privacyNotice }) => {
+                    setPendingGuessFlow(prev => prev && prev.question === userText
+                        ? { ...prev, response: data, privacyNotice }
+                        : prev
+                    );
+                })
+                .catch((error) => {
+                    console.warn('Guess-first cloud request failed:', error);
+                    setMessages(prev => [...prev, { role: 'bot', text: error.message || 'Cloud connection failed. Try again?', source: 'error' }]);
+                    setPendingGuessFlow(null);
+                });
+            return;
+        }
+
         setLoading(true);
         const needsAPI = !isDemoMode && (localBrainChoice === 'cloud' || shouldQueryAPI(userText));
 
         if (localBrainChoice === 'cloud' && !isDemoMode) {
             try {
                 setMessages(prev => [...prev, { role: 'bot', text: 'typing', source: 'typing' }]);
-
-                const apiResponse = await fetch(`${API_URL}/query`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
-                    body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
+                const { data, privacyNotice } = await requestCloudTutor(userText);
+                appendCloudResponse(data, {
+                    prefixMessages: privacyNotice
+                        ? [{ role: 'bot', text: privacyNotice, source: 'privacy' }]
+                        : [],
                 });
-
-                setMessages(prev => prev.filter(m => m.source !== 'typing'));
-
-                if (apiResponse.ok) {
-                    const data = await apiResponse.json();
-                    if (data.sections && data.sections.length > 0) {
-                        data.sections.forEach((section, i) => {
-                            setTimeout(() => {
-                                setMessages(prev => [...prev, { role: 'bot', text: section, source: 'api', sectionIndex: i }]);
-                            }, i * 100);
-                        });
-                    } else if (data.response) {
-                        setMessages(prev => [...prev, { role: 'bot', text: data.response, source: 'api' }]);
-                    } else {
-                        setMessages(prev => [...prev, { role: 'bot', text: "Hmm, the cloud couldn't find an answer.", source: 'api' }]);
-                    }
-                    if (data.context) setContext(data.context);
-                } else {
-                    setMessages(prev => [...prev, { role: 'bot', text: "Cloud connection failed. Try again?", source: 'error' }]);
-                }
             } catch (err) {
                 console.warn("API Error", err);
-                setMessages(prev => prev.filter(m => m.source !== 'typing'));
-                setMessages(prev => [...prev, { role: 'bot', text: "Cloud connection failed. Try again?", source: 'error' }]);
+                setMessages(prev => [...prev.filter(m => m.source !== 'typing'), { role: 'bot', text: err.message || "Cloud connection failed. Try again?", source: 'error' }]);
             }
             setLoading(false);
             return;
         }
 
-        const splitIntoChunks = (text) => {
-            const isInsideLatex = (str) => {
-                const dollarCount = (str.match(/(?<!\\)\$/g) || []).length;
-                return dollarCount % 2 !== 0;
-            };
-
-            let rawChunks = text.split(/\n\n+/).filter(c => c.trim());
-            const finalChunks = [];
-            let currentBuilder = "";
-
-            rawChunks.forEach(chunk => {
-                if (currentBuilder) {
-                    currentBuilder += "\n\n" + chunk;
-                    if (!isInsideLatex(currentBuilder)) {
-                        finalChunks.push(currentBuilder);
-                        currentBuilder = "";
-                    }
-                    return;
-                }
-                if (isInsideLatex(chunk)) { currentBuilder = chunk; return; }
-                if (chunk.includes('$$')) { finalChunks.push(chunk.trim()); return; }
-
-                const sentences = chunk.split(/(?<=[.!?])\s+(?=[A-Z])/);
-                let currentSubChunk = '';
-
-                sentences.forEach((sentence) => {
-                    if (isInsideLatex(sentence) || isInsideLatex(currentSubChunk + (currentSubChunk ? ' ' : '') + sentence)) {
-                        currentSubChunk += (currentSubChunk ? ' ' : '') + sentence;
-                        return;
-                    }
-                    if (currentSubChunk && (currentSubChunk.split(/[.!?]/).length > 2 || currentSubChunk.length > 150)) {
-                        finalChunks.push(currentSubChunk.trim());
-                        currentSubChunk = sentence;
-                    } else {
-                        currentSubChunk += (currentSubChunk ? ' ' : '') + sentence;
-                    }
-                });
-                if (currentSubChunk.trim()) finalChunks.push(currentSubChunk.trim());
-            });
-
-            if (currentBuilder) finalChunks.push(currentBuilder);
-            return finalChunks.filter(c => c.trim());
-        };
-
         try {
             setMessages(prev => [...prev, { role: 'bot', text: 'typing', source: 'typing' }]);
 
-            // Context Dependent Extension mapping for AI reasoning processing time
             if (isDemoMode && currentTimeoutDelay.current !== 180000) {
                 currentTimeoutDelay.current = 180000;
                 resetIdleTimer();
@@ -661,29 +777,14 @@ PERSONALITY:
 - Be patient and supportive, never condescending.
 - Address the user by name occasionally.
 
-**OUTPUT FORMAT (CRITICAL):**
-- Keep each response to **1-2 sentences MAX**
-- Use **bold** for key terms and emphasis
-- Put ALL formulas on their own line, wrapped in $$ like: $$f(x) = x^2$$
-- Separate distinct thoughts with double newlines
-- Never output long paragraphs - break everything into bite-sized chunks
+OUTPUT FORMAT:
+- Keep each response to 1-2 sentences max.
+- Use bold for key terms.
+- Put standalone formulas on their own lines in $$...$$.
+- Separate distinct thoughts with double newlines.
+- Guide the student instead of dumping the full answer immediately.
 
-CONVERSATION RULES:
-1. GREETINGS: Respond naturally and briefly
-2. MATH PROBLEMS: Use GUESS FIRST - ask student to try before helping
-3. CONCEPTS: Explain in short chunks, one idea at a time
-
-**ANTI-HALLUCINATION:**
-- Never confidently state answers unless certain
-- Say "double-check that yourself" for calculations
-- Guide students to work it out rather than giving answers
-
-**MATH FORMATTING:**
-- Use $$ for block formulas (standalone lines)
-- ALWAYS use \\frac{a}{b} for fractions, never a/b. This gives the big vinculum.
-- Example: First Principles uses: $$f'(x) = \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h}$$
-
-Use LaTeX: $$block formulas$$ and $inline math$`;
+Use LaTeX for maths.`;
 
             await modelService.streamChat(
                 messages.concat({ role: 'user', text: userText }).map(m => ({
@@ -720,42 +821,25 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 });
             }
 
-            // Only query cloud API in full mode, never in demo
             if (needsAPI) {
                 try {
                     setMessages(prev => [...prev, { role: 'bot', text: "Fetching detailed info from the cloud...", source: 'loading' }]);
-
-                    const apiResponse = await fetch(`${API_URL}/query`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Student-Id': studentId
-                        },
-                        body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
+                    const { data, privacyNotice } = await requestCloudTutor(userText);
+                    appendCloudResponse(data, {
+                        prefixMessages: privacyNotice
+                            ? [{ role: 'bot', text: privacyNotice, source: 'privacy' }]
+                            : [],
                     });
-
-                    if (apiResponse.ok) {
-                        const data = await apiResponse.json();
-                        setMessages(prev => prev.filter(m => m.source !== 'loading'));
-                        if (data.sections && data.sections.length > 0) {
-                            data.sections.forEach((section, i) => {
-                                setMessages(prev => [...prev, { role: 'bot', text: section, source: 'api', sectionIndex: i }]);
-                            });
-                        }
-                        if (data.context) setContext(data.context);
-                    } else {
-                        setMessages(prev => prev.filter(m => m.source !== 'loading'));
-                    }
                 } catch (apiErr) {
                     console.warn("API query failed:", apiErr);
-                    setMessages(prev => prev.filter(m => m.source !== 'loading'));
+                    setMessages(prev => [...prev.filter(m => m.source !== 'loading'), { role: 'bot', text: apiErr.message || 'Cloud connection failed. Try again?', source: 'error' }]);
                 }
             }
 
             setLoading(false);
         } catch (err) {
             console.warn("Chat error", err);
-            setMessages(prev => [...prev, { role: 'bot', text: "Something went wrong. Try again?", source: 'error' }]);
+            setMessages(prev => [...prev.filter(m => m.source !== 'typing'), { role: 'bot', text: "Something went wrong. Try again?", source: 'error' }]);
             setLoading(false);
         }
     };
@@ -764,6 +848,16 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         e.preventDefault();
         if (!input.trim()) return;
         const userText = input.trim();
+        if (pendingGuessFlow && !pendingGuessFlow.guessSubmitted) {
+            setInput('');
+            setMessages(prev => [...prev, { role: 'user', text: userText }]);
+            keystrokeRecordMessage();
+            if (!pendingGuessFlow.response) {
+                setMessages(prev => [...prev, { role: 'bot', text: 'Nice. I’m checking that against the verified solution now...', source: 'loading' }]);
+            }
+            setPendingGuessFlow(prev => prev ? { ...prev, guessText: userText, guessSubmitted: true } : prev);
+            return;
+        }
         if (loading) {
             setShowQueueConfirm(userText);
             return;
@@ -786,6 +880,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     const cancelQueueMessage = () => {
         setShowQueueConfirm(null);
     };
+
+    const submitCurrentInput = () => handleStudy({ preventDefault: () => {} });
 
     const shouldQueryAPI = (text) => {
         const complexKeywords = ['explain', 'prove', 'derive', 'why', 'how does', 'step by step'];
@@ -1242,6 +1338,61 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                                             <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                                             <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                                         </div>
+                                                    ) : msg.structured ? (
+                                                        <div className="space-y-3">
+                                                            <div className="rounded-2xl border border-primary/25 bg-black/20 p-3">
+                                                                <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-primary/70">
+                                                                    <span>Glass Box</span>
+                                                                    <span>{msg.structured.verification_status || 'model_only'}</span>
+                                                                </div>
+                                                                <p className="mb-1 text-[11px] uppercase tracking-[0.16em] text-white/45">
+                                                                    Core Truth
+                                                                </p>
+                                                                <div className="chat-prose">
+                                                                    <ReactMarkdown
+                                                                        remarkPlugins={[remarkMath]}
+                                                                        rehypePlugins={[rehypeKatex]}
+                                                                    >
+                                                                        {msg.structured.core_truth || msg.text}
+                                                                    </ReactMarkdown>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="chat-prose">
+                                                                <ReactMarkdown
+                                                                    remarkPlugins={[remarkMath]}
+                                                                    rehypePlugins={[rehypeKatex]}
+                                                                >
+                                                                    {msg.structured.explanation || msg.text}
+                                                                </ReactMarkdown>
+                                                            </div>
+
+                                                            {msg.structured.hints?.length > 0 && (
+                                                                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                                                                    <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-white/45">
+                                                                        Hints
+                                                                    </p>
+                                                                    <ul className="space-y-1 text-sm text-white/80">
+                                                                        {msg.structured.hints.map((hint, hintIndex) => (
+                                                                            <li key={hintIndex}>- {hint}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+
+                                                            {msg.structured.retrieval_context?.length > 0 && (
+                                                                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                                                                    <p className="mb-2 text-[11px] uppercase tracking-[0.16em] text-white/45">
+                                                                        Retrieval Context
+                                                                    </p>
+                                                                    <ul className="space-y-1 text-xs text-white/60">
+                                                                        {msg.structured.retrieval_context.map((item, itemIndex) => (
+                                                                            <li key={itemIndex}>- {item}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     ) : (
                                                         <div className="chat-prose">
                                                             <ReactMarkdown
@@ -1272,36 +1423,42 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                     </span>
                                 </div>
                             )}
-                            <form onSubmit={handleStudy} className="max-w-2xl mx-auto relative flex gap-3">
-                                <input
+                            <form onSubmit={handleStudy} className="max-w-2xl mx-auto space-y-3">
+                                <MathInput
                                     autoFocus
-                                    type="text"
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={setInput}
                                     disabled={context?.fatigue_metric?.status === 'LOCKOUT'}
+                                    rows={2}
+                                    submitOnEnter
+                                    onSubmitShortcut={submitCurrentInput}
                                     placeholder={
-                                        (!isModelReady && isDemoMode) || (localBrainChoice === 'local' && !isModelReady)
-                                            ? "Model is downloading... please wait"
-                                            : context?.fatigue_metric?.status === 'LOCKOUT'
-                                                ? "Rest period active..."
-                                                : loading
-                                                    ? "Type your next question to queue it..."
-                                                    : "Ask about calculus, trigonometry, statistics..."
+                                        pendingGuessFlow && !pendingGuessFlow.guessSubmitted
+                                            ? "Type your first guess or next step..."
+                                            : (!isModelReady && isDemoMode) || (localBrainChoice === 'local' && !isModelReady)
+                                                ? "Model is downloading... please wait"
+                                                : context?.fatigue_metric?.status === 'LOCKOUT'
+                                                    ? "Rest period active..."
+                                                    : loading
+                                                        ? "Type your next question to queue it..."
+                                                        : "Ask about calculus, trigonometry, statistics..."
                                     }
-                                    className="input-base flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    inputClassName="input-base w-full min-h-[84px] resize-none pr-24 disabled:opacity-40 disabled:cursor-not-allowed"
                                     {...keystrokeAttachToInput()}
                                 />
-                                <button
-                                    type="submit"
-                                    disabled={!input.trim() || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode) || (localBrainChoice === 'local' && !isModelReady)}
-                                    className={`p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none transition-all ${loading && input.trim()
-                                        ? 'bg-accent text-accent-foreground hover:opacity-90 shadow-glow-sm'
-                                        : 'btn-primary'
-                                        }`}
-                                    title={loading ? 'Queue this question' : 'Send'}
-                                >
-                                    {loading && input.trim() ? <ListPlus size={18} /> : <Send size={18} />}
-                                </button>
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={!input.trim() || context?.fatigue_metric?.status === 'LOCKOUT' || (!isModelReady && isDemoMode) || (localBrainChoice === 'local' && !isModelReady)}
+                                        className={`p-3.5 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-none transition-all ${loading && input.trim()
+                                            ? 'bg-accent text-accent-foreground hover:opacity-90 shadow-glow-sm'
+                                            : 'btn-primary'
+                                            }`}
+                                        title={loading ? 'Queue this question' : pendingGuessFlow && !pendingGuessFlow.guessSubmitted ? 'Send your guess' : 'Send'}
+                                    >
+                                        {loading && input.trim() ? <ListPlus size={18} /> : <Send size={18} />}
+                                    </button>
+                                </div>
                             </form>
                         </footer>
                     </div>

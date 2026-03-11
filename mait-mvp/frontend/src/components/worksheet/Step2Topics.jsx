@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import MathInput from '../MathInput';
 
 export default function Step2Topics({
     mode,
@@ -125,11 +126,13 @@ export default function Step2Topics({
                 </div>
 
                 <div className="flex-1 min-h-[400px]">
-                    <textarea
+                    <MathInput
                         value={rawQuestions}
-                        onChange={(e) => setRawQuestions(e.target.value)}
+                        onChange={setRawQuestions}
                         placeholder="e.g. Generate 5 limits questions, 3 differentiation chain rule questions, and 2 word problems involving rates of change..."
-                        className="w-full h-full min-h-[400px] bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-mait-cyan/50 outline-none resize-none transition-all placeholder:text-white/30"
+                        rows={12}
+                        className="h-full"
+                        inputClassName="w-full h-full min-h-[400px] bg-white/5 border border-white/10 rounded-2xl p-4 pr-24 text-sm text-white focus:border-mait-cyan/50 outline-none resize-none transition-all placeholder:text-white/30"
                     />
                 </div>
             </motion.div>

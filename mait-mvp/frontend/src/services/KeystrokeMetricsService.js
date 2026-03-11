@@ -25,6 +25,11 @@ class KeystrokeMetricsService {
         this.messageTimestamps = [];
     }
 
+    getAuthHeaders() {
+        const token = localStorage.getItem('mait_session_token');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
     /**
      * Load historical keystroke data from localStorage
      */
@@ -446,7 +451,10 @@ class KeystrokeMetricsService {
         try {
             const response = await fetch(`${API_URL}/keystroke-metrics`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeaders(),
+                },
                 body: JSON.stringify({
                     student_id: studentId,
                     metrics: {
@@ -483,7 +491,9 @@ class KeystrokeMetricsService {
     async getProfile(studentId) {
         const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
         try {
-            const response = await fetch(`${API_URL}/keystroke-profile/${studentId}`);
+            const response = await fetch(`${API_URL}/keystroke-profile/${studentId}`, {
+                headers: this.getAuthHeaders(),
+            });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }

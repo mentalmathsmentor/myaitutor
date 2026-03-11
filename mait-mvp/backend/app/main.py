@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -20,6 +21,8 @@ from .models import StudentContext, FatigueStatus, KeystrokeSubmission, Keystrok
 from .services import wellness_engine, educational_agent
 from .services import storage
 from .services.auth import verify_google_token
+from .services.session_auth import create_session_token, require_session, require_student_session
+from .services.privacy_airlock import enforce_cloud_safe_text
 from .services.syllabus_service import syllabus_service
 from .services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from .services.artifact_engine import (
@@ -44,11 +47,9 @@ if SENTRY_DSN:
 
 app = FastAPI(title="MAIT MVP (The Glitch Edition)")
 
-# Simple Auth: Verify Student-ID header for sensitive data
+# Session auth: every protected route must bind to the signed bearer session token.
 async def verify_student_auth(request: Request, student_id: str):
-    header_id = request.headers.get("X-Student-Id")
-    if header_id and header_id != student_id:
-        raise HTTPException(status_code=403, detail="Unauthorized: Student ID mismatch")
+    await require_student_session(request, student_id)
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
@@ -79,6 +80,8 @@ app.add_middleware(
 class InteractionRequest(BaseModel):
     student_id: str = Field(default="default_user", min_length=1, max_length=100)
     query: str = Field(..., min_length=1, max_length=1000, description="Student's question")
+    sanitized_query: Optional[str] = Field(default=None, max_length=1000, description="Privacy-scrubbed query for cloud execution")
+    guess_text: Optional[str] = Field(default=None, max_length=1000, description="Student's first guess, if supplied")
     complexity: int = Field(default=1, ge=1, le=10, description="Question complexity (1-10)")
 
 @app.get("/")
@@ -92,6 +95,55 @@ async def get_or_create_context(student_id: str) -> StudentContext:
         await storage.save_context(student_id, context)
     return context
 
+
+def build_auth_response(student_id: str, kind: str, user: Optional[dict] = None, google_id: Optional[str] = None):
+    return {
+        "student_id": student_id,
+        "session_token": create_session_token(student_id=student_id, kind=kind, google_id=google_id),
+        "user": user,
+    }
+
+
+async def migrate_student_records(old_id: str, new_id: str) -> List[str]:
+    if old_id == new_id:
+        return []
+
+    migrated: List[str] = []
+    old_context = await storage.get_context(old_id)
+    new_context = await storage.get_context(new_id)
+
+    if old_context and not new_context:
+        old_context.student_id = new_id
+        await storage.save_context(new_id, old_context)
+        migrated.append("context")
+
+    old_history = await storage.get_history(old_id, limit=200)
+    if old_history:
+        for msg in old_history:
+            await storage.save_message(
+                new_id,
+                msg["role"],
+                msg["content"],
+                fatigue_state=msg.get("fatigue_state"),
+                blooms_level=msg.get("blooms_level"),
+                topic=msg.get("topic"),
+            )
+        await storage.clear_history(old_id)
+        migrated.append("conversation_history")
+
+    old_user = await storage.get_user_by_student_id(old_id)
+    if old_user and old_user.get("google_id"):
+        await storage.upsert_user(
+            google_id=old_user["google_id"],
+            student_id=new_id,
+            email=old_user.get("email", ""),
+            name=old_user.get("name", ""),
+            picture=old_user.get("picture", ""),
+        )
+        migrated.append("user_profile")
+
+    return migrated
+
 @app.get("/context/{student_id}", response_model=StudentContext)
 async def get_context(request: Request, student_id: str):
     await verify_student_auth(request, student_id)
@@ -101,6 +153,8 @@ async def get_context(request: Request, student_id: str):
 @limiter.limit("20/minute")
 async def interact(request: Request, body: InteractionRequest):
     await verify_student_auth(request, body.student_id)
+    privacy_result = enforce_cloud_safe_text(body.query, body.sanitized_query)
+    effective_query = privacy_result["sanitized_text"]
     # 1. Retrieve/Create Context
     context = await get_or_create_context(body.student_id)
 
@@ -125,25 +179,29 @@ async def interact(request: Request, body: InteractionRequest):
          response_text = "Whoa, you just hit the wall. Break time!"
     else:
          # Use async Gemini integration - fatigue + bloom state injected into system prompt
-         response_text = await educational_agent.generate_response_async(body.query, context)
+         response_text = await educational_agent.generate_response_async(effective_query, context)
 
     # 5. Save Context (bloom level updated by educational_agent)
     await storage.save_context(body.student_id, context)
 
     return {
         "response": response_text,
+        "privacy": privacy_result,
         "context": context,
         "blooms_level": context.pedagogical_state.blooms_level.value,
         "mastery_score": context.pedagogical_state.mastery_score
     }
 
 @app.post("/query")
+@limiter.limit("20/minute")
 async def query_api(request: Request, body: InteractionRequest):
     """
     Query the API and return chunked sections for display as separate message bubbles.
     This is used when the frontend detects a query that needs API enrichment.
     """
     await verify_student_auth(request, body.student_id)
+    privacy_result = enforce_cloud_safe_text(body.query, body.sanitized_query)
+    effective_query = privacy_result["sanitized_text"]
     # Get context
     context = await get_or_create_context(body.student_id)
 
@@ -153,17 +211,18 @@ async def query_api(request: Request, body: InteractionRequest):
         return {
             "sections": ["LOCKOUT ACTIVE. Go take a break, mate."],
             "source": "api",
+            "privacy": privacy_result,
             "context": context,
             "blooms_level": context.pedagogical_state.blooms_level.value,
             "mastery_score": context.pedagogical_state.mastery_score
         }
 
     # Update fatigue
-    context = wellness_engine.update_fatigue(context, request.complexity)
+    context = wellness_engine.update_fatigue(context, body.complexity)
 
     # Bloom's Taxonomy - assess query and get teaching strategy
     topic = context.pedagogical_state.current_topic or "Mathematics"
-    demonstrated_level = assess_response_level(request.query, topic)
+    demonstrated_level = assess_response_level(effective_query, topic)
     bloom_instruction = get_bloom_teaching_strategy(context.pedagogical_state.blooms_level)
 
     # Advance bloom level based on demonstrated cognitive level
@@ -175,7 +234,7 @@ async def query_api(request: Request, body: InteractionRequest):
     # RAG retrieval via FAISS
     try:
         syllabus_context = syllabus_service.get_relevant_context(
-            query=request.query,
+            query=effective_query,
             fatigue_status=context.fatigue_metric.status,
             year=None
         )
@@ -184,45 +243,48 @@ async def query_api(request: Request, body: InteractionRequest):
         syllabus_context = ""
 
     # Fetch conversation history
-    conversation_history = await storage.get_history(request.student_id, limit=20)
+    conversation_history = await storage.get_history(body.student_id, limit=20)
 
     # Prune history if token estimate exceeds budget
-    token_estimate = await storage.get_history_token_estimate(request.student_id)
+    token_estimate = await storage.get_history_token_estimate(body.student_id)
     if token_estimate > 6000 and conversation_history:
         while conversation_history and token_estimate > 6000:
             removed = conversation_history.pop(0)
             token_estimate -= len(removed["content"]) // 4
 
     gemini_response = await get_gemini_response(
-        question=request.query,
+        question=effective_query,
         syllabus_context=syllabus_context,
         fatigue_state=context.fatigue_metric.status,
         current_topic=topic,
         bloom_instruction=bloom_instruction,
-        conversation_history=conversation_history
+        conversation_history=conversation_history,
+        guess_text=body.guess_text,
     )
 
     # Save both messages to conversation history
     response_text = gemini_response.get("text", "")
     await storage.save_message(
-        request.student_id, "user", request.query,
+        body.student_id, "user", effective_query,
         fatigue_state=context.fatigue_metric.status.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
     await storage.save_message(
-        request.student_id, "assistant", response_text,
+        body.student_id, "assistant", response_text,
         fatigue_state=context.fatigue_metric.status.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
 
     # Save context (bloom level updated above)
-    await storage.save_context(request.student_id, context)
+    await storage.save_context(body.student_id, context)
 
     return {
         "sections": gemini_response.get("sections", [gemini_response.get("text", "Error")]),
         "source": "api",
+        "privacy": privacy_result,
+        "structured_response": gemini_response.get("structured_response"),
         "context": context,
         "blooms_level": context.pedagogical_state.blooms_level.value,
         "mastery_score": context.pedagogical_state.mastery_score
@@ -251,6 +313,7 @@ async def get_history(request: Request, student_id: str, limit: int = Query(defa
 
 class GoogleLoginRequest(BaseModel):
     token: str = Field(..., description="Google ID token from frontend sign-in")
+    merge_from_student_id: Optional[str] = Field(default=None, description="Anonymous student session to merge into the Google account")
 
 class MigrateRequest(BaseModel):
     old_student_id: str = Field(..., description="Anonymous student ID to migrate from")
@@ -260,6 +323,16 @@ class MigrateRequest(BaseModel):
 class AccessCodeRequest(BaseModel):
     code: str
 
+
+@app.post("/auth/anonymous")
+async def create_anonymous_session():
+    student_id = f"student_{datetime.now().strftime('%Y%m%d')}_{os.urandom(8).hex()}"
+    context = StudentContext(student_id=student_id)
+    await storage.save_context(student_id, context)
+    payload = build_auth_response(student_id=student_id, kind="anonymous")
+    payload["status"] = "anonymous"
+    return payload
+
 @app.post("/auth/verify-access")
 async def verify_access_code(body: AccessCodeRequest):
     """
@@ -267,9 +340,7 @@ async def verify_access_code(body: AccessCodeRequest):
     """
     received_code = body.code.strip().upper()
     expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026").strip().upper()
-    
-    print(f"DEBUG AUTH: Received '{received_code}', Expected '{expected_code}'")
-    
+
     if received_code == expected_code:
         return {"status": "success"}
     
@@ -300,10 +371,17 @@ async def google_login(body: GoogleLoginRequest):
             name=user_info["name"],
             picture=user_info["picture"],
         )
+        if body.merge_from_student_id and body.merge_from_student_id != user["student_id"]:
+            await migrate_student_records(body.merge_from_student_id, user["student_id"])
+        payload = build_auth_response(
+            student_id=user["student_id"],
+            kind="google",
+            google_id=google_id,
+            user=user,
+        )
         return {
             "status": "existing",
-            "student_id": user["student_id"],
-            "user": user,
+            **payload,
         }
 
     # New user — create stable student_id from Google sub
@@ -315,66 +393,61 @@ async def google_login(body: GoogleLoginRequest):
         name=user_info["name"],
         picture=user_info["picture"],
     )
+    migrated = []
+    if body.merge_from_student_id and body.merge_from_student_id != student_id:
+        migrated = await migrate_student_records(body.merge_from_student_id, student_id)
+    payload = build_auth_response(
+        student_id=student_id,
+        kind="google",
+        google_id=google_id,
+        user=user,
+    )
     return {
         "status": "new",
-        "student_id": student_id,
-        "user": user,
+        "migrated": migrated,
+        **payload,
     }
 
 
 @app.post("/auth/migrate")
-async def migrate_student_data(body: MigrateRequest):
+async def migrate_student_data(request: Request, body: MigrateRequest):
     """
     Migrate data from an anonymous student_id to a Google-based student_id.
     This transfers conversation history, student context, and keystroke data
     so nothing is lost when a student logs in with Google for the first time.
     """
+    await verify_student_auth(request, body.old_student_id)
     old_id = body.old_student_id
     new_id = body.new_student_id
 
     if old_id == new_id:
         return {"status": "no_migration_needed"}
 
-    # Check if old student has any data
-    old_context = await storage.get_context(old_id)
-    new_context = await storage.get_context(new_id)
-
-    migrated = []
-
-    # Migrate context (only if new student has no context yet)
-    if old_context and not new_context:
-        old_context.student_id = new_id
-        await storage.save_context(new_id, old_context)
-        migrated.append("context")
-
-    # Migrate conversation history
-    old_history = await storage.get_history(old_id, limit=200)
-    if old_history:
-        for msg in old_history:
-            await storage.save_message(
-                new_id, msg["role"], msg["content"],
-                fatigue_state=msg.get("fatigue_state"),
-                blooms_level=msg.get("blooms_level"),
-                topic=msg.get("topic"),
-            )
-        await storage.clear_history(old_id)
-        migrated.append("conversation_history")
-
     return {
         "status": "migrated",
-        "migrated": migrated,
+        "migrated": await migrate_student_records(old_id, new_id),
         "old_student_id": old_id,
         "new_student_id": new_id,
     }
 
 
-@app.get("/auth/me/{student_id}")
-async def get_user_profile(student_id: str):
+@app.get("/auth/me")
+async def get_user_profile(request: Request):
     """Get the user profile associated with a student_id."""
+    claims = await require_session(request)
+    student_id = claims["sub"]
     user = await storage.get_user_by_student_id(student_id)
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+        return {
+            "student_id": student_id,
+            "kind": claims.get("kind", "anonymous"),
+            "user": None,
+        }
+    return {
+        "student_id": student_id,
+        "kind": claims.get("kind", "anonymous"),
+        "user": user,
+    }
 
 
 # ============================================
@@ -382,11 +455,12 @@ async def get_user_profile(student_id: str):
 # ============================================
 
 @app.post("/keystroke-metrics")
-async def submit_keystroke_metrics(submission: KeystrokeSubmission):
+async def submit_keystroke_metrics(request: Request, submission: KeystrokeSubmission):
     """
     Submit keystroke metrics for a typing session.
     Updates the student's keystroke profile with aggregated stats.
     """
+    await verify_student_auth(request, submission.student_id)
     context = await get_or_create_context(submission.student_id)
     profile = context.keystroke_profile
     metrics = submission.metrics
@@ -445,8 +519,9 @@ async def submit_keystroke_metrics(submission: KeystrokeSubmission):
 
 
 @app.get("/keystroke-profile/{student_id}")
-async def get_keystroke_profile(student_id: str):
+async def get_keystroke_profile(request: Request, student_id: str):
     """Get the keystroke psychometric profile for a student."""
+    await verify_student_auth(request, student_id)
     context = await get_or_create_context(student_id)
     return {
         "student_id": student_id,
@@ -455,8 +530,9 @@ async def get_keystroke_profile(student_id: str):
 
 
 @app.delete("/keystroke-profile/{student_id}")
-async def reset_keystroke_profile(student_id: str):
+async def reset_keystroke_profile(request: Request, student_id: str):
     """Reset keystroke profile for a student."""
+    await verify_student_auth(request, student_id)
     context = await get_or_create_context(student_id)
     context.keystroke_profile = KeystrokeProfile()
     await storage.save_context(student_id, context)
@@ -533,6 +609,7 @@ async def generate_worksheet(request: Request, body: WorksheetRequest):
             media_type="application/pdf",
             filename=filename,
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            background=BackgroundTask(shutil.rmtree, os.path.dirname(pdf_path), True),
         )
 
     except RuntimeError as e:

@@ -1,35 +1,84 @@
-import { useState, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react';
+
+
+const AUTH_USER_KEY = 'mait_auth_user';
+const STUDENT_ID_KEY = 'mait_student_id';
+const SESSION_TOKEN_KEY = 'mait_session_token';
+
 
 const getSavedAuthUser = () => {
     try {
-        const saved = localStorage.getItem('mait_auth_user');
+        const saved = localStorage.getItem(AUTH_USER_KEY);
         return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-};
-
-const getStudentId = () => {
-    let id = localStorage.getItem('mait_student_id');
-    if (!id) {
-        id = `student_${crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)}`;
-        localStorage.setItem('mait_student_id', id);
+    } catch {
+        return null;
     }
-    return id;
 };
 
-/**
- * useAuth — manages auth state (user, studentId), Google login, access code fallback, logout.
- * Extracted from App.jsx to reduce monolith complexity.
- *
- * @param {string} apiUrl - The backend API base URL
- * @param {object} callbacks - Side-effect callbacks: { onLoginSuccess, onLogout }
- */
+
+const getSavedStudentId = () => localStorage.getItem(STUDENT_ID_KEY);
+const getSavedSessionToken = () => localStorage.getItem(SESSION_TOKEN_KEY);
+
+
 export default function useAuth(apiUrl, callbacks = {}) {
     const [authUser, setAuthUser] = useState(getSavedAuthUser);
-    const [studentId, setStudentId] = useState(() => {
-        const saved = getSavedAuthUser();
-        return saved?.student_id || getStudentId();
-    });
+    const [studentId, setStudentId] = useState(getSavedStudentId);
+    const [sessionToken, setSessionToken] = useState(getSavedSessionToken);
     const [authLoading, setAuthLoading] = useState(false);
+    const [authReady, setAuthReady] = useState(Boolean(getSavedSessionToken()));
+
+    const persistSession = useCallback(({ student_id, session_token, user = null }) => {
+        if (student_id) {
+            localStorage.setItem(STUDENT_ID_KEY, student_id);
+            setStudentId(student_id);
+        }
+
+        if (session_token) {
+            localStorage.setItem(SESSION_TOKEN_KEY, session_token);
+            setSessionToken(session_token);
+        }
+
+        if (user) {
+            const authPayload = {
+                student_id,
+                name: user.name,
+                email: user.email,
+                picture: user.picture,
+            };
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authPayload));
+            setAuthUser(authPayload);
+        } else {
+            localStorage.removeItem(AUTH_USER_KEY);
+            setAuthUser(null);
+        }
+    }, []);
+
+    const bootstrapAnonymousSession = useCallback(async () => {
+        setAuthLoading(true);
+        try {
+            const res = await fetch(`${apiUrl}/auth/anonymous`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!res.ok) {
+                throw new Error('Anonymous session bootstrap failed');
+            }
+            const data = await res.json();
+            persistSession(data);
+            return data;
+        } finally {
+            setAuthReady(true);
+            setAuthLoading(false);
+        }
+    }, [apiUrl, persistSession]);
+
+    useEffect(() => {
+        if (!sessionToken) {
+            bootstrapAnonymousSession().catch((error) => {
+                console.error('Failed to bootstrap anonymous session:', error);
+            });
+        }
+    }, [sessionToken, bootstrapAnonymousSession]);
 
     const handleLoginSubmit = useCallback(async (code) => {
         try {
@@ -55,60 +104,46 @@ export default function useAuth(apiUrl, callbacks = {}) {
             const res = await fetch(`${apiUrl}/auth/google`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: credentialResponse.credential }),
+                body: JSON.stringify({
+                    token: credentialResponse.credential,
+                    merge_from_student_id: studentId,
+                }),
             });
-            if (!res.ok) throw new Error('Auth failed');
-            const data = await res.json();
-
-            const user = {
-                student_id: data.student_id,
-                name: data.user.name,
-                email: data.user.email,
-                picture: data.user.picture,
-            };
-
-            // If this is a new Google user and we had anonymous data, migrate it
-            const oldId = localStorage.getItem('mait_student_id');
-            if (data.status === 'new' && oldId && oldId !== data.student_id) {
-                try {
-                    await fetch(`${apiUrl}/auth/migrate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ old_student_id: oldId, new_student_id: data.student_id }),
-                    });
-                } catch (e) {
-                    console.warn('Migration failed (non-fatal):', e);
-                }
+            if (!res.ok) {
+                throw new Error('Auth failed');
             }
 
-            // Persist auth state
-            localStorage.setItem('mait_auth_user', JSON.stringify(user));
-            localStorage.setItem('mait_student_id', data.student_id);
-            setAuthUser(user);
-            setStudentId(data.student_id);
+            const data = await res.json();
+            persistSession(data);
             callbacks.onLoginSuccess?.();
         } catch (e) {
             console.error('Google login error:', e);
         } finally {
             setAuthLoading(false);
+            setAuthReady(true);
         }
-    }, [apiUrl, callbacks]);
+    }, [apiUrl, callbacks, persistSession, studentId]);
 
     const handleLogout = useCallback(() => {
-        localStorage.removeItem('mait_auth_user');
-        const newId = `student_${crypto.randomUUID()}`;
-        localStorage.setItem('mait_student_id', newId);
+        localStorage.removeItem(AUTH_USER_KEY);
+        localStorage.removeItem(STUDENT_ID_KEY);
+        localStorage.removeItem(SESSION_TOKEN_KEY);
         setAuthUser(null);
-        setStudentId(newId);
+        setStudentId(null);
+        setSessionToken(null);
+        setAuthReady(false);
         callbacks.onLogout?.();
     }, [callbacks]);
 
     return {
         authUser,
         studentId,
+        sessionToken,
         authLoading,
+        authReady,
         handleLoginSubmit,
         handleGoogleSuccess,
         handleLogout,
+        bootstrapAnonymousSession,
     };
 }

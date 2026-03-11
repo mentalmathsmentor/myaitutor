@@ -71,6 +71,37 @@ class WorksheetRequest(BaseModel):
         max_length=100,
         description="Optional student name printed on the worksheet header",
     )
+    subject: Optional[str] = Field(
+        default="Mathematics Advanced",
+        max_length=100,
+        description="Course name shown in the worksheet specification",
+    )
+    syllabus_points: List[str] = Field(
+        default_factory=list,
+        description="Explicit syllabus dot-points or topics to target",
+    )
+    manual_prompt: Optional[str] = Field(
+        default=None,
+        max_length=4000,
+        description="Manual topic specification or exact teacher instructions",
+    )
+    include_marking: bool = Field(
+        default=True,
+        description="Whether to add mark allocations per question",
+    )
+    remove_watermark: bool = Field(
+        default=False,
+        description="Whether to remove the MAIT footer watermark",
+    )
+    pedagogical_drills: List[str] = Field(
+        default_factory=list,
+        description="Optional pedagogy directives such as spot-the-error or proof-style prompts",
+    )
+    context_source: Optional[str] = Field(
+        default="builtin",
+        max_length=32,
+        description="Source of knowledge/context used to guide the worksheet request",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -231,15 +262,56 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
         else "Include a blank line in the header: Name: \\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_"
     )
 
+    syllabus_points = (
+        "\n".join(f"- {point}" for point in request.syllabus_points[:25])
+        if request.syllabus_points
+        else "- Use the core curriculum expectations for the selected topic."
+    )
+
+    manual_prompt = request.manual_prompt.strip() if request.manual_prompt else ""
+
+    drill_instructions = {
+        "spot-error": "Include at least one spot-the-error question with a flawed worked solution for students to debug.",
+        "parameter-shift": "Include at least one parameter-shift question where constants change and the student must infer the effect.",
+        "limit-case": "Include at least one limit-case or edge-case analysis task.",
+        "proof-style": "Include at least one proof-style or justification-heavy question.",
+        "word-problems": "Include at least one applied word problem grounded in a realistic context.",
+        "multi-step": "Include at least one multi-step synthesis problem that combines concepts.",
+    }
+    pedagogy_block = (
+        "\n".join(f"- {drill_instructions.get(drill, drill)}" for drill in request.pedagogical_drills)
+        if request.pedagogical_drills
+        else "- No additional pedagogy drills required."
+    )
+
+    marking_instruction = (
+        "Show a right-aligned mark allocation for each question, suitable for exam-style printing."
+        if request.include_marking
+        else "Do not show mark allocations."
+    )
+
+    watermark_instruction = (
+        "Do not include any MAIT or product watermark in the footer."
+        if request.remove_watermark
+        else "A small MAIT footer watermark is acceptable."
+    )
+
     return (
         f"Generate a complete LaTeX worksheet with the following specifications:\n"
+        f"- Subject: {request.subject or 'Mathematics Advanced'}\n"
         f"- Topic: {request.topic}\n"
         f"- NSW Year Level: {request.year_level}\n"
         f"- Number of questions: {request.num_questions}\n"
         f"- Difficulty: {request.difficulty.value}\n"
         f"  Guidance: {difficulty_guidance[request.difficulty]}\n"
         f"- {answer_instruction}\n"
+        f"- {marking_instruction}\n"
+        f"- {watermark_instruction}\n"
         f"- {student_line}\n"
+        f"- Context source: {request.context_source or 'builtin'}\n"
+        f"\nTarget these syllabus points or topic constraints:\n{syllabus_points}\n"
+        f"\nPedagogical drill requirements:\n{pedagogy_block}\n"
+        f"\nManual teacher instructions:\n{manual_prompt or 'None supplied.'}\n"
         f"\nRemember: output ONLY the LaTeX source code, nothing else."
     )
 
@@ -339,6 +411,9 @@ def _sanitize_latex(latex: str) -> str:
         _filter_usepackage,
         latex,
     )
+
+    if re.search(r"\\(input|include|openin|read|write18|immediate\\write18|catcode)", latex):
+        raise RuntimeError("Unsafe TeX command detected in generated worksheet.")
 
     return latex
 

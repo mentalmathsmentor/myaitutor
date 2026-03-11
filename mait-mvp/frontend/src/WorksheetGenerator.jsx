@@ -25,9 +25,13 @@ import {
 import canvasHint from './assets/gemini-canvas-final.png';
 import thinkingHint from './assets/gemini-model-selector.png';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
+
 export default function WorksheetGenerator({ navigate }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState('');
+  const [generationSuccess, setGenerationSuccess] = useState('');
   
   // Gemini Launch Logic
   const [showWarning, setShowWarning] = useState(false);
@@ -146,14 +150,6 @@ export default function WorksheetGenerator({ navigate }) {
     { id: 'word-problems', label: 'Contextual Word Problems', desc: 'Real-world applications' },
     { id: 'multi-step', label: 'Multi-Step Synthesis', desc: 'Complex chained problems' },
   ];
-
-  const toggleTopic = (topic) => {
-    setTopics(prev => 
-      prev.includes(topic) 
-        ? prev.filter(t => t !== topic)
-        : [...prev, topic]
-    );
-  };
 
   const toggleDrill = (drill) => {
     setPedagogicalDrills(prev => 
@@ -319,6 +315,37 @@ ${contentString}
 `;
   };
 
+  const mapDifficulty = () => {
+    if (difficulty <= 1) return 'easy';
+    if (difficulty === 2) return 'medium';
+    if (difficulty === 3) return 'mixed';
+    return 'hard';
+  };
+
+  const getDisplaySubject = () => (
+    selectedSubject === 'Other' && customSubject.trim() ? customSubject.trim() : selectedSubject
+  );
+
+  const buildWorksheetPayload = () => {
+    const yearLevel = Number(selectedYear.match(/\d+/)?.[0] || 12);
+    const displaySubject = getDisplaySubject();
+
+    return {
+      topic: selectedPoints[0] || rawQuestions.split('\n')[0] || displaySubject,
+      subject: displaySubject,
+      year_level: yearLevel,
+      num_questions: questionCount,
+      difficulty: mapDifficulty(),
+      include_answers: includeAnswers,
+      include_marking: includeMarking,
+      remove_watermark: removeWatermark,
+      syllabus_points: selectedPoints,
+      manual_prompt: mode === 'B' ? rawQuestions.trim() : '',
+      pedagogical_drills: pedagogicalDrills,
+      context_source: contextSource,
+    };
+  };
+
   const handleGenerate = async (e) => {
     if (e) e.preventDefault();
     
@@ -331,36 +358,62 @@ ${contentString}
     }
 
     setIsGenerating(true);
-    const promptText = generatePrompt();
+    setGenerationError('');
+    setGenerationSuccess('');
 
     try {
-        await navigator.clipboard.writeText(promptText);
-        setIsCopied(true);
-        setShowWarning(true);
-        
-        setIsGenerating(false);
+        const response = await fetch(`${API_URL}/generate-worksheet`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(buildWorksheetPayload()),
+        });
 
-        launchTimeoutRef.current = setTimeout(() => {
-            setShowCloseButton(true);
-            window.open('https://gemini.google.com/app', '_blank');
-            launchTimeoutRef.current = null;
-        }, 3000);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const detail = errorData?.detail;
+          const message = typeof detail === 'string'
+            ? detail
+            : detail?.message || 'Worksheet generation failed.';
+          throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = downloadUrl;
+        anchor.download = `mait-worksheet-${Date.now()}.pdf`;
+        anchor.click();
+        URL.revokeObjectURL(downloadUrl);
+        setGenerationSuccess('Worksheet PDF generated and downloaded.');
     } catch (err) {
-        console.error('Failed to copy text: ', err);
-        setIsGenerating(false);
-        setShowWarning(true);
-        launchTimeoutRef.current = setTimeout(() => {
-            setShowCloseButton(true);
-            window.open('https://gemini.google.com/app', '_blank');
-            launchTimeoutRef.current = null;
-        }, 3000);
+        console.error('Worksheet generation failed:', err);
+        setGenerationError(err.message || 'Worksheet generation failed.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatePrompt());
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(generatePrompt());
+      setIsCopied(true);
+      setShowWarning(true);
+      setShowCloseButton(false);
+      if (launchTimeoutRef.current) {
+        clearTimeout(launchTimeoutRef.current);
+      }
+      launchTimeoutRef.current = setTimeout(() => {
+        setShowCloseButton(true);
+        window.open('https://gemini.google.com/app', '_blank');
+        launchTimeoutRef.current = null;
+      }, 3000);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy worksheet prompt:', err);
+      setGenerationError('Could not copy the external prompt fallback.');
+    }
   };
 
   const canProceed = () => {
@@ -694,23 +747,33 @@ ${contentString}
                   <ChevronRight className="w-4 h-4 ml-2" />
                 </button>
               ) : (
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="btn-cosmic px-4 py-2 rounded-xl text-white flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Prompt & Launch Gemini
-                    </>
-                  )}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={copyToClipboard}
+                    disabled={isGenerating}
+                    className="btn-glass px-4 py-2 rounded-xl text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy External Prompt
+                  </button>
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating}
+                    className="btn-cosmic px-4 py-2 rounded-xl text-white flex items-center justify-center bg-gradient-to-r from-green-500 to-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                        Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Worksheet PDF
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -781,6 +844,16 @@ ${contentString}
                 <p className="text-2xl font-bold text-white">30-45 seconds</p>
                 <p className="text-xs text-white/50">vs 4+ hours manually</p>
               </div>
+
+              {(generationSuccess || generationError) && (
+                <div className={`mt-4 rounded-xl border p-4 text-sm ${
+                  generationError
+                    ? 'border-red-500/30 bg-red-500/10 text-red-200'
+                    : 'border-green-500/30 bg-green-500/10 text-green-100'
+                }`}>
+                  {generationError || generationSuccess}
+                </div>
+              )}
             </motion.div>
           </div>
         </div>
