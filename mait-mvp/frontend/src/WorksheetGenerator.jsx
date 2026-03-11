@@ -1,72 +1,18 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Sparkles, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, ListFilter, X, Search, ClipboardList, ArrowRight } from 'lucide-react'
-// KaTeX is loaded via CDN in index.html — use window.katex
+import { Sparkles, CheckCircle2, AlertTriangle, X, ArrowRight, ChevronDown, ExternalLink } from 'lucide-react'
+
+// Wizard Sub-components
+import Step1YearLevel from './components/worksheet/Step1YearLevel'
+import Step2Topics from './components/worksheet/Step2Topics'
+import Step3Configuration from './components/worksheet/Step3Configuration'
+import LivePreviewPanel from './components/worksheet/LivePreviewPanel'
+
 import syllabusData from './syllabus_data.json'
+import stageSubjects from './stage_subjects.json'
 import canvasHint from './assets/gemini-canvas-final.png'
 import modelSelectorHint from './assets/gemini-model-selector.png'
 
-const YEAR_LEVELS = Object.keys(syllabusData);
-import stageSubjects from './stage_subjects.json'
 const STAGES = Object.keys(stageSubjects);
-
-const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)', 'Dynamic Space']
-
-// ─── Syllabus Hierarchy (Legacy Maths retained for compatibility) ───
-const HIERARCHY_MAP = {
-    'Year 11 Extension 1': ['Year 11 Advanced'],
-    'Year 12 Extension 1': ['Year 12 Advanced'],
-    'Year 12 Extension 2': ['Year 12 Advanced', 'Year 12 Extension 1'],
-}
-
-function buildMergedSyllabus(yearLevel) {
-    const base = syllabusData[yearLevel] || {}
-    const parents = HIERARCHY_MAP[yearLevel]
-    if (!parents) return base
-
-    // Deep-clone the base so we don't mutate the original
-    const merged = JSON.parse(JSON.stringify(base))
-
-    for (const parentLevel of parents) {
-        const parentData = syllabusData[parentLevel]
-        if (!parentData) continue
-
-        // The prerequisite syllabus has structure: {Module: {Subtopic: [points]}}
-        // Our UI tree expects: {TopLevelModule: {Subtopic: [points]}}
-        // Flatten prerequisite into: {"[ParentLevel] (Prerequisite)": {"Module → Subtopic": [points]}}
-        const label = `${parentLevel} (Prerequisite)`
-        const flatSubtopics = {}
-        for (const [mod, subtopics] of Object.entries(parentData)) {
-            for (const [subt, points] of Object.entries(subtopics)) {
-                flatSubtopics[`${mod} → ${subt}`] = points
-            }
-        }
-        merged[label] = flatSubtopics
-    }
-
-    return merged
-}
-
-// ─── LaTeX inline renderer with memoization cache ───
-const latexCache = new Map()
-function renderLatex(text) {
-    if (latexCache.has(text)) return latexCache.get(text)
-    const parts = text.split(/(\$[^$]+\$)/g)
-    const k = window.katex
-    const html = parts.map(part => {
-        if (k && part.startsWith('$') && part.endsWith('$')) {
-            const tex = part.slice(1, -1)
-            try {
-                return k.renderToString(tex, { throwOnError: false, displayMode: false })
-            } catch {
-                return part
-            }
-        }
-        return part.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    }).join('')
-    latexCache.set(text, html)
-    return html
-}
-
 const DIFFICULTY_OPTIONS = ['Mixed', 'Easy → Hard Progression', 'Mostly Easy', 'Mostly Hard', 'Exam-Style']
 
 export default function WorksheetGenerator() {
@@ -87,16 +33,15 @@ export default function WorksheetGenerator() {
         return stageSubjects[savedStage] ? Object.keys(stageSubjects[savedStage])[0] : 'Mathematics';
     })
     const [customSubject, setCustomSubject] = useState('')
-    const [syllabusContextMode, setSyllabusContextMode] = useState('Off') // 'Off', 'Provide', 'Search'
-    const [textbooksProvided, setTextbooksProvided] = useState(false)
+    // Wizard State
+    const [currentStep, setCurrentStep] = useState(1)
+    // Advanced injection toggles
+    const [syllabusSource, setSyllabusSource] = useState('ai') // 'ai' | 'upload' | 'nesa'
+    const [textbookResources, setTextbookResources] = useState('')
     const [pedagogicalSpotError, setPedagogicalSpotError] = useState(() => localStorage.getItem('mait_ws_pedagogicalSpotError') === 'true')
     const [pedagogicalParameterShift, setPedagogicalParameterShift] = useState(() => localStorage.getItem('mait_ws_pedagogicalParameterShift') === 'true')
     const [pedagogicalLimitCase, setPedagogicalLimitCase] = useState(() => localStorage.getItem('mait_ws_pedagogicalLimitCase') === 'true')
     const [removeWatermark, setRemoveWatermark] = useState(() => localStorage.getItem('mait_ws_removeWatermark') === 'true')
-    const [showHints, setShowHints] = useState(() => {
-        const saved = localStorage.getItem('mait_ws_showHints');
-        return saved !== null ? saved === 'true' : true;
-    })
     const [numInput, setNumInput] = useState('') // Local state for raw input string
     const [firstTimeMode, setFirstTimeMode] = useState(false)
 
@@ -122,8 +67,6 @@ export default function WorksheetGenerator() {
     const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || 'Dynamic Space')
     const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true')
     const [generateAnswerKey, setGenerateAnswerKey] = useState(() => localStorage.getItem('mait_ws_answerKey') === 'true')
-    const [searchQuery, setSearchQuery] = useState('')
-    const [showReference, setShowReference] = useState(false)
     const [difficulty, setDifficulty] = useState(() => localStorage.getItem('mait_ws_difficulty') || DIFFICULTY_OPTIONS[0])
     const [includeCanvasSetup, setIncludeCanvasSetup] = useState(() => localStorage.getItem('mait_ws_canvasSetup') === 'true')
 
@@ -132,8 +75,6 @@ export default function WorksheetGenerator() {
     const [showCloseButton, setShowCloseButton] = useState(false)
     const [showErrorToast, setShowErrorToast] = useState(false)
     const [isShaking, setIsShaking] = useState(false)
-    const [expandedModules, setExpandedModules] = useState({})
-    const [expandedSubtopics, setExpandedSubtopics] = useState({})
 
     const launchTimeoutRef = useRef(null);
 
@@ -153,8 +94,7 @@ export default function WorksheetGenerator() {
         localStorage.setItem('mait_ws_pedagogicalParameterShift', pedagogicalParameterShift.toString());
         localStorage.setItem('mait_ws_pedagogicalLimitCase', pedagogicalLimitCase.toString());
         localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
-        localStorage.setItem('mait_ws_showHints', showHints.toString());
-    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup, pedagogicalSpotError, pedagogicalParameterShift, pedagogicalLimitCase, removeWatermark, showHints]);
+    }, [selectedStage, selectedSubject, numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeName, includeDate, includeCanvasSetup, pedagogicalSpotError, pedagogicalParameterShift, pedagogicalLimitCase, removeWatermark]);
 
     // Sync numInput when numQuestions changes (except when numInput is actively being edited)
     useEffect(() => {
@@ -205,121 +145,10 @@ export default function WorksheetGenerator() {
         }
     }, [selectedSubject]);
 
-    // Determine current legacy syllabus year equivalent for matching data in syllabus_data.json
-    // Only applies to mathematics for Stage 4+ in the old structure
-    const legacySyllabusYear = useMemo(() => {
-        if (selectedStage === 'Stage 4 (Yr 7-8)') return 'Year 7'; // fallback approximation
-        if (selectedStage === 'Stage 5 (Yr 9-10)') return 'Year 9';
-        if (selectedStage === 'Year 11') {
-            if (selectedSubject === 'Mathematics Advanced') return 'Year 11 Advanced';
-            if (selectedSubject === 'Mathematics Extension 1') return 'Year 11 Extension 1';
-            return 'Year 11 Standard';
-        }
-        if (selectedStage === 'Year 12') {
-            if (selectedSubject === 'Mathematics Advanced') return 'Year 12 Advanced';
-            if (selectedSubject === 'Mathematics Extension 1') return 'Year 12 Extension 1';
-            if (selectedSubject === 'Mathematics Extension 2') return 'Year 12 Extension 2';
-            if (selectedSubject === 'Physics') return 'Year 12 Physics';
-            if (selectedSubject === 'Engineering Studies') return 'Year 12 Engineering Studies';
-        }
-        return null;
-    }, [selectedStage, selectedSubject]);
+    // NOTE: All syllabus tree logic, search, expand/collapse, and point toggling
+    // is now encapsulated inside Step2Topics sub-component.
+    // syllabusData is passed directly to Step2Topics as SYLLABUS_DATA prop.
 
-    // Hierarchy Helpers (Only used if legacy match found)
-    const currentSyllabus = useMemo(() => legacySyllabusYear ? buildMergedSyllabus(legacySyllabusYear) : {}, [legacySyllabusYear]);
-
-    // Topic list for Non-legacy subjects
-    const currentTopicsList = useMemo(() => {
-        if (legacySyllabusYear) return null; // Use currentSyllabus instead
-        if (selectedSubject === 'Other') return [];
-        return stageSubjects[selectedStage]?.[selectedSubject] || [];
-    }, [selectedStage, selectedSubject, legacySyllabusYear]);
-
-
-    // ─── Search filtering ───
-    const filteredModules = useMemo(() => {
-        const q = searchQuery.toLowerCase().trim()
-        if (!q) return Object.keys(currentSyllabus)
-
-        return Object.keys(currentSyllabus).filter(mod => {
-            if (mod.toLowerCase().includes(q)) return true
-            const subtopics = currentSyllabus[mod] || {}
-            return Object.keys(subtopics).some(subt => {
-                if (subt.toLowerCase().includes(q)) return true
-                return subtopics[subt].some(pt => pt.toLowerCase().includes(q))
-            })
-        })
-    }, [currentSyllabus, searchQuery])
-
-    // Auto-expand modules/subtopics when searching
-    useEffect(() => {
-        const q = searchQuery.toLowerCase().trim()
-        if (!q) return
-        const mods = {}
-        const subs = {}
-        for (const mod of filteredModules) {
-            mods[mod] = true
-            const subtopics = currentSyllabus[mod] || {}
-            for (const subt of Object.keys(subtopics)) {
-                if (subt.toLowerCase().includes(q) || subtopics[subt].some(pt => pt.toLowerCase().includes(q))) {
-                    subs[subt] = true
-                }
-            }
-        }
-        setExpandedModules(prev => ({ ...prev, ...mods }))
-        setExpandedSubtopics(prev => ({ ...prev, ...subs }))
-    }, [searchQuery, filteredModules, currentSyllabus])
-
-    const modules = filteredModules;
-
-    const toggleModule = (mod) => {
-        setExpandedModules(prev => ({ ...prev, [mod]: !prev[mod] }));
-    };
-
-    const toggleSubtopic = (subt) => {
-        setExpandedSubtopics(prev => ({ ...prev, [subt]: !prev[subt] }));
-    };
-
-    const isSubtopicSelected = (mod, subt) => {
-        const points = currentSyllabus[mod]?.[subt];
-        return points && points.length > 0 && points.every(p => selectedPoints.includes(p));
-    };
-
-    const toggleSubtopicSelection = (mod, subt) => {
-        const points = currentSyllabus[mod]?.[subt] || [];
-        const currentlyAllSelected = points.length > 0 && points.every(p => selectedPoints.includes(p));
-
-        if (currentlyAllSelected) {
-            setSelectedPoints(prev => prev.filter(p => !points.includes(p)));
-        } else {
-            setSelectedPoints(prev => Array.from(new Set([...prev, ...points])));
-        }
-    };
-
-    const handlePointToggle = (point) => {
-        setSelectedPoints(prev =>
-            prev.includes(point) ? prev.filter(p => p !== point) : [...prev, point]
-        );
-    };
-
-    const isModuleSelected = (mod) => {
-        const subtopics = currentSyllabus[mod];
-        if (!subtopics) return false;
-        const allPoints = Object.values(subtopics).flat();
-        return allPoints.length > 0 && allPoints.every(p => selectedPoints.includes(p));
-    };
-
-    const toggleModuleSelection = (mod) => {
-        const subtopics = currentSyllabus[mod];
-        const allPoints = Object.values(subtopics).flat();
-        const currentlyAllSelected = allPoints.every(p => selectedPoints.includes(p));
-
-        if (currentlyAllSelected) {
-            setSelectedPoints(prev => prev.filter(p => !allPoints.includes(p)));
-        } else {
-            setSelectedPoints(prev => Array.from(new Set([...prev, ...allPoints])));
-        }
-    };
 
     const generatePrompt = () => {
         const displaySubject = selectedSubject === 'Other' && customSubject.trim() ? customSubject : selectedSubject;
@@ -347,16 +176,15 @@ export default function WorksheetGenerator() {
             ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\begin{multicols}{2}` and `\\end{multicols}`, separated by the vertical rule.'
             : '';
 
-        // Context Logic
+        // Syllabus context based on new syllabusSource state
         let contextPrefix = '';
-        if (syllabusContextMode === 'Provide' || textbooksProvided) {
-            contextPrefix += 'Using the context files attached to this prompt:\n';
-            if (syllabusContextMode === 'Provide') contextPrefix += '- Strictly adhere to the scope and constraints of the attached Syllabus.\n';
-            if (textbooksProvided) contextPrefix += '- Strongly model the questions on the style, structure, and difficulty found in the attached Textbook/Resources.\n';
+        if (syllabusSource === 'upload' || textbookResources.trim()) {
+            contextPrefix += 'Using the context files/information attached to this prompt:\n';
+            if (syllabusSource === 'upload') contextPrefix += '- Strictly adhere to the scope and constraints of the attached Syllabus.\n';
+            if (textbookResources.trim()) contextPrefix += `- Strongly model questions on the style, structure, and difficulty found in: ${textbookResources}.\n`;
             contextPrefix += '\n';
         }
-
-        if (syllabusContextMode === 'Search') {
+        if (syllabusSource === 'nesa') {
             contextPrefix += 'CRITICAL: You are authorized and encouraged to Search/Reference the official NESA NSW Syllabus requirements for the selected Stage and Subject to ensure 100% curriculum alignment.\n\n';
         }
 
@@ -371,11 +199,9 @@ export default function WorksheetGenerator() {
 
         let contentString = '';
         if (mode === 'A') {
-            const explicitTopics = (currentTopicsList && currentTopicsList.length > 0 && selectedPoints.length > 0)
-                ? `strictly targeting these specific topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
-                : selectedPoints.length > 0
-                    ? `strictly targeting these specific syllabus dot-points and topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
-                    : `targeting the general curriculum for ${displaySubject}`;
+            const explicitTopics = selectedPoints.length > 0
+                ? `strictly targeting these specific syllabus dot-points and topics: \n${selectedPoints.map(p => `- ${p}`).join('\n')}`
+                : `targeting the general curriculum for ${displaySubject}`;
 
             const difficultyText = difficulty === 'Mixed' ? 'Use a balanced mix of easy, medium, and hard questions.' :
                 difficulty === 'Easy → Hard Progression' ? 'Start with easy questions and progressively increase difficulty to hard.' :
@@ -390,24 +216,8 @@ export default function WorksheetGenerator() {
             contentString = `${contextPrefix}${pedagogyPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}${syllabusContext}`;
         }
 
-        // Generate dynamic title
-        let promptTitle = `${selectedStage} ${displaySubject} Worksheet`;
-        if (mode === 'A' && selectedPoints.length > 0 && legacySyllabusYear) {
-            const modCounts = {};
-            selectedPoints.forEach(p => {
-                for (const mod in currentSyllabus) {
-                    for (const subt in currentSyllabus[mod]) {
-                        if (currentSyllabus[mod][subt].includes(p)) {
-                            // Strip '(Prerequisite)' from module names for clean titles
-                            const cleanMod = mod.replace(/\s*\(Prerequisite\)$/i, '');
-                            modCounts[cleanMod] = (modCounts[cleanMod] || 0) + 1;
-                        }
-                    }
-                }
-            });
-            const topMod = Object.keys(modCounts).reduce((a, b) => modCounts[a] > modCounts[b] ? a : b, '');
-            if (topMod) promptTitle = `${topMod} ${displaySubject} Worksheet`;
-        }
+        // Title based on selected stage/subject (simplified, no longer depends on legacy tree)
+        const promptTitle = `${selectedStage} ${displaySubject} Worksheet`;
 
         let reminderText = "";
 
@@ -421,12 +231,12 @@ export default function WorksheetGenerator() {
             reminderText += "\n\n**Debug Guide / Canvas Setup:**\nNo Code/Preview window? Click **Tools**, select **Canvas**, and ask me to output in Canvas! :D";
         }
 
-        if (syllabusContextMode === 'Provide') {
+        if (syllabusSource === 'upload') {
             reminderText += "\n\n*(Please paste/upload your syllabus document now.)*";
         }
 
-        if (textbooksProvided) {
-            reminderText += "\n\n*(Please paste/upload your textbooks or reference resources now.)*";
+        if (textbookResources) {
+            reminderText += "\n\n*(Reminder: You indicated you'd use a specific textbook. Please type the textbook name into the chat now.)*";
         }
 
         reminderText += "\n\n**Disclaimer:** I'm just a robot, so I can get things wrong - check the questions! You can also copy-paste the code into another chat and ask it to check.";
@@ -604,7 +414,7 @@ ${contentString}
                         {/* Top Right Close Button */}
                         <button
                             onClick={closeModal}
-                            className={`absolute top - 4 right - 4 p - 2 text - muted - foreground hover: text - foreground hover: bg - surface - 3 rounded - full transition - all duration - 500 ${showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} `}
+                            className={`absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground hover:bg-surface-3 rounded-full transition-all duration-500 ${showCloseButton ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                             title="Dismiss"
                         >
                             <X size={20} />
@@ -633,7 +443,7 @@ ${contentString}
                                 </div>
                             </div>
                         </div>
-                        <div className={`pt - 4 transition - all duration - 500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'} `}>
+                        <div className={`pt-4 transition-all duration-500 ${showCloseButton ? 'opacity-0 h-0 overflow-hidden pt-0' : 'opacity-100'}`}>
                             <div className="h-4 w-full bg-surface-3 rounded-full overflow-hidden">
                                 <div className="h-full bg-green-500 animate-progress-shrink origin-left" />
                             </div>
@@ -653,563 +463,190 @@ ${contentString}
             />
 
             {/* Header Content */}
-            <div className="relative z-10 text-center px-6 pt-12 pb-12 w-full max-w-4xl">
+            <div className="relative z-10 text-center px-6 pt-12 pb-8 w-full max-w-6xl">
                 <h2 className="animate-reveal animate-reveal-2 text-4xl md:text-6xl font-display font-bold tracking-tight mb-4">
-                    <span className="gradient-text-primary">Universal Worksheet Generator</span>
+                    <span className="gradient-text-primary">Worksheet Studio</span>
                 </h2>
                 <p className="animate-reveal animate-reveal-3 text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-                    Personalized HSC exam-prep. Select your syllabus points and let Gemini handle the LaTeX.
+                    Personalized HSC exam-prep. Build your worksheet step-by-step.
                 </p>
             </div>
 
-            {/* Main Form Container */}
-            <div className="relative z-10 w-full max-w-4xl px-6 pb-24">
-                <form onSubmit={handleGenerate} className="glass-card rounded-3xl p-6 md:p-10 space-y-8 animate-reveal animate-reveal-4 overflow-visible">
+            {/* Main Wizard Container */}
+            <div className="relative z-10 w-full max-w-6xl px-6 pb-24">
+                <div className="grid lg:grid-cols-12 gap-8 items-start animate-reveal animate-reveal-4">
 
-                    {/* Top Section: Meta Info */}
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-[0.2em] text-muted-foreground">
-                                Stage / Year Level
-                            </label>
-                            <div className="relative">
-                                <select
-                                    value={selectedStage}
-                                    onChange={(e) => setSelectedStage(e.target.value)}
-                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3 truncate"
-                                    aria-label="Select stage or year level"
-                                >
-                                    {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    {/* Main Panel (8 cols) */}
+                    <div className="lg:col-span-8 glass-card rounded-3xl p-6 md:p-8 space-y-6">
+
+                        {/* Step Progress Indicator */}
+                        <div className="flex items-center justify-between relative mb-6">
+                            <div className="absolute top-[20px] left-5 right-5 h-0.5 bg-surface-3 z-0 -translate-y-[1px] rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-primary transition-all duration-500 ease-out"
+                                    style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
+                                />
                             </div>
+                            {[
+                                { n: 1, label: 'Year & Subject' },
+                                { n: 2, label: 'Topics' },
+                                { n: 3, label: 'Configure' }
+                            ].map(({ n, label }) => (
+                                <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => setCurrentStep(n)}
+                                    className={`relative z-10 flex flex-col items-center gap-1 group`}
+                                >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-sm transition-all duration-300 ${
+                                        currentStep === n
+                                            ? 'bg-primary text-white shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] scale-110'
+                                            : currentStep > n
+                                                ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                                                : 'bg-surface-2 text-muted-foreground hover:bg-surface-3'
+                                    }`}>
+                                        {currentStep > n ? <CheckCircle2 size={16} /> : n}
+                                    </div>
+                                    <span className={`text-[10px] font-display tracking-wider uppercase hidden sm:block transition-colors ${currentStep === n ? 'text-primary' : 'text-muted-foreground'}`}>
+                                        {label}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-[0.2em] text-muted-foreground">
-                                Subject
-                            </label>
-                            {selectedSubject === 'Other' ? (
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="text"
-                                        placeholder="Type custom subject..."
-                                        value={customSubject}
-                                        onChange={(e) => setCustomSubject(e.target.value)}
-                                        className="input-base w-full text-sm font-display py-3 pr-10"
-                                        autoFocus
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const options = Object.keys(stageSubjects[selectedStage] || {});
-                                            if (options.length > 0) setSelectedSubject(options[0]);
-                                        }}
-                                        className="absolute right-3 p-1 hover:bg-surface-3 rounded-md text-muted-foreground"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
+                        {/* Step Content */}
+                        <div className="min-h-[500px]">
+                            {currentStep === 1 && (
+                                <Step1YearLevel
+                                    selectedYear={selectedStage}
+                                    setSelectedYear={setSelectedStage}
+                                    selectedSubject={selectedSubject}
+                                    setSelectedSubject={setSelectedSubject}
+                                    customSubject={customSubject}
+                                    setCustomSubject={setCustomSubject}
+                                    setMode={setMode}
+                                    setSelectedPoints={setSelectedPoints}
+                                />
+                            )}
+
+                            {currentStep === 2 && (
+                                <Step2Topics
+                                    mode={mode}
+                                    setMode={setMode}
+                                    selectedYear={selectedStage}
+                                    selectedSubject={selectedSubject}
+                                    customSubject={customSubject}
+                                    setCustomSubject={setCustomSubject}
+                                    SYLLABUS_DATA={syllabusData}
+                                    selectedPoints={selectedPoints}
+                                    setSelectedPoints={setSelectedPoints}
+                                    rawQuestions={rawQuestions}
+                                    setRawQuestions={setRawQuestions}
+                                />
+                            )}
+
+                            {currentStep === 3 && (
+                                <Step3Configuration
+                                    numQuestions={numQuestions}
+                                    setNumQuestions={setNumQuestions}
+                                    numInput={numInput}
+                                    setNumInput={setNumInput}
+                                    difficulty={difficulty}
+                                    setDifficulty={setDifficulty}
+                                    workingSpace={workingSpace}
+                                    setWorkingSpace={setWorkingSpace}
+                                    includeName={includeName}
+                                    setIncludeName={setIncludeName}
+                                    includeDate={includeDate}
+                                    setIncludeDate={setIncludeDate}
+                                    includeMarks={includeMarks}
+                                    setIncludeMarks={setIncludeMarks}
+                                    generateAnswerKey={generateAnswerKey}
+                                    setGenerateAnswerKey={setGenerateAnswerKey}
+                                    includeCanvasSetup={includeCanvasSetup}
+                                    setIncludeCanvasSetup={setIncludeCanvasSetup}
+                                    firstTimeMode={firstTimeMode}
+                                    setFirstTimeMode={setFirstTimeMode}
+                                    removeWatermark={removeWatermark}
+                                    setRemoveWatermark={setRemoveWatermark}
+                                    pedagogicalSpotError={pedagogicalSpotError}
+                                    setPedagogicalSpotError={setPedagogicalSpotError}
+                                    pedagogicalParameterShift={pedagogicalParameterShift}
+                                    setPedagogicalParameterShift={setPedagogicalParameterShift}
+                                    pedagogicalLimitCase={pedagogicalLimitCase}
+                                    setPedagogicalLimitCase={setPedagogicalLimitCase}
+                                    syllabusSource={syllabusSource}
+                                    setSyllabusSource={setSyllabusSource}
+                                    textbookResources={textbookResources}
+                                    setTextbookResources={setTextbookResources}
+                                />
+                            )}
+                        </div>
+
+                        {/* Step Navigation */}
+                        <div className="flex justify-between items-center pt-6 border-t border-surface-3/30">
+                            <button
+                                type="button"
+                                onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
+                                className={`px-6 py-2.5 rounded-xl font-display text-sm font-medium transition-colors ${
+                                    currentStep === 1 ? 'opacity-0 pointer-events-none' : 'bg-surface-2 text-foreground hover:bg-surface-3'
+                                }`}
+                            >
+                                ← Back
+                            </button>
+
+                            {currentStep < 3 ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep(prev => Math.min(3, prev + 1))}
+                                    className="px-6 py-2.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl font-display text-sm font-bold flex items-center gap-2 transition-colors"
+                                >
+                                    Continue <ArrowRight size={16} />
+                                </button>
                             ) : (
-                                <div className="relative">
-                                    <select
-                                        value={selectedSubject}
-                                        onChange={(e) => setSelectedSubject(e.target.value)}
-                                        className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3 truncate"
-                                        aria-label="Select subject"
-                                    >
-                                        {(stageSubjects[selectedStage] ? Object.keys(stageSubjects[selectedStage]) : []).map(sub => (
-                                            <option key={sub} value={sub}>{sub}</option>
-                                        ))}
-                                        <option value="Other">Other (Custom)</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Mode Selection */}
-                    <div className="flex w-full bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3 gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setMode('A')}
-                            className={`flex-[0.5] py-3 px-4 rounded-xl font-display text-[11px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${mode === 'A' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
-                        >
-                            Syllabus Mode (Generative)
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setMode('B')}
-                            className={`flex-[0.5] py-3 px-4 rounded-xl font-display text-[11px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${mode === 'B' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
-                        >
-                            Question/Topic Specification
-                        </button>
-                    </div>
-
-                    {/* Hierarchical Tree Checklist or Manual Area */}
-                    <div className={`bg-surface-1/30 rounded-2xl border border-surface-3/50 min-h-[400px] overflow-hidden flex flex-col ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both] shadow-[0_0_15px_rgba(239,68,68,0.2)] border-destructive/40' : ''}`}>
-                        {mode === 'A' ? (
-                            <div className="flex flex-col h-full animate-reveal">
-                                {/* Search & Selected Header */}
-                                <div className="p-4 border-b border-surface-3/50 flex flex-wrap items-center gap-4 bg-surface-2/20">
-                                    <div className="relative flex-1 min-w-[200px]">
-                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                                        <input
-                                            type="text"
-                                            placeholder="Find a topic or point..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full bg-surface-1 border border-surface-3 rounded-xl pl-9 pr-4 py-2 text-xs font-display focus:border-primary/50 outline-none transition-all"
-                                        />
-                                    </div>
-                                    <div className="text-[10px] font-display uppercase tracking-widest text-primary font-bold flex items-center gap-2">
-                                        <CheckCircle2 size={12} />
-                                        {selectedPoints.length} Points Selected
-                                    </div>
-                                    {selectedPoints.length > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedPoints([])}
-                                            className="text-[10px] font-display uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors"
-                                        >
-                                            Clear All
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Scrollable Tree View */}
-                                <div className="flex-1 overflow-y-auto max-h-[500px] p-4 custom-scrollbar">
-                                    <div className="space-y-4">
-                                        {legacySyllabusYear ? (
-                                            modules.map(mod => (
-                                                <div key={mod} className="space-y-1">
-                                                    {/* Module row */}
-                                                    <div className="flex items-center gap-2 group p-1">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => toggleModule(mod)}
-                                                            className="p-1 hover:bg-surface-3 rounded transition-colors"
-                                                        >
-                                                            {expandedModules[mod] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                                        </button>
-                                                        <label className="flex items-center gap-2 cursor-pointer flex-1">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={isModuleSelected(mod)}
-                                                                onChange={() => toggleModuleSelection(mod)}
-                                                                className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
-                                                            />
-                                                            <span className="text-xs font-display font-bold text-foreground group-hover:text-primary transition-colors">{mod}</span>
-                                                        </label>
-                                                    </div>
-
-                                                    {/* Module Children (Subtopics) */}
-                                                    {expandedModules[mod] && (
-                                                        <div className="ml-6 space-y-3 border-l border-surface-3 pl-4 py-2">
-                                                            {Object.keys(currentSyllabus[mod] || {}).map(subt => (
-                                                                <div key={subt} className="space-y-1">
-                                                                    <div className="flex items-center gap-2 group p-1">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => toggleSubtopic(subt)}
-                                                                            className="p-1 hover:bg-surface-3 rounded transition-colors flex-shrink-0"
-                                                                        >
-                                                                            {expandedSubtopics[subt] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                                                        </button>
-                                                                        <label className="flex items-center gap-2 cursor-pointer flex-1 overflow-hidden">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={isSubtopicSelected(mod, subt)}
-                                                                                onChange={() => toggleSubtopicSelection(mod, subt)}
-                                                                                className="w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer flex-shrink-0"
-                                                                            />
-                                                                            <span className="text-[11px] font-display text-muted-foreground font-semibold group-hover:text-foreground tracking-wide truncate">{subt}</span>
-                                                                        </label>
-                                                                    </div>
-
-                                                                    {/* Subtopic Children (Dot Points) */}
-                                                                    {expandedSubtopics[subt] && (
-                                                                        <div className="ml-6 grid gap-2 py-1">
-                                                                            {currentSyllabus[mod][subt].map((point, idx) => (
-                                                                                <label
-                                                                                    key={idx}
-                                                                                    className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(point) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
-                                                                                >
-                                                                                    <input
-                                                                                        type="checkbox"
-                                                                                        checked={selectedPoints.includes(point)}
-                                                                                        onChange={() => handlePointToggle(point)}
-                                                                                        className="mt-0.5 w-3.5 h-3.5 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
-                                                                                    />
-                                                                                    <span className="text-[11px] font-display leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
-                                                                                </label>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            /* Simple list for newer stages (K-10 non-legacy) */
-                                            currentTopicsList && currentTopicsList.length > 0 ? (
-                                                <div className="grid gap-3">
-                                                    {currentTopicsList.map((topic, idx) => (
-                                                        <label
-                                                            key={idx}
-                                                            className={`flex items-start gap-3 p-3 rounded-xl border border-surface-3 transition-all cursor-pointer select-none ${selectedPoints.includes(topic) ? 'bg-primary/5 border-primary/20 text-foreground' : 'bg-surface-2/20 text-muted-foreground hover:border-primary/10'}`}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedPoints.includes(topic)}
-                                                                onChange={() => handlePointToggle(topic)}
-                                                                className="mt-0.5 w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-1 cursor-pointer"
-                                                            />
-                                                            <span className="text-sm font-display leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(topic) }} />
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center p-8 text-muted-foreground text-sm">
-                                                    No predefined topics for {selectedSubject === 'Other' ? (customSubject || 'this subject') : selectedSubject}. <br />Switch to "Question/Topic Specification" to manually prescribe topics.
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="p-6 space-y-3 animate-reveal">
-                                <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground mb-2">
-                                    Paste Your Raw Questions
-                                </label>
-                                <div className={isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}>
-                                    <textarea
-                                        required={mode === 'B'}
-                                        rows={10}
-                                        placeholder="Type in the topics and any specific dot-points or general aim of the worksheet."
-                                        value={rawQuestions}
-                                        onChange={(e) => setRawQuestions(e.target.value)}
-                                        className={`input-base w-full text-sm font-display resize-y py-3 min-h-[300px] ${isShaking ? 'border-destructive/60 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : ''}`}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Row 1: Number of Questions (Full Width) */}
-                    <div className="space-y-4 p-4 bg-surface-1/30 rounded-2xl border border-surface-3/50 shadow-sm transition-all duration-300 hover:border-primary/30">
-                        <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                            <span>Number of Questions</span>
-                            {numQuestions > 15 && (
-                                <span className="text-secondary/80 font-bold lowercase italic tracking-normal">(Note: Large worksheets use compact spacing)</span>
-                            )}
-                        </label>
-                        <div className="flex items-center gap-6">
-                            <input
-                                type="range"
-                                min={1}
-                                max={50}
-                                value={numQuestions > 50 ? 50 : numQuestions}
-                                onChange={(e) => setNumQuestions(parseInt(e.target.value, 10))}
-                                className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
-                                style={{
-                                    background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) ${((Math.min(numQuestions, 50) - 1) / 49) * 100}%, hsl(var(--surface-3)) 100%)`,
-                                }}
-                            />
-                            <input
-                                type="number"
-                                value={numInput}
-                                onChange={(e) => setNumInput(e.target.value)}
-                                onBlur={() => {
-                                    const val = parseInt(numInput, 10);
-                                    if (isNaN(val) || val < 1) {
-                                        setNumQuestions(1);
-                                        setNumInput('1');
-                                    } else {
-                                        setNumQuestions(val);
-                                        setNumInput(val.toString());
-                                    }
-                                }}
-                                className="input-base w-20 text-center text-base font-mono py-2 bg-surface-2 border-surface-4 shadow-inner"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Row 2: Split 50/50 */}
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Working Space / Page Layout
-                            </label>
-                            <div className="relative">
-                                <select
-                                    value={workingSpace}
-                                    onChange={(e) => setWorkingSpace(e.target.value)}
-                                    className="input-base appearance-none pr-10 cursor-pointer font-display text-sm w-full py-3 bg-surface-1/50"
-                                >
-                                    {SPACING_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Question Difficulty
-                            </label>
-                            <select
-                                value={difficulty}
-                                onChange={(e) => setDifficulty(e.target.value)}
-                                className="input-base w-full text-sm py-3 cursor-pointer bg-surface-1/50"
-                                aria-label="Select difficulty level"
-                            >
-                                {DIFFICULTY_OPTIONS.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Row 3: Attached Context & Segmented Syllabus Control */}
-                    <div className="space-y-4">
-                        <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                            Syllabus Injection Context
-                        </label>
-                        <div className="flex w-full bg-surface-1/50 p-1.5 rounded-2xl border border-surface-3 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setSyllabusContextMode('Off')}
-                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Off' ? 'bg-surface-3 text-foreground shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
-                            >
-                                AI general knowledge
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSyllabusContextMode('Provide')}
-                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Provide' ? 'bg-primary/20 text-primary border border-primary/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
-                            >
-                                I'll upload the syllabus
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSyllabusContextMode('Search')}
-                                className={`flex-[0.333] py-3 px-4 rounded-xl font-display text-[10px] md:text-sm font-semibold transition-all duration-300 flex items-center justify-center text-center leading-tight ${syllabusContextMode === 'Search' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30 shadow-sm' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'}`}
-                                title="Experimental Feature: AI performs a proactive search of the published NESA website to infer syllabus dot points."
-                            >
-                                Search NESA Website ⚠️
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
-                            <label className="flex items-center gap-3 cursor-pointer group" title="Inform Gemini that a Textbook or resources have been uploaded to chat">
-                                <input
-                                    type="checkbox"
-                                    checked={textbooksProvided}
-                                    onChange={(e) => setTextbooksProvided(e.target.checked)}
-                                    className="w-5 h-5 rounded-lg border-surface-4 text-accent focus:ring-accent/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                />
-                                <span className="text-[11px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-wider">I'll add Textbooks/Resources</span>
-                            </label>
-                        </div>
-
-                        {/* Pedagogical Tools Checklist */}
-                        <div className="space-y-4 pt-2">
-                            <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                                Pedagogical Requirements
-                            </label>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-surface-1/50 rounded-xl border border-surface-3">
-                                <label className="flex items-center gap-3 cursor-pointer group" title="Provides deliberately flawed step-by-step working (1 mark max).">
-                                    <input
-                                        type="checkbox"
-                                        checked={pedagogicalSpotError}
-                                        onChange={(e) => setPedagogicalSpotError(e.target.checked)}
-                                        className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                    />
-                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Spot the error</span>
-                                </label>
-                                <label className="flex items-center gap-3 cursor-pointer group" title="Tests systems thinking without fully solving.">
-                                    <input
-                                        type="checkbox"
-                                        checked={pedagogicalParameterShift}
-                                        onChange={(e) => setPedagogicalParameterShift(e.target.checked)}
-                                        className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                    />
-                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Parameter Shift</span>
-                                </label>
-                                <label className="flex items-center gap-3 cursor-pointer group" title="Tests engineering logic as variables approach extreme bounds.">
-                                    <input
-                                        type="checkbox"
-                                        checked={pedagogicalLimitCase}
-                                        onChange={(e) => setPedagogicalLimitCase(e.target.checked)}
-                                        className="w-5 h-5 rounded-lg border-surface-4 text-secondary focus:ring-secondary/20 bg-surface-2 cursor-pointer transition-all duration-300"
-                                    />
-                                    <span className="text-[11px] font-bold text-secondary group-hover:text-secondary/80 transition-colors font-display uppercase tracking-wider">Limit Case Analysis</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Row 4: Configuration / Output Settings (Full Width, 5-col Grid) */}
-                    <div className="space-y-2">
-                        <label className="block text-[10px] font-display uppercase tracking-wider text-muted-foreground">
-                            Configuration / Output Settings
-                        </label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4 mb-4">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeName}
-                                    onChange={(e) => setIncludeName(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Name space</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeDate}
-                                    onChange={(e) => setIncludeDate(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Date space</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeMarks}
-                                    onChange={(e) => setIncludeMarks(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Allocate Marks (experimental)</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={generateAnswerKey}
-                                    onChange={(e) => setGenerateAnswerKey(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Answer Key</span>
-                            </label>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-surface-2/30 rounded-xl border border-dashed border-surface-4">
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={includeCanvasSetup}
-                                    onChange={(e) => setIncludeCanvasSetup(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include Setup Guide for Canvas UI">Setup guide</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={firstTimeMode}
-                                    onChange={(e) => setFirstTimeMode(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight" title="Include comprehensive intro for new users in the prompt">First Time?</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={removeWatermark}
-                                    onChange={(e) => setRemoveWatermark(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Remove small watermark</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer group">
-                                <input
-                                    type="checkbox"
-                                    checked={showHints}
-                                    onChange={(e) => setShowHints(e.target.checked)}
-                                    className="w-4 h-4 rounded border-surface-4 text-primary focus:ring-primary/20 bg-surface-2 cursor-pointer"
-                                />
-                                <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors font-display uppercase tracking-tight">Show Hints?</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/* Final Action */}
-                    <div className="pt-6 relative group">
-                        <button
-                            type="submit"
-                            disabled={isCopied || showWarning}
-                            className="w-full py-5 rounded-2xl font-display text-[15px] font-bold tracking-wider uppercase flex items-center justify-center gap-3 transition-all duration-300 overflow-hidden relative shadow-lg bg-primary btn-distinct text-white hover:shadow-[0_0_50px_rgba(var(--primary-rgb),0.5)] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:animate-shimmer" />
-                            <Sparkles size={18} className="animate-pulse relative z-10" />
-                            <span className="relative z-10">Generate Prompt & Launch Gemini</span>
-                            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform relative z-10" />
-                        </button>
-                    </div>
-
-                </form>
-            </div>
-
-            {/* Quick Reference Section */}
-            <div className="relative z-10 w-full max-w-4xl px-6 pb-24 border-t border-surface-3/30 pt-12">
-                <div className="w-full flex flex-col items-center gap-6">
-                    <div className="glass-card card-shine rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 border border-surface-3/50 hover:border-secondary/40 transition-all duration-500 w-full">
-                        <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-secondary/10 flex items-center justify-center border border-secondary/20 shadow-inner">
-                            <ClipboardList className="text-secondary" size={40} />
-                        </div>
-
-                        <div className="flex-1 text-center md:text-left">
-                            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 mb-3">
-                                <h3 className="font-display text-2xl font-bold">First Education</h3>
-                                <span className="inline-block px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-[10px] font-display font-bold uppercase tracking-wider w-fit mx-auto md:mx-0">
-                                    External Resource
+                                <span className="text-xs text-muted-foreground flex items-center gap-2">
+                                    <CheckCircle2 size={12} className="text-primary" /> Use the Generate button →
                                 </span>
-                            </div>
-                            <p className="text-secondary/80 text-sm font-medium mb-3 uppercase tracking-widest">HSC Question Topic Test Maker</p>
-                            <p className="text-muted-foreground text-base leading-relaxed mb-6 max-w-2xl">
-                                Build custom topic tests from real HSC questions. Select topics to include or exclude, then generate a printable PDF. Perfect for targeted practice alongside MAIT's AI worksheets.
-                            </p>
-                            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                {["Topic Selection", "Custom PDFs", "Include/Exclude", "Answer Keys"].map(tag => (
-                                    <span key={tag} className="text-[11px] font-medium bg-surface-2/80 text-muted-foreground px-3 py-1 rounded-lg border border-surface-3/50">{tag}</span>
-                                ))}
-                            </div>
+                            )}
                         </div>
+                    </div>
 
-                        <div className="flex flex-col gap-4 w-full md:w-auto shrink-0">
-                            <a
-                                href="https://hscmathsbytopic.firsteducation.com.au/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-secondary flex items-center justify-center gap-3 py-4 px-8 rounded-2xl group font-bold tracking-wide text-base shadow-lg shadow-secondary/10"
-                            >
-                                Create Topic Test
-                                <ExternalLink size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                            </a>
-                            <p className="text-xs text-center text-muted-foreground/50 italic">
-                                Provided by <a href="https://firsteducation.com.au" target="_blank" rel="noopener noreferrer" className="hover:text-secondary underline transition-colors">First Education</a>
-                            </p>
-                        </div>
+                    {/* Live Preview Sidebar (4 cols) */}
+                    <div className="lg:col-span-4">
+                        <LivePreviewPanel
+                            currentStep={currentStep}
+                            selectedYear={selectedStage}
+                            selectedSubject={selectedSubject}
+                            customSubject={customSubject}
+                            mode={mode}
+                            selectedPoints={selectedPoints}
+                            rawQuestions={rawQuestions}
+                            numQuestions={numQuestions}
+                            difficulty={difficulty}
+                            workingSpace={workingSpace}
+                            isCopied={isCopied}
+                            showWarning={showWarning}
+                            handleGenerate={handleGenerate}
+                            isShaking={isShaking}
+                        />
                     </div>
                 </div>
             </div>
+
 
             {/* Showcase Backdrop & FAQ Section */}
             <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-24 top-[-2rem]">
                 <div className="grid lg:grid-cols-2 gap-12 items-start">
 
-                    {/* Left: Exemplar PDF Preview */}
+                    {/* Left: Universal Worksheet Draft Preview */}
                     <div className="glass-card rounded-3xl p-6 md:p-8 space-y-6 flex flex-col items-center">
                         <div className="text-center space-y-2 w-full">
-                            <h3 className="font-display text-2xl font-bold">Exemplar Worksheet</h3>
-                            <p className="text-muted-foreground text-sm">A preview of a Masterclass Diagnostic Exam.</p>
+                            <h3 className="font-display text-2xl font-bold">Universal Worksheet Draft</h3>
+                            <p className="text-muted-foreground text-sm">A preview of a professional NESA-aligned output.</p>
                         </div>
                         <div className="w-full aspect-[1/1.4] bg-surface-2 rounded-xl border border-surface-3/50 shadow-inner flex items-center justify-center p-2 overflow-hidden">
                             {/* Static PDF Preview Image */}
-                            <img src="/exemplar-placeholder.png" alt="Exemplar Preview" className="w-full h-full object-cover rounded-lg" />
+                            <img src="/universal_worksheet_exemplar.png" alt="Exemplar Preview" className="w-full h-full object-cover rounded-lg shadow-2xl" />
                         </div>
                     </div>
 
@@ -1352,37 +789,37 @@ ${contentString}
             {/* Global Styled Scrollbar */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-        .custom - scrollbar:: -webkit - scrollbar {
-        width: 6px;
-    }
-                .custom - scrollbar:: -webkit - scrollbar - track {
-        background: transparent;
-    }
-                .custom - scrollbar:: -webkit - scrollbar - thumb {
-        background: hsl(var(--surface - 4) / 0.5);
-        border - radius: 10px;
-    }
-                .custom - scrollbar:: -webkit - scrollbar - thumb:hover {
-        background: hsl(var(--primary) / 0.5);
-    }
-    @keyframes shake {
-        10 %, 90 % { transform: translate3d(-1px, 0, 0); }
-        20 %, 80 % { transform: translate3d(2px, 0, 0); }
-        30 %, 50 %, 70 % { transform: translate3d(-4px, 0, 0); }
-        40 %, 60 % { transform: translate3d(4px, 0, 0); }
-    }
-    input[type = number]:: -webkit - inner - spin - button,
-        input[type = number]:: -webkit - outer - spin - button {
-        -webkit - appearance: none;
-        margin: 0;
-    }
-    @keyframes progress - shrink {
-                    from { transform: scaleX(1); }
-                    to { transform: scaleX(0); }
-    }
-                .animate - progress - shrink {
-        animation: progress - shrink 3s linear forwards;
-    }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: hsl(var(--surface-4) / 0.5);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: hsl(var(--primary) / 0.5);
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        @keyframes progress-shrink {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+        }
+        .animate-progress-shrink {
+            animation: progress-shrink 3s linear forwards;
+        }
     `}} />
 
             {/* Footer */}

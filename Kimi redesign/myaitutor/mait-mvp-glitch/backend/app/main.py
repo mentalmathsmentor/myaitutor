@@ -1,5 +1,6 @@
 import shutil
 
+from typing import Optional
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -31,15 +32,20 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 # Initialize Sentry for error tracking
 SENTRY_DSN = os.getenv("SENTRY_DSN")
+
+# Adjust Sentry sampling rates
+SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
+SENTRY_PROFILES_SAMPLE_RATE = float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1"))
+
 if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[FastApiIntegration()],
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        profiles_sample_rate=SENTRY_PROFILES_SAMPLE_RATE,
     )
 
-app = FastAPI(title="MAIT MVP (The Glitch Edition)")
+app = FastAPI(title="MAIT MVP")
 
 # Simple Auth: Verify Student-ID header for sensitive data
 async def verify_student_auth(request: Request, student_id: str):
@@ -63,8 +69,7 @@ async def startup_event():
     print("Application startup complete.")
 
 # CORS - environment-based origins
-# For production: CORS_ORIGINS=https://myaitutor.au,https://www.myaitutor.au
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -264,10 +269,13 @@ async def verify_access_code(body: AccessCodeRequest):
     Verify the site-wide access code securely on the backend.
     """
     received_code = body.code.strip().upper()
-    expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026").strip().upper()
+    expected_code = os.getenv("MAIT_ACCESS_CODE", "").strip().upper()
     
-    print(f"DEBUG AUTH: Received '{received_code}', Expected '{expected_code}'")
-    
+    # Secure fallbacks or removal of hardcoded codes should happen here
+    if not expected_code:
+        # If no code is set in environment, we might want a stricter policy
+        raise HTTPException(status_code=500, detail="Access code not configured")
+
     if received_code == expected_code:
         return {"status": "success"}
     

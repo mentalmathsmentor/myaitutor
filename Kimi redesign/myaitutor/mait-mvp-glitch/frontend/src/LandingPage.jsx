@@ -86,7 +86,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
         const API_URL = import.meta.env.VITE_API_URL ||
             (window.location.hostname === 'myaitutor.au' || window.location.hostname === 'www.myaitutor.au'
                 ? 'https://api.myaitutor.au'
-                : 'http://localhost:8000')
+                : 'http://127.0.0.1:8000')
         fetch(`${API_URL}/visit`, { method: 'POST' })
             .then(r => r.json())
             .then(d => setVisitCount(d.count))
@@ -291,7 +291,7 @@ export default function LandingPage({ navigate, onLoginClick }) {
                 <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex flex-col items-center md:items-start gap-2">
                         <div className="flex items-center gap-2">
-                            <img src="/MAIT Logo 2.png" alt="MAIT" className="h-6 w-auto" />
+                            <img src="/mait-logo.png" alt="MAIT" className="h-6 w-auto" />
                             <span className="font-display font-bold text-sm tracking-tight text-foreground">MAIT</span>
                         </div>
                         <p className="text-muted-foreground text-[10px] tracking-wide uppercase">Your AI Study Mate</p>

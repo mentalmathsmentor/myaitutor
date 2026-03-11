@@ -1,0 +1,6 @@
+{
+    "python.defaultInterpreterPath": "mait-mvp/backend/venv/bin/python3",
+    "python.analysis.extraPaths": [
+        "mait-mvp/backend"
+    ]
+}

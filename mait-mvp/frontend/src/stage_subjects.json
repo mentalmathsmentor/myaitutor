@@ -1,5 +1,5 @@
 {
-    "Early Stage 1 (Kindy)": {
+    "Kindergarten": {
         "English": [
             "Phonics",
             "Decodables",
@@ -15,7 +15,7 @@
             "Time (Days of the week, Hours)"
         ]
     },
-    "Stage 1 (Yr 1-2)": {
+    "Stage 1 (Yr 1 & 2)": {
         "English": [
             "Phonics and Word Knowledge",
             "Fluency and Comprehension",
@@ -30,7 +30,7 @@
             "Position and 2D/3D Space"
         ]
     },
-    "Stage 2 (Yr 3-4)": {
+    "Stage 2 (Yr 3 & 4)": {
         "English": [
             "Reading Fluency and Comprehension",
             "Spelling Rules and Morphology",
@@ -45,7 +45,7 @@
             "Data Representation (Graphs)"
         ]
     },
-    "Stage 3 (Yr 5-6)": {
+    "Stage 3 (Yr 5 & 6)": {
         "English": [
             "Advanced Comprehension Strategies",
             "Literary Analysis",
@@ -60,7 +60,7 @@
             "Probability and Data Analysis"
         ]
     },
-    "Stage 4 (Yr 7-8)": {
+    "Stage 4 (Yr 7 & 8)": {
         "Mathematics": [
             "Fractions, Decimals and Percentages",
             "Linear Relationships",
@@ -85,7 +85,7 @@
             "Geography"
         ]
     },
-    "Stage 5 (Yr 9-10)": {
+    "Stage 5 (Yr 9 & 10)": {
         "Mathematics": [
             "Financial Mathematics",
             "Linear Relationships and Graphing",

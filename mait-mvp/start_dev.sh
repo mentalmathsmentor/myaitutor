@@ -4,7 +4,7 @@ lsof -ti:5173,8000 | xargs kill -9 2>/dev/null || true
 echo "Ports cleared"
 
 # Start uvicorn
-(cd backend && python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1) &
+(cd backend && ./venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1) &
 echo "Uvicorn started"
 
 # Start vite
