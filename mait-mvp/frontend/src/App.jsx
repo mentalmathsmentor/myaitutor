@@ -7,8 +7,8 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X, ListPlus, Clock, BookOpen } from 'lucide-react'
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
-import NavBar from './components/NavBar'
-import LandingPage from './LandingPage'
+import Navigation from './components/Navigation'
+import NewLandingPage from './NewLandingPage'
 import AIResources from './AIResources'
 import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
@@ -59,6 +59,21 @@ const getSavedAuthUser = () => {
         return saved ? JSON.parse(saved) : null;
     } catch { return null; }
 };
+
+function MarketingPageShell({ children, className = '' }) {
+    return (
+        <div className={`min-h-screen bg-cosmic noise-overlay ${className}`}>
+            <div className="orb-container" aria-hidden="true">
+                <div className="orb orb-1" />
+                <div className="orb orb-2" />
+                <div className="orb orb-3" />
+            </div>
+            <div className="relative z-10">
+                {children}
+            </div>
+        </div>
+    )
+}
 
 // page: 'landing' | 'resources' | 'worksheets' | 'app' | 'demo'
 function App() {
@@ -820,8 +835,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'landing') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <ErrorBoundary><LandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <ErrorBoundary><NewLandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -830,10 +845,12 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'resources') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <div className="pt-14">
-                    <ErrorBoundary><AIResources /></ErrorBoundary>
-                </div>
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <MarketingPageShell>
+                    <div className="pt-20 lg:pt-24">
+                        <ErrorBoundary><AIResources /></ErrorBoundary>
+                    </div>
+                </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -842,10 +859,12 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'worksheets') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <div className="pt-14">
-                    <ErrorBoundary><WorksheetGenerator /></ErrorBoundary>
-                </div>
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <MarketingPageShell>
+                    <div className="pt-20 lg:pt-24">
+                        <ErrorBoundary><WorksheetGenerator navigate={navigateTo} /></ErrorBoundary>
+                    </div>
+                </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -854,10 +873,12 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'privacy') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <div className="pt-14">
-                    <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
-                </div>
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <MarketingPageShell>
+                    <div className="pt-20 lg:pt-24">
+                        <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
+                    </div>
+                </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -866,10 +887,12 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (page === 'pastpapers') {
         return (
             <>
-                <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <div className="pt-14 h-screen">
-                    <ErrorBoundary><PastPapers /></ErrorBoundary>
-                </div>
+                <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+                <MarketingPageShell>
+                    <div className="pt-20 lg:pt-24 min-h-screen">
+                        <ErrorBoundary><PastPapers /></ErrorBoundary>
+                    </div>
+                </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -878,8 +901,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     // Chat pages (app / demo) — NavBar + HUD toolbar + chat
     return (
         <>
-            <NavBar currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-            <div className={`h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30 ${(isDemoMode && isIdle) ? 'idle-dim' : ''}`}>
+            <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
+            <div className={`h-screen pt-16 lg:pt-20 flex flex-col overflow-hidden bg-cosmic noise-overlay selection:bg-primary/30 ${(isDemoMode && isIdle) ? 'idle-dim' : ''}`}>
                 {/* Decorative grid overlay */}
                 <div className="fixed inset-0 pointer-events-none opacity-[0.015] z-0"
                     style={{
@@ -1345,7 +1368,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                             </button>
                             <button
                                 onClick={() => setLocalBrainChoice('cloud')}
-                                className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl bg-surface-1 border border-surface-3 hover:bg-surface-2 hover:border-surface-4 transition-all group"
+                                className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl bg-surface-1 border border-surface-3 hover:bg-surface-2 hover:border-white/20 transition-all group"
                             >
                                 <Zap size={36} className="text-muted-foreground group-hover:text-foreground group-hover:scale-110 transition-transform" />
                                 <div>
