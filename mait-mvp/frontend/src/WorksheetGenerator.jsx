@@ -158,10 +158,7 @@ export default function WorksheetGenerator({ navigate }) {
   const [pedagogicalWordProblems, setPedagogicalWordProblems] = useState(() => localStorage.getItem('mait_ws_pedagogicalWordProblems') === 'true');
   const [pedagogicalMultiStep, setPedagogicalMultiStep] = useState(() => localStorage.getItem('mait_ws_pedagogicalMultiStep') === 'true');
   const [removeWatermark, setRemoveWatermark] = useState(() => localStorage.getItem('mait_ws_removeWatermark') === 'true');
-  const [autoOpenGemini, setAutoOpenGemini] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_autoOpenGemini');
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [includeWorkedSolutions, setIncludeWorkedSolutions] = useState(false);
   const [numInput, setNumInput] = useState(() => {
     const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
     return String(Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
@@ -232,7 +229,6 @@ export default function WorksheetGenerator({ navigate }) {
     localStorage.setItem('mait_ws_pedagogicalWordProblems', pedagogicalWordProblems.toString());
     localStorage.setItem('mait_ws_pedagogicalMultiStep', pedagogicalMultiStep.toString());
     localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
-    localStorage.setItem('mait_ws_autoOpenGemini', autoOpenGemini.toString());
   }, [
     selectedStage,
     selectedSubject,
@@ -251,7 +247,6 @@ export default function WorksheetGenerator({ navigate }) {
     pedagogicalWordProblems,
     pedagogicalMultiStep,
     removeWatermark,
-    autoOpenGemini,
   ]);
 
   useEffect(() => {
@@ -648,7 +643,7 @@ export default function WorksheetGenerator({ navigate }) {
 
     reminderText += "\\n\\n**Disclaimer:** I'm just a robot, so I can get things wrong - check the questions! You can also copy-paste the code into another chat and ask it to check.";
 
-    return `**${promptTitle}**\\n\\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer.
+    let promptPayload = `**${promptTitle}**\\n\\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer.
 
 Your job is to create a professional, compile-ready PDF worksheet. 
 
@@ -727,6 +722,13 @@ ${answerKeyLogic}.
 **USER CONTENT TO PROCESS:**
 ${contentString}
 `;
+
+    if (includeWorkedSolutions) {
+      promptPayload += `\n\nCRITICAL PEDAGOGICAL DIRECTIVE: You MUST include comprehensive, step-by-step mathematical working for every question in the Answer Key section.
+Additionally, immediately following the solutions, you must generate a strictly formatted NESA-aligned marking rubric using a LaTeX \`tabular\` environment. The rubric must detail exactly where individual marks are awarded for each question (e.g., '1 mark for correct derivative', '1 mark for final solution').`;
+    }
+
+    return promptPayload;
   };
 
   const closeModal = () => {
@@ -775,15 +777,11 @@ ${contentString}
       if (launchTimeoutRef.current) {
         clearTimeout(launchTimeoutRef.current);
       }
-      if (autoOpenGemini) {
-        launchTimeoutRef.current = setTimeout(() => {
-          setShowCloseButton(true);
-          window.open('https://gemini.google.com/app', '_blank');
-          launchTimeoutRef.current = null;
-        }, 3000);
-      } else {
+      launchTimeoutRef.current = setTimeout(() => {
         setShowCloseButton(true);
-      }
+        window.open('https://gemini.google.com/app', '_blank');
+        launchTimeoutRef.current = null;
+      }, 3000);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy worksheet prompt:', error);
@@ -1467,11 +1465,16 @@ ${contentString}
                       { label: 'Name space', checked: includeName, onChange: setIncludeName },
                       { label: 'Date space', checked: includeDate, onChange: setIncludeDate },
                       { label: 'Allocate marks', note: '(Experimental)', checked: includeMarks, onChange: setIncludeMarks },
-                      { label: 'Answer key', checked: generateAnswerKey, onChange: setGenerateAnswerKey },
                       { label: 'Canvas setup guide', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
+                      { label: 'Answer key', checked: generateAnswerKey, onChange: setGenerateAnswerKey },
+                      {
+                        label: 'Full Worked Solutions & Rubric',
+                        description: 'Generates step-by-step working and a NESA marking criteria.',
+                        checked: includeWorkedSolutions,
+                        onChange: setIncludeWorkedSolutions,
+                      },
                       { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
                       { label: 'Remove watermark', note: '(Link to this generator)', checked: removeWatermark, onChange: setRemoveWatermark },
-                      { label: 'Auto-open Gemini', checked: autoOpenGemini, onChange: setAutoOpenGemini },
                     ].map((item) => (
                       <label key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
                         <input
@@ -1480,9 +1483,12 @@ ${contentString}
                           onChange={(event) => item.onChange(event.target.checked)}
                           className="h-5 w-5 rounded border-white/20 accent-mait-cyan"
                         />
-                        <span>
-                          {item.label}
-                          {item.note && <span className="ml-2 text-xs text-white/35">{item.note}</span>}
+                        <span className="flex flex-col">
+                          <span>
+                            {item.label}
+                            {item.note && <span className="ml-2 text-xs text-white/35">{item.note}</span>}
+                          </span>
+                          {item.description && <span className="mt-1 text-xs leading-relaxed text-white/45">{item.description}</span>}
                         </span>
                       </label>
                     ))}
