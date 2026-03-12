@@ -1469,7 +1469,7 @@ Additionally, immediately following the solutions, you must generate a strictly 
                       { label: 'Answer key', checked: generateAnswerKey, onChange: setGenerateAnswerKey },
                       {
                         label: 'Full Worked Solutions & Rubric',
-                        description: 'Generates step-by-step working and a NESA marking criteria.',
+                        description: 'Generates step-by-step working.',
                         checked: includeWorkedSolutions,
                         onChange: setIncludeWorkedSolutions,
                       },
