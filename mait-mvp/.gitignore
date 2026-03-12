@@ -37,6 +37,8 @@ Thumbs.db
 # Logs
 *.log
 logs/
+run/
+*.pid
 backend/*.log
 
 # Testing

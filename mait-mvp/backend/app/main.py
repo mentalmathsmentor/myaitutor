@@ -66,7 +66,10 @@ async def startup_event():
 
 # CORS - environment-based origins
 # For production: CORS_ORIGINS=https://myaitutor.au,https://www.myaitutor.au
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,
@@ -84,6 +87,15 @@ class InteractionRequest(BaseModel):
 @app.get("/")
 def read_root():
     return {"status": "online", "system": "MAIT MVP"}
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "mait-backend",
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
+    }
 
 async def get_or_create_context(student_id: str) -> StudentContext:
     context = await storage.get_context(student_id)
@@ -159,11 +171,11 @@ async def query_api(request: Request, body: InteractionRequest):
         }
 
     # Update fatigue
-    context = wellness_engine.update_fatigue(context, request.complexity)
+    context = wellness_engine.update_fatigue(context, body.complexity)
 
     # Bloom's Taxonomy - assess query and get teaching strategy
     topic = context.pedagogical_state.current_topic or "Mathematics"
-    demonstrated_level = assess_response_level(request.query, topic)
+    demonstrated_level = assess_response_level(body.query, topic)
     bloom_instruction = get_bloom_teaching_strategy(context.pedagogical_state.blooms_level)
 
     # Advance bloom level based on demonstrated cognitive level
@@ -175,7 +187,7 @@ async def query_api(request: Request, body: InteractionRequest):
     # RAG retrieval via FAISS
     try:
         syllabus_context = syllabus_service.get_relevant_context(
-            query=request.query,
+            query=body.query,
             fatigue_status=context.fatigue_metric.status,
             year=None
         )
@@ -184,17 +196,17 @@ async def query_api(request: Request, body: InteractionRequest):
         syllabus_context = ""
 
     # Fetch conversation history
-    conversation_history = await storage.get_history(request.student_id, limit=20)
+    conversation_history = await storage.get_history(body.student_id, limit=20)
 
     # Prune history if token estimate exceeds budget
-    token_estimate = await storage.get_history_token_estimate(request.student_id)
+    token_estimate = await storage.get_history_token_estimate(body.student_id)
     if token_estimate > 6000 and conversation_history:
         while conversation_history and token_estimate > 6000:
             removed = conversation_history.pop(0)
             token_estimate -= len(removed["content"]) // 4
 
     gemini_response = await get_gemini_response(
-        question=request.query,
+        question=body.query,
         syllabus_context=syllabus_context,
         fatigue_state=context.fatigue_metric.status,
         current_topic=topic,
@@ -205,20 +217,20 @@ async def query_api(request: Request, body: InteractionRequest):
     # Save both messages to conversation history
     response_text = gemini_response.get("text", "")
     await storage.save_message(
-        request.student_id, "user", request.query,
+        body.student_id, "user", body.query,
         fatigue_state=context.fatigue_metric.status.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
     await storage.save_message(
-        request.student_id, "assistant", response_text,
+        body.student_id, "assistant", response_text,
         fatigue_state=context.fatigue_metric.status.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
 
     # Save context (bloom level updated above)
-    await storage.save_context(request.student_id, context)
+    await storage.save_context(body.student_id, context)
 
     return {
         "sections": gemini_response.get("sections", [gemini_response.get("text", "Error")]),
