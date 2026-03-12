@@ -227,15 +227,20 @@ export default function AGEDemo({ navigate }) {
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
                     <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
-                  <span className="ml-4 text-[10px] text-gray-500 font-mono">Universal_Worksheet.pdf</span>
+                  <span className="ml-4 text-[10px] text-gray-500 font-mono">Universal Worksheet.pdf</span>
                 </div>
                 
-                {/* PDF Content - Actual iframe */}
-                <iframe 
-                  src="/Universal_Worksheet.pdf#toolbar=0&navpanes=0&scrollbar=0" 
-                  className="w-full h-full border-none pointer-events-none"
-                  title="Universal Worksheet Preview"
-                />
+                {/* PDF Content */}
+                <object
+                  data="/Universal_Worksheet.pdf#toolbar=0&navpanes=0&scrollbar=0"
+                  type="application/pdf"
+                  className="w-full h-full border-none"
+                  aria-label="Universal Worksheet Preview"
+                >
+                  <div className="flex h-full items-center justify-center bg-white p-6 text-center text-gray-700">
+                    Preview unavailable. Open <a href="/Universal_Worksheet.pdf" target="_blank" rel="noreferrer" className="ml-1 underline">Universal Worksheet.pdf</a>.
+                  </div>
+                </object>
               </div>
               
               {/* Floating Badge */}

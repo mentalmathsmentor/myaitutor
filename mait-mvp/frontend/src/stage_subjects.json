@@ -13,6 +13,18 @@
             "Length and Mass",
             "2D Shapes and 3D Objects",
             "Time (Days of the week, Hours)"
+        ],
+        "Science": [
+            "Living Things",
+            "The Weather",
+            "Materials Around Us",
+            "Using Our Senses"
+        ],
+        "HSIE": [
+            "My Family",
+            "My School",
+            "Places in My Community",
+            "Past and Present"
         ]
     },
     "Stage 1 (Yr 1-2)": {
@@ -28,6 +40,18 @@
             "Fractions (Halves, Quarters)",
             "Length, Area, Volume and Mass",
             "Position and 2D/3D Space"
+        ],
+        "Science": [
+            "Living World",
+            "Earth and Space",
+            "Material World",
+            "Physical World"
+        ],
+        "HSIE": [
+            "Families and Communities",
+            "Local Places",
+            "Past in the Present",
+            "Australia and Its People"
         ]
     },
     "Stage 2 (Yr 3-4)": {
@@ -43,6 +67,18 @@
             "Fractions & Decimals (Tenths, Hundredths)",
             "Measurement & Geometry",
             "Data Representation (Graphs)"
+        ],
+        "Science": [
+            "Living World",
+            "Earth and Space",
+            "Material World",
+            "Physical World"
+        ],
+        "HSIE": [
+            "Community and Remembrance",
+            "First Contacts",
+            "Places are Similar and Different",
+            "Earth's Environment"
         ]
     },
     "Stage 3 (Yr 5-6)": {
@@ -58,6 +94,18 @@
             "Angles, Symmetry and Transformation",
             "Volume, Capacity and Mass",
             "Probability and Data Analysis"
+        ],
+        "Science": [
+            "Living World",
+            "Earth and Space",
+            "Material World",
+            "Physical World"
+        ],
+        "HSIE": [
+            "Australian Colonies",
+            "Australia as a Nation",
+            "Factors That Shape Places",
+            "A Diverse and Connected World"
         ]
     },
     "Stage 4 (Yr 7-8)": {
@@ -103,6 +151,11 @@
             "Earth and Space",
             "Living World",
             "Chemical World"
+        ],
+        "HSIE": [
+            "History",
+            "Geography",
+            "Civics and Citizenship"
         ]
     },
     "Year 11": {
@@ -124,16 +177,14 @@
             "Trigonometry",
             "Calculus",
             "Combinatorics"
-        ]
+        ],
+        "English": [],
+        "Chemistry": [],
+        "Biology": [],
+        "Physics": []
     },
     "Year 12": {
-        "Mathematics Standard 1": [
-            "Algebra",
-            "Measurement",
-            "Financial Mathematics",
-            "Statistical Analysis"
-        ],
-        "Mathematics Standard 2": [
+        "Mathematics Standard": [
             "Algebra",
             "Measurement",
             "Financial Mathematics",
@@ -167,6 +218,9 @@
             "The Nature of Light",
             "From the Universe to the Atom"
         ],
+        "English": [],
+        "Chemistry": [],
+        "Biology": [],
         "Engineering Studies": [
             "Civil Structures",
             "Personal and Public Transport",

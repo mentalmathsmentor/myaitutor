@@ -53,8 +53,8 @@ export default function Navigation({
         transition={{ duration: 0.6, ease: "easeOut" }}
         className={`fixed top-0 left-0 right-0 z-[999] transition-all duration-500 ${
           isScrolled 
-            ? 'bg-mait-space/80 backdrop-blur-xl border-b border-white/10 shadow-2xl' 
-            : 'bg-transparent'
+            ? 'bg-mait-space/82 backdrop-blur-xl border-b border-white/10 shadow-2xl'
+            : 'bg-mait-space/70 backdrop-blur-xl border-b border-white/5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

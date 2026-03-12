@@ -6,6 +6,7 @@ import {
   Zap, 
   Shield,
   Play,
+  FileText,
   ArrowRight
 } from 'lucide-react';
 
@@ -161,20 +162,30 @@ export default function Hero({ scrollToSection, navigate, onLoginClick }) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-wrap gap-4"
+              className="grid max-w-2xl gap-4 sm:grid-cols-[1.35fr_1fr_1.05fr]"
             >
               <button
-                onClick={() => navigate('demo')}
-                className="btn-cosmic text-white px-8 py-4 text-base rounded-xl flex items-center gap-2"
+                onClick={() => navigate('worksheets')}
+                className="btn-cosmic text-white px-8 py-4 text-base rounded-xl flex items-center justify-center gap-2"
               >
-                <Play className="w-5 h-5" />
-                See A.G.E. in Action
+                <FileText className="w-5 h-5" />
+                Worksheet Maker
                 <ArrowRight className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => navigate('demo')}
+                className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-400 px-8 py-4 text-base font-medium text-mait-deep-space transition hover:-translate-y-0.5 hover:shadow-[0_15px_35px_-10px_rgba(34,197,94,0.45)]"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <Play className="w-5 h-5" />
+                  Free Demo
+                </span>
               </button>
               
               <button
                 onClick={onLoginClick}
-                className="btn-glass text-white px-8 py-4 text-base rounded-xl"
+                className="btn-glass text-white px-8 py-4 text-base rounded-xl w-full"
               >
                 Full Access
               </button>
@@ -222,110 +233,84 @@ export default function Hero({ scrollToSection, navigate, onLoginClick }) {
                   <div className="terminal-dot bg-red-500" />
                   <div className="terminal-dot bg-yellow-500" />
                   <div className="terminal-dot bg-green-500" />
-                  <span className="ml-4 text-xs text-white/40 font-mono">mate@mait — A.G.E. Pipeline</span>
+                  <span className="ml-4 text-xs text-white/40 font-mono">worksheet-studio.mait — launch flow</span>
                 </div>
                 
                 {/* Terminal Content */}
-                <div className="terminal-content p-6 space-y-4 min-h-[400px]">
+                <div className="terminal-content p-6 min-h-[400px]">
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5 }}
-                    className="text-green-400 font-mono text-sm"
+                    className="rounded-2xl border border-mait-cyan/20 bg-mait-cyan/5 px-4 py-3 text-sm text-mait-cyan"
                   >
-                    $ mait --init worksheet-generator
+                    Teacher workflow: curriculum {'\u2192'} instructions {'\u2192'} Gemini Canvas {'\u2192'} editable worksheet
                   </motion.div>
-                  
+                  <div className="mt-6 space-y-4">
+                    {[
+                      {
+                        delay: 0.8,
+                        step: '01',
+                        title: 'Pick stage and subject',
+                        detail: 'Year 12 Mathematics Advanced with syllabus points or manual brief.',
+                      },
+                      {
+                        delay: 1.05,
+                        step: '02',
+                        title: 'Tune additions and output',
+                        detail: 'Question count, spacing, proof-style, worded problems, answer key.',
+                      },
+                      {
+                        delay: 1.3,
+                        step: '03',
+                        title: 'Generate instructions',
+                        detail: 'MAIT writes Gemini-ready Canvas instructions with the exact worksheet format.',
+                      },
+                      {
+                        delay: 1.55,
+                        step: '04',
+                        title: 'Edit live in Canvas',
+                        detail: 'Tweak individual questions, regenerate sections, and export the final worksheet.',
+                      },
+                    ].map((item, index) => (
+                      <motion.div
+                        key={item.step}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: item.delay }}
+                        className="relative rounded-2xl border border-white/10 bg-white/5 p-4"
+                      >
+                        {index < 3 && (
+                          <motion.div
+                            className="absolute left-[1.125rem] top-[3.35rem] h-6 w-px bg-gradient-to-b from-emerald-400/80 to-transparent"
+                            animate={{ opacity: [0.45, 1, 0.45] }}
+                            transition={{ duration: 1.8, repeat: Infinity, delay: item.delay }}
+                          />
+                        )}
+                        <div className="flex items-start gap-4">
+                          <motion.div
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-xs font-bold text-emerald-300"
+                            animate={{ scale: [1, 1.04, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, delay: item.delay }}
+                          >
+                            {item.step}
+                          </motion.div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-white">{item.title}</div>
+                            <div className="mt-1 text-sm leading-relaxed text-white/55">{item.detail}</div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="text-white/70 font-mono text-sm"
+                    transition={{ delay: 1.9 }}
+                    className="mt-5 rounded-2xl border border-emerald-500/20 bg-emerald-500/8 px-4 py-3 text-sm text-emerald-300"
                   >
-                    Initializing Artifact Generation Engine...
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.1 }}
-                    className="space-y-2"
-                  >
-                    <div className="flex items-center gap-2 text-white/60 font-mono text-sm">
-                      <span className="text-mait-cyan">✓</span>
-                      Loading NESA syllabus database...
-                    </div>
-                    <div className="flex items-center gap-2 text-white/60 font-mono text-sm">
-                      <span className="text-mait-cyan">✓</span>
-                      Initializing LaTeX compiler...
-                    </div>
-                    <div className="flex items-center gap-2 text-white/60 font-mono text-sm">
-                      <span className="text-mait-cyan">✓</span>
-                      Mounting TikZ diagram engine...
-                    </div>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.5 }}
-                    className="text-green-400 font-mono text-sm"
-                  >
-                    Ready! Select your curriculum parameters:
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.8 }}
-                    className="glass-card p-4 rounded-lg space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60 text-sm">Year Level</span>
-                      <span className="text-mait-cyan font-mono text-sm">Year 12</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60 text-sm">Subject</span>
-                      <span className="text-mait-cyan font-mono text-sm">Mathematics Advanced</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60 text-sm">Topic</span>
-                      <span className="text-mait-cyan font-mono text-sm">Integration by Parts</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/60 text-sm">Questions</span>
-                      <span className="text-mait-cyan font-mono text-sm">15</span>
-                    </div>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2.2 }}
-                    className="flex items-center gap-2"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-mait-cyan animate-pulse" />
-                    <span className="text-white/50 font-mono text-xs">Generating worksheet.pdf...</span>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2.5 }}
-                    className="text-green-400 font-mono text-sm flex items-center gap-2"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Worksheet generated in 0.42s!
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2.8 }}
-                    className="flex items-center gap-2 text-white/40 font-mono text-sm"
-                  >
-                    <span className="text-mait-cosmic">$</span>
-                    <span className="animate-typing-cursor inline-block w-2 h-4 bg-white/40" />
+                    Launches into an editable Gemini Canvas flow, not a locked one-shot PDF.
                   </motion.div>
                 </div>
               </div>

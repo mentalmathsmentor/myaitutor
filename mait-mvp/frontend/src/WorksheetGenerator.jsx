@@ -29,6 +29,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender
 const STAGES = Object.keys(stageSubjects);
 const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)', 'Dynamic Space'];
 const DIFFICULTY_OPTIONS = ['Mixed', 'Easy -> Hard Progression', 'Mostly Easy', 'Mostly Hard', 'Exam-Style'];
+const MANUAL_ONLY_SUBJECTS = new Set(['English', 'Chemistry', 'Biology']);
 
 const HIERARCHY_MAP = {
   'Year 11 Extension 1': ['Year 11 Advanced'],
@@ -149,12 +150,18 @@ export default function WorksheetGenerator({ navigate }) {
     () => localStorage.getItem('mait_ws_pedagogicalParameterShift') === 'true'
   );
   const [pedagogicalLimitCase, setPedagogicalLimitCase] = useState(() => localStorage.getItem('mait_ws_pedagogicalLimitCase') === 'true');
+  const [pedagogicalProofStyle, setPedagogicalProofStyle] = useState(() => localStorage.getItem('mait_ws_pedagogicalProofStyle') === 'true');
+  const [pedagogicalWordProblems, setPedagogicalWordProblems] = useState(() => localStorage.getItem('mait_ws_pedagogicalWordProblems') === 'true');
+  const [pedagogicalMultiStep, setPedagogicalMultiStep] = useState(() => localStorage.getItem('mait_ws_pedagogicalMultiStep') === 'true');
   const [removeWatermark, setRemoveWatermark] = useState(() => localStorage.getItem('mait_ws_removeWatermark') === 'true');
   const [showHints, setShowHints] = useState(() => {
     const saved = localStorage.getItem('mait_ws_showHints');
     return saved !== null ? saved === 'true' : true;
   });
-  const [numInput, setNumInput] = useState('');
+  const [numInput, setNumInput] = useState(() => {
+    const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
+    return String(Math.min(99, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
+  });
   const [firstTimeMode, setFirstTimeMode] = useState(false);
   const [selectedPoints, setSelectedPoints] = useState(() => {
     try {
@@ -175,7 +182,10 @@ export default function WorksheetGenerator({ navigate }) {
     return saved !== null ? saved === 'true' : true;
   });
   const [mode, setMode] = useState('A');
-  const [numQuestions, setNumQuestions] = useState(() => parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10));
+  const [numQuestions, setNumQuestions] = useState(() => {
+    const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
+    return Math.min(99, Math.max(1, Number.isNaN(saved) ? 10 : saved));
+  });
   const [rawQuestions, setRawQuestions] = useState('');
   const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || 'Dynamic Space');
   const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true');
@@ -211,6 +221,9 @@ export default function WorksheetGenerator({ navigate }) {
     localStorage.setItem('mait_ws_pedagogicalSpotError', pedagogicalSpotError.toString());
     localStorage.setItem('mait_ws_pedagogicalParameterShift', pedagogicalParameterShift.toString());
     localStorage.setItem('mait_ws_pedagogicalLimitCase', pedagogicalLimitCase.toString());
+    localStorage.setItem('mait_ws_pedagogicalProofStyle', pedagogicalProofStyle.toString());
+    localStorage.setItem('mait_ws_pedagogicalWordProblems', pedagogicalWordProblems.toString());
+    localStorage.setItem('mait_ws_pedagogicalMultiStep', pedagogicalMultiStep.toString());
     localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
     localStorage.setItem('mait_ws_showHints', showHints.toString());
   }, [
@@ -227,15 +240,12 @@ export default function WorksheetGenerator({ navigate }) {
     pedagogicalSpotError,
     pedagogicalParameterShift,
     pedagogicalLimitCase,
+    pedagogicalProofStyle,
+    pedagogicalWordProblems,
+    pedagogicalMultiStep,
     removeWatermark,
     showHints,
   ]);
-
-  useEffect(() => {
-    if (numInput === '' || parseInt(numInput, 10) !== numQuestions) {
-      setNumInput(numQuestions.toString());
-    }
-  }, [numInput, numQuestions]);
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -247,9 +257,11 @@ export default function WorksheetGenerator({ navigate }) {
     if (subjectsForStage) {
       const nextSubject = Object.keys(subjectsForStage)[0];
       setSelectedSubject(nextSubject);
+      setMode(MANUAL_ONLY_SUBJECTS.has(nextSubject) ? 'B' : 'A');
       setCustomSubject('');
     } else {
       setSelectedSubject('Other');
+      setMode('B');
     }
   }, [selectedStage]);
 
@@ -272,7 +284,7 @@ export default function WorksheetGenerator({ navigate }) {
   }, [selectedStage, selectedSubject]);
 
   useEffect(() => {
-    if (selectedSubject === 'Other') {
+    if (selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) {
       setMode('B');
     }
   }, [selectedSubject]);
@@ -448,6 +460,15 @@ export default function WorksheetGenerator({ navigate }) {
     if (pedagogicalLimitCase) {
       pedagogicalDrills.push('limit-case');
     }
+    if (pedagogicalProofStyle) {
+      pedagogicalDrills.push('proof-style');
+    }
+    if (pedagogicalWordProblems) {
+      pedagogicalDrills.push('word-problems');
+    }
+    if (pedagogicalMultiStep) {
+      pedagogicalDrills.push('multi-step');
+    }
 
     return {
       topic: selectedPoints[0] || rawQuestions.split('\n')[0] || displaySubject,
@@ -516,7 +537,14 @@ export default function WorksheetGenerator({ navigate }) {
     }
 
     let pedagogyPrefix = '';
-    if (pedagogicalSpotError || pedagogicalParameterShift || pedagogicalLimitCase) {
+    if (
+      pedagogicalSpotError ||
+      pedagogicalParameterShift ||
+      pedagogicalLimitCase ||
+      pedagogicalProofStyle ||
+      pedagogicalWordProblems ||
+      pedagogicalMultiStep
+    ) {
       pedagogyPrefix += 'PEDAGOGY DIRECTIVE: You must include the following special question types in your worksheet:\\n';
       if (pedagogicalSpotError) {
         pedagogyPrefix += '- **Spot the Error:** Provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the error occurred and explain why. Wrap this specific question in a `\\\\begin{tcolorbox} ... \\\\end{tcolorbox}` environment. This must be worth exactly 1 mark.\\n';
@@ -526,6 +554,15 @@ export default function WorksheetGenerator({ navigate }) {
       }
       if (pedagogicalLimitCase) {
         pedagogyPrefix += '- **Limit Case Analysis:** Ask the student to evaluate the system/equation at an extreme boundary condition (e.g., as x approaches infinity, or as a physical mass approaches zero) and interpret the qualitative meaning of that result.\\n';
+      }
+      if (pedagogicalProofStyle) {
+        pedagogyPrefix += '- **Proof-Style Question:** Include at least one question that requires a formal justification, structured proof, or rigorous mathematical reasoning rather than direct computation only.\\n';
+      }
+      if (pedagogicalWordProblems) {
+        pedagogyPrefix += '- **Contextual Word Problem:** Include at least one authentic real-world worded problem that matches the selected subject and stage.\\n';
+      }
+      if (pedagogicalMultiStep) {
+        pedagogyPrefix += '- **Multi-Step Synthesis:** Include at least one problem that combines multiple concepts or syllabus ideas into a single chained task.\\n';
       }
       pedagogyPrefix += '\\n';
     }
@@ -725,7 +762,7 @@ ${contentString}
       await navigator.clipboard.writeText(generatePrompt());
       setIsCopied(true);
       setGenerationError('');
-      setGenerationSuccess('Exact worksheet prompt copied.');
+      setGenerationSuccess('Instructions generated, copied, and ready for Gemini Canvas.');
       setShowWarning(true);
       setShowCloseButton(false);
       if (launchTimeoutRef.current) {
@@ -791,6 +828,41 @@ ${contentString}
     }
   };
 
+  const handleNumSliderChange = (event) => {
+    const nextValue = Math.min(99, Math.max(1, parseInt(event.target.value, 10)));
+    setNumQuestions(nextValue);
+    setNumInput(String(nextValue));
+  };
+
+  const handleNumInputChange = (event) => {
+    const nextValue = event.target.value;
+    if (nextValue === '' || /^\d{0,2}$/.test(nextValue)) {
+      setNumInput(nextValue);
+    }
+  };
+
+  const commitNumInput = () => {
+    if (numInput.trim() === '') {
+      setNumQuestions(1);
+      setNumInput('1');
+      return;
+    }
+    const parsed = parseInt(numInput, 10);
+    const clamped = Math.min(99, Math.max(1, Number.isNaN(parsed) ? numQuestions : parsed));
+    setNumQuestions(clamped);
+    setNumInput(String(clamped));
+  };
+
+  const handleStepClick = (targetStep) => {
+    if (targetStep <= currentStep) {
+      setCurrentStep(targetStep);
+      return;
+    }
+    if (targetStep === currentStep + 1 && canProceed()) {
+      setCurrentStep(targetStep);
+    }
+  };
+
   const canProceed = () => {
     if (currentStep === 0) {
       return selectedStage && selectedSubject && (selectedSubject !== 'Other' || customSubject.trim() !== '');
@@ -802,7 +874,7 @@ ${contentString}
   };
 
   return (
-    <div className="min-h-screen cosmic-gradient pt-24 pb-12">
+    <div className="min-h-screen pt-24 pb-12">
       {showErrorToast && (
         <div className="fixed top-20 left-1/2 z-[110] -translate-x-1/2">
           <div className="flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm text-red-200 shadow-[0_0_30px_rgba(239,68,68,0.18)] backdrop-blur-xl">
@@ -828,9 +900,9 @@ ${contentString}
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/15 text-green-400">
               <CheckCircle2 size={30} />
             </div>
-            <h3 className="text-3xl font-bold text-white">Prompt copied</h3>
+            <h3 className="text-3xl font-bold text-white">Instructions ready</h3>
             <p className="mt-3 text-sm text-white/65">
-              Paste it into Gemini. We kept the original worksheet format and syllabus logic intact.
+              Your worksheet instructions are ready to paste into Gemini Canvas with the original logic intact.
             </p>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               <img src={canvasHint} alt="Gemini canvas hint" className="rounded-2xl border border-white/10" />
@@ -839,7 +911,7 @@ ${contentString}
             {!showCloseButton && (
               <div className="mt-5">
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full origin-left animate-progress-shrink bg-green-400" />
+                  <div className="h-full origin-left animate-progress bg-green-400" />
                 </div>
                 <p className="mt-3 text-xs uppercase tracking-[0.25em] text-green-300">Launching Gemini</p>
               </div>
@@ -863,7 +935,7 @@ ${contentString}
               <FileText className="h-8 w-8 text-mait-cyan" />
               Worksheet Studio
             </h1>
-            <p className="text-white/60">Original worksheet logic, syllabus dot-points, and prompt format preserved.</p>
+            <p className="text-white/60">Worksheet instructions, syllabus controls, and landing polish tuned for easier teacher use.</p>
           </div>
         </motion.div>
 
@@ -873,24 +945,38 @@ ${contentString}
           transition={{ delay: 0.08 }}
           className="glass-card-strong mb-8 rounded-2xl p-4"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center gap-3">
-                <div
-                  className={`flex items-center gap-3 rounded-xl px-4 py-2 transition ${
-                    index === currentStep ? 'bg-mait-cosmic/20 text-mait-cyan' : index < currentStep ? 'text-green-400' : 'text-white/40'
+              <div key={step.id} className="flex flex-1 items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleStepClick(index)}
+                  className={`flex flex-1 items-center gap-3 rounded-xl px-4 py-2 text-left transition ${
+                    index <= currentStep ? 'cursor-pointer' : 'cursor-default'
+                  } ${
+                    index === currentStep
+                      ? 'bg-mait-cosmic/20 text-mait-cyan'
+                      : index < currentStep
+                        ? 'text-green-400 hover:bg-green-500/8'
+                        : 'text-white/40'
                   }`}
                 >
                   <div
                     className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                      index === currentStep ? 'bg-mait-cosmic text-white' : index < currentStep ? 'bg-green-500/20' : 'bg-white/10'
+                      index === currentStep
+                        ? 'bg-mait-cosmic text-white'
+                        : index < currentStep
+                          ? 'bg-green-500/20'
+                          : 'bg-white/10'
                     }`}
                   >
                     {index < currentStep ? <Check className="h-4 w-4" /> : <step.icon className="h-4 w-4" />}
                   </div>
-                  <span className="hidden sm:block font-medium">{step.title}</span>
-                </div>
-                {index < steps.length - 1 && <div className={`hidden h-px w-8 sm:block ${index < currentStep ? 'bg-green-500/40' : 'bg-white/10'}`} />}
+                  <span className="font-medium">{step.title}</span>
+                </button>
+                {index < steps.length - 1 && (
+                  <div className={`hidden h-px flex-1 lg:block ${index < currentStep ? 'bg-green-500/45' : 'bg-white/10'}`} />
+                )}
               </div>
             ))}
           </div>
@@ -934,19 +1020,28 @@ ${contentString}
                         <button
                           key={subject}
                           type="button"
-                          onClick={() => setSelectedSubject(subject)}
+                          onClick={() => {
+                            setSelectedSubject(subject);
+                            setMode(MANUAL_ONLY_SUBJECTS.has(subject) ? 'B' : 'A');
+                          }}
                           className={`rounded-2xl border px-4 py-3 text-left transition ${
                             selectedSubject === subject
                               ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
                               : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
                           }`}
                         >
-                          {subject}
+                          <div className="font-medium">{subject}</div>
+                          {MANUAL_ONLY_SUBJECTS.has(subject) && (
+                            <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/35">Manual entry</div>
+                          )}
                         </button>
                       ))}
                       <button
                         type="button"
-                        onClick={() => setSelectedSubject('Other')}
+                        onClick={() => {
+                          setSelectedSubject('Other');
+                          setMode('B');
+                        }}
                         className={`rounded-2xl border px-4 py-3 text-left transition ${
                           selectedSubject === 'Other'
                             ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
@@ -1013,14 +1108,23 @@ ${contentString}
                   </div>
 
                   {mode === 'B' || selectedSubject === 'Other' ? (
-                    <MathInput
-                      value={rawQuestions}
-                      onChange={setRawQuestions}
-                      placeholder="Paste the exact question brief, topic list, or teacher instructions here..."
-                      rows={14}
-                      className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
-                      inputClassName="min-h-[360px] w-full rounded-3xl border border-white/10 bg-black/25 p-4 pr-24 text-sm text-white outline-none transition focus:border-mait-cyan/40"
-                    />
+                    <div className="space-y-4">
+                      {(selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) && (
+                        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
+                          {selectedSubject === 'Other'
+                            ? 'This subject uses manual entry only. Add your own topic brief or question instructions below.'
+                            : `${selectedSubject} is currently manual-entry only. The selected subject will still be injected into the final worksheet instructions.`}
+                        </div>
+                      )}
+                      <MathInput
+                        value={rawQuestions}
+                        onChange={setRawQuestions}
+                        placeholder={`Paste the exact ${displaySubject} brief, topic list, or teacher instructions here...`}
+                        rows={14}
+                        className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
+                        inputClassName="min-h-[360px] w-full rounded-3xl border border-white/10 bg-black/25 p-4 pr-24 text-sm text-white outline-none transition focus:border-mait-cyan/40"
+                      />
+                    </div>
                   ) : (
                     <div className={`overflow-hidden rounded-3xl border border-white/10 bg-black/20 ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}>
                       <div className="flex flex-wrap items-center gap-4 border-b border-white/10 bg-white/5 p-4">
@@ -1199,8 +1303,8 @@ ${contentString}
                   </div>
 
                   <div className="space-y-4">
-                    <label className="text-xs uppercase tracking-[0.25em] text-white/45">Pedagogical requirements</label>
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <label className="text-xs uppercase tracking-[0.25em] text-white/45">Pedagogical additions</label>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {[
                         {
                           id: 'spot-error',
@@ -1222,6 +1326,27 @@ ${contentString}
                           onChange: setPedagogicalLimitCase,
                           title: 'Limit case analysis',
                           description: 'Test edge behavior and interpret the qualitative result.',
+                        },
+                        {
+                          id: 'proof-style',
+                          checked: pedagogicalProofStyle,
+                          onChange: setPedagogicalProofStyle,
+                          title: 'Proof-style question',
+                          description: 'Require formal justification or rigorous mathematical reasoning.',
+                        },
+                        {
+                          id: 'word-problems',
+                          checked: pedagogicalWordProblems,
+                          onChange: setPedagogicalWordProblems,
+                          title: 'Contextual word problem',
+                          description: 'Inject at least one applied real-world scenario question.',
+                        },
+                        {
+                          id: 'multi-step',
+                          checked: pedagogicalMultiStep,
+                          onChange: setPedagogicalMultiStep,
+                          title: 'Multi-step synthesis',
+                          description: 'Combine multiple ideas into one chained problem.',
                         },
                       ].map((item) => (
                         <label
@@ -1266,24 +1391,23 @@ ${contentString}
                       <input
                         type="range"
                         min={1}
-                        max={50}
-                        value={Math.min(numQuestions, 50)}
-                        onChange={(event) => setNumQuestions(parseInt(event.target.value, 10))}
+                        max={99}
+                        value={Math.min(numQuestions, 99)}
+                        onChange={handleNumSliderChange}
                         className="w-full accent-mait-cyan"
                       />
                       <input
                         type="number"
                         value={numInput}
-                        onChange={(event) => setNumInput(event.target.value)}
-                        onBlur={() => {
-                          const value = parseInt(numInput, 10);
-                          if (Number.isNaN(value) || value < 1) {
-                            setNumQuestions(1);
-                            setNumInput('1');
-                            return;
+                        min={1}
+                        max={99}
+                        onChange={handleNumInputChange}
+                        onBlur={commitNumInput}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            commitNumInput();
                           }
-                          setNumQuestions(value);
-                          setNumInput(value.toString());
                         }}
                         className="w-20 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-center text-white outline-none transition focus:border-mait-cyan/40"
                       />
@@ -1336,7 +1460,7 @@ ${contentString}
                       { label: 'Answer key', checked: generateAnswerKey, onChange: setGenerateAnswerKey },
                       { label: 'Canvas setup guide', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
                       { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
-                      { label: 'Remove watermark', checked: removeWatermark, onChange: setRemoveWatermark },
+                      { label: 'Remove watermark', note: '(Link to this generator)', checked: removeWatermark, onChange: setRemoveWatermark },
                       { label: 'Show hints', checked: showHints, onChange: setShowHints },
                     ].map((item) => (
                       <label key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
@@ -1346,7 +1470,10 @@ ${contentString}
                           onChange={(event) => item.onChange(event.target.checked)}
                           className="h-5 w-5 rounded border-white/20 accent-mait-cyan"
                         />
-                        {item.label}
+                        <span>
+                          {item.label}
+                          {item.note && <span className="ml-2 text-xs text-white/35">{item.note}</span>}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -1379,9 +1506,8 @@ ${contentString}
 
           <div className="space-y-6">
             <div className="glass-card-strong rounded-3xl p-5">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4">
                 <h3 className="text-lg font-semibold text-white">Summary</h3>
-                <span className="rounded-full border border-mait-cyan/20 bg-mait-cyan/10 px-3 py-1 text-[10px] uppercase tracking-[0.25em] text-mait-cyan">Original logic</span>
               </div>
 
               <div className="space-y-4 text-sm">
@@ -1418,24 +1544,8 @@ ${contentString}
                   className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]"
                 >
                   <Copy className="h-4 w-4" />
-                  Copy exact prompt
+                  Generate Instructions and Launch Gemini
                 </button>
-
-                <button
-                  type="button"
-                  onClick={handleGeneratePdf}
-                  disabled={isGenerating}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  {isGenerating ? 'Generating PDF...' : 'Generate in-app PDF'}
-                </button>
-
-                {!canGeneratePdf && (
-                  <p className="text-xs leading-relaxed text-white/45">
-                    In-app PDF is currently limited to Stage 4-12 mathematics. The exact prompt path still preserves the full original worksheet behavior for every subject and stage.
-                  </p>
-                )}
               </div>
 
               {(generationError || generationSuccess) && (
@@ -1466,6 +1576,66 @@ ${contentString}
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <div className="glass-card-strong overflow-hidden rounded-3xl">
+            <div className="border-b border-white/10 px-6 py-5">
+              <h3 className="text-xl font-semibold text-white">Universal Worksheet.pdf</h3>
+              <p className="mt-1 text-sm text-white/50">A live preview of the worksheet style teachers will be generating instructions for.</p>
+            </div>
+            <div className="aspect-[1/1.36] bg-white p-3">
+              <object
+                data="/Universal_Worksheet.pdf#toolbar=0&navpanes=0&scrollbar=0"
+                type="application/pdf"
+                className="h-full w-full rounded-2xl border border-slate-200 bg-white"
+                aria-label="Universal Worksheet preview"
+              >
+                <div className="flex h-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-700">
+                  PDF preview unavailable. Open <a className="ml-1 underline" href="/Universal_Worksheet.pdf" target="_blank" rel="noreferrer">Universal Worksheet.pdf</a>.
+                </div>
+              </object>
+            </div>
+          </div>
+
+          <div className="glass-card-strong rounded-3xl p-6">
+            <div className="mb-6">
+              <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
+              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
+            </div>
+
+            <div className="space-y-4">
+              <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
+                  <span>How does "Search NESA Website" work?</span>
+                  <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
+                  It asks Gemini to proactively consult the published NESA site for alignment context. Treat it as experimental and always verify the resulting worksheet.
+                </div>
+              </details>
+
+              <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
+                  <span>Why launch through Gemini instead of generating the PDF here?</span>
+                  <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
+                  Gemini Canvas makes it much easier to edit, regenerate, and selectively tweak worksheet sections after the initial instructions are produced.
+                </div>
+              </details>
+
+              <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
+                  <span>What do the pedagogical additions actually change?</span>
+                  <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
+                  They inject explicit prompt directives for special question types like proof-style reasoning, multi-step synthesis, contextual word problems, and structured error analysis.
+                </div>
+              </details>
+            </div>
           </div>
         </div>
       </div>
