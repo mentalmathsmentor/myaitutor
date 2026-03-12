@@ -47,7 +47,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender
 const getStudentId = () => {
     let id = localStorage.getItem('mait_student_id');
     if (!id) {
-        id = `student_${crypto.randomUUID()}`;
+        id = `student_${crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)}`;
         localStorage.setItem('mait_student_id', id);
     }
     return id;
@@ -152,6 +152,7 @@ function App() {
     // Inactivity Tracker State
     const [isIdle, setIsIdle] = useState(false)
     const idleTimeoutRef = useRef(null)
+    const lastActivityRef = useRef(0)
     const currentTimeoutDelay = useRef(5000)
 
     const isDemoMode = page === 'demo'
@@ -480,8 +481,12 @@ function App() {
         if (isDemoMode) {
             // Initial Start
             resetIdleTimer();
-
-            const handleActivity = () => resetIdleTimer();
+            const handleActivity = () => {
+                const now = Date.now();
+                if (now - lastActivityRef.current < 200) return;
+                lastActivityRef.current = now;
+                resetIdleTimer();
+            };
             // Listen on capture phase for all interaction types
             window.addEventListener('mousemove', handleActivity, true);
             window.addEventListener('keydown', handleActivity, true);
