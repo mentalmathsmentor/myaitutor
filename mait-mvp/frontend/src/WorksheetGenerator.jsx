@@ -674,7 +674,7 @@ For every question you generate:
 
 **1. THE PREAMBLE:**
 \\\\documentclass[12pt, a4paper]{article}
-\\\\usepackage[top=1.5cm, bottom=2.5cm, left=1.5cm, right=1.5cm, headheight=30pt, footskip=30pt]{geometry}
+\\\\usepackage[top=1.5cm, bottom=1.5cm, left=1.5cm, right=1.5cm, headheight=30pt, headsep=15pt, footskip=20pt, includehead, includefoot]{geometry}
 \\\\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
 \\\\usepackage[none]{hyphenat}
 \\\\usepackage[hidelinks]{hyperref}
@@ -711,7 +711,7 @@ ${answerKeyLogic}
 * Spacing: ${spacingLogic}
 * **MARKS ALIGNMENT (CRITICAL):** ${marksLogic === 'Do not assign marks' ? marksLogic : `If assigning marks, you MUST use \`${marksLogic}\` at the very end of the question text. The \\\\mbox{} is critical to prevent the number and the word 'Marks' from being split across two lines. Do NOT let the marks wrap to a new line awkwardly. Ensure they are pushed completely flush-right.`}
 * **MANDATORY DIAGRAMS & SHAPES:** If a question mentions a shape, graph, diagram, angle relationship (e.g., "vertically opposite", "transversal"), or geometric property, you MUST generate the corresponding TikZ code to draw a clean, professional diagram below the question text.
-* **PREAMBLE & GEOMETRY RULE:** When setting up the document geometry, you MUST explicitly define bottom=2.5cm, footskip=30pt, and headheight=30pt. Do not use a bottom margin smaller than 2.5cm. This is strictly required to prevent multicols content and vertical rules from crashing into the custom multi-line footer. Use exact geometry: \\\\usepackage[top=1.5cm, bottom=2.5cm, left=1.5cm, right=1.5cm, headheight=30pt, footskip=30pt]{geometry}
+* **PREAMBLE & GEOMETRY RULE:** When setting up the document geometry, you MUST use the exact master geometry below so the header and footer alignment stays stable while preserving all dynamic worksheet content injections from the UI: \\\\usepackage[top=1.5cm, bottom=1.5cm, left=1.5cm, right=1.5cm, headheight=30pt, headsep=15pt, footskip=20pt, includehead, includefoot]{geometry}
 * **FOOTER RESTRAINT RULE:** Do not include multi-line footers or the "AI SELF-CHECK" text. Keep the center footer strictly to the page number using \\\\cfoot{Page \\\\thepage}. This is crucial to prevent the footer from colliding with the multicols vertical divider at the bottom of the page.
 
 **3. PAGINATION & FOOTER:**
