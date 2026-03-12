@@ -42,7 +42,7 @@ if SENTRY_DSN:
         profiles_sample_rate=1.0,
     )
 
-app = FastAPI(title="MAIT MVP (The Glitch Edition)")
+app = FastAPI(title="My AI Tutor")
 
 # Simple Auth: Verify Student-ID header for sensitive data
 async def verify_student_auth(request: Request, student_id: str):

@@ -117,6 +117,16 @@ function isMathsSubject(subject) {
   return subject.toLowerCase().includes('mathematics');
 }
 
+function formatStageLabel(stage) {
+  const match = stage.match(/^(.*?)(?:\s*\(([^)]+)\))?$/);
+  if (!match) {
+    return stage;
+  }
+
+  const [, label, hint] = match;
+  return hint ? `${label.trim()} ${hint}` : label.trim();
+}
+
 export default function WorksheetGenerator({ navigate }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -874,7 +884,10 @@ ${contentString}
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-12">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(147,51,234,0.2),_transparent_36%),linear-gradient(180deg,_rgba(46,16,101,0.32)_0%,_rgba(8,12,24,0.94)_32%,_rgba(8,12,24,1)_100%)] pt-24 pb-10">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,_rgba(168,85,247,0.12),_transparent_32%),radial-gradient(circle_at_86%_18%,_rgba(139,92,246,0.14),_transparent_28%),radial-gradient(circle_at_50%_100%,_rgba(91,33,182,0.1),_transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#190b34]/70 via-[#140d2d]/35 to-transparent" />
+      <div className="relative">
       {showErrorToast && (
         <div className="fixed top-20 left-1/2 z-[110] -translate-x-1/2">
           <div className="flex items-center gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-3 text-sm text-red-200 shadow-[0_0_30px_rgba(239,68,68,0.18)] backdrop-blur-xl">
@@ -1001,14 +1014,13 @@ ${contentString}
                         key={stage}
                         type="button"
                         onClick={() => setSelectedStage(stage)}
-                        className={`rounded-2xl border px-4 py-4 text-left transition ${
+                        className={`min-h-[112px] rounded-2xl border px-4 py-4 text-left transition ${
                           selectedStage === stage
                             ? 'border-mait-cyan/50 bg-mait-cosmic/20 text-white shadow-neon-purple'
                             : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
                         }`}
                       >
-                        <div className="text-sm font-semibold">{stage.split('(')[0].trim()}</div>
-                        {stage.includes('(') && <div className="mt-1 text-xs text-white/45">{stage.match(/\(([^)]+)\)/)?.[1]}</div>}
+                        <div className="text-sm font-semibold">{formatStageLabel(stage)}</div>
                       </button>
                     ))}
                   </div>
@@ -1024,16 +1036,13 @@ ${contentString}
                             setSelectedSubject(subject);
                             setMode(MANUAL_ONLY_SUBJECTS.has(subject) ? 'B' : 'A');
                           }}
-                          className={`rounded-2xl border px-4 py-3 text-left transition ${
+                          className={`flex min-h-[108px] items-center rounded-2xl border px-4 py-3 text-left transition ${
                             selectedSubject === subject
                               ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
                               : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
                           }`}
                         >
                           <div className="font-medium">{subject}</div>
-                          {MANUAL_ONLY_SUBJECTS.has(subject) && (
-                            <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-white/35">Manual entry</div>
-                          )}
                         </button>
                       ))}
                       <button
@@ -1042,7 +1051,7 @@ ${contentString}
                           setSelectedSubject('Other');
                           setMode('B');
                         }}
-                        className={`rounded-2xl border px-4 py-3 text-left transition ${
+                        className={`flex min-h-[108px] items-center rounded-2xl border px-4 py-3 text-left transition ${
                           selectedSubject === 'Other'
                             ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
                             : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
@@ -1544,7 +1553,10 @@ ${contentString}
                   className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]"
                 >
                   <Copy className="h-4 w-4" />
-                  Generate Instructions and Launch Gemini
+                  <span className="flex flex-col leading-tight">
+                    <span>Generate Instructions</span>
+                    <span>&amp; Launch Gemini</span>
+                  </span>
                 </button>
               </div>
 
@@ -1579,23 +1591,25 @@ ${contentString}
           </div>
         </div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="glass-card-strong overflow-hidden rounded-3xl">
             <div className="border-b border-white/10 px-6 py-5">
               <h3 className="text-xl font-semibold text-white">Universal Worksheet.pdf</h3>
               <p className="mt-1 text-sm text-white/50">A live preview of the worksheet style teachers will be generating instructions for.</p>
             </div>
-            <div className="aspect-[1/1.36] bg-white p-3">
-              <object
-                data="/Universal_Worksheet.pdf#toolbar=0&navpanes=0&scrollbar=0"
-                type="application/pdf"
-                className="h-full w-full rounded-2xl border border-slate-200 bg-white"
-                aria-label="Universal Worksheet preview"
-              >
-                <div className="flex h-full items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-700">
-                  PDF preview unavailable. Open <a className="ml-1 underline" href="/Universal_Worksheet.pdf" target="_blank" rel="noreferrer">Universal Worksheet.pdf</a>.
-                </div>
-              </object>
+            <div className="bg-white p-3">
+              <iframe
+                src="/Universal_Worksheet.pdf#toolbar=0&navpanes=0&scrollbar=0"
+                title="Universal Worksheet preview"
+                className="h-[620px] w-full rounded-2xl border border-slate-200 bg-white lg:h-[700px]"
+              />
+              <div className="px-2 pt-3 text-center text-sm text-slate-600">
+                If the preview does not load in your browser, open{' '}
+                <a className="font-medium underline" href="/Universal_Worksheet.pdf" target="_blank" rel="noreferrer">
+                  Universal Worksheet.pdf
+                </a>
+                .
+              </div>
             </div>
           </div>
 
@@ -1638,6 +1652,7 @@ ${contentString}
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

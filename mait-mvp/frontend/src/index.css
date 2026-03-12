@@ -8,16 +8,16 @@
     --background: 225 25% 4%;
     --foreground: 60 10% 95%;
 
-    /* Primary: Electric Teal - not generic purple */
-    --primary: 172 80% 45%;
+    /* Primary: Electric violet */
+    --primary: 268 86% 62%;
     --primary-foreground: 225 25% 4%;
 
-    /* Accent: Hot Coral - sharp contrast */
-    --accent: 12 90% 62%;
+    /* Accent: Neon cyan */
+    --accent: 188 92% 58%;
     --accent-foreground: 225 25% 4%;
 
-    /* Secondary: Soft Lavender */
-    --secondary: 260 30% 65%;
+    /* Secondary: Soft lavender */
+    --secondary: 258 52% 70%;
     --secondary-foreground: 225 25% 4%;
 
     /* Muted: Deep Space */
@@ -36,13 +36,13 @@
     --radius: 0.75rem;
 
     /* Glow effects */
-    --glow-primary: 172 80% 45%;
-    --glow-accent: 12 90% 62%;
+    --glow-primary: 268 86% 62%;
+    --glow-accent: 188 92% 58%;
 
     /* RGB for dynamic shadows */
-    --primary-rgb: 0, 242, 219;
+    --primary-rgb: 147, 51, 234;
     --secondary-rgb: 167, 139, 250;
-    --accent-rgb: 255, 87, 51;
+    --accent-rgb: 34, 211, 238;
 
     /* MAIT Cosmic Kimi Colors */
     --mait-cosmic-purple: 265 85% 60%;
@@ -89,9 +89,9 @@ body {
 /* ATMOSPHERIC BACKGROUND - ENHANCED */
 .bg-cosmic {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, hsla(172, 80%, 45%, 0.15), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 100%, hsla(12, 90%, 62%, 0.08), transparent),
-    radial-gradient(ellipse 40% 60% at 0% 80%, hsla(260, 30%, 65%, 0.06), transparent),
+    radial-gradient(ellipse 80% 50% at 50% -20%, hsla(268, 86%, 62%, 0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 100%, hsla(188, 92%, 58%, 0.08), transparent),
+    radial-gradient(ellipse 40% 60% at 0% 80%, hsla(258, 52%, 70%, 0.08), transparent),
     hsl(var(--background));
 }
 
