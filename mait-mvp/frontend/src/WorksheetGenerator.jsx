@@ -118,13 +118,7 @@ function isMathsSubject(subject) {
 }
 
 function formatStageLabel(stage) {
-  const match = stage.match(/^(.*?)(?:\s*\(([^)]+)\))?$/);
-  if (!match) {
-    return stage;
-  }
-
-  const [, label, hint] = match;
-  return hint ? `${label.trim()} ${hint}` : label.trim();
+  return stage;
 }
 
 export default function WorksheetGenerator({ navigate }) {
@@ -170,7 +164,7 @@ export default function WorksheetGenerator({ navigate }) {
   });
   const [numInput, setNumInput] = useState(() => {
     const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
-    return String(Math.min(99, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
+    return String(Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
   });
   const [firstTimeMode, setFirstTimeMode] = useState(false);
   const [selectedPoints, setSelectedPoints] = useState(() => {
@@ -194,14 +188,17 @@ export default function WorksheetGenerator({ navigate }) {
   const [mode, setMode] = useState('A');
   const [numQuestions, setNumQuestions] = useState(() => {
     const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
-    return Math.min(99, Math.max(1, Number.isNaN(saved) ? 10 : saved));
+    return Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved));
   });
   const [rawQuestions, setRawQuestions] = useState('');
   const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || 'Dynamic Space');
   const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true');
   const [generateAnswerKey, setGenerateAnswerKey] = useState(() => localStorage.getItem('mait_ws_answerKey') === 'true');
   const [difficulty, setDifficulty] = useState(() => localStorage.getItem('mait_ws_difficulty') || DIFFICULTY_OPTIONS[0]);
-  const [includeCanvasSetup, setIncludeCanvasSetup] = useState(() => localStorage.getItem('mait_ws_canvasSetup') === 'true');
+  const [includeCanvasSetup, setIncludeCanvasSetup] = useState(() => {
+    const saved = localStorage.getItem('mait_ws_canvasSetup');
+    return saved !== null ? saved === 'true' : true;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedModules, setExpandedModules] = useState({});
   const [expandedSubtopics, setExpandedSubtopics] = useState({});
@@ -839,14 +836,14 @@ ${contentString}
   };
 
   const handleNumSliderChange = (event) => {
-    const nextValue = Math.min(99, Math.max(1, parseInt(event.target.value, 10)));
+    const nextValue = Math.min(50, Math.max(1, parseInt(event.target.value, 10)));
     setNumQuestions(nextValue);
     setNumInput(String(nextValue));
   };
 
   const handleNumInputChange = (event) => {
     const nextValue = event.target.value;
-    if (nextValue === '' || /^\d{0,2}$/.test(nextValue)) {
+    if (nextValue === '' || /^\d{0,3}$/.test(nextValue)) {
       setNumInput(nextValue);
     }
   };
@@ -858,7 +855,7 @@ ${contentString}
       return;
     }
     const parsed = parseInt(numInput, 10);
-    const clamped = Math.min(99, Math.max(1, Number.isNaN(parsed) ? numQuestions : parsed));
+    const clamped = Math.min(100, Math.max(1, Number.isNaN(parsed) ? numQuestions : parsed));
     setNumQuestions(clamped);
     setNumInput(String(clamped));
   };
@@ -1014,13 +1011,13 @@ ${contentString}
                         key={stage}
                         type="button"
                         onClick={() => setSelectedStage(stage)}
-                        className={`min-h-[112px] rounded-2xl border px-4 py-4 text-left transition ${
+                        className={`rounded-2xl border px-4 py-3 text-left transition ${
                           selectedStage === stage
                             ? 'border-mait-cyan/50 bg-mait-cosmic/20 text-white shadow-neon-purple'
                             : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
                         }`}
                       >
-                        <div className="text-sm font-semibold">{formatStageLabel(stage)}</div>
+                        <div className="text-sm font-semibold leading-tight">{formatStageLabel(stage)}</div>
                       </button>
                     ))}
                   </div>
@@ -1036,7 +1033,7 @@ ${contentString}
                             setSelectedSubject(subject);
                             setMode(MANUAL_ONLY_SUBJECTS.has(subject) ? 'B' : 'A');
                           }}
-                          className={`flex min-h-[108px] items-center rounded-2xl border px-4 py-3 text-left transition ${
+                          className={`flex items-center rounded-2xl border px-4 py-3 text-left transition ${
                             selectedSubject === subject
                               ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
                               : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
@@ -1051,7 +1048,7 @@ ${contentString}
                           setSelectedSubject('Other');
                           setMode('B');
                         }}
-                        className={`flex min-h-[108px] items-center rounded-2xl border px-4 py-3 text-left transition ${
+                        className={`flex items-center rounded-2xl border px-4 py-3 text-left transition ${
                           selectedSubject === 'Other'
                             ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
                             : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
@@ -1400,8 +1397,8 @@ ${contentString}
                       <input
                         type="range"
                         min={1}
-                        max={99}
-                        value={Math.min(numQuestions, 99)}
+                        max={50}
+                        value={Math.min(numQuestions, 50)}
                         onChange={handleNumSliderChange}
                         className="w-full accent-mait-cyan"
                       />
@@ -1409,7 +1406,7 @@ ${contentString}
                         type="number"
                         value={numInput}
                         min={1}
-                        max={99}
+                        max={100}
                         onChange={handleNumInputChange}
                         onBlur={commitNumInput}
                         onKeyDown={(event) => {
@@ -1465,7 +1462,7 @@ ${contentString}
                     {[
                       { label: 'Name space', checked: includeName, onChange: setIncludeName },
                       { label: 'Date space', checked: includeDate, onChange: setIncludeDate },
-                      { label: 'Allocate marks', checked: includeMarks, onChange: setIncludeMarks },
+                      { label: 'Allocate marks', note: '(Experimental)', checked: includeMarks, onChange: setIncludeMarks },
                       { label: 'Answer key', checked: generateAnswerKey, onChange: setGenerateAnswerKey },
                       { label: 'Canvas setup guide', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
                       { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
