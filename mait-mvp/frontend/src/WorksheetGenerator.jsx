@@ -158,8 +158,8 @@ export default function WorksheetGenerator({ navigate }) {
   const [pedagogicalWordProblems, setPedagogicalWordProblems] = useState(() => localStorage.getItem('mait_ws_pedagogicalWordProblems') === 'true');
   const [pedagogicalMultiStep, setPedagogicalMultiStep] = useState(() => localStorage.getItem('mait_ws_pedagogicalMultiStep') === 'true');
   const [removeWatermark, setRemoveWatermark] = useState(() => localStorage.getItem('mait_ws_removeWatermark') === 'true');
-  const [showHints, setShowHints] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_showHints');
+  const [autoOpenGemini, setAutoOpenGemini] = useState(() => {
+    const saved = localStorage.getItem('mait_ws_autoOpenGemini');
     return saved !== null ? saved === 'true' : true;
   });
   const [numInput, setNumInput] = useState(() => {
@@ -232,7 +232,7 @@ export default function WorksheetGenerator({ navigate }) {
     localStorage.setItem('mait_ws_pedagogicalWordProblems', pedagogicalWordProblems.toString());
     localStorage.setItem('mait_ws_pedagogicalMultiStep', pedagogicalMultiStep.toString());
     localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
-    localStorage.setItem('mait_ws_showHints', showHints.toString());
+    localStorage.setItem('mait_ws_autoOpenGemini', autoOpenGemini.toString());
   }, [
     selectedStage,
     selectedSubject,
@@ -251,7 +251,7 @@ export default function WorksheetGenerator({ navigate }) {
     pedagogicalWordProblems,
     pedagogicalMultiStep,
     removeWatermark,
-    showHints,
+    autoOpenGemini,
   ]);
 
   useEffect(() => {
@@ -775,11 +775,15 @@ ${contentString}
       if (launchTimeoutRef.current) {
         clearTimeout(launchTimeoutRef.current);
       }
-      launchTimeoutRef.current = setTimeout(() => {
+      if (autoOpenGemini) {
+        launchTimeoutRef.current = setTimeout(() => {
+          setShowCloseButton(true);
+          window.open('https://gemini.google.com/app', '_blank');
+          launchTimeoutRef.current = null;
+        }, 3000);
+      } else {
         setShowCloseButton(true);
-        window.open('https://gemini.google.com/app', '_blank');
-        launchTimeoutRef.current = null;
-      }, 3000);
+      }
       setTimeout(() => setIsCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy worksheet prompt:', error);
@@ -992,8 +996,8 @@ ${contentString}
           </div>
         </motion.div>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_360px]">
-          <div className="glass-card-strong rounded-3xl p-6 lg:p-8">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_360px]">
+          <div className="glass-card-strong self-start rounded-3xl p-6 lg:p-8">
             <AnimatePresence mode="wait">
               {currentStep === 0 && (
                 <motion.div key="curriculum" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} className="space-y-8">
@@ -1467,7 +1471,7 @@ ${contentString}
                       { label: 'Canvas setup guide', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
                       { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
                       { label: 'Remove watermark', note: '(Link to this generator)', checked: removeWatermark, onChange: setRemoveWatermark },
-                      { label: 'Show hints', checked: showHints, onChange: setShowHints },
+                      { label: 'Auto-open Gemini', checked: autoOpenGemini, onChange: setAutoOpenGemini },
                     ].map((item) => (
                       <label key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
                         <input
@@ -1568,23 +1572,21 @@ ${contentString}
               )}
             </div>
 
-            {showHints && (
-              <div className="glass-card rounded-3xl p-5">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-mait-cyan/15 text-mait-cyan">
-                    <ExternalLink className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-white">Prompt handoff tips</h3>
-                    <p className="text-xs text-white/50">Helpful for the original Gemini-based worksheet flow.</p>
-                  </div>
+            <div className="glass-card rounded-3xl p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-mait-cyan/15 text-mait-cyan">
+                  <ExternalLink className="h-4 w-4" />
                 </div>
-                <div className="grid gap-3">
-                  <img src={canvasHint} alt="Gemini canvas hint" className="rounded-2xl border border-white/10" />
-                  <img src={modelSelectorHint} alt="Gemini model selector hint" className="rounded-2xl border border-white/10" />
+                <div>
+                  <h3 className="text-base font-semibold text-white">Prompt handoff tips</h3>
+                  <p className="text-xs text-white/50">Always visible so teachers can check Canvas and model setup without toggling anything.</p>
                 </div>
               </div>
-            )}
+              <div className="grid gap-3">
+                <img src={canvasHint} alt="Gemini canvas hint" className="rounded-2xl border border-white/10" />
+                <img src={modelSelectorHint} alt="Gemini model selector hint" className="rounded-2xl border border-white/10" />
+              </div>
+            </div>
           </div>
         </div>
 
