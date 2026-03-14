@@ -16,6 +16,22 @@ class BloomsLevel(str, Enum):
     EVALUATE = "Evaluate"
     CREATE = "Create"
 
+class DocumentKind(str, Enum):
+    ARTIFACT = "artifact"
+    STUDY = "study"
+
+class DocumentSource(str, Enum):
+    WORKSHEET_GENERATOR = "worksheet_generator"
+    CHAT = "chat"
+    MANUAL = "manual"
+
+class FragmentKind(str, Enum):
+    PREAMBLE = "preamble"
+    HEADER = "header"
+    QUESTION = "question"
+    FOOTER = "footer"
+    TEXT_BLOCK = "text_block"
+
 class FatigueMetric(BaseModel):
     current_score: int = Field(default=0, ge=0, le=100)
     status: FatigueStatus = Field(default=FatigueStatus.FRESH)
@@ -86,3 +102,23 @@ class StudentContext(BaseModel):
 
     # Track message history for intensity calculation
     message_timestamps: List[datetime] = Field(default_factory=list)
+
+class Document(BaseModel):
+    id: str
+    owner_student_id: str
+    title: str
+    kind: DocumentKind
+    source: DocumentSource
+    current_revision_id: Optional[str] = None
+    metadata_json: str = "{}"
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+class ArtifactDocumentFragment(BaseModel):
+    id: str
+    document_id: str
+    order_index: int
+    kind: FragmentKind
+    content_latex: str
+    metadata_json: str = "{}"
+    version_id: str
