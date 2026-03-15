@@ -495,240 +495,41 @@ export default function WorksheetGenerator({ navigate }) {
   };
 
   const generatePrompt = () => {
-    let lheadContent = `\\textbf{ ${selectedStage} - ${displaySubject} }`;
-    if (schoolName.trim()) {
-      lheadContent = `\\textbf{ ${schoolName} - ${selectedStage} - ${displaySubject} }`;
-    }
+    const userTopic = mode === 'A' 
+      ? (selectedPoints.length > 0 ? selectedPoints.join(' | ') : `${selectedStage} ${displaySubject}`)
+      : (rawQuestions.trim() ? rawQuestions.trim() : `${selectedStage} ${displaySubject}`);
 
-    let headerString = '';
-    if (includeName && includeDate) {
-      headerString = '\\noindent\\textbf{Name:} \\makebox[6cm]{\\hrulefill} \\hfill \\textbf{Date:} \\makebox[3cm]{\\hrulefill}';
-    } else if (includeName) {
-      headerString = '\\noindent\\textbf{Name:} \\makebox[6cm]{\\hrulefill}';
-    } else if (includeDate) {
-      headerString = '\\noindent\\textbf{Date:} \\makebox[3cm]{\\hrulefill}';
-    }
+    const hasPedagogy = pedagogicalSpotError || pedagogicalParameterShift || pedagogicalLimitCase || pedagogicalProofStyle || pedagogicalWordProblems || pedagogicalMultiStep;
+    const isExamMode = !hasPedagogy;
+    const includeWatermark = !removeWatermark;
 
-    const marksLogic = includeMarks ? '\\hfill\\quad\\textbf{[X Marks]}' : 'Do not assign marks';
-    const dynamicSpacing = numQuestions > 20 ? '2cm' : numQuestions > 10 ? '4cm' : '6cm';
-    const spacingLogic =
-      workingSpace === 'Two-column Compact'
-        ? 'For the main worksheet, you MUST use the `multicols` environment with 2 columns (`\\\\begin{multicols}{2} ... \\\\end{multicols}`). Use the enumerate environment inside the multicols. Do not add large blank spaces between questions, keep it compact.'
-        : workingSpace === 'Dynamic Space'
-          ? 'LAYOUT DIRECTIVE: Use dynamic spacing. If math graphing, add axes. If trig graph, shift axes appropriately and enforce strict domain bounds (e.g. 0 to 2pi). If worded question, add ruled lines of appropriate density using `\\\\vspace{0.8cm}\\\\noindent\\\\rule{\\\\linewidth}{0.4pt}` repeated for each line needed. For pure mathematical calculations, leave blank working space using \\\\vspace{4cm}.'
-          : `Use \\\\vspace{${dynamicSpacing}} between questions.`;
+    const answerKeyStatus = generateAnswerKey 
+      ? (includeWorkedSolutions ? 'Generate Teacher Answer Key at the end with full worked solutions & marking rubric.' : 'Generate Teacher Answer Key at the end.')
+      : 'No answer key.';
 
-    const answerKeyLogic = generateAnswerKey
-      ? 'Insert \\newpage at the end and provide a Teacher Answer Key. The Answer Key MUST be formatted in a two-column layout using `\\\\begin{multicols}{2}` and `\\\\end{multicols}`, separated by the vertical rule.'
-      : '';
+    let customInstructions = '';
+    if (syllabusContextMode === 'Provide') customInstructions += 'I will upload the syllabus. ';
+    if (textbooksProvided) customInstructions += 'I will upload textbooks/resources. ';
+    if (schoolName.trim()) customInstructions += `School/Class Name for Header: ${schoolName.trim()}. `;
 
-    let contextPrefix = '';
-    if (syllabusContextMode === 'Provide' || textbooksProvided) {
-      contextPrefix += 'Using the context files attached to this prompt:\\n';
-      if (syllabusContextMode === 'Provide') {
-        contextPrefix += '- Strictly adhere to the scope and constraints of the attached Syllabus.\\n';
-      }
-      if (textbooksProvided) {
-        contextPrefix += '- Strongly model the questions on the style, structure, and difficulty found in the attached Textbook/Resources.\\n';
-      }
-      contextPrefix += '\\n';
-    }
+    return `**USER WORKSHEET REQUEST:**
+Generate a worksheet based on your strict System Directives and your attached Syllabus Knowledge Base.
 
-    if (syllabusContextMode === 'Search') {
-      contextPrefix += 'CRITICAL: You are authorized and encouraged to Search/Reference the official NESA NSW Syllabus requirements for the selected Stage and Subject to ensure 100% curriculum alignment.\\n\\n';
-    }
+* **Topic / Syllabus Focus:** ${userTopic}
+* **Number of Questions:** ${numQuestions}
+* **Difficulty:** ${difficulty}
+* **Header Spaces:** ${includeName ? 'Include Name line.' : ''} ${includeDate ? 'Include Date line.' : ''}
+* **Working Space:** ${workingSpace}
+* **Marks:** ${includeMarks ? 'Assign and right-align marks.' : 'No marks.'}
+* **Answer Key:** ${answerKeyStatus}
 
-    let pedagogyPrefix = '';
-    if (
-      pedagogicalSpotError ||
-      pedagogicalParameterShift ||
-      pedagogicalLimitCase ||
-      pedagogicalProofStyle ||
-      pedagogicalWordProblems ||
-      pedagogicalMultiStep
-    ) {
-      pedagogyPrefix += 'PEDAGOGY DIRECTIVE: You must include the following special question types in your worksheet:\\n';
-      if (pedagogicalSpotError) {
-        pedagogyPrefix += '- **Spot the Error:** Provide a deliberately flawed, step-by-step mathematical working. Ask the student to identify the specific line where the error occurred and explain why. Wrap this specific question in a `\\\\begin{tcolorbox} ... \\\\end{tcolorbox}` environment. This must be worth exactly 1 mark.\\n';
-      }
-      if (pedagogicalParameterShift) {
-        pedagogyPrefix += '- **Parameter Shift:** Ask the student to explain how changing a specific constant or parameter in the system/equation alters the overall behavior or graph, without requiring a full algebraic re-solve.\\n';
-      }
-      if (pedagogicalLimitCase) {
-        pedagogyPrefix += '- **Limit Case Analysis:** Ask the student to evaluate the system/equation at an extreme boundary condition (e.g., as x approaches infinity, or as a physical mass approaches zero) and interpret the qualitative meaning of that result.\\n';
-      }
-      if (pedagogicalProofStyle) {
-        pedagogyPrefix += '- **Proof-Style Question:** Include at least one question that requires a formal justification, structured proof, or rigorous mathematical reasoning rather than direct computation only.\\n';
-      }
-      if (pedagogicalWordProblems) {
-        pedagogyPrefix += '- **Contextual Word Problem:** Include at least one authentic real-world worded problem that matches the selected subject and stage.\\n';
-      }
-      if (pedagogicalMultiStep) {
-        pedagogyPrefix += '- **Multi-Step Synthesis:** Include at least one problem that combines multiple concepts or syllabus ideas into a single chained task.\\n';
-      }
-      pedagogyPrefix += '\\n';
-    }
+**CRITICAL TOGGLES:**
+* **WATERMARK:** ${includeWatermark ? 'ON (Inject URL into rfoot)' : 'OFF (Leave rfoot empty)'}
+* **MODE:** ${isExamMode ? 'EXAM STRICT (Pure questions only, no pedagogy tools)' : 'PEDAGOGY (Weave in selected pedagogy tools)'}
 
-    let contentString = '';
-    if (mode === 'A') {
-      const explicitTopics =
-        currentTopicsList && currentTopicsList.length > 0 && selectedPoints.length > 0
-          ? `strictly targeting these specific topics: \\n${selectedPoints.map((point) => `- ${point}`).join('\\n')}`
-          : selectedPoints.length > 0
-            ? `strictly targeting these specific syllabus dot-points and topics: \\n${selectedPoints.map((point) => `- ${point}`).join('\\n')}`
-            : `targeting the general curriculum for ${displaySubject}`;
+**Custom Instructions:** ${customInstructions || 'None.'}
 
-      const difficultyText =
-        difficulty === 'Mixed'
-          ? 'Use a balanced mix of easy, medium, and hard questions.'
-          : difficulty === 'Easy -> Hard Progression'
-            ? 'Start with easy questions and progressively increase difficulty to hard.'
-            : difficulty === 'Mostly Easy'
-              ? 'Keep most questions easy/accessible, with 1-2 challenging ones at the end.'
-              : difficulty === 'Mostly Hard'
-                ? 'Focus on challenging, exam-level questions with minimal easy questions.'
-                : 'Match the difficulty and style of real exam questions.';
-
-      contentString = `${contextPrefix}${pedagogyPrefix}Please generate ${numQuestions} professional-level exam questions ${explicitTopics} for ${selectedStage} ${displaySubject}.\\n\\n**DIFFICULTY:** ${difficultyText}`;
-    } else {
-      const syllabusContext =
-        selectedPoints.length > 0
-          ? `\\n\\nReference Syllabus Points selected by user:\\n${selectedPoints.map((point) => `- ${point}`).join('\\n')}`
-          : '';
-      contentString = `${contextPrefix}${pedagogyPrefix}Please format these exact questions/topics into a professional worksheet for ${selectedStage} ${displaySubject}: ${rawQuestions}${syllabusContext}`;
-    }
-
-    let promptTitle = `${selectedStage} ${displaySubject} Worksheet`;
-    if (mode === 'A' && selectedPoints.length > 0 && legacySyllabusYear) {
-      const moduleCounts = {};
-      selectedPoints.forEach((point) => {
-        Object.entries(currentSyllabus).forEach(([moduleName, subtopics]) => {
-          Object.entries(subtopics).forEach(([subtopic, points]) => {
-            if (points.includes(point)) {
-              const cleanModule = moduleName.replace(/\s*\(Prerequisite\)$/i, '');
-              moduleCounts[cleanModule] = (moduleCounts[cleanModule] || 0) + 1;
-            }
-          });
-        });
-      });
-      const topModule = Object.keys(moduleCounts).reduce((best, candidate) => {
-        if (!best) {
-          return candidate;
-        }
-        return moduleCounts[best] > moduleCounts[candidate] ? best : candidate;
-      }, '');
-      if (topModule) {
-        promptTitle = `${topModule} ${displaySubject} Worksheet`;
-      }
-    }
-
-    let reminderText = '';
-    if (firstTimeMode) {
-      reminderText += '**Welcome!** I am the Universal Artifact Architect. I can generate complete worksheets for you. Simply ask me to tweak the difficulty, change the topic focus, or add more visual diagrams. Once rendered, you can click the canvas window to highlight and edit specific questions on the fly!\\n\\n';
-    }
-
-    reminderText += 'Reminder: Feel free to ask me to make changes! You can highlight sections in the Canvas window by clicking the dotted box with the arrow to ask for specific edits.';
-
-    if (includeCanvasSetup) {
-      reminderText += '\\n\\n**Debug Guide / Canvas Setup:**\\nNo Code/Preview window? Click **Tools**, select **Canvas**, and ask me to output in Canvas! :D';
-    }
-
-    if (syllabusContextMode === 'Provide') {
-      reminderText += '\\n\\n*(Please paste/upload your syllabus document now.)*';
-    }
-
-    if (textbooksProvided) {
-      reminderText += '\\n\\n*(Please paste/upload your textbooks or reference resources now.)*';
-    }
-
-    reminderText += "\\n\\n**Disclaimer:** I'm just a robot, so I can get things wrong - check the questions! You can also copy-paste the code into another chat and ask it to check.";
-
-    let promptPayload = `**${promptTitle}**\\n\\nAct as the Universal Artifact Architect, an expert LaTeX Document Engine and Curriculum Designer.
-
-Your job is to create a professional, compile-ready PDF worksheet. 
-
-**CRITICAL DIRECTIVE:** 
-You must structure your output exactly like this. First, output this exact message: '${reminderText}' Second, output the complete, compile-ready LaTeX code inside ONE SINGLE code block starting with \`\`\`latex and ending with \`\`\`. Do not output any other conversational text.
-
-${includeMarks ? '**LATEX DIRECTIVE FOR MARKS:** Always place the marks (e.g., [2 Marks]) at the very end of the question text line, separated by `\\\\hfill\\\\quad`. Ensure they are strictly right-aligned to the margin to maintain a professional exam layout.\\n' : ''}
-
-**CRITICAL REASONING DIRECTIVE (INTERNAL VERIFICATION):**
-Before generating the final LaTeX code block, you MUST use your internal thinking/scratchpad phase to rigorously construct and verify every single question and answer. 
-You are a senior mathematics and science mentor. Do not accept your first thought as correct.
-For every question you generate:
-1. Solve the question step-by-step internally.
-2. VERIFY the solution using a secondary, distinct mathematical or logical method (e.g., if you integrated, differentiate the result. If physics, check unit dimensional analysis. If probability, check edge cases).
-3. If the secondary method reveals a hallucination or error, discard the question and generate a new one.
-4. ONLY proceed to LaTeX formatting once the math/logic is 100% verified.
-5. Keep all verification strictly internal. Do NOT leak these thinking steps into the final output.
-
-**CRITICAL LATEX QUALITY CONTROLS:**
-1. Never use Unicode characters for math (like √ or α). Always use standard LaTeX syntax (like \\\\sqrt{} or \\\\alpha).
-2. Ensure every \\\\begin{enumerate} has a strictly matching \\\\end{enumerate} tag to prevent compilation failures.
-3. If a question involves Pythagoras, Trigonometry, Circular Measure, or Geometry, you MUST generate a corresponding TikZ diagram.
-
-**1. THE PREAMBLE:**
-\\\\documentclass[12pt, a4paper]{article}
-\\\\usepackage[top=1.5cm, bottom=1.5cm, left=1.5cm, right=1.5cm, headheight=30pt, headsep=15pt, footskip=20pt, includehead, includefoot]{geometry}
-\\\\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
-\\\\usepackage[none]{hyphenat}
-\\\\usepackage[hidelinks]{hyperref}
-\\\\setlength{\\\\columnsep}{1cm}
-\\\\setlength{\\\\columnseprule}{0.4pt}
-
-\\\\pagestyle{fancy}
-\\\\fancyhf{}
-\\\\lhead{ ${lheadContent} }
-\\\\rhead{}
-\\\\cfoot{Page \\\\thepage}
-${removeWatermark ? '\\\\rfoot{}' : '\\\\rfoot{\\\\textcolor{gray!50}{\\\\tiny \\\\textit{myaitutor.au/worksheets}}}'}
-\\\\renewcommand{\\\\headrulewidth}{0.4pt}
-\\\\setlength{\\\\headheight}{30pt}
-\\\\begin{document}
-\\\\sloppy
-${headerString ? `\\n${headerString}\\n\\\\vspace{0.8cm}\\n` : ''}
-\\\\begin{center}
-    {\\\\Large \\\\textbf{ ${mode === 'A' ? 'Syllabus Focus: Mixed Topics' : 'Custom Worksheet'} }}
-\\\\end{center}
-\\\\vspace{0.5cm}
-
-${contentString}
-
-${spacingLogic}
-
-${marksLogic}
-
-${answerKeyLogic}
-
-**2. LAYOUT & FORMATTING RULES:**
-* NATIVE NUMBERING ONLY: Use the standard enumerate environment. Let LaTeX handle numbering. Do NOT use custom labels like \\\\item[\\\\textbf{Question 1:}].
-* LINE BREAKS: Do NOT use \\\\\\\\ for line breaks within questions. Use a blank line (double return) to ensure text aligns to the left margin perfectly.
-* Spacing: ${spacingLogic}
-* **MARKS ALIGNMENT (CRITICAL):** ${marksLogic === 'Do not assign marks' ? marksLogic : `If assigning marks, you MUST use \`${marksLogic}\` at the very end of the question text. The \\\\mbox{} is critical to prevent the number and the word 'Marks' from being split across two lines. Do NOT let the marks wrap to a new line awkwardly. Ensure they are pushed completely flush-right.`}
-* **MANDATORY DIAGRAMS & SHAPES:** If a question mentions a shape, graph, diagram, angle relationship (e.g., "vertically opposite", "transversal"), or geometric property, you MUST generate the corresponding TikZ code to draw a clean, professional diagram below the question text.
-* **PREAMBLE & GEOMETRY RULE:** When setting up the document geometry, you MUST use the exact master geometry below so the header and footer alignment stays stable while preserving all dynamic worksheet content injections from the UI: \\\\usepackage[top=1.5cm, bottom=1.5cm, left=1.5cm, right=1.5cm, headheight=30pt, headsep=15pt, footskip=20pt, includehead, includefoot]{geometry}
-* **FOOTER RESTRAINT RULE:** Do not include multi-line footers or the "AI SELF-CHECK" text. Keep the center footer strictly to the page number using \\\\cfoot{Page \\\\thepage}. This is crucial to prevent the footer from colliding with the multicols vertical divider at the bottom of the page.
-
-**3. PAGINATION & FOOTER:**
-* Before every new \\\\item, insert \\\\needspace{6cm}.
-
-**4. SCALING FOR 30+ QUESTIONS:**
-If the request is for more than 20 questions, ensure you maintain high quality and varied task difficulty. For 30+ questions, you may use smaller spacing segments to fit the content while maintaining readability.
-
-**5. ANSWER KEY:**
-${answerKeyLogic}.
-
-***
-**USER CONTENT TO PROCESS:**
-${contentString}
-`;
-
-    if (includeWorkedSolutions) {
-      promptPayload += `\n\nCRITICAL PEDAGOGICAL DIRECTIVE: You MUST include comprehensive, step-by-step mathematical working for every question in the Answer Key section.
-Additionally, immediately following the solutions, you must generate a strictly formatted NESA-aligned marking rubric using a LaTeX \`tabular\` environment. The rubric must detail exactly where individual marks are awarded for each question (e.g., '1 mark for correct derivative', '1 mark for final solution').`;
-    }
-
-    return promptPayload;
+Begin generation now. Output ONLY the raw LaTeX code block.`;
   };
 
   const closeModal = () => {
@@ -754,7 +555,7 @@ Additionally, immediately following the solutions, you must generate a strictly 
           launchTimeoutRef.current = null;
         }
         setShowCloseButton(true);
-        window.open('https://gemini.google.com/app', '_blank');
+        window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank');
       }
     };
 
@@ -779,7 +580,7 @@ Additionally, immediately following the solutions, you must generate a strictly 
       }
       launchTimeoutRef.current = setTimeout(() => {
         setShowCloseButton(true);
-        window.open('https://gemini.google.com/app', '_blank');
+        window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank');
         launchTimeoutRef.current = null;
       }, 3000);
       setTimeout(() => setIsCopied(false), 2000);

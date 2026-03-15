@@ -1,0 +1,17 @@
+{
+  "course": "Mathematics Extension 2 (Year 12)",
+  "topics": [
+    {
+      "topic_name": "Complex Numbers",
+      "sub_topics": [
+        {
+          "sub_topic_name": "Complex Arithmetic",
+          "dot_points": [
+            "Define the imaginary unit $i$ as a root of $x^2 = -1$.",
+            "Perform addition, subtraction, multiplication and division of complex numbers in the form $z = a + ib$."
+          ]
+        }
+      ]
+    }
+  ]
+}
