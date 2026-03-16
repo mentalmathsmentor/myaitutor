@@ -171,6 +171,12 @@ export default function Step2Topics({
     const toggleModule = (mod) => setExpandedModules(prev => ({ ...prev, [mod]: !prev[mod] }));
     const toggleSubtopic = (subt) => setExpandedSubtopics(prev => ({ ...prev, [subt]: !prev[subt] }));
 
+    const getId = (p) => typeof p === 'object' && p !== null ? p.id : p;
+    const getLabel = (p) => {
+        if (typeof p === 'object' && p !== null) return p.label || p.id || '';
+        return typeof p === 'string' ? p : String(p || '');
+    };
+
     const getPointsForModule = (mod) => {
         let points = [];
         Object.values(currentSyllabus[mod] || {}).forEach(arr => points.push(...arr));
@@ -179,15 +185,17 @@ export default function Step2Topics({
 
     const isModuleSelected = (mod) => {
         const modPoints = getPointsForModule(mod);
-        return modPoints.length > 0 && modPoints.every(p => selectedPoints.includes(p));
+        return modPoints.length > 0 && modPoints.every(p => selectedPoints.includes(getId(p)));
     };
 
     const toggleModuleSelection = (mod) => {
         const modPoints = getPointsForModule(mod);
         if (isModuleSelected(mod)) {
-            setSelectedPoints(prev => prev.filter(p => !modPoints.includes(p)));
+            const modIds = modPoints.map(getId);
+            setSelectedPoints(prev => prev.filter(p => !modIds.includes(p)));
         } else {
-            setSelectedPoints(prev => [...new Set([...prev, ...modPoints])]);
+            const modIds = modPoints.map(getId);
+            setSelectedPoints(prev => [...new Set([...prev, ...modIds])]);
         }
     };
 
@@ -195,23 +203,26 @@ export default function Step2Topics({
 
     const isSubtopicSelected = (mod, subt) => {
         const subPoints = getPointsForSubtopic(mod, subt);
-        return subPoints.length > 0 && subPoints.every(p => selectedPoints.includes(p));
+        return subPoints.length > 0 && subPoints.every(p => selectedPoints.includes(getId(p)));
     };
 
     const toggleSubtopicSelection = (mod, subt) => {
         const subPoints = getPointsForSubtopic(mod, subt);
         if (isSubtopicSelected(mod, subt)) {
-            setSelectedPoints(prev => prev.filter(p => !subPoints.includes(p)));
+            const subIds = subPoints.map(getId);
+            setSelectedPoints(prev => prev.filter(p => !subIds.includes(p)));
         } else {
-            setSelectedPoints(prev => [...new Set([...prev, ...subPoints])]);
+            const subIds = subPoints.map(getId);
+            setSelectedPoints(prev => [...new Set([...prev, ...subIds])]);
         }
     };
 
     const handlePointToggle = (point) => {
+        const id = getId(point);
         setSelectedPoints(prev => 
-            prev.includes(point) 
-                ? prev.filter(p => p !== point)
-                : [...prev, point]
+            prev.includes(id) 
+                ? prev.filter(p => p !== id)
+                : [...prev, id]
         );
     };
 
@@ -309,7 +320,7 @@ export default function Step2Topics({
                             // Apply basic search string filter. If a child matches, we force-show the parent.
                             const hasSubtopicMatch = Object.keys(currentSyllabus[mod] || {}).some(sub => 
                                 sub.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                currentSyllabus[mod][sub].some(p => p.toLowerCase().includes(searchQuery.toLowerCase()))
+                                currentSyllabus[mod][sub].some(p => getLabel(p).toLowerCase().includes(searchQuery.toLowerCase()))
                             );
 
                             if (searchQuery && !mod.toLowerCase().includes(searchQuery.toLowerCase()) && !hasSubtopicMatch) {
@@ -343,7 +354,7 @@ export default function Step2Topics({
                                         <div className="ml-6 space-y-3 border-l border-white/10 pl-4 py-2">
                                             {Object.keys(currentSyllabus[mod] || {}).map(subt => {
                                                 const points = currentSyllabus[mod][subt];
-                                                const hasPointMatch = points.some(p => p.toLowerCase().includes(searchQuery.toLowerCase()));
+                                                const hasPointMatch = points.some(p => getLabel(p).toLowerCase().includes(searchQuery.toLowerCase()));
                                                 
                                                 if (searchQuery && !subt.toLowerCase().includes(searchQuery.toLowerCase()) && !hasPointMatch) {
                                                     return null;
@@ -376,28 +387,31 @@ export default function Step2Topics({
                                                         {(expandedSubtopics[subt] || searchQuery) && (
                                                             <div className="ml-6 grid gap-2 py-1">
                                                                 {points.map((point, idx) => {
-                                                                    if (searchQuery && !point.toLowerCase().includes(searchQuery.toLowerCase())) {
+                                                                    const lbl = getLabel(point);
+                                                                    const id = getId(point);
+                                                                    
+                                                                    if (searchQuery && !lbl.toLowerCase().includes(searchQuery.toLowerCase())) {
                                                                         return null;
                                                                     }
                                                                     
                                                                     return (
                                                                         <label
-                                                                            key={idx}
+                                                                            key={id || idx}
                                                                             className={`flex items-start gap-3 p-3 rounded-xl border border-white/5 transition-all cursor-pointer select-none ${
-                                                                                selectedPoints.includes(point) 
+                                                                                selectedPoints.includes(id) 
                                                                                 ? 'bg-mait-cyan/10 border-mait-cyan/30 text-white shadow-neon-cyan'
                                                                                 : 'bg-black/20 text-white/60 hover:border-mait-cyan/20'
                                                                             }`}
                                                                         >
                                                                             <input
                                                                                 type="checkbox"
-                                                                                checked={selectedPoints.includes(point)}
+                                                                                checked={selectedPoints.includes(id)}
                                                                                 onChange={() => handlePointToggle(point)}
                                                                                 className="mt-0.5 w-3.5 h-3.5 rounded border-white/20 accent-mait-cyan cursor-pointer flex-shrink-0"
                                                                             />
                                                                             <SyllabusPoint 
-                                                                                text={point} 
-                                                                                isSelected={selectedPoints.includes(point)} 
+                                                                                text={lbl} 
+                                                                                isSelected={selectedPoints.includes(id)} 
                                                                             />
                                                                         </label>
                                                                     );

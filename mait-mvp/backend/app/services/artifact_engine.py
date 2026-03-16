@@ -31,46 +31,40 @@ from .gemini_client import get_client, MODEL_ID
 # Pydantic models
 # ---------------------------------------------------------------------------
 
-class Difficulty(str, Enum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
-    MIXED = "mixed"
+class WorksheetSettings(BaseModel):
+    course: str
+    subject: str
+    difficulty: str
+    numberOfQuestions: int
+    headerSpaces: str
+    workingSpace: str
+    marks: str
+    answerKey: str
+    watermark: bool
+    mode: str
 
+class SyllabusPacket(BaseModel):
+    topicSummary: str
+    outcomes: List[str]
+    dotPoints: List[str]
+    include: List[str]
+    exclude: List[str]
+    assessmentEmphasis: List[str]
+    questionStyleNotes: List[str]
+
+class LegacyFields(BaseModel):
+    manual_prompt: str = ""
+    context_source: str = ""
 
 class WorksheetRequest(BaseModel):
     """Request payload for worksheet generation."""
-    topic: str = Field(
-        ...,
-        min_length=1,
-        max_length=200,
-        description="Maths topic aligned to NSW HSC syllabus, e.g. 'Differentiation'",
-    )
-    year_level: int = Field(
-        default=11,
-        ge=7,
-        le=12,
-        description="NSW year level (7-12)",
-    )
-    num_questions: int = Field(
-        default=10,
-        ge=1,
-        le=30,
-        description="Number of questions to generate",
-    )
-    difficulty: Difficulty = Field(
-        default=Difficulty.MIXED,
-        description="Difficulty level: easy, medium, hard, or mixed (progressive)",
-    )
-    include_answers: bool = Field(
-        default=True,
-        description="Whether to include an answer key section",
-    )
-    student_name: Optional[str] = Field(
-        default=None,
-        max_length=100,
-        description="Optional student name printed on the worksheet header",
-    )
+    requestVersion: str
+    worksheetSettings: WorksheetSettings
+    topicSummary: str
+    syllabusPacket: SyllabusPacket
+    pedagogicalDrills: List[str]
+    customInstructions: str
+    legacyFields: LegacyFields
 
 
 # ---------------------------------------------------------------------------
@@ -209,39 +203,88 @@ FORMATTING REQUIREMENTS:
 
 def _build_user_prompt(request: WorksheetRequest) -> str:
     """Construct the user prompt that tells Gemini what worksheet to generate."""
-    difficulty_guidance = {
-        Difficulty.EASY: "All questions should be straightforward, testing basic recall and direct application.",
-        Difficulty.MEDIUM: "Questions should require multi-step reasoning and moderate algebraic manipulation.",
-        Difficulty.HARD: "Questions should be challenging, requiring synthesis of multiple concepts, suitable for exam preparation.",
-        Difficulty.MIXED: (
-            "Questions MUST progress in difficulty: start with basic recall, "
-            "move to multi-step application, and finish with challenging exam-style questions."
-        ),
-    }
+    
+    settings = request.worksheetSettings
+    packet = request.syllabusPacket
 
-    answer_instruction = (
-        "Include a FULL Answer Key on a new page with worked solutions for every question."
-        if request.include_answers
-        else "Do NOT include an answer key."
+    def format_array(label: str, arr: List[str]) -> str:
+        return f"- **{label}:** {', '.join(arr)}" if arr else ""
+
+    topic_parts = [p.strip() for p in request.topicSummary.split('|') if p.strip()]
+    first_topic = topic_parts[0] if topic_parts else "Mathematics"
+    condensed_topic = f"{first_topic} (Mixed)" if len(topic_parts) > 1 else first_topic
+    
+    header = f"**{settings.course} {condensed_topic} Worksheet**"
+
+    prompt_lines = [
+        header,
+        "",
+        "**USER WORKSHEET REQUEST:**",
+        "",
+        "**WORKSHEET SETTINGS:**",
+        f"- **Course:** {settings.course}",
+        f"- **Topic Summary:** {request.topicSummary}",
+        f"- **Number of Questions:** {settings.numberOfQuestions}",
+        f"- **Difficulty:** {settings.difficulty}",
+        f"- **Header Spaces:** {settings.headerSpaces or 'None'}",
+        f"- **Working Space:** {settings.workingSpace}",
+        f"- **Marks:** {settings.marks}",
+        f"- **Answer Key:** {settings.answerKey}",
+        f"- **WATERMARK:** {'ON (Inject URL into rfoot)' if settings.watermark else 'OFF (Leave rfoot empty)'}",
+        f"- **MODE:** {settings.mode}",
+        ""
+    ]
+
+    if request.legacyFields.manual_prompt:
+        prompt_lines.extend([
+            "**MANUAL INSTRUCTIONS:**",
+            request.legacyFields.manual_prompt,
+            ""
+        ])
+    else:
+        prompt_lines.append("**SYLLABUS PACKET:**")
+        
+        dot_points_str = format_array("Relevant Dot-Points", packet.dotPoints)
+        if dot_points_str: prompt_lines.append(dot_points_str)
+        
+        outcomes_str = format_array("Outcomes", packet.outcomes)
+        if outcomes_str: prompt_lines.append(outcomes_str)
+        
+        include_str = format_array("Include", packet.include)
+        if include_str: prompt_lines.append(include_str)
+        
+        exclude_str = format_array("Exclude", packet.exclude)
+        if exclude_str: prompt_lines.append(exclude_str)
+        
+        emphasis_str = format_array("Assessment Emphasis", packet.assessmentEmphasis)
+        if emphasis_str: prompt_lines.append(emphasis_str)
+        
+        style_str = format_array("Question Style Notes", packet.questionStyleNotes)
+        if style_str: prompt_lines.append(style_str)
+
+        if not any([dot_points_str, outcomes_str, include_str, exclude_str, emphasis_str, style_str]):
+            prompt_lines.append("- No direct syllabus map provided.")
+        prompt_lines.append("")
+
+    if request.customInstructions:
+        prompt_lines.extend([
+            "**CUSTOM INSTRUCTIONS:**",
+            f"- {request.customInstructions}",
+            ""
+        ])
+
+    if request.pedagogicalDrills:
+        prompt_lines.extend([
+            "**PEDAGOGICAL DRILLS REQUESTED:**",
+            f"- {', '.join(request.pedagogicalDrills)}",
+            ""
+        ])
+
+    prompt_lines.append(
+        "Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact."
     )
 
-    student_line = (
-        f"Include a line in the header for the student name pre-filled as: {request.student_name}"
-        if request.student_name
-        else "Include a blank line in the header: Name: \\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_"
-    )
-
-    return (
-        f"Generate a complete LaTeX worksheet with the following specifications:\n"
-        f"- Topic: {request.topic}\n"
-        f"- NSW Year Level: {request.year_level}\n"
-        f"- Number of questions: {request.num_questions}\n"
-        f"- Difficulty: {request.difficulty.value}\n"
-        f"  Guidance: {difficulty_guidance[request.difficulty]}\n"
-        f"- {answer_instruction}\n"
-        f"- {student_line}\n"
-        f"\nRemember: output ONLY the LaTeX source code, nothing else."
-    )
+    return "\n".join(prompt_lines)
 
 
 # ---------------------------------------------------------------------------
@@ -480,8 +523,8 @@ async def generate_worksheet_pdf(request: WorksheetRequest) -> str:
         # Gemini failed entirely -- use the fallback template
         print(f"[A.G.E.] Gemini generation failed, using fallback template: {e}")
         latex_source = FALLBACK_LATEX_TEMPLATE % {
-            "topic": request.topic.replace("&", r"\&"),
-            "year_level": request.year_level,
+            "topic": request.topicSummary.replace("&", r"\&"),
+            "year_level": request.worksheetSettings.course,
         }
 
     try:
@@ -494,8 +537,8 @@ async def generate_worksheet_pdf(request: WorksheetRequest) -> str:
 
         fallback_dir = tempfile.mkdtemp(prefix="mait_worksheet_fallback_")
         fallback_source = FALLBACK_LATEX_TEMPLATE % {
-            "topic": request.topic.replace("&", r"\&"),
-            "year_level": request.year_level,
+            "topic": request.topicSummary.replace("&", r"\&"),
+            "year_level": request.worksheetSettings.course,
         }
         try:
             pdf_path = compile_latex_to_pdf(fallback_source, fallback_dir)

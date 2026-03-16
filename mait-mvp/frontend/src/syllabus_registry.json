@@ -1,0 +1,93 @@
+{
+  "y_11_advanced_functions_index_laws": {
+    "outcomes": [
+      "MA11-1 Algebraic Techniques"
+    ],
+    "include": [
+      "Evaluating numerical expressions with fractional bases and negative powers"
+    ],
+    "exclude": [
+      "Logarithm laws"
+    ],
+    "assessmentEmphasis": [
+      "Simplifying complex expressions showing all working steps clearly."
+    ],
+    "questionStyleNotes": [
+      "Use a mix of variables and fractional numerical bases."
+    ]
+  },
+  "y_11_advanced_functions_simultaneous_equations": {
+    "outcomes": [
+      "MA11-1 Algebraic Techniques",
+      "MA11-2 Functions"
+    ],
+    "include": [
+      "Solving algebraically via substitution",
+      "Interpreting points of intersection"
+    ],
+    "exclude": [
+      "Systems with zero solutions (unless testing the discriminant)"
+    ],
+    "assessmentEmphasis": [
+      "Rigorous algebraic substitution and clearly identifying both (x, y) coordinate pairs."
+    ],
+    "questionStyleNotes": [
+      "Provide one equation already isolated to a variable where possible to start easy, then progress."
+    ]
+  },
+  "y_11_advanced_calculus_first_principles": {
+    "outcomes": [
+      "MA11-8 Calculus"
+    ],
+    "include": [
+      "Evaluating limits of difference quotients for polynomials up to degree 3"
+    ],
+    "exclude": [
+      "Differentiation from first principles of trigonometric or exponential functions"
+    ],
+    "assessmentEmphasis": [
+      "Demonstrating clear algebraic substitution and limit evaluation steps."
+    ],
+    "questionStyleNotes": [
+      "Always provide the definition formula in the question or hint."
+    ]
+  },
+  "y_11_advanced_calculus_power_rule": {
+    "outcomes": [
+      "MA11-8 Calculus"
+    ],
+    "include": [
+      "Positive integers",
+      "Negative integers",
+      "Fractional indices (surds)"
+    ],
+    "exclude": [
+      "Chain rule applications",
+      "Product or quotient rules"
+    ],
+    "assessmentEmphasis": [
+      "Transforming root/fractional forms to index form before differentiating."
+    ],
+    "questionStyleNotes": [
+      "Mix standard polynomial terms with terms having negative coefficients and fractional powers."
+    ]
+  },
+  "y_11_advanced_calculus_chain_rule": {
+    "outcomes": [
+      "MA11-8 Calculus"
+    ],
+    "include": [
+      "Polynomial raised to a power",
+      "Square roots of polynomials"
+    ],
+    "exclude": [
+      "Combining chain rule with product/quotient rule in early stages"
+    ],
+    "assessmentEmphasis": [
+      "Correctly identifying the inner and outer functions."
+    ],
+    "questionStyleNotes": [
+      "Include questions where the inner derivative produces a constant that needs careful factoring."
+    ]
+  }
+}

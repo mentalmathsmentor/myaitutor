@@ -738,7 +738,7 @@ body {
     right: -6px;
     width: 12px;
     height: 12px;
-    background: hsl(172, 70%, 35%);
+    background: hsla(var(--primary), 0.85); /* Matches to-primary/80 roughly */
     clip-path: polygon(0 0, 0 100%, 100% 100%);
   }
 
@@ -761,7 +761,14 @@ body {
   .chat-prose {
     @apply relative;
     z-index: 1;
+  }
+
+  .chat-bubble-assistant .chat-prose {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 1px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .chat-bubble-user .chat-prose {
+    text-shadow: none;
   }
 
   .chat-prose p {

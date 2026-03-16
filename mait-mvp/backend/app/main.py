@@ -525,8 +525,8 @@ async def generate_worksheet(request: Request, body: WorksheetRequest):
         pdf_path = await generate_worksheet_pdf(body)
 
         # Build a human-readable filename
-        safe_topic = body.topic.replace(" ", "_").replace("/", "-")[:40]
-        filename = f"worksheet_yr{body.year_level}_{safe_topic}.pdf"
+        safe_topic = body.topicSummary.replace(" ", "_").replace("/", "-")[:40]
+        filename = f"worksheet_{body.worksheetSettings.course.replace(' ', '')}_{safe_topic}.pdf"
 
         return FileResponse(
             path=pdf_path,

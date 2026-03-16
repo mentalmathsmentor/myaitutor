@@ -23,6 +23,8 @@ import syllabusData from './syllabus_data.json';
 import stageSubjects from './stage_subjects.json';
 import canvasHint from './assets/gemini-canvas-final.png';
 import modelSelectorHint from './assets/gemini-model-selector.png';
+import { buildWorksheetRequest } from './features/worksheet/utils/buildWorksheetRequest';
+import { renderGemHandoffPrompt } from './features/worksheet/utils/renderGemHandoffPrompt';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
 
@@ -68,6 +70,11 @@ function buildMergedSyllabus(yearLevel) {
 const latexCache = new Map();
 
 function renderLatex(text) {
+  if (typeof text === 'object' && text !== null) {
+    text = text.label || text.id || '';
+  }
+  if (typeof text !== 'string') return '';
+  
   if (latexCache.has(text)) {
     return latexCache.get(text);
   }
@@ -164,16 +171,7 @@ export default function WorksheetGenerator({ navigate }) {
     return String(Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
   });
   const [firstTimeMode, setFirstTimeMode] = useState(false);
-  const [selectedPoints, setSelectedPoints] = useState(() => {
-    try {
-      const savedStage = localStorage.getItem('mait_ws_stage') || 'Year 12';
-      const savedSubject = localStorage.getItem('mait_ws_subject') || (stageSubjects[savedStage] ? Object.keys(stageSubjects[savedStage])[0] : 'Mathematics');
-      const saved = localStorage.getItem(`mait_ws_pts_${savedStage}_${savedSubject}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [selectedPoints, setSelectedPoints] = useState([]);
   const [includeName, setIncludeName] = useState(() => {
     const saved = localStorage.getItem('mait_ws_name');
     return saved !== null ? saved === 'true' : true;
@@ -201,8 +199,6 @@ export default function WorksheetGenerator({ navigate }) {
   const [expandedSubtopics, setExpandedSubtopics] = useState({});
 
   const launchTimeoutRef = useRef(null);
-  const isInitialMount = useRef(true);
-  const isFirstPointsLoad = useRef(true);
 
   const steps = [
     { id: 'curriculum', title: 'Curriculum', icon: GraduationCap },
@@ -250,11 +246,6 @@ export default function WorksheetGenerator({ navigate }) {
   ]);
 
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
     const subjectsForStage = stageSubjects[selectedStage];
     if (subjectsForStage) {
       const nextSubject = Object.keys(subjectsForStage)[0];
@@ -267,21 +258,9 @@ export default function WorksheetGenerator({ navigate }) {
     }
   }, [selectedStage]);
 
-  useEffect(() => {
-    localStorage.setItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`, JSON.stringify(selectedPoints));
-  }, [selectedPoints, selectedStage, selectedSubject]);
+
 
   useEffect(() => {
-    if (isFirstPointsLoad.current) {
-      isFirstPointsLoad.current = false;
-      try {
-        const saved = localStorage.getItem(`mait_ws_pts_${selectedStage}_${selectedSubject}`);
-        setSelectedPoints(saved ? JSON.parse(saved) : []);
-      } catch {
-        setSelectedPoints([]);
-      }
-      return;
-    }
     setSelectedPoints([]);
   }, [selectedStage, selectedSubject]);
 
@@ -344,11 +323,21 @@ export default function WorksheetGenerator({ navigate }) {
     return stageSubjects[selectedStage]?.[selectedSubject] || [];
   }, [legacySyllabusYear, selectedStage, selectedSubject]);
 
+  const getId = (p) => (typeof p === 'object' && p !== null ? p.id : p);
+  const getLabel = (p) => {
+    if (typeof p === 'object' && p !== null) return p.label || p.id || '';
+    return typeof p === 'string' ? p : String(p || '');
+  };
+
   const filteredModules = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) {
       return Object.keys(currentSyllabus);
     }
+    if (!query) {
+      return Object.keys(currentSyllabus);
+    }
+
     return Object.keys(currentSyllabus).filter((moduleName) => {
       if (moduleName.toLowerCase().includes(query)) {
         return true;
@@ -357,7 +346,7 @@ export default function WorksheetGenerator({ navigate }) {
         if (subtopic.toLowerCase().includes(query)) {
           return true;
         }
-        return points.some((point) => point.toLowerCase().includes(query));
+        return points.some((point) => getLabel(point).toLowerCase().includes(query));
       });
     });
   }, [currentSyllabus, searchQuery]);
@@ -373,7 +362,7 @@ export default function WorksheetGenerator({ navigate }) {
     for (const moduleName of filteredModules) {
       nextModules[moduleName] = true;
       for (const [subtopic, points] of Object.entries(currentSyllabus[moduleName] || {})) {
-        if (subtopic.toLowerCase().includes(query) || points.some((point) => point.toLowerCase().includes(query))) {
+        if (subtopic.toLowerCase().includes(query) || points.some((point) => getLabel(point).toLowerCase().includes(query))) {
           nextSubtopics[subtopic] = true;
         }
       }
@@ -396,35 +385,38 @@ export default function WorksheetGenerator({ navigate }) {
   };
 
   const handlePointToggle = (point) => {
-    setSelectedPoints((prev) => (prev.includes(point) ? prev.filter((entry) => entry !== point) : [...prev, point]));
+    const id = getId(point);
+    setSelectedPoints((prev) => (prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id]));
   };
 
   const isModuleSelected = (moduleName) => {
     const points = Object.values(currentSyllabus[moduleName] || {}).flat();
-    return points.length > 0 && points.every((point) => selectedPoints.includes(point));
+    return points.length > 0 && points.every((point) => selectedPoints.includes(getId(point)));
   };
 
   const toggleModuleSelection = (moduleName) => {
     const points = Object.values(currentSyllabus[moduleName] || {}).flat();
-    if (points.every((point) => selectedPoints.includes(point))) {
-      setSelectedPoints((prev) => prev.filter((point) => !points.includes(point)));
+    const pointIds = points.map(getId);
+    if (pointIds.every((id) => selectedPoints.includes(id))) {
+      setSelectedPoints((prev) => prev.filter((id) => !pointIds.includes(id)));
       return;
     }
-    setSelectedPoints((prev) => Array.from(new Set([...prev, ...points])));
+    setSelectedPoints((prev) => Array.from(new Set([...prev, ...pointIds])));
   };
 
   const isSubtopicSelected = (moduleName, subtopic) => {
     const points = currentSyllabus[moduleName]?.[subtopic] || [];
-    return points.length > 0 && points.every((point) => selectedPoints.includes(point));
+    return points.length > 0 && points.every((point) => selectedPoints.includes(getId(point)));
   };
 
   const toggleSubtopicSelection = (moduleName, subtopic) => {
     const points = currentSyllabus[moduleName]?.[subtopic] || [];
-    if (points.every((point) => selectedPoints.includes(point))) {
-      setSelectedPoints((prev) => prev.filter((point) => !points.includes(point)));
+    const pointIds = points.map(getId);
+    if (pointIds.every((id) => selectedPoints.includes(id))) {
+      setSelectedPoints((prev) => prev.filter((id) => !pointIds.includes(id)));
       return;
     }
-    setSelectedPoints((prev) => Array.from(new Set([...prev, ...points])));
+    setSelectedPoints((prev) => Array.from(new Set([...prev, ...pointIds])));
   };
 
   const validateSelection = () => {
@@ -451,85 +443,37 @@ export default function WorksheetGenerator({ navigate }) {
     return 'mixed';
   };
 
-  const buildWorksheetPayload = () => {
-    const pedagogicalDrills = [];
-    if (pedagogicalSpotError) {
-      pedagogicalDrills.push('spot-error');
-    }
-    if (pedagogicalParameterShift) {
-      pedagogicalDrills.push('parameter-shift');
-    }
-    if (pedagogicalLimitCase) {
-      pedagogicalDrills.push('limit-case');
-    }
-    if (pedagogicalProofStyle) {
-      pedagogicalDrills.push('proof-style');
-    }
-    if (pedagogicalWordProblems) {
-      pedagogicalDrills.push('word-problems');
-    }
-    if (pedagogicalMultiStep) {
-      pedagogicalDrills.push('multi-step');
-    }
-
-    return {
-      topic: selectedPoints[0] || rawQuestions.split('\n')[0] || displaySubject,
-      subject: displaySubject,
-      year_level: yearLevel || 11,
-      num_questions: Math.min(numQuestions, 30),
-      difficulty: mapDifficulty(),
-      include_answers: generateAnswerKey,
-      student_name: includeName && schoolName.trim() ? schoolName.trim() : undefined,
-      syllabus_points: selectedPoints,
-      manual_prompt: mode === 'B' ? rawQuestions.trim() : '',
-      pedagogical_drills: pedagogicalDrills,
-      context_source:
-        syllabusContextMode === 'Search'
-          ? 'web'
-          : syllabusContextMode === 'Provide' || textbooksProvided
-            ? 'syllabus'
-            : 'builtin',
-      include_marking: includeMarks,
-      remove_watermark: removeWatermark,
-    };
-  };
+  const getWorksheetRequestParams = () => ({
+    selectedStage,
+    selectedSubject,
+    customSubject,
+    mode,
+    rawQuestions,
+    numQuestions,
+    difficulty,
+    workingSpace,
+    includeMarks,
+    generateAnswerKey,
+    includeWorkedSolutions,
+    includeName,
+    includeDate,
+    schoolName,
+    removeWatermark,
+    syllabusContextMode,
+    textbooksProvided,
+    pedagogicalSpotError,
+    pedagogicalParameterShift,
+    pedagogicalLimitCase,
+    pedagogicalProofStyle,
+    pedagogicalWordProblems,
+    pedagogicalMultiStep,
+    selectedPoints,
+    syllabusData: currentSyllabus // pass the merged syllabus or raw data
+  });
 
   const generatePrompt = () => {
-    const userTopic = mode === 'A' 
-      ? (selectedPoints.length > 0 ? selectedPoints.join(' | ') : `${selectedStage} ${displaySubject}`)
-      : (rawQuestions.trim() ? rawQuestions.trim() : `${selectedStage} ${displaySubject}`);
-
-    const hasPedagogy = pedagogicalSpotError || pedagogicalParameterShift || pedagogicalLimitCase || pedagogicalProofStyle || pedagogicalWordProblems || pedagogicalMultiStep;
-    const isExamMode = !hasPedagogy;
-    const includeWatermark = !removeWatermark;
-
-    const answerKeyStatus = generateAnswerKey 
-      ? (includeWorkedSolutions ? 'Generate Teacher Answer Key at the end with full worked solutions & marking rubric.' : 'Generate Teacher Answer Key at the end.')
-      : 'No answer key.';
-
-    let customInstructions = '';
-    if (syllabusContextMode === 'Provide') customInstructions += 'I will upload the syllabus. ';
-    if (textbooksProvided) customInstructions += 'I will upload textbooks/resources. ';
-    if (schoolName.trim()) customInstructions += `School/Class Name for Header: ${schoolName.trim()}. `;
-
-    return `**USER WORKSHEET REQUEST:**
-Generate a worksheet based on your strict System Directives and your attached Syllabus Knowledge Base.
-
-* **Topic / Syllabus Focus:** ${userTopic}
-* **Number of Questions:** ${numQuestions}
-* **Difficulty:** ${difficulty}
-* **Header Spaces:** ${includeName ? 'Include Name line.' : ''} ${includeDate ? 'Include Date line.' : ''}
-* **Working Space:** ${workingSpace}
-* **Marks:** ${includeMarks ? 'Assign and right-align marks.' : 'No marks.'}
-* **Answer Key:** ${answerKeyStatus}
-
-**CRITICAL TOGGLES:**
-* **WATERMARK:** ${includeWatermark ? 'ON (Inject URL into rfoot)' : 'OFF (Leave rfoot empty)'}
-* **MODE:** ${isExamMode ? 'EXAM STRICT (Pure questions only, no pedagogy tools)' : 'PEDAGOGY (Weave in selected pedagogy tools)'}
-
-**Custom Instructions:** ${customInstructions || 'None.'}
-
-Begin generation now. Output ONLY the raw LaTeX code block.`;
+    const request = buildWorksheetRequest(getWorksheetRequestParams());
+    return renderGemHandoffPrompt(request);
   };
 
   const closeModal = () => {
@@ -607,12 +551,13 @@ Begin generation now. Output ONLY the raw LaTeX code block.`;
     setGenerationSuccess('');
 
     try {
+      const requestPayload = buildWorksheetRequest(getWorksheetRequestParams());
       const response = await fetch(`${API_URL}/generate-worksheet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(buildWorksheetPayload()),
+        body: JSON.stringify(requestPayload),
       });
 
       if (!response.ok) {
@@ -983,7 +928,7 @@ Begin generation now. Output ONLY the raw LaTeX code block.`;
                                       if (
                                         query &&
                                         !subtopic.toLowerCase().includes(query) &&
-                                        !points.some((point) => point.toLowerCase().includes(query))
+                                        !points.some((point) => getLabel(point).toLowerCase().includes(query))
                                       ) {
                                         return null;
                                       }
@@ -1007,18 +952,18 @@ Begin generation now. Output ONLY the raw LaTeX code block.`;
 
                                           {(expandedSubtopics[subtopic] || searchQuery) && (
                                             <div className="ml-6 grid gap-2">
-                                              {points.map((point) => (
+                                                  {points.map((point) => (
                                                 <label
-                                                  key={point}
+                                                  key={point.id || point}
                                                   className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
-                                                    selectedPoints.includes(point)
+                                                    selectedPoints.includes(getId(point))
                                                       ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
                                                       : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
                                                   }`}
                                                 >
                                                   <input
                                                     type="checkbox"
-                                                    checked={selectedPoints.includes(point)}
+                                                    checked={selectedPoints.includes(point.id || point)}
                                                     onChange={() => handlePointToggle(point)}
                                                     className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
                                                   />
@@ -1038,19 +983,22 @@ Begin generation now. Output ONLY the raw LaTeX code block.`;
                         ) : currentTopicsList && currentTopicsList.length > 0 ? (
                           <div className="grid gap-3">
                             {currentTopicsList
-                              .filter((topic) => topic.toLowerCase().includes(searchQuery.toLowerCase()))
+                              .filter((topic) => {
+                                const lbl = typeof topic === 'object' ? topic.label : topic;
+                                return (lbl || '').toLowerCase().includes(searchQuery.toLowerCase());
+                              })
                               .map((topic) => (
                                 <label
-                                  key={topic}
+                                  key={topic.id || topic}
                                   className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
-                                    selectedPoints.includes(topic)
+                                    selectedPoints.includes(topic.id || topic)
                                       ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
                                       : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
-                                    checked={selectedPoints.includes(topic)}
+                                    checked={selectedPoints.includes(topic.id || topic)}
                                     onChange={() => handlePointToggle(topic)}
                                     className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
                                   />

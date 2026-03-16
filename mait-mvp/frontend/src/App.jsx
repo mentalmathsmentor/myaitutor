@@ -20,6 +20,9 @@ import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 import useAuth from './hooks/useAuth'
 import AvatarDisplay from './components/AvatarDisplay'
 
+import { MathEngineService } from './features/math/MathEngineService'
+import { MathRouter } from './features/math/MathRouter'
+
 const VALID_PAGES = ['landing', 'resources', 'worksheets', 'pastpapers', 'app', 'demo', 'privacy'];
 
 function getPageFromPath() {
@@ -136,12 +139,11 @@ function App() {
     const [studyTimerSeconds, setStudyTimerSeconds] = useState(0)
     const endOfMsgRef = useRef(null)
 
-    // New state for polished demo experience
-    const [demoModelSize, setDemoModelSize] = useState('small') // 'small' | 'large'
+    const [demoModelSize, setDemoModelSize] = useState('balanced') // 'tiny' | 'balanced' | 'quality' | 'legacy'
     const [localBrainChoice, setLocalBrainChoice] = useState(null) // null | 'local' | 'cloud'
     const [downloadError, setDownloadError] = useState(null) // error message string or null
     const [webGPUError, setWebGPUError] = useState(null) // WebGPU not available error
-    const [showModelSwitchConfirm, setShowModelSwitchConfirm] = useState(null) // 'small' | 'large' | null
+    const [showModelSwitchConfirm, setShowModelSwitchConfirm] = useState(null) // 'tiny' | 'balanced' | 'quality' | 'legacy' | null
     const [loadedModelName, setLoadedModelName] = useState(null) // actual model name once loaded
     const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false)
     const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem('mait_autosave') === 'true')
@@ -188,8 +190,7 @@ function App() {
     }
 
     const startLocalBrain = (modelSize = null) => {
-        // Determine which model size to use
-        const effectiveModelSize = modelSize || (isDemoMode ? demoModelSize : 'large');
+        const effectiveModelSize = modelSize || (isDemoMode ? demoModelSize : 'balanced');
 
         // If already ready with same model, skip
         if (isModelReady && modelService.getModelInfo().size === effectiveModelSize) return;
@@ -256,7 +257,7 @@ function App() {
         setShowOverlay(false);
         // Small delay to let state reset before retrying
         setTimeout(() => {
-            startLocalBrain(isDemoMode ? demoModelSize : 'large');
+            startLocalBrain(isDemoMode ? demoModelSize : 'balanced');
         }, 100);
     };
 
@@ -569,6 +570,28 @@ function App() {
         }
 
         setLoading(true);
+
+        const useDeterministicMathEngine = true;
+        let streamingUserText = userText;
+        let isToolRouted = false;
+        let mathResult = null;
+
+        if (useDeterministicMathEngine) {
+            const mathPayload = MathRouter.classify(userText);
+            if (mathPayload) {
+                mathResult = MathEngineService.execute(mathPayload);
+                if (mathResult.success) {
+                    isToolRouted = true;
+                    setMessages(prev => [...prev, { 
+                        role: 'bot', 
+                        text: `*Verified Engine Result:*  \n$$${mathResult.tex}$$`, 
+                        source: 'math-engine' 
+                    }]);
+                    streamingUserText = `The user asked: "${userText}". A deterministic math tool calculated the final answer as: ${mathResult.resultText}. Provide a helpful explanation or hint for finding this result in your Mate persona. Do not change the final answer.`;
+                }
+            }
+        }
+
         const needsAPI = !isDemoMode && (localBrainChoice === 'cloud' || shouldQueryAPI(userText));
 
         if (localBrainChoice === 'cloud' && !isDemoMode) {
@@ -677,7 +700,8 @@ PERSONALITY:
 
 **OUTPUT FORMAT (CRITICAL):**
 - Keep each response to **1-2 sentences MAX**
-- Use **bold** for key terms and emphasis
+- Use **bold** for key terms and emphasis (only outside of math blocks!)
+- NEVER use asterisks (**) inside LaTeX math blocks. If you need bold in math, use \\mathbf{}
 - Put ALL formulas on their own line, wrapped in $$ like: $$f(x) = x^2$$
 - Separate distinct thoughts with double newlines
 - Never output long paragraphs - break everything into bite-sized chunks
@@ -700,7 +724,7 @@ CONVERSATION RULES:
 Use LaTeX: $$block formulas$$ and $inline math$`;
 
             await modelService.streamChat(
-                messages.concat({ role: 'user', text: userText }).map(m => ({
+                messages.concat({ role: 'user', text: streamingUserText }).map(m => ({
                     role: m.role === 'bot' ? 'assistant' : 'user',
                     content: m.text
                 })),
@@ -1192,28 +1216,33 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                             </p>
                             {/* Model quality toggle */}
                             <div className="flex items-center gap-1 ml-3 shrink-0">
-                                <button
-                                    onClick={() => handleModelSizeSwitch('small')}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${demoModelSize === 'small'
-                                        ? 'bg-primary/15 border-primary/40 text-primary'
-                                        : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
-                                        }`}
-                                    title="Gemma 2 2B - Faster download (~1.4 GB), quicker responses"
-                                >
-                                    <Zap size={10} />
-                                    <span className="hidden sm:inline">Fast</span>
-                                </button>
-                                <button
-                                    onClick={() => handleModelSizeSwitch('large')}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${demoModelSize === 'large'
-                                        ? 'bg-secondary/15 border-secondary/40 text-secondary'
-                                        : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
-                                        }`}
-                                    title="Phi 3.5 Mini - Higher quality (~2.2 GB download)"
-                                >
-                                    <FlaskConical size={10} />
-                                    <span className="hidden sm:inline">Quality</span>
-                                </button>
+                                {Object.entries(modelService.constructor.getAvailableModels())
+                                    .filter(([key, config]) => !config.hidden)
+                                    .map(([key, config]) => {
+                                        let Icon = BrainCircuit;
+                                        if (config.icon === 'zap') Icon = Zap;
+                                        if (config.icon === 'flask') Icon = FlaskConical;
+                                        if (config.icon === 'brain') Icon = BrainCircuit;
+
+                                        let activeStyles = 'bg-primary/15 border-primary/40 text-primary';
+                                        if (key === 'balanced') activeStyles = 'bg-accent/20 border-accent/50 text-accent';
+                                        if (key === 'quality') activeStyles = 'bg-secondary/15 border-secondary/40 text-secondary';
+                                        
+                                        return (
+                                            <button
+                                                key={key}
+                                                onClick={() => handleModelSizeSwitch(key)}
+                                                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-display uppercase tracking-wider transition-all border ${demoModelSize === key
+                                                    ? activeStyles
+                                                    : 'bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:border-surface-3'
+                                                    }`}
+                                                title={`${config.name} - ${config.description} (~${(config.estimatedSizeMB/1000).toFixed(1)} GB)`}
+                                            >
+                                                <Icon size={10} />
+                                                <span className="hidden sm:inline">{config.displayName ? config.displayName.split(' ')[0] : config.name}</span>
+                                            </button>
+                                        );
+                                    })}
                             </div>
                         </div>
                     </div>

@@ -3,17 +3,38 @@
 
 // Model options - small for demo (fast download), large for full quality
 const MODELS = {
-    small: {
-        id: "gemma-2-2b-it-q4f16_1-MLC",
-        name: "Gemma 2 2B",
-        displayName: "Fast (Gemma 2 2B)",
-        estimatedSizeMB: 1400,
+    tiny: {
+        id: "SmolLM2-1.7B-Instruct-q4f16_1-MLC",
+        name: "SmolLM2 1.7B",
+        displayName: "Tiny (SmolLM2 1.7B)",
+        estimatedSizeMB: 1200,
+        description: "Ultra-fast loading, for low-end devices",
+        icon: "zap"
     },
-    large: {
+    balanced: {
+        id: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
+        name: "Llama 3.2 3B",
+        displayName: "Balanced (Llama 3.2 3B)",
+        estimatedSizeMB: 2000,
+        description: "Strongest general maths tutoring",
+        icon: "brain"
+    },
+    quality: {
         id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
         name: "Phi 3.5 Mini",
-        displayName: "Quality (Phi 3.5 Mini)",
+        displayName: "Quality (Phi 3.5)",
         estimatedSizeMB: 2200,
+        description: "Highest logical reasoning capability",
+        icon: "flask"
+    },
+    legacy: {
+        id: "gemma-2-2b-it-q4f16_1-MLC",
+        name: "Gemma 2 2B",
+        displayName: "Legacy (Gemma 2)",
+        estimatedSizeMB: 1400,
+        description: "Previous fast fallback",
+        icon: "archive",
+        hidden: true
     }
 };
 
@@ -55,7 +76,7 @@ class ModelService {
         this.status = 'IDLE'; // 'IDLE' | 'INITIALIZING' | 'READY' | 'ERROR'
         this.session = null; // for window.ai
         this.initPromise = null; // Singleton promise for in-flight init
-        this.currentModelSize = null; // 'small' | 'large'
+        this.currentModelSize = null; // 'tiny' | 'balanced' | 'quality' | 'legacy'
         this.currentModelInfo = null; // { id, name, displayName, estimatedSizeMB }
         this.downloadStartTime = null;
         this.lastProgressBytes = 0;
@@ -113,9 +134,9 @@ class ModelService {
     /**
      * Initialize the model engine
      * @param {Function} onProgress - Callback for progress updates: (report: { text, progress, fetchedMB, totalMB, speedMBps }) => void
-     * @param {string} modelSize - 'small' or 'large' (default: 'small')
+     * @param {string} modelSize - 'tiny', 'balanced', 'quality', 'legacy' (default: 'balanced')
      */
-    async initialize(onProgress, modelSize = 'small') {
+    async initialize(onProgress, modelSize = 'balanced') {
         // If already ready with the SAME model, just return
         if (this.status === 'READY' && this.currentModelSize === modelSize) {
             onProgress({ text: "Model already loaded.", progress: 100 });
@@ -148,7 +169,7 @@ class ModelService {
 
         this.status = 'INITIALIZING';
         this.currentModelSize = modelSize;
-        this.currentModelInfo = MODELS[modelSize] || MODELS.small;
+        this.currentModelInfo = MODELS[modelSize] || MODELS.balanced;
         this.downloadStartTime = Date.now();
         this.lastProgressTime = Date.now();
         this.lastProgressBytes = 0;
