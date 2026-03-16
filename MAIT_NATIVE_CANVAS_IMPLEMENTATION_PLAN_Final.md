@@ -1,6 +1,6 @@
 # MAIT Native Canvas — V2 Implementation Plan (Final)
 
-> **Revision:** V2-Final — Incorporates Gemini architect review, Claude architect review, and codebase audit.
+> **Revision:** V3 — Incorporates Gemini architect review, Claude architect review, codebase audit, and Multimodal & Image Handling Pipeline.
 >
 > **Audience:** Solo developer shipping on a 4-week sprint.
 >
@@ -514,6 +514,21 @@ export const FRAGMENT_TEMPLATES = {
     metadata_json: { spaceAfter: "1cm" }
   },
 
+  image_placeholder: {
+    kind: "diagram",
+    label: "Image Placeholder",
+    icon: "ImageOff",
+    category: "Diagrams",
+    defaultContent: `\\begin{center}
+\\begin{tcolorbox}[height=6cm, colback=white, colframe=gray!50, dashed]
+\\centering
+\\vspace{2.5cm}
+\\textcolor{gray}{\\textit{Space reserved for image insertion}}
+\\end{tcolorbox}
+\\end{center}`,
+    metadata_json: { spaceAfter: "1cm", isImagePlaceholder: true }
+  },
+
   // ── Pedagogical Blocks ─────────────────────────────────
   sabotage_box: {
     kind: "instruction",
@@ -599,6 +614,7 @@ The toolbar has an **"+ Insert"** button that opens a dropdown/popover grouped b
 │  DIAGRAMS                       │
 │    ☐ Number Plane (TikZ)        │
 │    ☐ Unit Circle (Trig)         │
+│    ☐ Image Placeholder          │
 │  PEDAGOGICAL                    │
 │    ☐ Spot the Error Box         │
 │    ☐ Worked Example             │
@@ -736,163 +752,245 @@ This is intentionally simple regex-based parsing. A full TeX AST parser (like `p
 
 ---
 
-## 8.5. Image-to-Fragment Pipeline (Photo → Editable LaTeX Question)
+## 8.5. Multimodal & Image Handling Pipeline
 
-### The Feature
+### Architectural Principle: Backend Compilation Stays Pure Text
 
-A teacher photographs a question from a textbook, past paper, or colleague's worksheet. MAIT OCRs the image, recreates any diagrams as TikZ, and inserts the result as an **editable fragment** in the canvas.
+**The V1 backend LaTeX compiler (pdflatex/Tectonic) processes ONLY text-based LaTeX.** No `\includegraphics`, no image file paths, no binary assets uploaded to the compile sandbox. This constraint is non-negotiable for V1 — it keeps the compilation pipeline fast, stateless, and free from file I/O complexity.
 
-This is a significant differentiator: Gemini Canvas cannot do this within a worksheet-aware context.
+Images enter the system through three escalating tiers:
 
-### Architecture: Two-Stage Gemini Flash Pipeline (No External OCR Dependency)
+| Tier | Phase | Mechanism | Backend Impact |
+|---|---|---|---|
+| **Smart Image Placeholder** | Phase 2 | Dashed `tcolorbox` in LaTeX — teacher tapes/pastes over the printed PDF | Zero — pure LaTeX |
+| **Optical Extraction Protocol** | Phase 3 | Vision LLM converts image → native LaTeX/TikZ fragments | Zero — output is text LaTeX |
+| **Frontend PDF Stamping** | Phase 6 | `pdf-lib` stamps raster images onto compiled PDF in the browser | Zero — backend never sees the image |
 
-**Why not Mathpix?** Adding a third-party OCR API means another dependency, another billing account, another point of failure. Gemini Flash multimodal already handles math OCR well, and you already have the SDK integrated. Keep the stack tight.
+All three tiers produce printable worksheets. No tier requires the backend to handle image files.
 
-**Stage 1 — Structured Extraction** (Gemini Flash, `media_resolution: "high"`)
+---
+
+### Tier 1: Smart Image Placeholder (Phase 2 — Insert Menu)
+
+Already defined in the Insert Menu template config (§6.6) as `image_placeholder`. Teachers use this when they need to:
+- Reserve space for a photograph they'll physically tape onto printed copies
+- Hold a spot for a complex image (cell diagrams, real-world photos) that can't be recreated in TikZ
+- Mark where a Tier 3 PDF stamp will go in Post-V1
+
+The placeholder renders as a dashed gray box with italic helper text. Teachers can customize the height via the fragment editor.
+
+---
+
+### Tier 2: Optical Extraction Protocol — `/vision-parse` (Phase 3)
+
+Teachers upload an image (screenshot of a math problem, photo of an old worksheet, textbook page), and the AI parses it directly into **native editable fragments**.
+
+#### Why not Mathpix?
+
+Adding a third-party OCR API means another dependency, another billing account, another point of failure. Gemini Flash multimodal already handles math OCR well, and you already have the SDK integrated. Keep the stack tight.
+
+#### Architecture: Single-Call Vision LLM → Fragment Array
+
+The frontend converts the image to base64 and sends it to one backend endpoint. The vision LLM returns a **strict JSON array of fragment objects** that are immediately injected into the Zustand store and persisted to the DB.
 
 ```python
 # image_to_fragment_service.py
 
-IMAGE_OCR_SYSTEM_PROMPT = r"""You are a maths worksheet digitizer for NSW HSC Mathematics.
-You will receive a photograph of a maths question (from a textbook, past paper, or handwritten source).
+VISION_PARSE_SYSTEM_PROMPT = r"""You are a maths worksheet digitizer for NSW HSC Mathematics.
+You will receive a photograph of a maths question, diagram, or worksheet section.
 
-Your job is to produce a STRUCTURED JSON description of the question. This will be used
-in Stage 2 to generate compilable LaTeX.
+Your job is to convert it into an ARRAY of LaTeX fragment objects that can be
+directly inserted into a block-based worksheet editor.
 
-OUTPUT FORMAT (JSON only, no commentary):
-{
-  "question_text": "The full text of the question, with inline math as LaTeX (e.g. $\\frac{1}{2}$)",
-  "parts": [
-    { "label": "a", "text": "Find the derivative of...", "marks": 2 }
-  ],
-  "diagram": {
-    "present": true/false,
-    "type": "number_plane | graph | geometric_figure | table | none",
-    "description": "A parabola y=x^2-4 with shaded region between x=0 and x=2,
-                     x-axis from -3 to 3, y-axis from -5 to 5, grid lines visible"
+OUTPUT FORMAT (strict JSON array, no commentary, no markdown fences):
+[
+  {
+    "kind": "question",
+    "label": "Question N — [topic] [M Marks]",
+    "content_latex": "\\item The full LaTeX of the question..."
   },
-  "marks_total": 6,
-  "source_hint": "Appears to be from a Year 12 Advanced calculus context"
-}
-"""
-```
+  {
+    "kind": "diagram",
+    "label": "Diagram — [description]",
+    "content_latex": "\\begin{center}\\begin{tikzpicture}...\\end{tikzpicture}\\end{center}"
+  }
+]
 
-**Stage 2 — LaTeX + TikZ Generation** (Gemini Flash, `thinking_level: "medium"`)
-
-```python
-TIKZ_GENERATION_SYSTEM_PROMPT = r"""You are a LaTeX/TikZ expert for NSW HSC Mathematics worksheets.
-You will receive a structured JSON description of a maths question.
-Generate a SINGLE compilable LaTeX fragment for this question.
+VALID FRAGMENT KINDS: question, diagram, instruction, worked_example, text_block, header, footer
 
 RULES:
-1. Output ONLY the LaTeX fragment. No \documentclass, no \begin{document}.
-2. The fragment will be inserted into an existing enumerate environment.
-3. Start with \item.
-4. ALL math in proper LaTeX: \frac{}{}, \int_{}{}, \lim_{}, etc.
-5. If a diagram is present, recreate it using TikZ with these guidelines:
-   - Use \begin{center}\begin{tikzpicture}...\end{tikzpicture}\end{center}
-   - For graphs: use pgfplots with \begin{axis}...\end{axis}
-   - For number planes: draw grid, axes, labels, then plot features
-   - For geometric figures: use coordinates, draw commands, labels
-   - Match the spatial layout of the original as closely as possible
-   - Add axis labels, tick marks, and annotations from the original
-6. If the diagram is too complex to recreate accurately, insert a placeholder:
-   \begin{center}\fbox{\parbox{8cm}{\centering [Diagram: <description>]\\
-   \small Teacher: replace with actual diagram or use TikZ editor}}\end{center}
-7. Place marks at the end: \hfill \textbf{[N Marks]}
+1. ALL math must use proper LaTeX: \frac{}{}, \int_{}, \lim_{}, \sin, etc.
+2. Each question is its own fragment object. Multi-part questions stay as one fragment.
+3. Place marks at the end of each question: \hfill \textbf{[N Marks]}
+
+CRITICAL — DIAGRAM BAIL-OUT GUARDRAIL:
+4. If the image contains a SIMPLE graph, number plane, geometric figure, or function plot:
+   → Write the TikZ/pgfplots code to recreate it.
+   → Use \begin{center}\begin{tikzpicture}...\end{tikzpicture}\end{center}
+   → For function graphs, prefer pgfplots: \begin{axis}...\addplot...\end{axis}
+5. If the image contains a COMPLEX photograph, intricate biological diagram, real-world
+   image, or any diagram you are NOT confident you can recreate accurately in TikZ:
+   → DO NOT attempt TikZ.
+   → Output the Smart Image Placeholder instead:
+   {"kind": "diagram", "label": "Diagram — [brief description]",
+    "content_latex": "\\begin{center}\\begin{tcolorbox}[height=6cm, colback=white, colframe=gray!50, dashed]\\centering\\vspace{2.5cm}\\textcolor{gray}{\\textit{[brief description of original image]}}\\end{tcolorbox}\\end{center}"}
+6. When in doubt between TikZ and placeholder, CHOOSE THE PLACEHOLDER. A clean
+   placeholder that the teacher can stamp over is better than broken TikZ.
 
 ALLOWED PACKAGES (already in preamble): tikz, pgfplots, amsmath, amssymb, tcolorbox
 """
 ```
 
-### Why Two Stages?
+#### Backend Route
 
-1. **Separation of concerns.** Stage 1 is pure perception (what's in the image?). Stage 2 is pure generation (turn description into LaTeX). If Stage 2 fails to compile, you can retry it without re-processing the image.
-2. **Debuggability.** The structured JSON from Stage 1 is human-readable. If the TikZ is wrong, the teacher (or you debugging) can see exactly what the model "saw" vs. what it generated.
-3. **Cost efficiency.** Stage 1 uses high-resolution vision (~1000 tokens for the image). Stage 2 is text-only (~300 input tokens). Total cost: ~$0.002 per image. If Stage 2 needs a retry, you don't re-pay for the image.
+```
+POST /documents/{id}/vision-parse
+  Content-Type: application/json
+  Body: {
+    "image_base64": "<base64-encoded image>",
+    "insert_after_fragment_id": "<optional — where to insert>"
+  }
 
-### Diagram Recreation Reliability
+  Response:
+  {
+    "fragments": [
+      {
+        "id": "uuid",
+        "kind": "question",
+        "label": "Question 5 — Integration [4 Marks]",
+        "content_latex": "\\item Find $\\int_0^2 x^2 \\, dx$. \\hfill \\textbf{[4 Marks]}",
+        "sort_key": "a3V",
+        "confidence": "high"
+      },
+      {
+        "id": "uuid",
+        "kind": "diagram",
+        "label": "Diagram — Shaded region under parabola",
+        "content_latex": "\\begin{center}\\begin{tikzpicture}...\\end{tikzpicture}\\end{center}",
+        "sort_key": "a3W",
+        "confidence": "medium"
+      }
+    ],
+    "placeholders_used": 0,
+    "total_fragments": 2
+  }
+```
 
-Based on current benchmarks:
+**One endpoint, one LLM call, immediate fragment injection.** The backend:
+1. Receives base64 image
+2. Calls Gemini Flash with `media_resolution: "high"` and the system prompt above
+3. Parses the returned JSON array
+4. Generates `sort_key` values (LexoRank) for each fragment, positioned after `insert_after_fragment_id`
+5. Persists all fragments to DB
+6. Returns the fragment array to the frontend
 
-| Diagram Type | Expected Reliability | Strategy |
+The frontend injects them into the Zustand store and auto-scrolls to the first new fragment.
+
+#### Why Single-Call Instead of Two-Stage?
+
+The V2 plan had a two-stage pipeline (extract JSON description → generate LaTeX). After review with Gemini, we consolidated to a single call because:
+
+1. **Simpler.** One endpoint, one LLM call, one response. Less code, less latency, fewer failure modes.
+2. **The bail-out guardrail replaces the two-stage safety net.** Instead of "Stage 1 describes the diagram, Stage 2 decides whether to TikZ it," the single prompt has an explicit decision rule: simple → TikZ, complex → placeholder.
+3. **Cost is the same.** The vision tokens are paid once either way. Single-call: ~$0.002. Two-stage: ~$0.002. No savings from splitting.
+4. **Teachers still get editability.** The output is editable fragments. If the TikZ is wrong, they fix it in the fragment editor or replace it with a placeholder. The "Edit Description" escape hatch from V2 is replaced by direct fragment editing, which is more intuitive.
+
+#### Diagram Recreation Reliability
+
+| Diagram Type | Expected Reliability | LLM Strategy |
 |---|---|---|
 | **Number planes** (axes, points, lines) | ~90% accurate | Direct TikZ generation |
-| **Function graphs** (parabolas, trig, exponential) | ~85% accurate | Use pgfplots with `\addplot` |
+| **Function graphs** (parabolas, trig, exponential) | ~85% accurate | pgfplots with `\addplot` |
 | **Geometric figures** (triangles, circles, angles) | ~75% accurate | TikZ with coordinate geometry |
-| **Complex annotated diagrams** (shaded regions, multiple curves, labels) | ~60% accurate | Generate best-effort + fallback placeholder |
+| **Complex/photographic diagrams** | N/A — bails out | **Smart Image Placeholder** (teacher stamps later in Phase 6) |
 
-**The key insight:** Because the result is an **editable fragment**, imperfect TikZ is acceptable. The teacher sees the generated diagram, tweaks if needed, and compiles. This is infinitely better than "re-type the whole question by hand."
+The bail-out guardrail means the ~60% reliability tier from V2 is eliminated. The LLM either confidently recreates the diagram OR emits a clean placeholder. No broken TikZ reaches the teacher.
 
-### Frontend UX
+#### Frontend UX
 
-#### Upload Flow
+1. Teacher clicks **"Scan Question"** in the toolbar (or Insert Menu → "From Image")
+2. File picker opens (`accept="image/*"`, mobile camera supported via `capture="environment"`)
+3. Image thumbnail + loading spinner: "Analyzing question..."
+4. On success: new fragments appear in the fragment list, auto-scrolled into view
+5. Each fragment is immediately editable — teacher can review, tweak, or delete
+6. Any placeholder fragments are visually distinct (dashed border badge in the fragment card)
 
-1. Teacher clicks **"Scan Question"** button in the toolbar (or in the Insert Menu under a new "From Image" category)
-2. File picker opens (accept: `image/*`, also supports camera capture on mobile via `capture="environment"`)
-3. Image thumbnail appears in a modal with a loading spinner: "Analyzing question..."
-4. Stage 1 completes → show extracted JSON preview:
-   ```
-   ┌──────────────────────────────────────┐
-   │  📸 Scanned Question                 │
-   │                                      │
-   │  "Find the area enclosed by          │
-   │   y = x² and y = 2x for x ≥ 0"     │
-   │                                      │
-   │  Parts: (a) Sketch [2M] (b) Find [3M]│
-   │  Diagram: ✅ Graph detected           │
-   │                                      │
-   │  [ ✏️ Edit Description ] [ Generate ] │
-   └──────────────────────────────────────┘
-   ```
-5. Teacher can edit the structured description before Stage 2 (fix OCR mistakes)
-6. Click "Generate" → Stage 2 runs → fragment inserted into canvas
-7. Fragment auto-expands for immediate review/editing
+#### Cost Per Vision Parse
 
-#### "Edit Description" Escape Hatch
+| Model | Input | Output | Cost |
+|---|---|---|---|
+| Gemini Flash (`media_resolution: "high"`) | ~1,200 tokens (image + prompt) | ~500 tokens (fragment JSON) | **~$0.002** |
 
-If the OCR gets something wrong (e.g., reads `x²` as `x?`), the teacher edits the structured description in a simple form, then Stage 2 regenerates the LaTeX from the corrected description. No need to re-upload the image.
+At 10 scans/day: $0.02/day — negligible.
 
-### Backend API
+---
+
+### Tier 3: Frontend PDF Stamping — "God Tier" Image Support (Phase 6, Post-V1)
+
+#### Concept
+
+The backend compiler stays 100% pure text. No `\includegraphics`, no image hosting, no binary assets in the compile sandbox. Instead, teachers drag-and-drop raster images (`.png`, `.jpg`) directly onto placeholder boxes in the **PDF preview pane**, and the React frontend uses `pdf-lib` to visually stamp the images onto the compiled PDF **client-side**.
+
+#### Why Client-Side?
+
+- **Backend stays stateless.** No image uploads, no file storage, no S3 buckets. The compiled PDF is text-only LaTeX output.
+- **Privacy.** Teacher images never leave the browser. No server-side storage of potentially copyrighted textbook images.
+- **Simplicity.** `pdf-lib` is a well-maintained, browser-native PDF manipulation library (~200KB). No server changes needed.
+
+#### Implementation Sketch
+
+```javascript
+// Frontend: PdfPreviewPane.jsx (Phase 6 addition)
+import { PDFDocument } from 'pdf-lib'
+
+async function stampImageOnPlaceholder(pdfBytes, imageFile, placeholderBbox) {
+  const pdfDoc = await PDFDocument.load(pdfBytes)
+  const imageBytes = await imageFile.arrayBuffer()
+
+  // Embed the image (supports PNG and JPG)
+  const image = imageFile.type.includes('png')
+    ? await pdfDoc.embedPng(imageBytes)
+    : await pdfDoc.embedJpg(imageBytes)
+
+  // Scale to fit within the placeholder bounding box
+  const scaled = image.scaleToFit(placeholderBbox.width, placeholderBbox.height)
+
+  // Draw on the correct page at the placeholder's position
+  const page = pdfDoc.getPage(placeholderBbox.pageIndex)
+  page.drawImage(image, {
+    x: placeholderBbox.x + (placeholderBbox.width - scaled.width) / 2,
+    y: placeholderBbox.y + (placeholderBbox.height - scaled.height) / 2,
+    width: scaled.width,
+    height: scaled.height,
+  })
+
+  return await pdfDoc.save()
+}
+```
+
+#### Placeholder Detection
+
+The Smart Image Placeholder (`tcolorbox[dashed]`) compiles to a visible dashed rectangle in the PDF. To detect its position for stamping:
+
+- **Option A (simple):** Store placeholder coordinates in `metadata_json` when fragments are assembled. The `compile_service` can calculate the approximate page position based on fragment order and content length. Imprecise but workable for V1.
+- **Option B (precise, Post-V1):** Use `pdf.js` to render the PDF in a `<canvas>`, let the teacher click on the placeholder box, and capture the click coordinates as the stamp target. More interactive, more accurate.
+
+#### UX Flow
+
+1. Teacher compiles worksheet → PDF preview shows dashed placeholder boxes
+2. Teacher drags a `.png`/`.jpg` onto a placeholder box in the preview pane
+3. `pdf-lib` stamps the image onto the PDF at that position
+4. Updated PDF displayed in preview — placeholder replaced by the image
+5. Teacher exports the stamped PDF — the final printable artifact
+
+#### Dependencies
 
 ```
-POST /documents/{id}/scan-question
-  Content-Type: multipart/form-data
-  Body: image file + optional insert_after_fragment_id
-
-  Response (Stage 1):
-  {
-    "scan_id": "uuid",
-    "extracted": { ... structured JSON ... },
-    "status": "extracted"
-  }
-
-POST /documents/{id}/scan-question/{scan_id}/generate
-  Body: { "extracted": { ... optionally edited JSON ... } }
-
-  Response (Stage 2):
-  {
-    "fragment": { ... new fragment object ... },
-    "tikz_present": true,
-    "confidence": "high" | "medium" | "low"
-  }
+# Frontend (package.json) — Phase 6 only
+pdf-lib                    # Client-side PDF manipulation (~200KB)
 ```
 
-Two endpoints so the teacher can review/edit between stages. The frontend can also auto-chain them for a one-click flow if the teacher prefers speed over review.
-
-### Cost Per Scan
-
-| Stage | Model | Input | Output | Cost |
-|---|---|---|---|---|
-| Stage 1 (OCR) | Gemini Flash | ~1,200 tokens (image + prompt) | ~200 tokens (JSON) | ~$0.001 |
-| Stage 2 (TikZ gen) | Gemini Flash | ~400 tokens (JSON + prompt) | ~500 tokens (LaTeX) | ~$0.001 |
-| **Total** | | | | **~$0.002 per scan** |
-
-At 10 scans/day, that's $0.02/day — negligible.
-
-### Phase Placement
-
-This feature slots into **Phase 3** (Weeks 3–4), after fragment CRUD and compilation are stable. It reuses the same fragment insertion pipeline as the Insert Menu — the only new work is the two Gemini Flash calls and the upload modal UI.
+No backend changes. No new API routes. The stamped PDF is a frontend-only artifact.
 
 ---
 
@@ -1003,17 +1101,16 @@ Compilation is triggered ONLY by:
 - [ ] Implement `useCompilePoller.js` — poll build status
 - [ ] Wire "Preview" button + Ctrl+Shift+P shortcut
 
-**Exit criteria:** Teacher can edit fragments, insert pre-built templates (questions, diagrams, spot-the-error boxes), click Preview, see compiled PDF. Failed compiles show a teacher-friendly error message. Export to .pdf and .tex works.
+**Exit criteria:** Teacher can edit fragments, insert pre-built templates (questions, diagrams, spot-the-error boxes, **image placeholders**), click Preview, see compiled PDF. Placeholder boxes render as dashed rectangles in the PDF. Failed compiles show a teacher-friendly error message. Export to .pdf and .tex works.
 
-### Phase 3 — AI Revision & Image-to-Fragment Scanner (Weeks 3–4)
+### Phase 3 — AI Revision & Optical Extraction (Weeks 3–4)
 
 **Backend:**
 - [ ] Create `document_revisions` table
 - [ ] Implement `revision_service.py` — targeted fragment revision via Gemini
 - [ ] Add revision API routes (revise, apply, reject, list)
-- [ ] Implement `image_to_fragment_service.py` — two-stage Gemini Flash pipeline (see §8.5)
-- [ ] Add `POST /documents/{id}/scan-question` endpoint (Stage 1: image → structured JSON)
-- [ ] Add `POST /documents/{id}/scan-question/{scan_id}/generate` endpoint (Stage 2: JSON → LaTeX/TikZ fragment)
+- [ ] Implement `image_to_fragment_service.py` — single-call Gemini Flash vision pipeline (see §8.5 Tier 2)
+- [ ] Add `POST /documents/{id}/vision-parse` endpoint (image base64 → fragment array with bail-out guardrail)
 - [ ] Add `pgfplots` to allowed packages in `_sanitize_latex()` (needed for scanned graph recreation)
 
 **Frontend:**
@@ -1022,11 +1119,12 @@ Compilation is triggered ONLY by:
 - [ ] Implement revision preview/apply/reject flow
 - [ ] Add "Revise with AI" button to each `FragmentCard`
 - [ ] Add 2-second debounced auto-save for fragment content
-- [ ] Create `ScanQuestionModal.jsx` — image upload → OCR preview → edit description → generate fragment
+- [ ] Create `ScanQuestionModal.jsx` — image upload → vision-parse → fragment injection
 - [ ] Add "Scan Question" button to toolbar and Insert Menu ("From Image" category)
 - [ ] Support camera capture on mobile (`<input accept="image/*" capture="environment">`)
+- [ ] Visual distinction for placeholder fragments (dashed border badge on `FragmentCard`)
 
-**Exit criteria:** Teacher can select a fragment, type an instruction, preview the AI revision, and accept or reject it. Revision history is viewable. Teacher can photograph a textbook question, review the OCR extraction, and insert it as an editable LaTeX fragment with recreated TikZ diagrams.
+**Exit criteria:** Teacher can select a fragment, type an instruction, preview the AI revision, and accept or reject it. Revision history is viewable. Teacher can photograph a textbook question and get it inserted as editable LaTeX fragments — simple diagrams recreated as TikZ, complex diagrams bailed out to Smart Image Placeholders.
 
 ### Phase 4 — Study Canvas (Post-V1, ~Week 5–6)
 
@@ -1041,9 +1139,12 @@ Compilation is triggered ONLY by:
 - [ ] Fallback routing (Gemini → OpenAI on 429)
 - [ ] Provider metadata in revision history
 
-### Phase 6 — Auto-Repair & Advanced Features (Post-V1)
+### Phase 6 — Auto-Repair, PDF Stamping & Advanced Features (Post-V1)
 
 - [ ] Auto-repair LLM loop: on compile failure, LLM attempts one fix pass automatically
+- [ ] **Frontend PDF Stamping** (see §8.5 Tier 3): teachers drag-drop images onto placeholder boxes in the PDF preview pane
+- [ ] Integrate `pdf-lib` for client-side PDF image stamping (no backend changes)
+- [ ] Placeholder bounding box detection (Option A: metadata-based, Option B: click-to-target)
 - [ ] Stripe billing integration
 - [ ] Usage metering and quotas
 - [ ] Premium model routing
@@ -1099,7 +1200,7 @@ This means **zero breaking changes** to the existing worksheet generation flow. 
 |---|---|---|---|---|
 | Generate worksheet | Gemini Flash | ~2,000 | ~4,000 | ~$0.003 |
 | Revise one fragment | Gemini Flash | ~500 | ~300 | <$0.001 |
-| Scan question (Stage 1+2) | Gemini Flash | ~1,600 | ~700 | ~$0.002 |
+| Vision parse (single call) | Gemini Flash | ~1,200 | ~500 | ~$0.002 |
 | Humanize error | Gemini Flash | ~200 | ~50 | <$0.001 |
 
 ### Compilation Costs
@@ -1128,17 +1229,22 @@ A teacher creating a worksheet, revising 3 questions, scanning 2 textbook questi
 - Export .pdf and .tex downloads work
 - `--no-shell-escape` prevents `\write18` commands
 
-### Phase 3 Tests (Revision & Image Scanner)
+### Phase 2 Tests (Image Placeholder)
+- Insert Image Placeholder → dashed `tcolorbox` renders in compiled PDF
+- Placeholder height is editable via fragment editor
+- Multiple placeholders on one page render correctly
+
+### Phase 3 Tests (Revision & Optical Extraction)
 - Revise single fragment → only that fragment changes
 - Revision preview → accept → fragment updated, revision logged
 - Revision preview → reject → fragment unchanged
 - Revision history displays in chronological order
 - Concurrent edits: two quick revisions don't corrupt state
-- Scan photo of printed question → Stage 1 returns valid structured JSON
-- Scan photo with diagram → Stage 2 generates compilable TikZ
-- Edit OCR description → re-generate produces corrected LaTeX
-- Scan question inserted as editable fragment at correct position
-- Complex diagram fallback: placeholder box inserted when confidence is low
+- `/vision-parse` with printed question photo → returns valid fragment array JSON
+- `/vision-parse` with simple graph → TikZ fragment generated, compiles successfully
+- `/vision-parse` with complex photograph → bail-out guardrail fires, Smart Image Placeholder emitted
+- Vision-parsed fragments inserted at correct position with valid LexoRank sort_keys
+- Placeholder fragments visually distinct in fragment list (dashed badge)
 
 ### UX Acceptance
 - Worksheet Studio → "Open in Canvas" → fragments visible in < 2s
@@ -1191,6 +1297,9 @@ immer                      # Immutable updates (used with Zustand)
 fractional-indexing         # LexoRank sort keys
 @dnd-kit/core              # Drag-and-drop (12KB)
 @dnd-kit/sortable          # Sortable preset for dnd-kit
+
+# Frontend — Phase 6 only (Post-V1)
+pdf-lib                    # Client-side PDF image stamping (~200KB)
 ```
 
 ---
@@ -1212,8 +1321,10 @@ fractional-indexing         # LexoRank sort keys
 | Provider routing | Phase 5 (Post-V1) | Gemini-only for V1. Add OpenAI fallback after core is stable. |
 | Billing | Phase 6 (Post-V1) | Ship free, monetize later. |
 | Image OCR provider | Gemini Flash multimodal (no Mathpix) | Already integrated, ~$0.002/scan, no new dependency. |
-| Image-to-TikZ pipeline | Two-stage (extract → generate) | Stage 1 (perception) separable from Stage 2 (generation). Retryable, debuggable, editable between stages. |
-| Diagram fallback | Placeholder box for low-confidence | Imperfect TikZ is acceptable because fragments are editable. Placeholder prevents silent failures. |
+| Vision parse pipeline | Single-call `/vision-parse` (not two-stage) | One endpoint, one LLM call. Bail-out guardrail replaces two-stage safety net. |
+| Diagram bail-out | Smart Image Placeholder for complex/photographic images | LLM either confidently TikZs it OR emits a clean placeholder. No broken TikZ reaches teachers. |
+| Image in compiled PDF | Never — backend stays pure text LaTeX | No `\includegraphics`, no image hosting, no binary assets in compile sandbox. |
+| Raster image support | Client-side PDF stamping via `pdf-lib` (Phase 6) | Teacher drags images onto placeholder boxes in the browser. Backend never sees the image. |
 | Insert Fragment templates | Static config + expanded FragmentKind | Zero API cost, instant insertion, teaches teachers what's possible. |
 
 ---
