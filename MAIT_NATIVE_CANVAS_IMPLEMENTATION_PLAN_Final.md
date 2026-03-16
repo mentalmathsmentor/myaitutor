@@ -12,7 +12,8 @@
 
 | Term | Meaning |
 |---|---|
-| **Fragment** | One logical piece of a worksheet — preamble, header, question, footer, text block. The atomic unit of the canvas. |
+| **Fragment** | One logical piece of a worksheet — preamble, header, question, diagram, instruction, footer, etc. The atomic unit of the canvas. |
+| **Fragment Template** | A pre-built LaTeX snippet (e.g. "Spot the Error Box", "Number Plane") that teachers insert from the Insert Menu. Injected directly into the Zustand store as a new fragment. |
 | **Document** | A persisted worksheet (artifact) or study note (study). Owns an ordered list of fragments. |
 | **Sort Key** | A string-based LexoRank key that determines fragment ordering without integer collisions. |
 | **Artifact Canvas** | The LaTeX block-editor for worksheets. |
@@ -121,7 +122,7 @@ Ship a single workspace route with one editor type:
 | `id` | TEXT PK | UUID |
 | `document_id` | TEXT NOT NULL | FK to documents |
 | `sort_key` | TEXT NOT NULL | **LexoRank string** (see §4.3) |
-| `kind` | TEXT NOT NULL | `preamble`, `header`, `question`, `footer`, `text_block` |
+| `kind` | TEXT NOT NULL | `preamble`, `header`, `question`, `diagram`, `instruction`, `worked_example`, `footer`, `text_block` |
 | `content_latex` | TEXT NOT NULL | Raw LaTeX for this fragment |
 | `label` | TEXT | Human-readable label, e.g. "Question 3" |
 | `metadata_json` | TEXT | Marks, difficulty, etc. |
@@ -394,6 +395,7 @@ frontend/src/
 │       ├── FragmentEditor.jsx        ← CodeMirror/textarea for one fragment's LaTeX
 │       ├── PdfPreviewPane.jsx        ← Right pane: compiled PDF viewer
 │       ├── CanvasToolbar.jsx         ← Top bar: compile, export, save, undo
+│       ├── InsertFragmentMenu.jsx    ← "+ Insert" dropdown with template categories
 │       ├── RevisionPanel.jsx         ← Sidebar: AI instruction input per fragment
 │       ├── RevisionTimeline.jsx      ← Drawer: revision history list
 │       ├── BuildStatusIndicator.jsx  ← Toolbar badge: compiling/success/failed
@@ -408,7 +410,7 @@ frontend/src/
 
 Each `FragmentCard` shows:
 - **Drag handle** (left edge) — for reordering via drag-and-drop
-- **Kind badge** — colored pill: `PREAMBLE` (gray), `HEADER` (blue), `QUESTION` (green), `FOOTER` (gray), `TEXT` (yellow)
+- **Kind badge** — colored pill: `PREAMBLE` (gray), `HEADER` (blue), `QUESTION` (green), `DIAGRAM` (purple), `INSTRUCTION` (orange), `WORKED_EXAMPLE` (cyan), `FOOTER` (gray), `TEXT` (yellow)
 - **Label** — e.g. "Question 3 — Differentiation [4 marks]"
 - **Collapsed preview** — first ~80 chars of LaTeX, syntax-highlighted
 - **Expanded view** — full LaTeX editor (textarea or lightweight CodeMirror)
@@ -434,6 +436,197 @@ On drop:
 2. Optimistically update `canvasStore.fragmentOrder`.
 3. Fire `PATCH /documents/{id}/fragments/{fid}` with new `sort_key`.
 4. On error: revert optimistic update.
+
+### 6.6 Insert Fragment Menu (Template System)
+
+**This is a key differentiator over Gemini Canvas.** Teachers shouldn't have to know what's possible — the Insert Menu shows them.
+
+#### Template Configuration
+
+Static config file that maps directly to fragment creation in the Zustand store:
+
+```javascript
+// src/config/fragmentTemplates.js
+export const FRAGMENT_TEMPLATES = {
+  // ── Questions ──────────────────────────────────────────
+  standard_question: {
+    kind: "question",
+    label: "Standard Question [2 Marks]",
+    icon: "SquarePen",       // Lucide icon name
+    category: "Questions",
+    defaultContent: `\\item Solve the following equation for $x$:
+
+\\[ 3x^2 - 12x + 9 = 0 \\]
+
+\\hfill \\textbf{[2 Marks]}`,
+    metadata_json: { marks: 2, spaceAfter: "4cm" }
+  },
+
+  multi_part_question: {
+    kind: "question",
+    label: "Multi-Part Question [6 Marks]",
+    icon: "ListOrdered",
+    category: "Questions",
+    defaultContent: `\\item Consider the function $f(x) = x^3 - 3x + 2$.
+\\begin{enumerate}[label=(\\alph*)]
+  \\item Find $f'(x)$. \\hfill \\textbf{[2 Marks]}
+  \\item Find the stationary points and determine their nature. \\hfill \\textbf{[3 Marks]}
+  \\item Sketch the graph of $y = f(x)$. \\hfill \\textbf{[1 Mark]}
+\\end{enumerate}`,
+    metadata_json: { marks: 6, spaceAfter: "6cm" }
+  },
+
+  // ── Diagrams ───────────────────────────────────────────
+  number_plane: {
+    kind: "diagram",
+    label: "Number Plane (TikZ)",
+    icon: "Grid3X3",
+    category: "Diagrams",
+    defaultContent: `\\begin{center}
+\\begin{tikzpicture}[scale=0.6]
+  \\draw[step=1cm,gray!30,very thin] (-5,-5) grid (5,5);
+  \\draw[thick,->] (-5,0) -- (5,0) node[right] {$x$};
+  \\draw[thick,->] (0,-5) -- (0,5) node[above] {$y$};
+  \\foreach \\x in {-4,-3,-2,-1,1,2,3,4}
+    \\draw (\\x,0.1) -- (\\x,-0.1) node[below,font=\\tiny] {\\x};
+  \\foreach \\y in {-4,-3,-2,-1,1,2,3,4}
+    \\draw (0.1,\\y) -- (-0.1,\\y) node[left,font=\\tiny] {\\y};
+\\end{tikzpicture}
+\\end{center}`,
+    metadata_json: { spaceAfter: "1cm" }
+  },
+
+  unit_circle: {
+    kind: "diagram",
+    label: "Unit Circle (Trig)",
+    icon: "Circle",
+    category: "Diagrams",
+    defaultContent: `\\begin{center}
+\\begin{tikzpicture}[scale=2]
+  \\draw[thick] (0,0) circle (1);
+  \\draw[thick,->] (-1.3,0) -- (1.3,0) node[right] {$x$};
+  \\draw[thick,->] (0,-1.3) -- (0,1.3) node[above] {$y$};
+  \\draw[dashed] (0,0) -- (30:1) node[midway,above] {$1$};
+  \\draw (0.3,0) arc (0:30:0.3) node[midway,right,font=\\small] {$\\theta$};
+\\end{tikzpicture}
+\\end{center}`,
+    metadata_json: { spaceAfter: "1cm" }
+  },
+
+  // ── Pedagogical Blocks ─────────────────────────────────
+  sabotage_box: {
+    kind: "instruction",
+    label: "Spot the Error Box",
+    icon: "AlertTriangle",
+    category: "Pedagogical",
+    defaultContent: `\\begin{tcolorbox}[colback=gray!10, colframe=black, title=\\textbf{SPOT THE ERROR}]
+A student submitted this working. Find and correct the mistake:
+\\[ (x+2)^2 = x^2 + 4 \\]
+\\end{tcolorbox}`,
+    metadata_json: { spaceAfter: "3cm" }
+  },
+
+  worked_example: {
+    kind: "worked_example",
+    label: "Worked Example",
+    icon: "GraduationCap",
+    category: "Pedagogical",
+    defaultContent: `\\begin{tcolorbox}[colback=blue!5, colframe=blue!40, title=\\textbf{Worked Example}]
+\\textbf{Find} $\\frac{d}{dx}(x^2 \\sin x)$
+
+\\textbf{Solution:} Using the product rule, $\\frac{d}{dx}(uv) = u'v + uv'$:
+\\begin{align*}
+  u &= x^2, \\quad u' = 2x \\\\
+  v &= \\sin x, \\quad v' = \\cos x \\\\
+  \\frac{d}{dx}(x^2 \\sin x) &= 2x\\sin x + x^2\\cos x
+\\end{align*}
+\\end{tcolorbox}`,
+    metadata_json: { spaceAfter: "2cm" }
+  },
+
+  // ── Layout ─────────────────────────────────────────────
+  section_divider: {
+    kind: "text_block",
+    label: "Section Divider",
+    icon: "Minus",
+    category: "Layout",
+    defaultContent: `\\vspace{12pt}
+\\hrule
+\\vspace{6pt}
+{\\large\\bfseries Section B --- Extended Response}
+\\vspace{6pt}
+\\hrule
+\\vspace{12pt}`,
+    metadata_json: { spaceAfter: "0cm" }
+  },
+
+  self_check_footer: {
+    kind: "footer",
+    label: "AI Self-Check Footer",
+    icon: "Bot",
+    category: "Layout",
+    defaultContent: `\\vfill
+\\hrule
+\\vspace{0.2cm}
+{\\footnotesize \\textbf{SELF-CHECK PROTOCOL:} \\\\
+\\textbf{Stuck?} Screenshot this question. \\\\
+\\textbf{Ask AI:} \\textit{"Act as my tutor and coach me through this..."}}`,
+    metadata_json: { isUnique: true }
+  }
+};
+
+// Group templates by category for the Insert Menu UI
+export const TEMPLATE_CATEGORIES = [
+  { id: "Questions",   icon: "HelpCircle",    label: "Questions" },
+  { id: "Diagrams",    icon: "PenTool",       label: "Diagrams" },
+  { id: "Pedagogical", icon: "Lightbulb",     label: "Pedagogical" },
+  { id: "Layout",      icon: "LayoutTemplate", label: "Layout" },
+];
+```
+
+#### Insert Menu UX
+
+The toolbar has an **"+ Insert"** button that opens a dropdown/popover grouped by category:
+
+```
+┌─────────────────────────────────┐
+│  + Insert Fragment              │
+├─────────────────────────────────┤
+│  QUESTIONS                      │
+│    ☐ Standard Question [2M]     │
+│    ☐ Multi-Part Question [6M]   │
+│  DIAGRAMS                       │
+│    ☐ Number Plane (TikZ)        │
+│    ☐ Unit Circle (Trig)         │
+│  PEDAGOGICAL                    │
+│    ☐ Spot the Error Box         │
+│    ☐ Worked Example             │
+│  LAYOUT                         │
+│    ☐ Section Divider            │
+│    ☐ AI Self-Check Footer       │
+└─────────────────────────────────┘
+```
+
+On click:
+1. Create a new fragment with `defaultContent` from the template.
+2. Generate a LexoRank `sort_key` placing it after the currently selected fragment (or at the end).
+3. Inject into `canvasStore.fragmentsById` and `fragmentOrder`.
+4. Fire `POST /documents/{id}/fragments` to persist.
+5. Auto-expand the new fragment card for immediate editing.
+
+#### Package Allowlist Update
+
+The `tcolorbox` package is required for the Spot the Error and Worked Example templates. Add to the allowed packages in `artifact_engine.py`:
+
+```python
+allowed_packages = {
+    "amsmath", "amssymb", "amsthm", "geometry", "enumitem",
+    "fancyhdr", "lastpage", "tikz", "pgfplots",
+    "tcolorbox",  # ← NEW: pedagogical template boxes
+}
+```
+
+Also add `\usepackage{tcolorbox}` to the preamble fragment when any `instruction` or `worked_example` fragment is present in the document. The `compile_service.py` can auto-inject this during assembly.
 
 ---
 
@@ -625,11 +818,13 @@ Compilation is triggered ONLY by:
 
 **Exit criteria:** Teacher can generate a worksheet, open it in the canvas, see it decomposed into fragments, edit fragment content, reorder fragments via drag-and-drop.
 
-### Phase 2 — Compilation & Preview (Week 2)
+### Phase 2 — Compilation, Preview & Insert Menu (Week 2)
 
 **Backend:**
 - [ ] Create `artifact_builds` table
 - [ ] Implement `compile_service.py` — assemble fragments → compile → store result
+- [ ] Auto-inject `\usepackage{tcolorbox}` into preamble when `instruction`/`worked_example` fragments present
+- [ ] Add `tcolorbox` to allowed packages in `_sanitize_latex()`
 - [ ] Add build status polling endpoint
 - [ ] Implement PDF export endpoint (.pdf + .tex download)
 - [ ] Integrate humanized error messages (Gemini Flash)
@@ -637,12 +832,14 @@ Compilation is triggered ONLY by:
 **Frontend:**
 - [ ] Create `PdfPreviewPane.jsx` — display compiled PDF
 - [ ] Create `CanvasToolbar.jsx` — compile button, export, save state
+- [ ] Create `InsertFragmentMenu.jsx` — template dropdown grouped by category
+- [ ] Create `src/config/fragmentTemplates.js` — template definitions
 - [ ] Create `BuildStatusIndicator.jsx` — compiling/success/failed badge
 - [ ] Create `CompileErrorBanner.jsx` — humanized error display
 - [ ] Implement `useCompilePoller.js` — poll build status
 - [ ] Wire "Preview" button + Ctrl+Shift+P shortcut
 
-**Exit criteria:** Teacher can edit fragments, click Preview, see compiled PDF. Failed compiles show a teacher-friendly error message. Export to .pdf and .tex works.
+**Exit criteria:** Teacher can edit fragments, insert pre-built templates (questions, diagrams, spot-the-error boxes), click Preview, see compiled PDF. Failed compiles show a teacher-friendly error message. Export to .pdf and .tex works.
 
 ### Phase 3 — AI Revision (Weeks 3–4)
 
@@ -789,10 +986,12 @@ backend/app/routers/canvas_router.py
 ### Frontend
 ```
 frontend/src/stores/canvasStore.js
+frontend/src/config/fragmentTemplates.js
 frontend/src/pages/CanvasWorkspace.jsx
 frontend/src/components/canvas/FragmentList.jsx
 frontend/src/components/canvas/FragmentCard.jsx
 frontend/src/components/canvas/FragmentEditor.jsx
+frontend/src/components/canvas/InsertFragmentMenu.jsx
 frontend/src/components/canvas/PdfPreviewPane.jsx
 frontend/src/components/canvas/CanvasToolbar.jsx
 frontend/src/components/canvas/RevisionPanel.jsx

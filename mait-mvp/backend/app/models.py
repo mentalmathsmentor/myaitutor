@@ -29,6 +29,9 @@ class FragmentKind(str, Enum):
     PREAMBLE = "preamble"
     HEADER = "header"
     QUESTION = "question"
+    DIAGRAM = "diagram"
+    INSTRUCTION = "instruction"
+    WORKED_EXAMPLE = "worked_example"
     FOOTER = "footer"
     TEXT_BLOCK = "text_block"
 
