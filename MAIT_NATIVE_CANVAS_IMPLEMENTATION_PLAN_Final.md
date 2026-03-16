@@ -396,6 +396,7 @@ frontend/src/
 │       ├── PdfPreviewPane.jsx        ← Right pane: compiled PDF viewer
 │       ├── CanvasToolbar.jsx         ← Top bar: compile, export, save, undo
 │       ├── InsertFragmentMenu.jsx    ← "+ Insert" dropdown with template categories
+│       ├── ScanQuestionModal.jsx     ← Image upload → OCR → TikZ → editable fragment
 │       ├── RevisionPanel.jsx         ← Sidebar: AI instruction input per fragment
 │       ├── RevisionTimeline.jsx      ← Drawer: revision history list
 │       ├── BuildStatusIndicator.jsx  ← Toolbar badge: compiling/success/failed
@@ -604,6 +605,9 @@ The toolbar has an **"+ Insert"** button that opens a dropdown/popover grouped b
 │  LAYOUT                         │
 │    ☐ Section Divider            │
 │    ☐ AI Self-Check Footer       │
+│─────────────────────────────────│
+│  📸 FROM IMAGE                  │
+│    ☐ Scan Question (Photo/File) │
 └─────────────────────────────────┘
 ```
 
@@ -732,6 +736,166 @@ This is intentionally simple regex-based parsing. A full TeX AST parser (like `p
 
 ---
 
+## 8.5. Image-to-Fragment Pipeline (Photo → Editable LaTeX Question)
+
+### The Feature
+
+A teacher photographs a question from a textbook, past paper, or colleague's worksheet. MAIT OCRs the image, recreates any diagrams as TikZ, and inserts the result as an **editable fragment** in the canvas.
+
+This is a significant differentiator: Gemini Canvas cannot do this within a worksheet-aware context.
+
+### Architecture: Two-Stage Gemini Flash Pipeline (No External OCR Dependency)
+
+**Why not Mathpix?** Adding a third-party OCR API means another dependency, another billing account, another point of failure. Gemini Flash multimodal already handles math OCR well, and you already have the SDK integrated. Keep the stack tight.
+
+**Stage 1 — Structured Extraction** (Gemini Flash, `media_resolution: "high"`)
+
+```python
+# image_to_fragment_service.py
+
+IMAGE_OCR_SYSTEM_PROMPT = r"""You are a maths worksheet digitizer for NSW HSC Mathematics.
+You will receive a photograph of a maths question (from a textbook, past paper, or handwritten source).
+
+Your job is to produce a STRUCTURED JSON description of the question. This will be used
+in Stage 2 to generate compilable LaTeX.
+
+OUTPUT FORMAT (JSON only, no commentary):
+{
+  "question_text": "The full text of the question, with inline math as LaTeX (e.g. $\\frac{1}{2}$)",
+  "parts": [
+    { "label": "a", "text": "Find the derivative of...", "marks": 2 }
+  ],
+  "diagram": {
+    "present": true/false,
+    "type": "number_plane | graph | geometric_figure | table | none",
+    "description": "A parabola y=x^2-4 with shaded region between x=0 and x=2,
+                     x-axis from -3 to 3, y-axis from -5 to 5, grid lines visible"
+  },
+  "marks_total": 6,
+  "source_hint": "Appears to be from a Year 12 Advanced calculus context"
+}
+"""
+```
+
+**Stage 2 — LaTeX + TikZ Generation** (Gemini Flash, `thinking_level: "medium"`)
+
+```python
+TIKZ_GENERATION_SYSTEM_PROMPT = r"""You are a LaTeX/TikZ expert for NSW HSC Mathematics worksheets.
+You will receive a structured JSON description of a maths question.
+Generate a SINGLE compilable LaTeX fragment for this question.
+
+RULES:
+1. Output ONLY the LaTeX fragment. No \documentclass, no \begin{document}.
+2. The fragment will be inserted into an existing enumerate environment.
+3. Start with \item.
+4. ALL math in proper LaTeX: \frac{}{}, \int_{}{}, \lim_{}, etc.
+5. If a diagram is present, recreate it using TikZ with these guidelines:
+   - Use \begin{center}\begin{tikzpicture}...\end{tikzpicture}\end{center}
+   - For graphs: use pgfplots with \begin{axis}...\end{axis}
+   - For number planes: draw grid, axes, labels, then plot features
+   - For geometric figures: use coordinates, draw commands, labels
+   - Match the spatial layout of the original as closely as possible
+   - Add axis labels, tick marks, and annotations from the original
+6. If the diagram is too complex to recreate accurately, insert a placeholder:
+   \begin{center}\fbox{\parbox{8cm}{\centering [Diagram: <description>]\\
+   \small Teacher: replace with actual diagram or use TikZ editor}}\end{center}
+7. Place marks at the end: \hfill \textbf{[N Marks]}
+
+ALLOWED PACKAGES (already in preamble): tikz, pgfplots, amsmath, amssymb, tcolorbox
+"""
+```
+
+### Why Two Stages?
+
+1. **Separation of concerns.** Stage 1 is pure perception (what's in the image?). Stage 2 is pure generation (turn description into LaTeX). If Stage 2 fails to compile, you can retry it without re-processing the image.
+2. **Debuggability.** The structured JSON from Stage 1 is human-readable. If the TikZ is wrong, the teacher (or you debugging) can see exactly what the model "saw" vs. what it generated.
+3. **Cost efficiency.** Stage 1 uses high-resolution vision (~1000 tokens for the image). Stage 2 is text-only (~300 input tokens). Total cost: ~$0.002 per image. If Stage 2 needs a retry, you don't re-pay for the image.
+
+### Diagram Recreation Reliability
+
+Based on current benchmarks:
+
+| Diagram Type | Expected Reliability | Strategy |
+|---|---|---|
+| **Number planes** (axes, points, lines) | ~90% accurate | Direct TikZ generation |
+| **Function graphs** (parabolas, trig, exponential) | ~85% accurate | Use pgfplots with `\addplot` |
+| **Geometric figures** (triangles, circles, angles) | ~75% accurate | TikZ with coordinate geometry |
+| **Complex annotated diagrams** (shaded regions, multiple curves, labels) | ~60% accurate | Generate best-effort + fallback placeholder |
+
+**The key insight:** Because the result is an **editable fragment**, imperfect TikZ is acceptable. The teacher sees the generated diagram, tweaks if needed, and compiles. This is infinitely better than "re-type the whole question by hand."
+
+### Frontend UX
+
+#### Upload Flow
+
+1. Teacher clicks **"Scan Question"** button in the toolbar (or in the Insert Menu under a new "From Image" category)
+2. File picker opens (accept: `image/*`, also supports camera capture on mobile via `capture="environment"`)
+3. Image thumbnail appears in a modal with a loading spinner: "Analyzing question..."
+4. Stage 1 completes → show extracted JSON preview:
+   ```
+   ┌──────────────────────────────────────┐
+   │  📸 Scanned Question                 │
+   │                                      │
+   │  "Find the area enclosed by          │
+   │   y = x² and y = 2x for x ≥ 0"     │
+   │                                      │
+   │  Parts: (a) Sketch [2M] (b) Find [3M]│
+   │  Diagram: ✅ Graph detected           │
+   │                                      │
+   │  [ ✏️ Edit Description ] [ Generate ] │
+   └──────────────────────────────────────┘
+   ```
+5. Teacher can edit the structured description before Stage 2 (fix OCR mistakes)
+6. Click "Generate" → Stage 2 runs → fragment inserted into canvas
+7. Fragment auto-expands for immediate review/editing
+
+#### "Edit Description" Escape Hatch
+
+If the OCR gets something wrong (e.g., reads `x²` as `x?`), the teacher edits the structured description in a simple form, then Stage 2 regenerates the LaTeX from the corrected description. No need to re-upload the image.
+
+### Backend API
+
+```
+POST /documents/{id}/scan-question
+  Content-Type: multipart/form-data
+  Body: image file + optional insert_after_fragment_id
+
+  Response (Stage 1):
+  {
+    "scan_id": "uuid",
+    "extracted": { ... structured JSON ... },
+    "status": "extracted"
+  }
+
+POST /documents/{id}/scan-question/{scan_id}/generate
+  Body: { "extracted": { ... optionally edited JSON ... } }
+
+  Response (Stage 2):
+  {
+    "fragment": { ... new fragment object ... },
+    "tikz_present": true,
+    "confidence": "high" | "medium" | "low"
+  }
+```
+
+Two endpoints so the teacher can review/edit between stages. The frontend can also auto-chain them for a one-click flow if the teacher prefers speed over review.
+
+### Cost Per Scan
+
+| Stage | Model | Input | Output | Cost |
+|---|---|---|---|---|
+| Stage 1 (OCR) | Gemini Flash | ~1,200 tokens (image + prompt) | ~200 tokens (JSON) | ~$0.001 |
+| Stage 2 (TikZ gen) | Gemini Flash | ~400 tokens (JSON + prompt) | ~500 tokens (LaTeX) | ~$0.001 |
+| **Total** | | | | **~$0.002 per scan** |
+
+At 10 scans/day, that's $0.02/day — negligible.
+
+### Phase Placement
+
+This feature slots into **Phase 3** (Weeks 3–4), after fragment CRUD and compilation are stable. It reuses the same fragment insertion pipeline as the Insert Menu — the only new work is the two Gemini Flash calls and the upload modal UI.
+
+---
+
 ## 9. AI Revision Prompt Strategy
 
 ### Per-Fragment Targeted Revision
@@ -841,12 +1005,16 @@ Compilation is triggered ONLY by:
 
 **Exit criteria:** Teacher can edit fragments, insert pre-built templates (questions, diagrams, spot-the-error boxes), click Preview, see compiled PDF. Failed compiles show a teacher-friendly error message. Export to .pdf and .tex works.
 
-### Phase 3 — AI Revision (Weeks 3–4)
+### Phase 3 — AI Revision & Image-to-Fragment Scanner (Weeks 3–4)
 
 **Backend:**
 - [ ] Create `document_revisions` table
 - [ ] Implement `revision_service.py` — targeted fragment revision via Gemini
 - [ ] Add revision API routes (revise, apply, reject, list)
+- [ ] Implement `image_to_fragment_service.py` — two-stage Gemini Flash pipeline (see §8.5)
+- [ ] Add `POST /documents/{id}/scan-question` endpoint (Stage 1: image → structured JSON)
+- [ ] Add `POST /documents/{id}/scan-question/{scan_id}/generate` endpoint (Stage 2: JSON → LaTeX/TikZ fragment)
+- [ ] Add `pgfplots` to allowed packages in `_sanitize_latex()` (needed for scanned graph recreation)
 
 **Frontend:**
 - [ ] Create `RevisionPanel.jsx` — per-fragment instruction input
@@ -854,8 +1022,11 @@ Compilation is triggered ONLY by:
 - [ ] Implement revision preview/apply/reject flow
 - [ ] Add "Revise with AI" button to each `FragmentCard`
 - [ ] Add 2-second debounced auto-save for fragment content
+- [ ] Create `ScanQuestionModal.jsx` — image upload → OCR preview → edit description → generate fragment
+- [ ] Add "Scan Question" button to toolbar and Insert Menu ("From Image" category)
+- [ ] Support camera capture on mobile (`<input accept="image/*" capture="environment">`)
 
-**Exit criteria:** Teacher can select a fragment, type an instruction, preview the AI revision, and accept or reject it. Revision history is viewable.
+**Exit criteria:** Teacher can select a fragment, type an instruction, preview the AI revision, and accept or reject it. Revision history is viewable. Teacher can photograph a textbook question, review the OCR extraction, and insert it as an editable LaTeX fragment with recreated TikZ diagrams.
 
 ### Phase 4 — Study Canvas (Post-V1, ~Week 5–6)
 
@@ -928,6 +1099,7 @@ This means **zero breaking changes** to the existing worksheet generation flow. 
 |---|---|---|---|---|
 | Generate worksheet | Gemini Flash | ~2,000 | ~4,000 | ~$0.003 |
 | Revise one fragment | Gemini Flash | ~500 | ~300 | <$0.001 |
+| Scan question (Stage 1+2) | Gemini Flash | ~1,600 | ~700 | ~$0.002 |
 | Humanize error | Gemini Flash | ~200 | ~50 | <$0.001 |
 
 ### Compilation Costs
@@ -936,7 +1108,7 @@ This means **zero breaking changes** to the existing worksheet generation flow. 
 - Temp disk usage: ~5MB per build (cleaned up)
 
 ### Summary
-A teacher creating a worksheet, revising 3 questions, and compiling 4 times costs approximately **$0.006 in API fees**. The dominant cost is infrastructure (Render hosting), not AI.
+A teacher creating a worksheet, revising 3 questions, scanning 2 textbook questions, and compiling 4 times costs approximately **$0.010 in API fees**. The dominant cost is infrastructure (Render hosting), not AI.
 
 ---
 
@@ -956,12 +1128,17 @@ A teacher creating a worksheet, revising 3 questions, and compiling 4 times cost
 - Export .pdf and .tex downloads work
 - `--no-shell-escape` prevents `\write18` commands
 
-### Phase 3 Tests (Revision)
+### Phase 3 Tests (Revision & Image Scanner)
 - Revise single fragment → only that fragment changes
 - Revision preview → accept → fragment updated, revision logged
 - Revision preview → reject → fragment unchanged
 - Revision history displays in chronological order
 - Concurrent edits: two quick revisions don't corrupt state
+- Scan photo of printed question → Stage 1 returns valid structured JSON
+- Scan photo with diagram → Stage 2 generates compilable TikZ
+- Edit OCR description → re-generate produces corrected LaTeX
+- Scan question inserted as editable fragment at correct position
+- Complex diagram fallback: placeholder box inserted when confidence is low
 
 ### UX Acceptance
 - Worksheet Studio → "Open in Canvas" → fragments visible in < 2s
@@ -980,6 +1157,7 @@ backend/app/services/document_service.py
 backend/app/services/fragment_service.py
 backend/app/services/compile_service.py
 backend/app/services/revision_service.py
+backend/app/services/image_to_fragment_service.py
 backend/app/routers/canvas_router.py
 ```
 
@@ -992,6 +1170,7 @@ frontend/src/components/canvas/FragmentList.jsx
 frontend/src/components/canvas/FragmentCard.jsx
 frontend/src/components/canvas/FragmentEditor.jsx
 frontend/src/components/canvas/InsertFragmentMenu.jsx
+frontend/src/components/canvas/ScanQuestionModal.jsx
 frontend/src/components/canvas/PdfPreviewPane.jsx
 frontend/src/components/canvas/CanvasToolbar.jsx
 frontend/src/components/canvas/RevisionPanel.jsx
@@ -1032,6 +1211,10 @@ fractional-indexing         # LexoRank sort keys
 | Study Canvas | Phase 4 (Post-V1) | Artifact canvas is the core value prop. Ship it first. |
 | Provider routing | Phase 5 (Post-V1) | Gemini-only for V1. Add OpenAI fallback after core is stable. |
 | Billing | Phase 6 (Post-V1) | Ship free, monetize later. |
+| Image OCR provider | Gemini Flash multimodal (no Mathpix) | Already integrated, ~$0.002/scan, no new dependency. |
+| Image-to-TikZ pipeline | Two-stage (extract → generate) | Stage 1 (perception) separable from Stage 2 (generation). Retryable, debuggable, editable between stages. |
+| Diagram fallback | Placeholder box for low-confidence | Imperfect TikZ is acceptable because fragments are editable. Placeholder prevents silent failures. |
+| Insert Fragment templates | Static config + expanded FragmentKind | Zero API cost, instant insertion, teaches teachers what's possible. |
 
 ---
 
