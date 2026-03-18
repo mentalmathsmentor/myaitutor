@@ -23,7 +23,7 @@ import { ScanQuestionModal } from '@/components/canvas/ScanQuestionModal';
 import { RevisionPanel } from '@/components/canvas/RevisionPanel';
 import { RevisionTimeline } from '@/components/canvas/RevisionTimeline';
 import { CompileErrorBanner } from '@/components/canvas/CompileErrorBanner';
-import type { Section } from '../App';
+import type { Section } from '../lib/navigation';
 
 interface CanvasWorkspaceProps {
   setCurrentSection: (section: Section) => void;
