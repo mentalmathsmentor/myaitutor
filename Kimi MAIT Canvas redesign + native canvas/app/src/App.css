@@ -1,0 +1,114 @@
+/* MAIT App Specific Styles */
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for the entire app */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(230 25% 5%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(265 85% 60% / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(265 85% 60% / 0.5);
+}
+
+/* Slider styling */
+[data-slot="slider-track"] {
+  background: hsl(230 15% 20%) !important;
+}
+
+[data-slot="slider-range"] {
+  background: linear-gradient(90deg, hsl(265 85% 60%), hsl(180 85% 55%)) !important;
+}
+
+[data-slot="slider-thumb"] {
+  background: hsl(265 85% 60%) !important;
+  border: 2px solid white !important;
+  box-shadow: 0 0 10px hsl(265 85% 60% / 0.5) !important;
+}
+
+/* Switch styling */
+[data-slot="switch"] {
+  background: hsl(230 15% 20%) !important;
+}
+
+[data-slot="switch"][data-state="checked"] {
+  background: hsl(265 85% 60%) !important;
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.3s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Glass card hover enhancement */
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Terminal text selection */
+.terminal-content::selection {
+  background: hsl(265 85% 60% / 0.4);
+  color: white;
+}
+
+/* Animation for loading states */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Focus styles for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid hsl(265 85% 60%);
+  outline-offset: 2px;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
