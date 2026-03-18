@@ -224,7 +224,7 @@ export const useCanvasStore = create<CanvasState>()(
         state.expandedElementIds.add(id);
       });
 
-      // Persist to backend (fire-and-forget)
+      // Persist to backend and reconcile server-assigned ID
       if (doc?.id) {
         fetch(`${API_URL}/canvas/documents/${doc.id}/elements`, {
           method: 'POST',
@@ -235,7 +235,29 @@ export const useCanvasStore = create<CanvasState>()(
             label: element.label,
             contentLatex: element.contentLatex,
           }),
-        }).catch((err) => console.warn('[canvas] Failed to persist new element:', err));
+        })
+          .then((res) => res.json())
+          .then((data: { element?: { id?: string } }) => {
+            const serverId = data?.element?.id;
+            if (serverId && serverId !== id) {
+              // Reconcile: replace the frontend-generated ID with the server-assigned one
+              set((state) => {
+                const elem = state.elementsById[id];
+                if (!elem) return;
+                elem.id = serverId;
+                state.elementsById[serverId] = elem;
+                delete state.elementsById[id];
+                const idx = state.elementOrder.indexOf(id);
+                if (idx !== -1) state.elementOrder[idx] = serverId;
+                if (state.selectedElementId === id) state.selectedElementId = serverId;
+                if (state.expandedElementIds.has(id)) {
+                  state.expandedElementIds.delete(id);
+                  state.expandedElementIds.add(serverId);
+                }
+              });
+            }
+          })
+          .catch((err) => console.warn('[canvas] Failed to persist new element:', err));
       }
 
       return id;
