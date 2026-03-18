@@ -25,9 +25,14 @@ from .services.blooms_engine import assess_response_level, advance_bloom_level, 
 from .services.artifact_engine import (
     WorksheetRequest,
     generate_worksheet_pdf,
+    generate_worksheet_latex,
+    compile_latex_to_pdf,
     get_topics_for_year,
     get_all_topics,
 )
+from .services.document_service import create_document, get_document, get_documents_by_student, update_document_title, delete_document
+from .services.element_service import create_element, get_elements, update_element, delete_element
+from .services.latex_decomposer import parse_monolithic_latex
 import os
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -588,6 +593,104 @@ def list_worksheet_topics(year_level: Optional[int] = Query(default=None, ge=7, 
         },
         "total_topics": sum(len(t) for t in all_topics.values()),
     }
+
+
+# ============================================
+# NATIVE CANVAS ENDPOINTS
+# ============================================
+
+class CanvasGenerateRequest(BaseModel):
+    student_id: str
+    worksheet_request: WorksheetRequest
+    
+@app.post("/canvas/generate")
+@limiter.limit("5/minute")
+async def canvas_generate(request: Request, body: CanvasGenerateRequest):
+    await verify_student_auth(request, body.student_id)
+    
+    try:
+        # Generate the monolithic LaTeX
+        latex_source = await generate_worksheet_latex(body.worksheet_request)
+        
+        # Decompose
+        element_data = parse_monolithic_latex(latex_source)
+        
+        title = f"{body.worksheet_request.worksheetSettings.subject} Worksheet"
+        if body.worksheet_request.topicSummary:
+            title = body.worksheet_request.topicSummary[:40]
+
+        # Save to DB
+        doc = await create_document(body.student_id, title)
+        doc_id = doc["id"]
+        
+        saved_elements = []
+        for elem in element_data:
+            saved_elem = await create_element(
+                document_id=doc_id,
+                sort_key=elem["sort_key"],
+                kind=elem["kind"],
+                label=elem.get("label", "Element"),
+                content_latex=elem["content_latex"],
+                is_locked=elem["is_locked"],
+                is_collapsed=elem["is_collapsed"]
+            )
+            saved_elements.append(saved_elem)
+            
+        return {
+            "document": doc,
+            "elements": saved_elements
+        }
+    except Exception as e:
+        print(f"[Canvas Generate] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/canvas/documents")
+async def list_canvas_documents(request: Request, student_id: str):
+    await verify_student_auth(request, student_id)
+    docs = await get_documents_by_student(student_id)
+    return {"documents": docs}
+
+@app.get("/canvas/documents/{doc_id}")
+async def get_canvas_document(request: Request, doc_id: str):
+    # Depending on auth structure, you could extract student_id from headers and verify ownership
+    doc = await get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    elements = await get_elements(doc_id)
+    return {"document": doc, "elements": elements}
+
+class ElementUpdateRequest(BaseModel):
+    contentLatex: Optional[str] = None
+    sortKey: Optional[str] = None
+    isLocked: Optional[bool] = None
+    isCollapsed: Optional[bool] = None
+
+@app.put("/canvas/elements/{elem_id}")
+async def update_canvas_element(request: Request, elem_id: str, body: ElementUpdateRequest):
+    updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
+    updated = await update_element(elem_id, updates)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Element not found")
+    return {"element": updated}
+    
+class CompileRequest(BaseModel):
+    latex_source: str
+    
+@app.post("/canvas/compile")
+async def compile_canvas_pdf(request: Request, body: CompileRequest):
+    import tempfile
+    import base64
+    from .services.artifact_engine import compile_latex_to_pdf
+    
+    output_dir = tempfile.mkdtemp(prefix="mait_canvas_compile_")
+    try:
+        pdf_path = compile_latex_to_pdf(body.latex_source, output_dir)
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        return {"success": True, "pdfUrl": f"data:application/pdf;base64,{b64_pdf}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # ============================================

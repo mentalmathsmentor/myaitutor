@@ -77,6 +77,69 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_users_student_id
             ON users(student_id)
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS documents (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_documents_student_id
+            ON documents(student_id)
+        """)
+        # 2. Document Elements Migration Logic
+        # Check for legacy table
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_fragments'")
+        has_fragments = await cursor.fetchone() is not None
+        
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_elements'")
+        has_elements = await cursor.fetchone() is not None
+        
+        if has_fragments:
+            if has_elements:
+                # Accidental double-creation scenario. Drop the new empty one to unblock rename.
+                await db.execute("DROP TABLE document_elements")
+            # Safely rename the old table
+            await db.execute("ALTER TABLE document_fragments RENAME TO document_elements")
+            
+        # Ensure the table is created properly for new installations
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS document_elements (
+                id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                sort_key TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                label TEXT,
+                content_latex TEXT,
+                metadata_json TEXT DEFAULT '{}',
+                version_id TEXT,
+                is_locked BOOLEAN DEFAULT 0,
+                is_collapsed BOOLEAN DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # Apply any pending column changes if table existed before rename
+        cursor = await db.execute("PRAGMA table_info(document_elements)")
+        columns = [row[1] for row in await cursor.fetchall()]
+        if "role" in columns and "kind" not in columns:
+            await db.execute("ALTER TABLE document_elements RENAME COLUMN role TO kind")
+        if "order_index" in columns and "sort_key" not in columns:
+            await db.execute("ALTER TABLE document_elements RENAME COLUMN order_index TO sort_key")
+        if "label" not in columns:
+            await db.execute("ALTER TABLE document_elements ADD COLUMN label TEXT")
+        if "version_id" not in columns:
+            await db.execute("ALTER TABLE document_elements ADD COLUMN version_id TEXT")
+        
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_elements_document_id
+            ON document_elements(document_id)
+        """)
         await db.commit()
 
 
