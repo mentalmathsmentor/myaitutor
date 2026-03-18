@@ -2,15 +2,36 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { generateKeyBetween } from 'fractional-indexing';
 
+const API_URL = (import.meta as { env: Record<string, string> }).env?.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
+
+// Debounce map for element update persistence (element id → timer id)
+const _updateDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+
+function persistElementUpdate(docId: string, elemId: string, patch: Record<string, unknown>) {
+  clearTimeout(_updateDebounceTimers[elemId]);
+  _updateDebounceTimers[elemId] = setTimeout(async () => {
+    try {
+      await fetch(`${API_URL}/canvas/elements/${elemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+    } catch (err) {
+      console.warn('[canvas] Failed to persist element update:', err);
+    }
+    delete _updateDebounceTimers[elemId];
+  }, 1500);
+}
+
 // Element Types
-export type ElementKind = 
-  | 'preamble' 
-  | 'header' 
-  | 'question' 
-  | 'diagram' 
-  | 'instruction' 
-  | 'worked_example' 
-  | 'footer' 
+export type ElementKind =
+  | 'preamble'
+  | 'header'
+  | 'question'
+  | 'diagram'
+  | 'instruction'
+  | 'worked_example'
+  | 'footer'
   | 'text_block'
   | 'mcq_options';
 
@@ -69,26 +90,26 @@ export interface Revision {
 interface CanvasState {
   // Document
   document: Document | null;
-  
+
   // Elements — keyed by ID for O(1) lookup
   elementsById: Record<string, Element>;
   elementOrder: string[];
-  
+
   // Build state
   activeBuild: ArtifactBuild | null;
   isCompiling: boolean;
-  
+
   // Revision state
   pendingRevision: Revision | null;
   revisionHistory: Revision[];
-  
+
   // UI state
   selectedElementId: string | null;
   expandedElementIds: Set<string>;
   showInsertMenu: boolean;
   showScanModal: boolean;
   showRevisionPanel: boolean;
-  
+
   // Actions
   setDocument: (doc: Document) => void;
   setElements: (elements: Element[]) => void;
@@ -101,22 +122,22 @@ interface CanvasState {
   expandElement: (id: string) => void;
   collapseElement: (id: string) => void;
   selectElement: (id: string | null) => void;
-  
+
   // Build actions
   setActiveBuild: (build: ArtifactBuild | null) => void;
   setIsCompiling: (compiling: boolean) => void;
-  
+
   // Revision actions
   setPendingRevision: (rev: Revision | null) => void;
   addRevision: (rev: Revision) => void;
   applyRevision: (revisionId: string) => void;
   rejectRevision: (revisionId: string) => void;
-  
+
   // UI actions
   setShowInsertMenu: (show: boolean) => void;
   setShowScanModal: (show: boolean) => void;
   setShowRevisionPanel: (show: boolean) => void;
-  
+
   // Computed
   getOrderedElements: () => Element[];
   getElementById: (id: string) => Element | undefined;
@@ -138,34 +159,34 @@ export const useCanvasStore = create<CanvasState>()(
     showInsertMenu: false,
     showScanModal: false,
     showRevisionPanel: false,
-    
+
     // Document actions
     setDocument: (doc) => set({ document: doc }),
-    
+
     // Element actions
     setElements: (elements) => {
       const byId: Record<string, Element> = {};
       const order: string[] = [];
-      
+
       // Sort by sortKey
       const sorted = [...elements].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-      
+
       sorted.forEach((e) => {
         byId[e.id] = e;
         order.push(e.id);
       });
-      
+
       set({ elementsById: byId, elementOrder: order });
     },
-    
+
     addElement: (element, afterId) => {
       const id = `elem_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const now = new Date().toISOString();
-      
+
       // Generate sort key
       let sortKey: string;
-      const { elementOrder, elementsById } = get();
-      
+      const { elementOrder, elementsById, document: doc } = get();
+
       if (afterId && elementsById[afterId]) {
         const afterIndex = elementOrder.indexOf(afterId);
         const beforeId = elementOrder[afterIndex + 1];
@@ -178,7 +199,7 @@ export const useCanvasStore = create<CanvasState>()(
         const lastKey = lastId ? elementsById[lastId]?.sortKey : null;
         sortKey = generateKeyBetween(lastKey, null);
       }
-      
+
       const newElement: Element = {
         ...element,
         id,
@@ -187,11 +208,11 @@ export const useCanvasStore = create<CanvasState>()(
         createdAt: now,
         updatedAt: now,
       };
-      
+
       set((state) => {
         state.elementsById[id] = newElement;
         // Insert in correct position based on sortKey
-        const insertIndex = state.elementOrder.findIndex((eid) => 
+        const insertIndex = state.elementOrder.findIndex((eid) =>
           state.elementsById[eid].sortKey > sortKey
         );
         if (insertIndex === -1) {
@@ -202,22 +223,42 @@ export const useCanvasStore = create<CanvasState>()(
         state.selectedElementId = id;
         state.expandedElementIds.add(id);
       });
-      
+
+      // Persist to backend (fire-and-forget)
+      if (doc?.id) {
+        fetch(`${API_URL}/canvas/documents/${doc.id}/elements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sortKey,
+            kind: element.kind,
+            label: element.label,
+            contentLatex: element.contentLatex,
+          }),
+        }).catch((err) => console.warn('[canvas] Failed to persist new element:', err));
+      }
+
       return id;
     },
-    
+
     updateElement: (id, patch) => {
       set((state) => {
         const element = state.elementsById[id];
         if (element) {
-          Object.assign(element, patch, { 
+          Object.assign(element, patch, {
             updatedAt: new Date().toISOString(),
             versionId: `v_${Date.now()}`
           });
         }
       });
+
+      // Debounced persist to backend
+      const { document: doc } = get();
+      if (doc?.id) {
+        persistElementUpdate(doc.id, id, patch as Record<string, unknown>);
+      }
     },
-    
+
     deleteElement: (id) => {
       set((state) => {
         delete state.elementsById[id];
@@ -227,41 +268,56 @@ export const useCanvasStore = create<CanvasState>()(
         }
         state.expandedElementIds.delete(id);
       });
+
+      // Persist deletion to backend (fire-and-forget)
+      fetch(`${API_URL}/canvas/elements/${id}`, { method: 'DELETE' })
+        .catch((err) => console.warn('[canvas] Failed to persist element deletion:', err));
     },
-    
+
     reorderElement: (id, newIndex) => {
       set((state) => {
         const currentIndex = state.elementOrder.indexOf(id);
         if (currentIndex === -1) return;
-        
+
         // Remove from current position
         state.elementOrder.splice(currentIndex, 1);
         // Insert at new position
         state.elementOrder.splice(newIndex, 0, id);
-        
-        // Recalculate sort keys
-        state.elementOrder.forEach((eid, idx) => {
-          const prevKey = idx > 0 ? state.elementsById[state.elementOrder[idx - 1]].sortKey : null;
-          const nextKey = idx < state.elementOrder.length - 1 ? state.elementsById[state.elementOrder[idx + 1]].sortKey : null;
-          state.elementsById[eid].sortKey = generateKeyBetween(prevKey, nextKey);
-        });
+
+        // Only recalculate sort key for the MOVED element — avoid loop dependency bug
+        const prevId = newIndex > 0 ? state.elementOrder[newIndex - 1] : null;
+        const nextId = newIndex < state.elementOrder.length - 1 ? state.elementOrder[newIndex + 1] : null;
+        const prevKey = prevId ? state.elementsById[prevId].sortKey : null;
+        const nextKey = nextId ? state.elementsById[nextId].sortKey : null;
+        const newSortKey = generateKeyBetween(prevKey, nextKey);
+        state.elementsById[id].sortKey = newSortKey;
+
+        // Persist new sort key to backend (fire-and-forget, after state is committed)
+        const newSortKeyCapture = newSortKey;
+        setTimeout(() => {
+          fetch(`${API_URL}/canvas/elements/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sortKey: newSortKeyCapture }),
+          }).catch((err) => console.warn('[canvas] Failed to persist reorder:', err));
+        }, 0);
       });
     },
-    
+
     moveElement: (id, direction) => {
       const { elementOrder, reorderElement } = get();
       const currentIndex = elementOrder.indexOf(id);
       if (currentIndex === -1) return;
-      
-      const newIndex = direction === 'up' 
+
+      const newIndex = direction === 'up'
         ? Math.max(0, currentIndex - 1)
         : Math.min(elementOrder.length - 1, currentIndex + 1);
-      
+
       if (newIndex !== currentIndex) {
         reorderElement(id, newIndex);
       }
     },
-    
+
     toggleExpanded: (id) => {
       set((state) => {
         if (state.expandedElementIds.has(id)) {
@@ -271,21 +327,21 @@ export const useCanvasStore = create<CanvasState>()(
         }
       });
     },
-    
+
     expandElement: (id) => {
       set((state) => state.expandedElementIds.add(id));
     },
-    
+
     collapseElement: (id) => {
       set((state) => state.expandedElementIds.delete(id));
     },
-    
+
     selectElement: (id) => set({ selectedElementId: id }),
-    
+
     // Build actions
     setActiveBuild: (build) => set({ activeBuild: build }),
     setIsCompiling: (compiling) => set({ isCompiling: compiling }),
-    
+
     // Revision actions
     setPendingRevision: (rev) => set({ pendingRevision: rev }),
     addRevision: (rev) => {
@@ -322,12 +378,12 @@ export const useCanvasStore = create<CanvasState>()(
         }
       });
     },
-    
+
     // UI actions
     setShowInsertMenu: (show) => set({ showInsertMenu: show }),
     setShowScanModal: (show) => set({ showScanModal: show }),
     setShowRevisionPanel: (show) => set({ showRevisionPanel: show }),
-    
+
     // Computed helpers
     getOrderedElements: () => {
       const { elementsById, elementOrder } = get();
@@ -360,7 +416,7 @@ export const createDocumentFromWorksheet = (config: {
 }): { document: Document; elements: Element[] } => {
   const now = new Date().toISOString();
   const docId = `doc_${Date.now()}`;
-  
+
   const document: Document = {
     id: docId,
     title: `${config.subject} Worksheet`,
@@ -374,7 +430,7 @@ export const createDocumentFromWorksheet = (config: {
     createdAt: now,
     updatedAt: now,
   };
-  
+
   // Create initial elements
   const elements: Element[] = [
     {
@@ -423,13 +479,13 @@ Date: \\underline{\\hspace{3cm}}
       sortKey: 'a2',
       contentLatex: `\\begin{enumerate}[label=\\textbf{\\arabic*.}]
   \\item Evaluate $\\int x^2 \\, dx$. \\hfill \\textbf{[2 Marks]}
-  
+
   \\vspace{4cm}
-  
+
   \\item Find the derivative of $f(x) = 3x^3 - 2x^2 + x - 5$. \\hfill \\textbf{[3 Marks]}
-  
+
   \\vspace{4cm}
-  
+
   \\item Solve for $x$: $2x + 5 = 15$. \\hfill \\textbf{[2 Marks]}
 \\end{enumerate}`,
       label: `Questions (Sample)`,
@@ -457,6 +513,6 @@ Date: \\underline{\\hspace{3cm}}
       updatedAt: now,
     },
   ];
-  
+
   return { document, elements };
 };

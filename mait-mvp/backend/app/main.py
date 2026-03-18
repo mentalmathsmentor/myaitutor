@@ -664,6 +664,31 @@ class ElementUpdateRequest(BaseModel):
     sortKey: Optional[str] = None
     isLocked: Optional[bool] = None
     isCollapsed: Optional[bool] = None
+    label: Optional[str] = None
+
+class ElementCreateRequest(BaseModel):
+    sortKey: str
+    kind: str
+    label: str = "Element"
+    contentLatex: str = ""
+    isLocked: bool = False
+    isCollapsed: bool = False
+
+@app.post("/canvas/documents/{doc_id}/elements")
+async def create_canvas_element(request: Request, doc_id: str, body: ElementCreateRequest):
+    doc = await get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    element = await create_element(
+        document_id=doc_id,
+        sort_key=body.sortKey,
+        kind=body.kind,
+        label=body.label,
+        content_latex=body.contentLatex,
+        is_locked=body.isLocked,
+        is_collapsed=body.isCollapsed,
+    )
+    return {"element": element}
 
 @app.put("/canvas/elements/{elem_id}")
 async def update_canvas_element(request: Request, elem_id: str, body: ElementUpdateRequest):
@@ -672,10 +697,24 @@ async def update_canvas_element(request: Request, elem_id: str, body: ElementUpd
     if not updated:
         raise HTTPException(status_code=404, detail="Element not found")
     return {"element": updated}
-    
+
+@app.delete("/canvas/elements/{elem_id}")
+async def delete_canvas_element(request: Request, elem_id: str):
+    deleted = await delete_element(elem_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Element not found")
+    return {"status": "deleted"}
+
+@app.delete("/canvas/documents/{doc_id}")
+async def delete_canvas_document(request: Request, doc_id: str):
+    deleted = await delete_document(doc_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"status": "deleted"}
+
 class CompileRequest(BaseModel):
     latex_source: str
-    
+
 @app.post("/canvas/compile")
 async def compile_canvas_pdf(request: Request, body: CompileRequest):
     import tempfile

@@ -80,14 +80,22 @@ async def update_element(element_id: str, updates: Dict[str, Any]) -> Optional[d
         "contentLatex": "content_latex",
         "sortKey": "sort_key",
         "isLocked": "is_locked",
-        "isCollapsed": "is_collapsed"
+        "isCollapsed": "is_collapsed",
+        "label": "label",
+        "versionId": "version_id",
     }
-    
+
     db_updates = {}
     for k, v in updates.items():
         db_key = field_maps.get(k, k)
         db_updates[db_key] = v
-        
+
+    # Whitelist allowed columns — never interpolate unverified names into SQL
+    ALLOWED_COLUMNS = {"content_latex", "sort_key", "is_locked", "is_collapsed", "label", "version_id", "updated_at"}
+    db_updates = {k: v for k, v in db_updates.items() if k in ALLOWED_COLUMNS}
+    if not db_updates:
+        return None
+
     set_clause = ", ".join([f"{k} = ?" for k in db_updates.keys()])
     values = list(db_updates.values()) + [element_id]
     

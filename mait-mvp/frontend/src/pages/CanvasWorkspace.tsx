@@ -1,5 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const API_URL = (import.meta as { env: Record<string, string> }).env?.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
 import { 
   ChevronLeft, 
   FileText, 
@@ -34,38 +36,16 @@ interface CanvasWorkspaceProps {
   } | null;
 }
 
-// Mock compilation service
-const mockCompile = async (latexSource: string): Promise<{ success: boolean; pdfUrl?: string; error?: string }> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate successful compilation
-      if (latexSource.includes('\\\\documentclass')) {
-        resolve({ 
-          success: true, 
-          pdfUrl: 'data:application/pdf;base64,JVBERi0xLjQKJcOkw7zDtsO...' // Mock PDF data
-        });
-      } else {
-        resolve({ 
-          success: false, 
-          error: '! LaTeX Error: Missing \\\\documentclass command.' 
-        });
-      }
-    }, 2000);
-  });
-};
-
-// Mock humanized error service
-const mockHumanizeError = async (_error: string): Promise<string> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve("There's a missing command in your document. Make sure you have a proper LaTeX preamble with \\\\documentclass.");
-    }, 500);
-  });
-};
 
 export default function CanvasWorkspace({ setCurrentSection, initialConfig }: CanvasWorkspaceProps) {
   const [showRevisionTimeline, setShowRevisionTimeline] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
   
   const {
     document: doc,
@@ -120,14 +100,10 @@ export default function CanvasWorkspace({ setCurrentSection, initialConfig }: Ca
     return elements.map((f) => f.contentLatex).join('\n\n');
   }, [getOrderedElements]);
 
-  // Handle compile
+  // Handle compile — calls real backend /canvas/compile endpoint
   const handleCompile = async () => {
     setIsCompiling(true);
-    setActiveBuild(null);
-    
-    const latexSource = assembleLatex();
-    
-    // Create pending build
+
     const buildId = `build_${Date.now()}`;
     setActiveBuild({
       id: buildId,
@@ -135,39 +111,74 @@ export default function CanvasWorkspace({ setCurrentSection, initialConfig }: Ca
       status: 'compiling',
       createdAt: new Date().toISOString(),
     });
-    
-    const result = await mockCompile(latexSource);
-    
-    if (result.success) {
-      setActiveBuild({
-        id: buildId,
-        documentId: doc?.id || '',
-        status: 'success',
-        pdfUrl: result.pdfUrl,
-        createdAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
+
+    try {
+      const latexSource = assembleLatex();
+      const response = await fetch(`${API_URL}/canvas/compile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ latex_source: latexSource }),
       });
-    } else {
-      const humanizedError = await mockHumanizeError(result.error || '');
+
+      if (!isMounted.current) return;
+
+      const result = await response.json() as { success: boolean; pdfUrl?: string; error?: string };
+
+      if (result.success && result.pdfUrl) {
+        setActiveBuild({
+          id: buildId,
+          documentId: doc?.id || '',
+          status: 'success',
+          pdfUrl: result.pdfUrl,
+          createdAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+        });
+      } else {
+        setActiveBuild({
+          id: buildId,
+          documentId: doc?.id || '',
+          status: 'failed',
+          errorMessage: result.error,
+          errorMessageHuman: result.error || 'Compilation failed. Check your LaTeX syntax.',
+          createdAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+        });
+      }
+    } catch (err) {
+      if (!isMounted.current) return;
       setActiveBuild({
         id: buildId,
         documentId: doc?.id || '',
         status: 'failed',
-        errorMessage: result.error,
-        errorMessageHuman: humanizedError,
+        errorMessage: String(err),
+        errorMessageHuman: 'Could not reach the compilation server. Check your connection.',
         createdAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
       });
+    } finally {
+      if (isMounted.current) setIsCompiling(false);
     }
-    
-    setIsCompiling(false);
   };
 
-  // Handle save
-  const handleSave = () => {
-    // Mock save
+  // Handle save — flushes all current elements to backend via PUT
+  const handleSave = useCallback(async () => {
+    if (!doc?.id) return;
+    const elements = getOrderedElements();
+    await Promise.allSettled(
+      elements.map((el) =>
+        fetch(`${API_URL}/canvas/elements/${el.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contentLatex: el.contentLatex,
+            sortKey: el.sortKey,
+            label: el.label,
+          }),
+        })
+      )
+    );
     setHasUnsavedChanges(false);
-  };
+  }, [doc?.id, getOrderedElements]);
 
   // Handle export
   const handleExport = (format: 'pdf' | 'tex') => {
