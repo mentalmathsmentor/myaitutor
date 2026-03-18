@@ -1,0 +1,147 @@
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel
+
+from ..services.artifact_engine import WorksheetRequest, generate_worksheet_latex, compile_latex_to_pdf
+from ..services.document_service import create_document, get_document, get_documents_by_student, delete_document
+from ..services.element_service import create_element, get_elements, update_element, delete_element
+from ..services.latex_decomposer import parse_monolithic_latex
+from ..deps import verify_student_auth, limiter
+
+router = APIRouter(prefix="/canvas", tags=["canvas"])
+
+
+class CanvasGenerateRequest(BaseModel):
+    student_id: str
+    worksheet_request: WorksheetRequest
+
+
+class ElementUpdateRequest(BaseModel):
+    contentLatex: Optional[str] = None
+    sortKey: Optional[str] = None
+    isLocked: Optional[bool] = None
+    isCollapsed: Optional[bool] = None
+    label: Optional[str] = None
+
+
+class ElementCreateRequest(BaseModel):
+    sortKey: str
+    kind: str
+    label: str = "Element"
+    contentLatex: str = ""
+    isLocked: bool = False
+    isCollapsed: bool = False
+
+
+class CompileRequest(BaseModel):
+    latex_source: str
+
+
+@router.post("/generate")
+@limiter.limit("5/minute")
+async def canvas_generate(request: Request, body: CanvasGenerateRequest):
+    await verify_student_auth(request, body.student_id)
+
+    try:
+        latex_source = await generate_worksheet_latex(body.worksheet_request)
+        element_data = parse_monolithic_latex(latex_source)
+
+        title = f"{body.worksheet_request.worksheetSettings.subject} Worksheet"
+        if body.worksheet_request.topicSummary:
+            title = body.worksheet_request.topicSummary[:40]
+
+        doc = await create_document(body.student_id, title)
+        doc_id = doc["id"]
+
+        saved_elements = []
+        for elem in element_data:
+            saved_elem = await create_element(
+                document_id=doc_id,
+                sort_key=elem["sort_key"],
+                kind=elem["kind"],
+                label=elem.get("label", "Element"),
+                content_latex=elem["content_latex"],
+                is_locked=elem["is_locked"],
+                is_collapsed=elem["is_collapsed"]
+            )
+            saved_elements.append(saved_elem)
+
+        return {"document": doc, "elements": saved_elements}
+    except Exception as e:
+        print(f"[Canvas Generate] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/documents")
+async def list_canvas_documents(request: Request, student_id: str):
+    await verify_student_auth(request, student_id)
+    docs = await get_documents_by_student(student_id)
+    return {"documents": docs}
+
+
+@router.get("/documents/{doc_id}")
+async def get_canvas_document(request: Request, doc_id: str):
+    doc = await get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    elements = await get_elements(doc_id)
+    return {"document": doc, "elements": elements}
+
+
+@router.post("/documents/{doc_id}/elements")
+async def create_canvas_element(request: Request, doc_id: str, body: ElementCreateRequest):
+    doc = await get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    element = await create_element(
+        document_id=doc_id,
+        sort_key=body.sortKey,
+        kind=body.kind,
+        label=body.label,
+        content_latex=body.contentLatex,
+        is_locked=body.isLocked,
+        is_collapsed=body.isCollapsed,
+    )
+    return {"element": element}
+
+
+@router.put("/elements/{elem_id}")
+async def update_canvas_element(request: Request, elem_id: str, body: ElementUpdateRequest):
+    updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
+    updated = await update_element(elem_id, updates)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Element not found")
+    return {"element": updated}
+
+
+@router.delete("/elements/{elem_id}")
+async def delete_canvas_element(request: Request, elem_id: str):
+    deleted = await delete_element(elem_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Element not found")
+    return {"status": "deleted"}
+
+
+@router.delete("/documents/{doc_id}")
+async def delete_canvas_document(request: Request, doc_id: str):
+    deleted = await delete_document(doc_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"status": "deleted"}
+
+
+@router.post("/compile")
+async def compile_canvas_pdf(request: Request, body: CompileRequest):
+    import tempfile
+    import base64
+
+    output_dir = tempfile.mkdtemp(prefix="mait_canvas_compile_")
+    try:
+        pdf_path = compile_latex_to_pdf(body.latex_source, output_dir)
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        return {"success": True, "pdfUrl": f"data:application/pdf;base64,{b64_pdf}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
