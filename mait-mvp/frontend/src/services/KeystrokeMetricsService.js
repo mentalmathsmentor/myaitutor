@@ -1,3 +1,5 @@
+import { API_URL } from '@/config/api';
+
 /**
  * KeystrokeMetricsService - Keystroke Psychometric Analysis System
  *
@@ -442,7 +444,6 @@ class KeystrokeMetricsService {
      * @returns {Promise<object>} response with updated profile
      */
     async submitMetrics(studentId, metrics) {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
         try {
             const response = await fetch(`${API_URL}/keystroke-metrics`, {
                 method: 'POST',
@@ -481,7 +482,6 @@ class KeystrokeMetricsService {
      * @returns {Promise<object|null>} profile data or null on error
      */
     async getProfile(studentId) {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
         try {
             const response = await fetch(`${API_URL}/keystroke-profile/${studentId}`);
             if (!response.ok) {

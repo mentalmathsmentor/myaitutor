@@ -45,7 +45,7 @@ function navigateTo(page) {
 }
 
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
+import { API_URL } from './config/api';
 
 const getStudentId = () => {
     let id = localStorage.getItem('mait_student_id');

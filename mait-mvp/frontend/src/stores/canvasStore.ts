@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { generateKeyBetween } from 'fractional-indexing';
 
-const API_URL = (import.meta as { env: Record<string, string> }).env?.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
+import { API_URL } from '@/config/api';
 
 // Debounce map for element update persistence (element id → timer id)
 const _updateDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {};

@@ -28,7 +28,7 @@ import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorkshee
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
 import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
+import { API_URL } from '@/config/api';
 
 const STAGES = Object.keys(stageSubjects);
 const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)', 'Dynamic Space'];

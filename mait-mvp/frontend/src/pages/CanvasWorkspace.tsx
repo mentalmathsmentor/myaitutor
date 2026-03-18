@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API_URL = (import.meta as { env: Record<string, string> }).env?.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
-import { 
+import { API_URL } from '@/config/api';
+import {
   ChevronLeft, 
   FileText, 
   AlertCircle,
