@@ -461,13 +461,17 @@ export const createDocumentFromWorksheet = (config: {
       sortKey: 'a0',
       contentLatex: `\\documentclass[11pt, a4paper]{article}
 \\usepackage[a4paper, margin=2cm]{geometry}
-\\usepackage{fontspec}
-\\usepackage[english]{babel}
-\\babelfont{rm}{Noto Sans}
-\\usepackage{amsmath, amssymb, amsthm, tikz, enumitem}
+\\usepackage{amsmath, amssymb, amsthm, enumitem}
+\\usepackage{tikz, pgfplots}
+\\usepackage{fancyhdr, lastpage}
+\\usepackage{tcolorbox}
 \\usetikzlibrary{arrows.meta, calc, angles, quotes}
+\\pgfplotsset{compat=1.18}
 \\setlength{\\parindent}{0pt}
 \\setlength{\\parskip}{1em}
+\\pagestyle{fancy}
+\\fancyhf{}
+\\rfoot{Page \\thepage\\ of \\pageref{LastPage}}
 
 \\begin{document}`,
       label: 'Preamble',

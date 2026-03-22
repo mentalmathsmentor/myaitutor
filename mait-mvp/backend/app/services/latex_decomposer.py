@@ -39,8 +39,11 @@ def parse_monolithic_latex(raw_latex: str) -> List[Dict[str, str]]:
     if footer_match:
         footer = footer_match.group(1).strip()
         latex = latex[:footer_match.start()].strip()
+        # If footer is just \end{document}, wrap it with a visible end marker
+        if footer.strip() == r'\end{document}':
+            footer = "\\vfill\n\n\\hrule\n\\vspace{0.5em}\n\\begin{center}\n\\textit{End of Worksheet}\n\\end{center}\n\n\\end{document}"
     else:
-        footer = "\\end{document}"
+        footer = "\\vfill\n\n\\hrule\n\\vspace{0.5em}\n\\begin{center}\n\\textit{End of Worksheet}\n\\end{center}\n\n\\end{document}"
         
     # 3. Extract Header vs Body
     # A typical header might be a \begin{center} ... \end{center} block at the top

@@ -94,10 +94,12 @@ function SortableElementCard({ element, index, onMoveUp, onMoveDown }: SortableE
   const isExpanded = expandedElementIds.has(element.id);
   const colors = kindColors[element.kind];
 
-  // Preview content (first 100 chars)
+  // Preview content (first 100 chars) — strip commands but keep text inside braces
   const previewContent = element.contentLatex
-    .replace(/\\[a-zA-Z]+(\[.*?\])?(\{.*?\})?/g, ' ')
-    .replace(/\$\$?/g, '')
+    .replace(/\\(?:begin|end)\{[^}]+\}/g, ' ')
+    .replace(/\\[a-zA-Z]+(\[[^\]]*\])?/g, ' ')
+    .replace(/[{}$]/g, '')
+    .replace(/\s+/g, ' ')
     .slice(0, 100)
     .trim();
 
@@ -127,44 +129,46 @@ function SortableElementCard({ element, index, onMoveUp, onMoveDown }: SortableE
         } ${colors.bg}`}
       >
         {/* Card Header */}
-        <div
-          className="flex items-center gap-2 p-3 cursor-pointer"
-          onClick={() => {
-            selectElement(element.id);
-            toggleExpanded(element.id);
-          }}
-        >
-          {/* Drag Handle */}
+        <div className="flex items-center gap-2 p-3">
+          {/* Drag Handle — only this initiates drag */}
           <div
-            className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60"
+            className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 touch-none"
             {...attributes}
             {...listeners}
-            onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="w-4 h-4" />
           </div>
 
-          {/* Kind Badge */}
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${colors.bg} ${colors.text} border ${colors.border}`}>
-            {kindLabels[element.kind]}
-          </span>
-
-          {/* Label */}
-          <span className="flex-1 text-white/80 text-sm font-medium truncate">
-            {element.label}
-          </span>
-
-          {/* Marks indicator */}
-          {element.metadata?.marks && (
-            <span className="text-xs text-white/50">
-              [{element.metadata.marks}M]
+          {/* Clickable area — selection + expand/collapse */}
+          <div
+            className="flex-1 flex items-center gap-2 cursor-pointer min-w-0"
+            onClick={() => {
+              selectElement(element.id);
+              toggleExpanded(element.id);
+            }}
+          >
+            {/* Kind Badge */}
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${colors.bg} ${colors.text} border ${colors.border}`}>
+              {kindLabels[element.kind]}
             </span>
-          )}
 
-          {/* Expand/Collapse */}
-          <button className="text-white/40 hover:text-white/80">
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+            {/* Label */}
+            <span className="flex-1 text-white/80 text-sm font-medium truncate">
+              {element.label}
+            </span>
+
+            {/* Marks indicator */}
+            {element.metadata?.marks && (
+              <span className="text-xs text-white/50 shrink-0">
+                [{element.metadata.marks}M]
+              </span>
+            )}
+
+            {/* Expand/Collapse */}
+            <button className="text-white/40 hover:text-white/80 shrink-0">
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
         {/* Collapsed Preview */}
