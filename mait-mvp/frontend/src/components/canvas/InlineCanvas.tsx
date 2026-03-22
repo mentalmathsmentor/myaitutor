@@ -33,6 +33,9 @@ interface InlineCanvasProps {
     questionCount: number;
     difficulty: number;
   };
+  // Full WorksheetRequest built by buildWorksheetRequest() — when provided,
+  // this is sent directly to /canvas/generate instead of the minimal config payload.
+  worksheetRequest?: Record<string, unknown> | null;
   onExpand?: () => void;
 }
 
@@ -58,12 +61,13 @@ const mockHumanizeError = async (_error: string): Promise<string> => {
   return "Compilation failed. Check the syntax of your LaTeX blocks.";
 };
 
-export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
+export function InlineCanvas({ config, worksheetRequest, onExpand }: InlineCanvasProps) {
   const [showRevisionTimeline, setShowRevisionTimeline] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
+  const [generationWarning, setGenerationWarning] = useState<string | null>(null);
   const initRef = useRef(false);
   
   const {
@@ -91,39 +95,43 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
         try {
           const studentId = localStorage.getItem('mait_student_id') || 'anonymous_student';
           
+          // Use the full WorksheetRequest from the studio if available (preferred path).
+          // Fall back to a minimal request built from config if called without it.
+          const requestBody = worksheetRequest ?? {
+            requestVersion: "2",
+            worksheetSettings: {
+              course: config.yearLevel,
+              subject: config.subject,
+              difficulty: "Mixed",
+              numberOfQuestions: config.questionCount,
+              headerSpaces: "Include Name line. Include Date line.",
+              workingSpace: "Dynamic Space",
+              marks: "Assign and right-align marks.",
+              answerKey: "No answer key.",
+              watermark: true,
+              mode: "EXAM STRICT (Pure questions only, no pedagogy tools)"
+            },
+            topicSummary: config.topics.join(" | "),
+            syllabusPacket: {
+              topicSummary: config.topics.join(" | "),
+              outcomes: [],
+              dotPoints: config.topics,
+              include: [],
+              exclude: [],
+              assessmentEmphasis: [],
+              questionStyleNotes: []
+            },
+            pedagogicalDrills: [],
+            customInstructions: "",
+            legacyFields: { manual_prompt: "", context_source: "builtin" }
+          };
+
           const response = await fetch(`${API_URL}/canvas/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
             body: JSON.stringify({
               student_id: studentId,
-              worksheet_request: {
-                requestVersion: "1.0",
-                worksheetSettings: {
-                  course: config.yearLevel,
-                  subject: config.subject,
-                  difficulty: config.difficulty.toString(),
-                  numberOfQuestions: config.questionCount,
-                  headerSpaces: "None",
-                  workingSpace: "Standard",
-                  marks: "Show",
-                  answerKey: "Bottom",
-                  watermark: false,
-                  mode: "Standard"
-                },
-                topicSummary: config.topics.join(" | "),
-                syllabusPacket: {
-                  topicSummary: config.topics.join(" | "),
-                  outcomes: [],
-                  dotPoints: config.topics,
-                  include: [],
-                  exclude: [],
-                  assessmentEmphasis: [],
-                  questionStyleNotes: []
-                },
-                pedagogicalDrills: [],
-                customInstructions: "",
-                legacyFields: { manual_prompt: "", context_source: "" }
-              }
+              worksheet_request: requestBody,
             })
           });
           
@@ -135,11 +143,13 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
           setDocument(data.document);
           setElements(data.elements);
         } catch (e: any) {
-          console.warn("Backend canvas/generate failed, falling back to local scaffold:", e.message);
-          // Fall back to local document creation so the canvas is still usable
+          console.error("[Canvas] /canvas/generate failed:", e.message);
+          // Fall back to a local scaffold so the canvas is still usable.
+          // The placeholder question makes clear that AI generation did not run.
           const { document: localDoc, elements: localElements } = createDocumentFromWorksheet(config);
           setDocument(localDoc);
           setElements(localElements);
+          setGenerationWarning(`AI generation unavailable: ${e.message}. The canvas loaded with a blank scaffold — add questions manually or check that the backend is running.`);
         } finally {
           setIsInitialized(true);
         }
@@ -439,6 +449,17 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
             <div className="flex flex-col lg:flex-row" style={{ minHeight: '600px', maxHeight: '800px' }}>
               {/* Left Pane - Element List */}
               <div className="w-full lg:w-1/2 flex flex-col border-b lg:border-b-0 lg:border-r border-white/10">
+                {/* Generation Warning Banner */}
+                {generationWarning && (
+                  <div className="flex items-start gap-3 px-4 py-3 bg-yellow-500/10 border-b border-yellow-500/20">
+                    <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-yellow-300/80 text-xs flex-1">{generationWarning}</p>
+                    <button
+                      onClick={() => setGenerationWarning(null)}
+                      className="text-yellow-400/50 hover:text-yellow-400 text-xs"
+                    >✕</button>
+                  </div>
+                )}
                 {/* Error Banner */}
                 <CompileErrorBanner />
                 

@@ -136,6 +136,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [generationError, setGenerationError] = useState('');
   const [generationSuccess, setGenerationSuccess] = useState('');
   const [showCanvas, setShowCanvas] = useState(false);
+  const [canvasWorksheetRequest, setCanvasWorksheetRequest] = useState(null);
 
   const [showWarning, setShowWarning] = useState(false);
   const [showCloseButton, setShowCloseButton] = useState(false);
@@ -1280,6 +1281,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   <button
                     type="button"
                     onClick={() => {
+                      setCanvasWorksheetRequest(buildWorksheetRequest(getWorksheetRequestParams()));
                       setShowCanvas(true);
                       setTimeout(() => {
                         const el = document.getElementById('mait-native-canvas-container');
@@ -1401,7 +1403,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 </div>
               </div>
               
-              <InlineCanvas config={canvasConfig} />
+              <InlineCanvas config={canvasConfig} worksheetRequest={canvasWorksheetRequest} />
             </motion.div>
           )}
         </AnimatePresence>
