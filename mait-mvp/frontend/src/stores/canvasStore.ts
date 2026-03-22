@@ -112,6 +112,9 @@ interface CanvasState {
   showScanModal: boolean;
   showRevisionPanel: boolean;
 
+  // Question regeneration state
+  regeneratingElementId: string | null;
+
   // Actions
   setDocument: (doc: Document) => void;
   setElements: (elements: Element[]) => void;
@@ -139,6 +142,7 @@ interface CanvasState {
   setShowInsertMenu: (show: boolean) => void;
   setShowScanModal: (show: boolean) => void;
   setShowRevisionPanel: (show: boolean) => void;
+  setRegeneratingElementId: (id: string | null) => void;
 
   // Computed
   getOrderedElements: () => Element[];
@@ -161,6 +165,7 @@ export const useCanvasStore = create<CanvasState>()(
     showInsertMenu: false,
     showScanModal: false,
     showRevisionPanel: false,
+    regeneratingElementId: null,
 
     // Document actions
     setDocument: (doc) => set({ document: doc }),
@@ -407,6 +412,7 @@ export const useCanvasStore = create<CanvasState>()(
     setShowInsertMenu: (show) => set({ showInsertMenu: show }),
     setShowScanModal: (show) => set({ showScanModal: show }),
     setShowRevisionPanel: (show) => set({ showRevisionPanel: show }),
+    setRegeneratingElementId: (id) => set({ regeneratingElementId: id }),
 
     // Computed helpers
     getOrderedElements: () => {

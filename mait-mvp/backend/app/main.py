@@ -15,7 +15,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 from .deps import limiter
 from .services import storage
-from .routers import auth, chat, canvas, worksheet, analytics, misc
+from .routers import auth, chat, canvas, worksheet, analytics, misc, questions
 
 # Initialize Sentry for error tracking
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -65,3 +65,4 @@ app.include_router(chat.router)
 app.include_router(canvas.router)
 app.include_router(worksheet.router)
 app.include_router(analytics.router)
+app.include_router(questions.router)

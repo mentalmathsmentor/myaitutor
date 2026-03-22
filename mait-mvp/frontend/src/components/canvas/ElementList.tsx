@@ -6,11 +6,14 @@ import {
   ChevronUp,
   Trash2,
   Copy,
-  Bot
+  Bot,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCanvasStore, type Element, type ElementKind } from '@/stores/canvasStore';
 import { ElementEditor } from './ElementEditor';
+import { API_URL } from '@/config/api';
 
 import {
   DndContext,
@@ -88,6 +91,8 @@ function SortableElementCard({ element, index, onMoveUp, onMoveDown }: SortableE
     setShowRevisionPanel,
     addElement,
     elementOrder,
+    regeneratingElementId,
+    setRegeneratingElementId,
   } = useCanvasStore();
 
   const isSelected = selectedElementId === element.id;
@@ -110,6 +115,36 @@ function SortableElementCard({ element, index, onMoveUp, onMoveDown }: SortableE
       label: `${element.label} (Copy)`,
       metadata: element.metadata,
     }, element.id);
+  };
+
+  const hasDiagram = /\\begin\{tikzpicture\}|\\begin\{axis\}|pgfplots/.test(element.contentLatex);
+  const isRegenerating = regeneratingElementId === element.id;
+
+  const handleRegenerateDiagram = async () => {
+    setRegeneratingElementId(element.id);
+    try {
+      const studentId = localStorage.getItem('mait_student_id') || 'anonymous';
+      const res = await fetch(`${API_URL}/questions/regenerate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
+        body: JSON.stringify({
+          student_id: studentId,
+          original_question_latex: element.contentLatex,
+          error_feedback: 'Diagram needs spatial correction or failed to render correctly.',
+          topic: element.label,
+          marks: element.metadata?.marks || 2,
+        }),
+      });
+      if (!res.ok) throw new Error(`Regeneration failed: ${res.status}`);
+      const data = await res.json() as { question?: { question_latex?: string } };
+      if (data.question?.question_latex) {
+        updateElement(element.id, { contentLatex: data.question.question_latex });
+      }
+    } catch (err) {
+      console.error('[Regenerate]', err);
+    } finally {
+      setRegeneratingElementId(null);
+    }
   };
 
   const isFirst = index === 0;
@@ -219,6 +254,23 @@ function SortableElementCard({ element, index, onMoveUp, onMoveDown }: SortableE
                     <Bot className="w-3 h-3 mr-1" />
                     Revise with AI
                   </Button>
+
+                  {hasDiagram && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRegenerateDiagram}
+                      disabled={isRegenerating}
+                      className="text-orange-400 hover:text-orange-300 text-xs"
+                    >
+                      {isRegenerating ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                      )}
+                      Regenerate Diagram
+                    </Button>
+                  )}
 
                   <Button
                     variant="ghost"
