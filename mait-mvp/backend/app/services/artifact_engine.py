@@ -365,7 +365,7 @@ def _sanitize_latex(latex: str) -> str:
     # Remove any \usepackage that is not in our allowed list
     allowed_packages = {
         "amsmath", "amssymb", "amsthm", "geometry", "enumitem",
-        "fancyhdr", "lastpage", "tikz", "pgfplots",
+        "fancyhdr", "lastpage", "tikz", "pgfplots", "tcolorbox",
     }
     def _filter_usepackage(m: re.Match) -> str:
         pkg = m.group(2)
@@ -474,12 +474,13 @@ def compile_latex_to_pdf(latex_source: str, output_dir: str) -> str:
                 pdflatex_path,
                 "-interaction=nonstopmode",
                 "-halt-on-error",
+                "--no-shell-escape",
                 "-output-directory", output_dir,
                 tex_path,
             ],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=30,
             cwd=output_dir,
         )
 

@@ -1,90 +1,76 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Upload, 
-  Camera, 
-  Loader2, 
-  CheckCircle2, 
+import {
+  X,
+  Upload,
+  Camera,
+  Loader2,
+  CheckCircle2,
   AlertCircle,
   Image as ImageIcon,
   ScanLine
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCanvasStore } from '@/stores/canvasStore';
-
-// Mock vision parse service
-const mockVisionParse = async (_imageBase64: string): Promise<{
-  success: boolean;
-  elements?: Array<{
-    kind: string;
-    label: string;
-    contentLatex: string;
-  }>;
-  error?: string;
-}> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate successful parsing
-      resolve({
-        success: true,
-        elements: [
-          {
-            kind: 'question',
-            label: 'Question 5 — Integration [4 Marks]',
-            contentLatex: `\\item Find $\\int_0^2 x^2 \\, dx$. \\hfill \\textbf{[4 Marks]}
- 
- \\vspace{4cm}`,
-          },
-          {
-            kind: 'diagram',
-            label: 'Diagram — Shaded region under parabola',
-            contentLatex: `\\begin{center}
- \\begin{tikzpicture}[scale=0.8]
-   \\draw[step=1cm,gray!30,very thin] (-1,-1) grid (3,5);
-   \\draw[thick,->] (-1,0) -- (3,0) node[right] {$x$};
-   \\draw[thick,->] (0,-1) -- (0,5) node[above] {$y$};
-   \\draw[thick,blue,domain=0:2,samples=100] plot (\\x, {\\x*\\x});
-   \\fill[blue,opacity=0.3] (0,0) -- plot[domain=0:2] (\\x, {\\x*\\x}) -- (2,0) -- cycle;
- \\end{tikzpicture}
- \\end{center}`,
-          },
-        ],
-      });
-    }, 2500);
-  });
-};
+import { API_URL } from '@/config/api';
 
 export function ScanQuestionModal() {
-  const { showScanModal, setShowScanModal, addElement, selectedElementId } = useCanvasStore();
+  const { showScanModal, setShowScanModal, document, setElements, getOrderedElements } = useCanvasStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [result, setResult] = useState<{
     success: boolean;
     elements?: Array<{
+      id: string;
       kind: string;
       label: string;
       contentLatex: string;
+      sortKey: string;
     }>;
     error?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const handleFileSelect = useCallback(async (file: File) => {
-    // Convert to base64
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const base64 = e.target?.result as string;
-      setPreviewImage(base64);
+      const dataUrl = e.target?.result as string;
+      setPreviewImage(dataUrl);
       setIsProcessing(true);
-      
-      const parseResult = await mockVisionParse(base64);
-      setResult(parseResult);
-      setIsProcessing(false);
+
+      try {
+        const base64 = dataUrl.split(',')[1];
+        const mimeType = file.type || 'image/jpeg';
+
+        const res = await fetch(`${API_URL}/canvas/documents/${document?.id}/vision-parse`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_base64: base64,
+            image_mime_type: mimeType,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Vision parse failed' }));
+          setResult({ success: false, error: err.detail || 'Vision parse failed' });
+        } else {
+          const data = await res.json();
+          setResult({
+            success: true,
+            elements: data.elements || [],
+          });
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Network error';
+        setResult({ success: false, error: msg });
+      } finally {
+        setIsProcessing(false);
+      }
     };
     reader.readAsDataURL(file);
-  }, []);
-  
+  }, [document?.id]);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
@@ -92,38 +78,64 @@ export function ScanQuestionModal() {
       handleFileSelect(file);
     }
   }, [handleFileSelect]);
-  
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       handleFileSelect(file);
     }
   }, [handleFileSelect]);
-  
+
   const handleInsertElements = () => {
     if (result?.elements) {
-      result.elements.forEach((elem, index) => {
-        setTimeout(() => {
-          addElement({
+      // Elements are already persisted by the backend vision-parse endpoint.
+      // Merge them into the frontend store.
+      const existing = getOrderedElements();
+      const existingIds = new Set(existing.map((e: { id: string }) => e.id));
+      const newElements = result.elements.filter((e) => !existingIds.has(e.id));
+
+      if (newElements.length > 0) {
+        // Merge into store — add to elementsById and elementOrder
+        const currentStore = useCanvasStore.getState();
+        const updatedById = { ...currentStore.elementsById };
+        const updatedOrder = [...currentStore.elementOrder];
+
+        for (const elem of newElements) {
+          updatedById[elem.id] = {
+            id: elem.id,
             kind: elem.kind as any,
-            contentLatex: elem.contentLatex,
             label: elem.label,
-          }, index === 0 ? selectedElementId || undefined : undefined);
-        }, index * 100);
-      });
+            contentLatex: elem.contentLatex,
+            sortKey: elem.sortKey,
+            isLocked: false,
+            isCollapsed: false,
+          };
+          updatedOrder.push(elem.id);
+        }
+
+        // Sort order by sortKey
+        updatedOrder.sort((a, b) =>
+          (updatedById[a]?.sortKey || '').localeCompare(updatedById[b]?.sortKey || '')
+        );
+
+        useCanvasStore.setState({
+          elementsById: updatedById,
+          elementOrder: updatedOrder,
+        });
+      }
     }
     handleClose();
   };
-  
+
   const handleClose = () => {
     setShowScanModal(false);
     setPreviewImage(null);
     setResult(null);
     setIsProcessing(false);
   };
-  
+
   if (!showScanModal) return null;
-  
+
   return (
     <AnimatePresence>
       {showScanModal && (
@@ -136,7 +148,7 @@ export function ScanQuestionModal() {
             onClick={handleClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -157,7 +169,7 @@ export function ScanQuestionModal() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {/* Content */}
             <div className="flex-1 p-4 overflow-y-auto">
               {!previewImage && !result && (
@@ -169,14 +181,14 @@ export function ScanQuestionModal() {
                   <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
                     <Upload className="w-8 h-8 text-white/40" />
                   </div>
-                  
+
                   <p className="text-white font-medium mb-2">
                     Drop an image here, or click to browse
                   </p>
                   <p className="text-white/50 text-sm mb-4">
-                    Supports: JPG, PNG, HEIC • Max 5MB
+                    Supports: JPG, PNG, HEIC
                   </p>
-                  
+
                   <div className="flex justify-center gap-3">
                     <Button
                       onClick={() => fileInputRef.current?.click()}
@@ -186,7 +198,7 @@ export function ScanQuestionModal() {
                       <ImageIcon className="w-4 h-4 mr-2" />
                       Browse Files
                     </Button>
-                    
+
                     <Button
                       onClick={() => fileInputRef.current?.click()}
                       variant="outline"
@@ -196,7 +208,7 @@ export function ScanQuestionModal() {
                       Take Photo
                     </Button>
                   </div>
-                  
+
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -207,7 +219,7 @@ export function ScanQuestionModal() {
                   />
                 </div>
               )}
-              
+
               {/* Preview & Processing */}
               {previewImage && (
                 <div className="space-y-4">
@@ -218,7 +230,7 @@ export function ScanQuestionModal() {
                       alt="Scanned question"
                       className="w-full max-h-64 object-contain"
                     />
-                    
+
                     {isProcessing && (
                       <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
                         <Loader2 className="w-10 h-10 text-mait-cyan animate-spin mb-3" />
@@ -227,7 +239,7 @@ export function ScanQuestionModal() {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Processing Steps */}
                   {isProcessing && (
                     <div className="space-y-2">
@@ -245,7 +257,7 @@ export function ScanQuestionModal() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Results */}
                   {result && (
                     <div className="space-y-4">
@@ -255,11 +267,11 @@ export function ScanQuestionModal() {
                             <CheckCircle2 className="w-5 h-5" />
                             <span className="font-medium">Successfully parsed!</span>
                           </div>
-                          
+
                           <p className="text-white/60 text-sm">
                             Found {result.elements?.length} element(s):
                           </p>
-                          
+
                           <div className="space-y-2">
                             {result.elements?.map((elem, idx) => (
                               <div
@@ -278,7 +290,7 @@ export function ScanQuestionModal() {
                               </div>
                             ))}
                           </div>
-                          
+
                           <div className="flex gap-2">
                             <Button
                               onClick={handleInsertElements}
@@ -302,11 +314,11 @@ export function ScanQuestionModal() {
                             <AlertCircle className="w-5 h-5" />
                             <span className="font-medium">Could not parse image</span>
                           </div>
-                          
+
                           <p className="text-white/60 text-sm">
                             {result.error || 'The image could not be processed. Try a clearer image or enter the content manually.'}
                           </p>
-                          
+
                           <Button
                             onClick={() => {
                               setPreviewImage(null);
@@ -324,11 +336,11 @@ export function ScanQuestionModal() {
                 </div>
               )}
             </div>
-            
+
             {/* Footer Info */}
             <div className="p-3 border-t border-white/10 bg-white/5">
               <p className="text-white/40 text-xs text-center">
-                Powered by Gemini Flash Vision • Images are processed but not stored
+                Powered by Gemini Flash Vision
               </p>
             </div>
           </motion.div>

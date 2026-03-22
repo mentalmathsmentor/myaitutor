@@ -7,6 +7,9 @@ from ..services.artifact_engine import WorksheetRequest, generate_worksheet_late
 from ..services.document_service import create_document, get_document, get_documents_by_student, delete_document
 from ..services.element_service import create_element, get_elements, update_element, delete_element
 from ..services.latex_decomposer import parse_monolithic_latex
+from ..services.revision_service import (
+    create_revision, apply_revision, reject_revision, list_revisions,
+)
 from ..deps import verify_student_auth, limiter
 
 router = APIRouter(prefix="/canvas", tags=["canvas"])
@@ -36,6 +39,16 @@ class ElementCreateRequest(BaseModel):
 
 class CompileRequest(BaseModel):
     latex_source: str
+
+
+class ReviseRequest(BaseModel):
+    instruction: str
+
+
+class VisionParseRequest(BaseModel):
+    image_base64: str
+    image_mime_type: str = "image/jpeg"
+    insert_after_element_id: Optional[str] = None
 
 
 @router.post("/generate")
@@ -145,3 +158,75 @@ async def compile_canvas_pdf(request: Request, body: CompileRequest):
         return {"success": True, "pdfUrl": f"data:application/pdf;base64,{b64_pdf}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+# ── Revision endpoints ──────────────────────────────────────────────
+
+
+@router.post("/elements/{elem_id}/revise")
+async def revise_canvas_element(request: Request, elem_id: str, body: ReviseRequest):
+    try:
+        revision = await create_revision(elem_id, body.instruction)
+        return {"revision": revision}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/revisions/{rev_id}/apply")
+async def apply_canvas_revision(request: Request, rev_id: str):
+    try:
+        revision = await apply_revision(rev_id)
+        return {"revision": revision}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/revisions/{rev_id}/reject")
+async def reject_canvas_revision(request: Request, rev_id: str):
+    try:
+        revision = await reject_revision(rev_id)
+        return {"revision": revision}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/documents/{doc_id}/revisions")
+async def list_canvas_revisions(request: Request, doc_id: str, element_id: Optional[str] = None):
+    revisions = await list_revisions(doc_id, element_id)
+    return {"revisions": revisions}
+
+
+# ── Vision parse endpoint ───────────────────────────────────────────
+
+
+@router.post("/documents/{doc_id}/vision-parse")
+async def vision_parse_document(request: Request, doc_id: str, body: VisionParseRequest):
+    from ..services.image_to_fragment_service import vision_parse
+
+    doc = await get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Resolve insertion sort_key from element id if provided
+    insert_after_sort_key = None
+    if body.insert_after_element_id:
+        elements = await get_elements(doc_id)
+        for e in elements:
+            if e["id"] == body.insert_after_element_id:
+                insert_after_sort_key = e["sortKey"]
+                break
+
+    try:
+        elements, placeholders_used = await vision_parse(
+            body.image_base64, body.image_mime_type, doc_id, insert_after_sort_key
+        )
+        return {
+            "elements": elements,
+            "placeholders_used": placeholders_used,
+            "total_elements": len(elements),
+        }
+    except Exception as e:
+        print(f"[Vision Parse] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
