@@ -184,9 +184,14 @@ Figure out the best visual representation based on the subject and topic. You ha
     \node[right] at (2.8,2.6) {\small$y=f(x)$};
   \end{tikzpicture}
 * You CANNOT generate: Photorealistic images, organic illustrations, or any non-geometric art.
-* When placing a TikZ diagram alongside question text, ALWAYS wrap them in side-by-side minipages:
-  \begin{minipage}[t]{0.55\linewidth} ... question text ... \end{minipage}\hfill
-  \begin{minipage}[t]{0.40\linewidth} \begin{tikzpicture} ... \end{tikzpicture} \end{minipage}
+* DIAGRAM PLACEMENT: ALWAYS place diagrams BELOW the question text, NEVER side-by-side. Do NOT use minipages to put text and diagrams next to each other. Use this pattern:
+  \item Question text goes here on its own full-width line(s).
+  \begin{center}
+  \begin{tikzpicture}[scale=0.8]
+    ... diagram code ...
+  \end{tikzpicture}
+  \end{center}
+  \par\noindent\hfill\mbox{\textbf{[X Marks]}}
 * Available TikZ libraries (already loaded in the preamble): arrows.meta, calc, angles, quotes, patterns, decorations.markings, positioning.
 Adapt the complexity to the student's stage (e.g., basic shapes/number lines for primary students, complex slope fields for seniors).
 
@@ -200,7 +205,7 @@ If no syllabus packet is supplied, generate from the provided topic/settings onl
 # LATEX QUALITY & LAYOUT CONTROLS
 1. Math Syntax: No Unicode math (e.g., use \sqrt{}, not \sqrt{} with unicode char).
 2. Environment Integrity: Match all \begin{} and \end{} tags perfectly.
-3. Multipart & Side-by-Side: When generating multipart questions (e.g., Question 1a, 1b) or placing text next to a TikZ diagram, you MUST use the minipage environment to keep elements locked together and prevent awkward page breaks.
+3. Multipart Questions: When generating multipart questions (e.g., Question 1a, 1b), you may use minipages to keep sub-parts together. Do NOT use minipages to place diagrams side-by-side with question text — diagrams always go below.
 4. Native Numbering: You MUST output all questions inside a single, standard \begin{enumerate} ... \end{enumerate} environment. Do NOT use custom labels like \item[\textbf{Question 1:}].
 5. Marks Placement Rule:
 - For short single-line questions, place marks flush-right at the end of the question using:
@@ -301,7 +306,7 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
     prompt_lines.extend([
         f"**DIAGRAM REQUIREMENT:** Include vanilla TikZ diagrams (NO pgfplots) in at least {min_diagrams} of the {settings.numberOfQuestions} questions. "
         "Use hand-drawn Cartesian planes (\\draw[->] axes + \\draw[domain=...] plot), geometric figures, unit circles, vector arrows, or area shading as appropriate to the topic. "
-        "Wrap diagram+text in side-by-side minipages.",
+        "Place ALL diagrams BELOW the question text using \\begin{center}, NEVER side-by-side in minipages.",
         "",
         "Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact."
     ])

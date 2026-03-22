@@ -126,9 +126,7 @@ LaTeX QUALITY RULES:
 - For marks placement on short questions: \unskip\hfill\mbox{\textbf{[X Marks]}}
 - For marks on long/multipart questions: \par\noindent\hfill\mbox{\textbf{[X Marks]}}
 - Use \mbox{...} around marks labels to prevent line-wrapping.
-- For side-by-side text+diagram:
-  \begin{minipage}[t]{0.55\linewidth} ... \end{minipage}\hfill
-  \begin{minipage}[t]{0.40\linewidth} \begin{tikzpicture} ... \end{tikzpicture} \end{minipage}
+- DIAGRAM PLACEMENT: ALWAYS place diagrams BELOW the question text, NEVER side-by-side in minipages. Use \begin{center} \begin{tikzpicture} ... \end{tikzpicture} \end{center} after the question text.
 
 DIAGRAM RULES:
 - Set requires_diagram=true when the question needs or contains a TikZ diagram.
