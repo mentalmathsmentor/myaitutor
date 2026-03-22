@@ -27,7 +27,7 @@ export const ELEMENT_TEMPLATES: ElementTemplate[] = [
 
 \\[ 3x^2 - 12x + 9 = 0 \\]
 
-\\hfill \\textbf{[2 Marks]}`,
+\\par\\noindent\\hfill\\mbox{\\textbf{[2 Marks]}}`,
     metadata: { marks: 2, spaceAfter: '4cm' },
   },
   {
@@ -38,9 +38,9 @@ export const ELEMENT_TEMPLATES: ElementTemplate[] = [
     category: 'Questions',
     defaultContent: `\\item Consider the function $f(x) = x^3 - 3x + 2$.
 \\begin{enumerate}[label=(\\alph*)]
-  \\item Find $f'(x)$. \\hfill \\textbf{[2 Marks]}
-  \\item Find the stationary points and determine their nature. \\hfill \\textbf{[3 Marks]}
-  \\item Sketch the graph of $y = f(x)$. \\hfill \\textbf{[1 Mark]}
+  \\item Find $f'(x)$. \\unskip\\hfill\\mbox{\\textbf{[2 Marks]}}
+  \\item Find the stationary points and determine their nature. \\unskip\\hfill\\mbox{\\textbf{[3 Marks]}}
+  \\item Sketch the graph of $y = f(x)$. \\unskip\\hfill\\mbox{\\textbf{[1 Mark]}}
 \\end{enumerate}`,
     metadata: { marks: 6, spaceAfter: '6cm' },
   },
@@ -50,7 +50,7 @@ export const ELEMENT_TEMPLATES: ElementTemplate[] = [
     label: 'Short Answer [1 Mark]',
     icon: 'MessageSquare',
     category: 'Questions',
-    defaultContent: `\\item Simplify: $(x^2)^3$. \\hfill \\textbf{[1 Mark]}
+    defaultContent: `\\item Simplify: $(x^2)^3$. \\unskip\\hfill\\mbox{\\textbf{[1 Mark]}}
 
 \\vspace{2cm}`,
     metadata: { marks: 1, spaceAfter: '2cm' },

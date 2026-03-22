@@ -465,7 +465,7 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
               </div>
               
               {/* Right Pane - PDF Preview */}
-              <div className="hidden lg:flex flex-1 flex-col">
+              <div className="hidden lg:flex flex-1 flex-col min-w-0">
                 <PdfPreviewPane 
                   pdfUrl={activeBuild?.pdfUrl}
                   isCompiling={isCompiling}

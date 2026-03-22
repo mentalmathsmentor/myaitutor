@@ -1279,7 +1279,16 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setShowCanvas(true)}
+                    onClick={() => {
+                      setShowCanvas(true);
+                      setTimeout(() => {
+                        const el = document.getElementById('mait-native-canvas-container');
+                        if (el) {
+                          const y = el.getBoundingClientRect().top + window.scrollY - 100;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                      }, 150);
+                    }}
                     className="flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
                   >
                     <Code2 className="h-4 w-4" />
@@ -1370,6 +1379,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
         <AnimatePresence>
           {showCanvas && (
             <motion.div
+              id="mait-native-canvas-container"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}

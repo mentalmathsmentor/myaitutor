@@ -58,11 +58,15 @@ async def canvas_generate(request: Request, body: CanvasGenerateRequest):
 
     try:
         latex_source = await generate_worksheet_latex(body.worksheet_request)
-        element_data = parse_monolithic_latex(latex_source)
-
         title = f"{body.worksheet_request.worksheetSettings.subject} Worksheet"
         if body.worksheet_request.topicSummary:
             title = body.worksheet_request.topicSummary[:40]
+
+        def escape_latex(s: str) -> str:
+            return s.replace('\\', '\\textbackslash ').replace('_', '\\_').replace('%', '\\%').replace('$', '\\$').replace('&', '\\&').replace('#', '\\#').replace('{', '\\{').replace('}', '\\}')
+
+        safe_title = escape_latex(title)
+        element_data = parse_monolithic_latex(latex_source, safe_title)
 
         doc = await create_document(body.student_id, title)
         doc_id = doc["id"]

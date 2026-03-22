@@ -41,6 +41,8 @@ export interface Element {
   sortKey: string;
   contentLatex: string;
   label: string;
+  isLocked?: boolean;
+  isCollapsed?: boolean;
   metadata?: {
     marks?: number;
     difficulty?: number;
@@ -454,26 +456,45 @@ export const createDocumentFromWorksheet = (config: {
   };
 
   // Create initial elements
+  const escapeLatex = (str: string) => {
+    if (!str) return '';
+    return String(str)
+      .replace(/\\/g, '\\textbackslash ')
+      .replace(/_/g, '\\_')
+      .replace(/&/g, '\\&')
+      .replace(/%/g, '\\%')
+      .replace(/\$/g, '\\$')
+      .replace(/#/g, '\\#')
+      .replace(/{/g, '\\{')
+      .replace(/}/g, '\\}');
+  };
+  const safeSubject = escapeLatex(config.subject);
+  const safeTopic = escapeLatex(config.topics[0] || 'General Practice');
+  const safeYearLevel = escapeLatex(config.yearLevel || '');
+
   const elements: Element[] = [
     {
       id: `elem_${Date.now()}_preamble`,
       kind: 'preamble',
       sortKey: 'a0',
-      contentLatex: `\\documentclass[11pt, a4paper]{article}
-\\usepackage[a4paper, margin=2cm]{geometry}
-\\usepackage{amsmath, amssymb, amsthm, enumitem}
-\\usepackage{tikz, pgfplots}
-\\usepackage{fancyhdr, lastpage}
-\\usepackage{tcolorbox}
+      contentLatex: `\\documentclass[12pt, a4paper]{article}
+\\usepackage[top=1cm, bottom=1.2cm, left=2cm, right=2cm, headheight=18pt, headsep=12pt, footskip=15pt, includehead, includefoot]{geometry}
+\\usepackage{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}
+\\usepackage[none]{hyphenat}
+\\usepackage[hidelinks]{hyperref}
 \\usetikzlibrary{arrows.meta, calc, angles, quotes}
-\\pgfplotsset{compat=1.18}
-\\setlength{\\parindent}{0pt}
-\\setlength{\\parskip}{1em}
+\\setlength{\\columnsep}{1cm}
+\\setlength{\\columnseprule}{0.4pt}
+\\setlist[enumerate,1]{labelindent=0.4cm,leftmargin=!,labelsep=0.35cm,align=left,widest=99}
 \\pagestyle{fancy}
 \\fancyhf{}
-\\rfoot{Page \\thepage\\ of \\pageref{LastPage}}
+\\lhead{ \\textbf{ MyAITutor.au } }
+\\rhead{ \\textbf{${safeSubject}} }
+\\cfoot{Page \\thepage}
+\\renewcommand{\\headrulewidth}{0.4pt}
 
-\\begin{document}`,
+\\begin{document}
+\\sloppy`,
       label: 'Preamble',
       versionId: 'v1',
       createdAt: now,
@@ -484,14 +505,13 @@ export const createDocumentFromWorksheet = (config: {
       kind: 'header',
       sortKey: 'a1',
       contentLatex: `\\begin{center}
-\\Large\\textbf{${config.subject}}\\\\[0.5em]
-\\large ${config.yearLevel} — ${config.topics[0] || 'General Practice'}
+\\Large\\textbf{${safeSubject}}\\\\[0.5em]
+\\large ${safeYearLevel} — ${safeTopic}
 \\end{center}
 
 \\vspace{1em}
 
-Name: \\underline{\\hspace{8cm}}\\\\[0.5em]
-Date: \\underline{\\hspace{3cm}}
+Name: \\underline{\\hspace{6cm}} \\hfill Date: \\underline{\\hspace{3cm}}
 
 \\vspace{1em}`,
       label: 'Header',
@@ -500,22 +520,70 @@ Date: \\underline{\\hspace{3cm}}
       updatedAt: now,
     },
     {
-      id: `elem_${Date.now()}_questions`,
+      id: `elem_${Date.now()}_questions_start`,
+      kind: 'text_block',
+      sortKey: 'a2_a_start',
+      contentLatex: '\\begin{enumerate}',
+      label: 'List Start',
+      isLocked: true,
+      isCollapsed: true,
+      versionId: 'v1',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: `elem_${Date.now()}_q1`,
       kind: 'question',
-      sortKey: 'a2',
-      contentLatex: `\\begin{enumerate}[label=\\textbf{\\arabic*.}]
-  \\item Evaluate $\\int x^2 \\, dx$. \\hfill \\textbf{[2 Marks]}
-
-  \\vspace{4cm}
-
-  \\item Find the derivative of $f(x) = 3x^3 - 2x^2 + x - 5$. \\hfill \\textbf{[3 Marks]}
-
-  \\vspace{4cm}
-
-  \\item Solve for $x$: $2x + 5 = 15$. \\hfill \\textbf{[2 Marks]}
-\\end{enumerate}`,
-      label: `Questions (Sample)`,
-      metadata: { marks: 7 },
+      sortKey: 'a2_b_001',
+      contentLatex: '\\item Evaluate $\\int x^2 \\, dx$. \\unskip\\hfill\\mbox{\\textbf{[2 Marks]}}\n\n\\vspace{4cm}',
+      label: 'Question 1',
+      metadata: { marks: 2 },
+      versionId: 'v1',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: `elem_${Date.now()}_q2`,
+      kind: 'question',
+      sortKey: 'a2_b_002',
+      contentLatex: '\\item Find the derivative of $f(x) = 3x^3 - 2x^2 + x - 5$. \\par\\noindent\\hfill\\mbox{\\textbf{[3 Marks]}}\n\n\\vspace{4cm}',
+      label: 'Question 2',
+      metadata: { marks: 3 },
+      versionId: 'v1',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: `elem_${Date.now()}_q3`,
+      kind: 'question',
+      sortKey: 'a2_b_003',
+      contentLatex: '\\item Solve for $x$: $2x + 5 = 15$. \\unskip\\hfill\\mbox{\\textbf{[2 Marks]}}',
+      label: 'Question 3',
+      metadata: { marks: 2 },
+      versionId: 'v1',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: `elem_${Date.now()}_questions_end`,
+      kind: 'text_block',
+      sortKey: 'a2_c_end',
+      contentLatex: '\\end{enumerate}',
+      label: 'List End',
+      isLocked: true,
+      isCollapsed: true,
+      versionId: 'v1',
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: `elem_${Date.now()}_watermark`,
+      kind: 'text_block',
+      sortKey: 'a2_d_wm',
+      contentLatex: '\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}',
+      label: 'Watermark',
+      isLocked: false,
+      isCollapsed: false,
       versionId: 'v1',
       createdAt: now,
       updatedAt: now,

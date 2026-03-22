@@ -96,16 +96,22 @@ export function PdfPreviewPane({ pdfUrl, isCompiling }: PdfPreviewPaneProps) {
             <p className="text-white/40 text-sm mt-1">This may take a few seconds</p>
           </div>
         ) : pdfUrl ? (
-          <div
-            className="flex justify-center"
-            style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
-          >
-            <iframe
-              src={pdfUrl}
-              title="PDF Preview"
-              className="bg-white shadow-lg border-0"
-              style={{ width: '210mm', height: '297mm' }}
-            />
+          <div className="w-full flex justify-center pointer-events-auto">
+            <div
+              className="bg-white shadow-2xl origin-top"
+              style={{ 
+                width: '100%',
+                maxWidth: '210mm',
+                aspectRatio: '1 / 1.4142',
+                transform: `scale(${zoom / 100})`
+              }}
+            >
+              <iframe
+                src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                title="PDF Preview"
+                className="w-full h-full border-0"
+              />
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center">
