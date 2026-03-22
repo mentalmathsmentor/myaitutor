@@ -395,6 +395,9 @@ async def generate_worksheet_latex(request: WorksheetRequest) -> str:
             raw_text = response.text.strip()
             print(f"[A.G.E.] Gemini returned {len(raw_text)} chars (attempt {attempt + 1})")
 
+            # Extract and sanitize LaTeX
+            latex_source = _sanitize_latex(_extract_latex(raw_text))
+
             if r"\begin{enumerate}" not in latex_source:
                 raise ValueError("Gemini response did not contain a valid LaTeX enumerate block.")
 
