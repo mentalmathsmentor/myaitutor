@@ -28,6 +28,7 @@ def parse_monolithic_latex(raw_latex: str, title: str = "Worksheet") -> List[Dic
 \\lhead{{ \\textbf{{ MyAITutor.au }} }}
 \\rhead{{ \\textbf{{ {title} }} }}
 \\cfoot{{Page \\thepage}}
+\\rfoot{{\\textcolor{{gray!50}}{{\\tiny \\textit{{myaitutor.au/worksheets}}}}}}
 \\renewcommand{{\\headrulewidth}}{{0.4pt}}
 
 \\begin{{document}}
@@ -36,7 +37,7 @@ def parse_monolithic_latex(raw_latex: str, title: str = "Worksheet") -> List[Dic
     elements.append({
         "kind": "preamble",
         "content_latex": preamble,
-        "label": "Preamble",
+        "label": "Format",
         "is_locked": True,
         "is_collapsed": True,
         "sort_key": "a0"
@@ -140,15 +141,6 @@ Name: \\underline{{\\hspace{{6cm}}}} \\hfill Date: \\underline{{\\hspace{{3cm}}}
         "sort_key": "a2_c_end"
     })
     
-    elements.append({
-        "kind": "text_block",
-        "content_latex": "\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}",
-        "label": "Watermark",
-        "is_locked": False,
-        "is_collapsed": False,
-        "sort_key": "a2_d_wm"
-    })
-
     footer = "\\vfill\n\n\\hrule\n\\vspace{0.5em}\n\\begin{center}\n\\textit{End of Worksheet}\n\\end{center}\n\n\\end{document}"
     elements.append({
         "kind": "footer",

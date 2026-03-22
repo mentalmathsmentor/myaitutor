@@ -497,11 +497,12 @@ export const createDocumentFromWorksheet = (config: {
 \\lhead{ \\textbf{ MyAITutor.au } }
 \\rhead{ \\textbf{${safeSubject}} }
 \\cfoot{Page \\thepage}
+\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}
 \\renewcommand{\\headrulewidth}{0.4pt}
 
 \\begin{document}
 \\sloppy`,
-      label: 'Preamble',
+      label: 'Format',
       versionId: 'v1',
       createdAt: now,
       updatedAt: now,
@@ -556,18 +557,6 @@ Name: \\underline{\\hspace{6cm}} \\hfill Date: \\underline{\\hspace{3cm}}
       label: 'List End',
       isLocked: true,
       isCollapsed: true,
-      versionId: 'v1',
-      createdAt: now,
-      updatedAt: now,
-    },
-    {
-      id: `elem_${Date.now()}_watermark`,
-      kind: 'text_block',
-      sortKey: 'a2_d_wm',
-      contentLatex: '\\rfoot{\\textcolor{gray!50}{\\tiny \\textit{myaitutor.au/worksheets}}}',
-      label: 'Watermark',
-      isLocked: false,
-      isCollapsed: false,
       versionId: 'v1',
       createdAt: now,
       updatedAt: now,
