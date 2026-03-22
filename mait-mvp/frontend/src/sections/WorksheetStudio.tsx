@@ -912,7 +912,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         )}
                       </div>
 
-                      <div className="max-h-[540px] overflow-y-auto p-4">
+                      <div className="max-h-[540px] overflow-y-auto overflow-x-hidden p-4">
                         {legacySyllabusYear ? (
                           <div className="space-y-4">
                             {filteredModules.map((moduleName) => (
@@ -947,16 +947,16 @@ export default function WorksheetStudio({ setCurrentSection }) {
 
                                       return (
                                         <div key={subtopic} className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <button type="button" onClick={() => toggleSubtopic(subtopic)} className="rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
+                                          <div className="flex min-w-0 items-center gap-2">
+                                            <button type="button" onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
                                               {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                             </button>
-                                            <label className="flex flex-1 cursor-pointer items-center gap-3">
+                                            <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                                               <input
                                                 type="checkbox"
                                                 checked={isSubtopicSelected(moduleName, subtopic)}
                                                 onChange={() => toggleSubtopicSelection(moduleName, subtopic)}
-                                                className="h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                                className="h-4 w-4 flex-shrink-0 rounded border-white/20 accent-mait-cyan"
                                               />
                                               <span className="truncate text-xs font-medium uppercase tracking-[0.18em] text-white/55">{subtopic}</span>
                                             </label>
