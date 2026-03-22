@@ -68,6 +68,8 @@ export function InlineCanvas({ config, worksheetRequest, onExpand }: InlineCanva
   const [isInitialized, setIsInitialized] = useState(false);
   const [initError, setInitError] = useState<string | null>(null);
   const [generationWarning, setGenerationWarning] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationReady, setGenerationReady] = useState(false);
   const initRef = useRef(false);
   
   const {
@@ -87,14 +89,23 @@ export function InlineCanvas({ config, worksheetRequest, onExpand }: InlineCanva
     showRevisionPanel,
   } = useCanvasStore();
 
-  // Initialize document from config
+  // Initialize: show scaffold immediately, then fire Gemini in the background.
   useEffect(() => {
     if (!isInitialized && config && !initRef.current) {
       initRef.current = true;
-      const initCanvas = async () => {
+
+      // 1. Show the scaffold right away so the canvas is interactive instantly.
+      const { document: scaffoldDoc, elements: scaffoldElements } = createDocumentFromWorksheet(config);
+      setDocument(scaffoldDoc);
+      setElements(scaffoldElements);
+      setIsInitialized(true);
+
+      // 2. Fire off AI generation in the background.
+      setIsGenerating(true);
+      const generateInBackground = async () => {
         try {
           const studentId = localStorage.getItem('mait_student_id') || 'anonymous_student';
-          
+
           // Use the full WorksheetRequest from the studio if available (preferred path).
           // Fall back to a minimal request built from config if called without it.
           const requestBody = worksheetRequest ?? {
@@ -134,28 +145,25 @@ export function InlineCanvas({ config, worksheetRequest, onExpand }: InlineCanva
               worksheet_request: requestBody,
             })
           });
-          
+
           if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
             throw new Error(errData?.detail || "Failed to generate canvas");
           }
           const data = await response.json();
+          // Replace the scaffold with the real Gemini-generated elements.
           setDocument(data.document);
           setElements(data.elements);
+          setGenerationReady(true);
         } catch (e: any) {
           console.error("[Canvas] /canvas/generate failed:", e.message);
-          // Fall back to a local scaffold so the canvas is still usable.
-          // The placeholder question makes clear that AI generation did not run.
-          const { document: localDoc, elements: localElements } = createDocumentFromWorksheet(config);
-          setDocument(localDoc);
-          setElements(localElements);
-          setGenerationWarning(`AI generation unavailable: ${e.message}. The canvas loaded with a blank scaffold — add questions manually or check that the backend is running.`);
+          setGenerationWarning(`AI generation failed: ${e.message}. You can edit the scaffold manually or check that the backend is running.`);
         } finally {
-          setIsInitialized(true);
+          setIsGenerating(false);
         }
       };
-      
-      initCanvas();
+
+      generateInBackground();
     }
   }, [config, isInitialized, setDocument, setElements]);
 
@@ -449,7 +457,27 @@ export function InlineCanvas({ config, worksheetRequest, onExpand }: InlineCanva
             <div className="flex flex-col lg:flex-row" style={{ minHeight: '600px', maxHeight: '800px' }}>
               {/* Left Pane - Element List */}
               <div className="w-full lg:w-1/2 flex flex-col border-b lg:border-b-0 lg:border-r border-white/10">
-                {/* Generation Warning Banner */}
+                {/* AI generation progress / result banners */}
+                {isGenerating && (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-mait-cyan/10 border-b border-mait-cyan/20">
+                    <Loader2 className="w-4 h-4 text-mait-cyan animate-spin flex-shrink-0" />
+                    <p className="text-mait-cyan/80 text-xs flex-1">Generating questions with AI — the canvas is ready to use while you wait...</p>
+                  </div>
+                )}
+                {generationReady && !isGenerating && (
+                  <div className="flex items-center gap-3 px-4 py-3 bg-green-500/10 border-b border-green-500/20">
+                    <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <p className="text-green-300/80 text-xs flex-1">AI questions loaded! Hit <strong>Preview</strong> to compile the PDF.</p>
+                    <button
+                      onClick={() => { setGenerationReady(false); handleCompile(); }}
+                      className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-300 hover:bg-green-500/30 transition"
+                    >Compile Now</button>
+                    <button
+                      onClick={() => setGenerationReady(false)}
+                      className="text-green-400/50 hover:text-green-400 text-xs"
+                    >✕</button>
+                  </div>
+                )}
                 {generationWarning && (
                   <div className="flex items-start gap-3 px-4 py-3 bg-yellow-500/10 border-b border-yellow-500/20">
                     <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />

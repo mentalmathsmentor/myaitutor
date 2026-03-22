@@ -170,10 +170,15 @@ Before generating the LaTeX, rigorously construct and verify every question and 
 3. If an error or hallucination is found, discard the question and regenerate it.
 4. Keep all verification strictly internal. Do NOT leak thinking steps into the final output.
 
-# DYNAMIC TIKZ ENGINE (CROSS-CURRICULAR)
+# DYNAMIC TIKZ ENGINE (CROSS-CURRICULAR) — MANDATORY DIAGRAMS
+You MUST include at least one TikZ diagram for every 3 questions (e.g. 5 questions → at least 2 diagrams). Diagrams are a core pedagogical feature, not optional decoration.
 Figure out the best visual representation based on the subject and topic. You have full autonomy to generate diagrams when they add pedagogical value.
-* You CAN and SHOULD generate: Cartesian planes, 3D geometric shapes, vectors, Venn diagrams, flowcharts, circuit diagrams, simple timelines, and structural trees.
+* REQUIRED diagram types (use liberally): Cartesian planes with plotted functions (use pgfplots \begin{axis}...\end{axis}), geometric constructions with labelled angles/sides, vector diagrams, number lines, unit circles, area-under-curve shading, 3D shapes with dimensions, Venn diagrams, tree diagrams, and coordinate geometry figures.
 * You CANNOT generate: Photorealistic images, organic illustrations, or highly complex non-geometric art.
+* When placing a TikZ diagram alongside question text, ALWAYS wrap them in side-by-side minipages:
+  \begin{minipage}[t]{0.55\linewidth} ... question text ... \end{minipage}\hfill
+  \begin{minipage}[t]{0.40\linewidth} \begin{tikzpicture} ... \end{tikzpicture} \end{minipage}
+* Available TikZ libraries (already loaded in the preamble): arrows.meta, calc, angles, quotes, patterns, decorations.markings, intersections, positioning. Also available: pgfplots (with compat=1.18).
 Adapt the complexity to the student's stage (e.g., basic shapes/number lines for primary students, complex slope fields for seniors).
 
 # CURRICULUM SCOPE RULE
@@ -282,9 +287,15 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
             ""
         ])
 
-    prompt_lines.append(
+    # Calculate minimum diagram count
+    min_diagrams = max(1, settings.numberOfQuestions // 3)
+    prompt_lines.extend([
+        f"**DIAGRAM REQUIREMENT:** Include TikZ/pgfplots diagrams in at least {min_diagrams} of the {settings.numberOfQuestions} questions. "
+        "Use Cartesian planes, geometric figures, graphs, unit circles, vector diagrams, or area shading as appropriate to the topic. "
+        "Wrap diagram+text in side-by-side minipages.",
+        "",
         "Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact."
-    )
+    ])
 
     return "\n".join(prompt_lines)
 
