@@ -23,6 +23,7 @@ import { ScanQuestionModal } from './ScanQuestionModal';
 import { RevisionPanel } from './RevisionPanel';
 import { RevisionTimeline } from './RevisionTimeline';
 import { CompileErrorBanner } from './CompileErrorBanner';
+import { API_URL } from '@/config/api';
 
 interface InlineCanvasProps {
   config: {
@@ -38,7 +39,7 @@ interface InlineCanvasProps {
 const compileCanvasPdf = async (latexSource: string): Promise<{ success: boolean; pdfUrl?: string; error?: string }> => {
   try {
     const studentId = localStorage.getItem('mait_student_id') || 'anonymous_student';
-    const response = await fetch('/canvas/compile', {
+    const response = await fetch(`${API_URL}/canvas/compile`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -90,7 +91,7 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
         try {
           const studentId = localStorage.getItem('mait_student_id') || 'anonymous_student';
           
-          const response = await fetch('/canvas/generate', {
+          const response = await fetch(`${API_URL}/canvas/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
             body: JSON.stringify({
@@ -134,8 +135,11 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
           setDocument(data.document);
           setElements(data.elements);
         } catch (e: any) {
-          console.error("Failed to init canvas from config", e);
-          setInitError(e.message || "Failed to initialize canvas");
+          console.warn("Backend canvas/generate failed, falling back to local scaffold:", e.message);
+          // Fall back to local document creation so the canvas is still usable
+          const { document: localDoc, elements: localElements } = createDocumentFromWorksheet(config);
+          setDocument(localDoc);
+          setElements(localElements);
         } finally {
           setIsInitialized(true);
         }
@@ -206,7 +210,7 @@ export function InlineCanvas({ config, onExpand }: InlineCanvasProps) {
       
       // Update each element (in a real app, this might be a single bulk endpoint)
       for (const e of elements) {
-        await fetch(`/canvas/elements/${e.id}`, {
+        await fetch(`${API_URL}/canvas/elements/${e.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
           body: JSON.stringify({
