@@ -16,11 +16,10 @@ def parse_monolithic_latex(raw_latex: str, title: str = "Worksheet") -> List[Dic
     
     preamble = f"""\\documentclass[12pt, a4paper]{{article}}
 \\usepackage[top=1cm, bottom=1.2cm, left=2cm, right=2cm, headheight=18pt, headsep=12pt, footskip=15pt, includehead, includefoot]{{geometry}}
-\\usepackage{{amsmath, amssymb, fancyhdr, graphicx, tikz, pgfplots, enumitem, tcolorbox, needspace, multicol}}
+\\usepackage{{amsmath, amssymb, fancyhdr, graphicx, tikz, enumitem, tcolorbox, needspace, multicol}}
 \\usepackage[none]{{hyphenat}}
 \\usepackage[hidelinks]{{hyperref}}
-\\usetikzlibrary{{arrows.meta, calc, angles, quotes, patterns, decorations.markings, intersections, positioning}}
-\\pgfplotsset{{compat=1.18}}
+\\usetikzlibrary{{arrows.meta, calc, angles, quotes, patterns, decorations.markings, positioning}}
 \\setlength{{\\columnsep}}{{1cm}}
 \\setlength{{\\columnseprule}}{{0.4pt}}
 \\setlist[enumerate,1]{{labelindent=0.4cm,leftmargin=!,labelsep=0.35cm,align=left,widest=99}}

@@ -173,12 +173,21 @@ Before generating the LaTeX, rigorously construct and verify every question and 
 # DYNAMIC TIKZ ENGINE (CROSS-CURRICULAR) — MANDATORY DIAGRAMS
 You MUST include at least one TikZ diagram for every 3 questions (e.g. 5 questions → at least 2 diagrams). Diagrams are a core pedagogical feature, not optional decoration.
 Figure out the best visual representation based on the subject and topic. You have full autonomy to generate diagrams when they add pedagogical value.
-* REQUIRED diagram types (use liberally): Cartesian planes with plotted functions (use pgfplots \begin{axis}...\end{axis}), geometric constructions with labelled angles/sides, vector diagrams, number lines, unit circles, area-under-curve shading, 3D shapes with dimensions, Venn diagrams, tree diagrams, and coordinate geometry figures.
-* You CANNOT generate: Photorealistic images, organic illustrations, or highly complex non-geometric art.
+* REQUIRED diagram types (use liberally): Cartesian planes with drawn axes and plotted curves, geometric constructions with labelled angles/sides, vector diagrams, number lines, unit circles, area-under-curve shading, triangles with dimensions, Venn diagrams, tree diagrams, and coordinate geometry figures.
+* You CANNOT use pgfplots (\begin{axis}) — it is not installed. Draw ALL graphs manually using vanilla TikZ \draw commands.
+* VANILLA TIKZ GRAPH PATTERN (use this for any function graph):
+  \begin{tikzpicture}[scale=0.8]
+    \draw[->] (-0.3,0) -- (3.5,0) node[right] {$x$};
+    \draw[->] (0,-0.3) -- (0,3.5) node[above] {$y$};
+    \foreach \x in {1,2,3} { \draw (\x,0.05) -- (\x,-0.05) node[below] {\small$\x$}; }
+    \draw[thick,domain=0:3,samples=60] plot (\x, {(\x)^2/3});
+    \node[right] at (2.8,2.6) {\small$y=f(x)$};
+  \end{tikzpicture}
+* You CANNOT generate: Photorealistic images, organic illustrations, or any non-geometric art.
 * When placing a TikZ diagram alongside question text, ALWAYS wrap them in side-by-side minipages:
   \begin{minipage}[t]{0.55\linewidth} ... question text ... \end{minipage}\hfill
   \begin{minipage}[t]{0.40\linewidth} \begin{tikzpicture} ... \end{tikzpicture} \end{minipage}
-* Available TikZ libraries (already loaded in the preamble): arrows.meta, calc, angles, quotes, patterns, decorations.markings, intersections, positioning. Also available: pgfplots (with compat=1.18).
+* Available TikZ libraries (already loaded in the preamble): arrows.meta, calc, angles, quotes, patterns, decorations.markings, positioning.
 Adapt the complexity to the student's stage (e.g., basic shapes/number lines for primary students, complex slope fields for seniors).
 
 # CURRICULUM SCOPE RULE
@@ -290,8 +299,8 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
     # Calculate minimum diagram count
     min_diagrams = max(1, settings.numberOfQuestions // 3)
     prompt_lines.extend([
-        f"**DIAGRAM REQUIREMENT:** Include TikZ/pgfplots diagrams in at least {min_diagrams} of the {settings.numberOfQuestions} questions. "
-        "Use Cartesian planes, geometric figures, graphs, unit circles, vector diagrams, or area shading as appropriate to the topic. "
+        f"**DIAGRAM REQUIREMENT:** Include vanilla TikZ diagrams (NO pgfplots) in at least {min_diagrams} of the {settings.numberOfQuestions} questions. "
+        "Use hand-drawn Cartesian planes (\\draw[->] axes + \\draw[domain=...] plot), geometric figures, unit circles, vector arrows, or area shading as appropriate to the topic. "
         "Wrap diagram+text in side-by-side minipages.",
         "",
         "Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact."
@@ -348,7 +357,7 @@ def _sanitize_latex(latex: str) -> str:
     # Remove any \usepackage that is not in our allowed list
     allowed_packages = {
         "amsmath", "amssymb", "amsthm", "geometry", "enumitem",
-        "fancyhdr", "lastpage", "tikz", "pgfplots", "tcolorbox",
+        "fancyhdr", "lastpage", "tikz", "tcolorbox",
         "graphicx", "multicol", "needspace", "hyphenat", "hyperref"
     }
     def _filter_usepackage(m: re.Match) -> str:
