@@ -334,6 +334,59 @@ class ModelService {
             }
         }
     }
+
+    /**
+     * Unload the model and clear cache if requested
+     * @param {boolean} shouldCache - If false, deletes all webllm/model caches
+     */
+    async unloadModel(shouldCache = false) {
+        if (this.engine) {
+            try {
+                await this.engine.unload();
+            } catch (e) {
+                console.warn("Engine unload error:", e);
+            }
+            this.engine = null;
+            // Additional dispose to clear GPU memory as per user request
+            if (this.engine && typeof this.engine.dispose === 'function') {
+                try { this.engine.dispose(); } catch (e) {}
+            }
+        }
+        
+        await this.reset();
+
+        if (!shouldCache && typeof caches !== 'undefined') {
+            try {
+                const cacheNames = await caches.keys();
+                for (const name of cacheNames) {
+                    if (name.includes('webllm') || name.includes('model')) {
+                        await caches.delete(name);
+                    }
+                }
+                console.log("Model caches cleared.");
+            } catch (e) {
+                console.warn("Failed to clear caches:", e);
+            }
+        }
+    }
+
+    /**
+     * Check if ANY model is already cached (best effort)
+     */
+    async isModelCached(modelId) {
+        if (typeof caches === 'undefined') return false;
+        try {
+            const cacheNames = await caches.keys();
+            for (const name of cacheNames) {
+                if (name.includes('webllm') || name.includes('model')) {
+                    // For WebLLM, cache storage often contains "webllm/model" or similar folders
+                    // Checking if they exist is a reasonable proxy for "cache exists"
+                    return true;
+                }
+            }
+        } catch (e) {}
+        return false;
+    }
 }
 
 export const modelService = new ModelService();

@@ -12,6 +12,7 @@ import NewLandingPage from './NewLandingPage'
 import AIResources from './AIResources'
 import WorksheetGenerator from './WorksheetGenerator'
 import ChatInterface from './features/slm/components/ChatInterface'
+import ModelConsentGate from './features/slm/components/ModelConsentGate'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
 import PastPapers from './PastPapers'
 import TopicSidebar from './components/TopicSidebar'
@@ -150,6 +151,7 @@ function App() {
     const autoSavePromptShown = useRef(false)
     const [pendingQueue, setPendingQueue] = useState([])
     const [showQueueConfirm, setShowQueueConfirm] = useState(null) // string (pending text) or null
+    const [cachedModels, setCachedModels] = useState({}) // track which models are cached
 
     // Inactivity Tracker State
     const [isIdle, setIsIdle] = useState(false)
@@ -544,10 +546,31 @@ function App() {
         }
     }, [loading, pendingQueue]);
 
-    // Auto-start local brain when entering demo mode
+    // Sync cached models state and handle teardown for demo mode
     useEffect(() => {
-        if (isDemoMode && !isModelReady && !downloadProgress) {
-            startLocalBrain(demoModelSize);
+        if (isDemoMode) {
+            // Check cache for all available models
+            const checkCache = async () => {
+                const models = Object.keys(modelService.constructor.getAvailableModels());
+                const cacheStatus = {};
+                for (const key of models) {
+                    cacheStatus[key] = await modelService.isModelCached(key);
+                }
+                setCachedModels(cacheStatus);
+            };
+            checkCache();
+
+            // Setup teardown
+            const handleBeforeUnload = () => {
+                const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
+                modelService.unloadModel(keepCached);
+            };
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            return () => {
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
+                modelService.unloadModel(keepCached);
+            };
         }
     }, [isDemoMode]);
 
@@ -1248,16 +1271,33 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                     </div>
                 )}
 
-                {/* MAIN CONTENT: Chat + Sidebar */}
+                {/* MAIN CONTENT: Chat + Sidebar or Consent Gate */}
                 <div className="flex-1 flex overflow-hidden">
                     {/* Chat column */}
                     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-                        {/* CHAT AREA */}
-                        <div
-                            ref={chatContainerRef}
-                            onScroll={handleScroll}
-                            className="flex-1 overflow-y-auto"
-                        >
+                        {isDemoMode && (!isModelReady || downloadProgress !== null) ? (
+                            <ModelConsentGate 
+                                models={modelService.constructor.getAvailableModels()}
+                                cachedModels={cachedModels}
+                                downloadProgress={downloadProgress}
+                                onStart={(modelId, shouldCache) => {
+                                    setDemoModelSize(modelId);
+                                    startLocalBrain(modelId);
+                                }}
+                                onCancel={() => {
+                                    modelService.reset();
+                                    setDownloadProgress(null);
+                                    setDownloadError(null);
+                                }}
+                            />
+                        ) : (
+                            <>
+                                {/* CHAT AREA */}
+                                <div
+                                    ref={chatContainerRef}
+                                    onScroll={handleScroll}
+                                    className="flex-1 overflow-y-auto"
+                                >
                             <div className="max-w-2xl mx-auto px-4 py-6">
                                 <div className="space-y-5">
                                     {messages.map((msg, idx) => (
@@ -1349,6 +1389,8 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                                 </button>
                             </form>
                         </footer>
+                            </>
+                        )}
                     </div>
 
                     {/* Topic Sidebar */}
