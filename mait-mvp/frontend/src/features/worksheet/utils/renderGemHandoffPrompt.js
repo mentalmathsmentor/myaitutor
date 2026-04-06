@@ -24,11 +24,11 @@ export function renderGemHandoffPrompt(request) {
   handoff += `- **Topic Summary:** ${topicSummary}\n`;
   handoff += `- **Number of Questions:** ${settings.numberOfQuestions}\n`;
   handoff += `- **Difficulty:** ${settings.difficulty}\n`;
-  handoff += `- **Header Spaces:** ${settings.headerSpaces || 'None'}\n`;
+  if (settings.headerSpaces) handoff += `- **Header Spaces:** ${settings.headerSpaces}\n`;
   handoff += `- **Working Space:** ${settings.workingSpace}\n`;
-  handoff += `- **Marks:** ${settings.marks}\n`;
-  handoff += `- **Answer Key:** ${settings.answerKey}\n`;
-  handoff += `- **WATERMARK:** ${settings.watermark ? 'ON (Inject URL into rfoot)' : 'OFF (Leave rfoot empty)'}\n`;
+  if (settings.marks !== 'No marks.') handoff += `- **Marks:** ${settings.marks}\n`;
+  if (settings.answerKey !== 'No answer key.') handoff += `- **Answer Key:** ${settings.answerKey}\n`;
+  if (!settings.watermark) handoff += `- **WATERMARK:** OFF (Leave rfoot empty)\n`;
   handoff += `- **MODE:** ${settings.mode}\n\n`;
 
   if (request.legacyFields.manual_prompt) {
