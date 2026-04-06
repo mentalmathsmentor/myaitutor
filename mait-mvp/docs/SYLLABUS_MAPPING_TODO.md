@@ -1,3 +1,12 @@
+# Implementation Backlog
+
+## Top Priority — Quick Wins
+
+- [ ] **Send Feedback / Contact form** — Add a "Send Feedback" or "Help / Contact" form in two places: (1) inside the worksheet generator (e.g. sidebar or below the generate button), and (2) in the site-wide footer. Should be a simple contact form (name, email, message) or mailto link. High value for collecting teacher input early.
+- [ ] **Send Feedback button (quick)** — As a quick-win interim, add a simple mailto link or feedback button before building the full form.
+
+---
+
 # Syllabus Dot-Point Mapping — Future Work
 
 This file tracks which subjects have their syllabus dot-points mapped in `syllabus_data.json` and `syllabus_registry.json`, enabling the structured dot-point selection UI in the worksheet generator.
