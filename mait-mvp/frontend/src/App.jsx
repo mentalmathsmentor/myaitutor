@@ -1,25 +1,25 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
-import 'katex/dist/katex.min.css'
 import ErrorBoundary from './components/ErrorBoundary'
 import { Send, Battery, BatteryWarning, BrainCircuit, Download, Cpu, XCircle, Activity, ArrowLeft, Play, RefreshCw, AlertTriangle, Zap, FlaskConical, Timer, TimerOff, Trash2, LogOut, Save, X, ListPlus, Clock, BookOpen } from 'lucide-react'
 import { GoogleLogin } from '@react-oauth/google'
 import { modelService } from './features/slm/services/ModelService'
 import Navigation from './components/Navigation'
-import NewLandingPage from './NewLandingPage'
-import AIResources from './AIResources'
-import WorksheetGenerator from './WorksheetGenerator'
-import ChatInterface from './features/slm/components/ChatInterface'
+const NewLandingPage = lazy(() => import('./NewLandingPage'))
+const AIResources = lazy(() => import('./AIResources'))
+const WorksheetGenerator = lazy(() => import('./WorksheetGenerator'))
+const ChatInterface = lazy(() => import('./features/slm/components/ChatInterface'))
+const PastPapers = lazy(() => import('./PastPapers'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 import ModelConsentGate from './features/slm/components/ModelConsentGate'
 import KeystrokeAnalytics from './components/KeystrokeAnalytics'
-import PastPapers from './PastPapers'
 import TopicSidebar from './components/TopicSidebar'
-import PrivacyPolicy from './pages/PrivacyPolicy'
 import { useKeystrokeTracker } from './hooks/useKeystrokeTracker'
 import useAuth from './hooks/useAuth'
 import AvatarDisplay from './components/AvatarDisplay'
+import { useIsMobileOrReduced } from './hooks/useIsMobileOrReduced'
 
 import { MathEngineService } from './features/math/MathEngineService'
 import { MathRouter } from './features/math/MathRouter'
@@ -79,8 +79,17 @@ function MarketingPageShell({ children, className = '' }) {
     )
 }
 
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[hsl(230,25%,5%)]">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white/70" />
+    </div>
+  );
+}
+
 // page: 'landing' | 'resources' | 'worksheets' | 'app' | 'demo'
 function App() {
+    const isMobile = useIsMobileOrReduced()
     const [page, setPage] = useState(getPageFromPath)
     const [showLocalChat, setShowLocalChat] = useState(false)
     const [showMobileSyllabus, setShowMobileSyllabus] = useState(false)
@@ -871,7 +880,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (showLocalChat) {
         return (
             <div className="relative z-50 min-h-screen bg-cosmic noise-overlay">
-                <ChatInterface onBack={() => setShowLocalChat(false)} />
+                <Suspense fallback={<PageLoader />}>
+                    <ChatInterface onBack={() => setShowLocalChat(false)} />
+                </Suspense>
             </div>
         );
     }
@@ -888,7 +899,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
         return (
             <>
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
-                <ErrorBoundary><NewLandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
+                <Suspense fallback={<PageLoader />}>
+                    <ErrorBoundary><NewLandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
+                </Suspense>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
             </>
         )
@@ -900,7 +913,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <MarketingPageShell>
                     <div className="pt-20 lg:pt-24">
-                        <ErrorBoundary><AIResources /></ErrorBoundary>
+                        <Suspense fallback={<PageLoader />}>
+                            <ErrorBoundary><AIResources /></ErrorBoundary>
+                        </Suspense>
                     </div>
                 </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
@@ -914,7 +929,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <MarketingPageShell>
                     <div className="pt-20 lg:pt-24">
-                        <ErrorBoundary><WorksheetGenerator navigate={navigateTo} /></ErrorBoundary>
+                        <Suspense fallback={<PageLoader />}>
+                            <ErrorBoundary><WorksheetGenerator navigate={navigateTo} /></ErrorBoundary>
+                        </Suspense>
                     </div>
                 </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
@@ -928,7 +945,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <MarketingPageShell>
                     <div className="pt-20 lg:pt-24">
-                        <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
+                        <Suspense fallback={<PageLoader />}>
+                            <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
+                        </Suspense>
                     </div>
                 </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
@@ -942,7 +961,9 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 <Navigation currentPage={page} navigate={navigateTo} onLoginClick={handleLoginClick} authUser={authUser} onLogout={handleLogout} />
                 <MarketingPageShell>
                     <div className="pt-20 lg:pt-24 min-h-screen">
-                        <ErrorBoundary><PastPapers /></ErrorBoundary>
+                        <Suspense fallback={<PageLoader />}>
+                            <ErrorBoundary><PastPapers /></ErrorBoundary>
+                        </Suspense>
                     </div>
                 </MarketingPageShell>
                 <LoginModal show={showLoginModal} onClose={() => setShowLoginModal(false)} onSubmit={handleLoginSubmit} onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }} onGoogleSuccess={handleGoogleSuccess} authLoading={authLoading} />
@@ -1096,8 +1117,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         {/* Local SLM Toggle - only in full mode (demo auto-starts it) */}
                         {!isDemoMode && (
                             <button
-                                onClick={() => { setShowLocalChat(true); startLocalBrain('large'); }}
-                                className="flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
+                                disabled={isMobile}
+                                title={isMobile ? 'Local AI requires a desktop browser with 4GB+ RAM' : ''}
+                                onClick={() => { if (isMobile) return; setShowLocalChat(true); startLocalBrain('balanced'); }}
+                                className={`flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide${isMobile ? ' opacity-40 cursor-not-allowed' : ''}`}
                             >
                                 <Cpu size={13} />
                                 <span className="hidden sm:inline">LOCAL CORE</span>

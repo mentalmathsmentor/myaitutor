@@ -31,14 +31,10 @@ export default defineConfig({
             'react',
             'react-dom',
             'react-markdown',
-            'remark-math',
-            'rehype-katex',
-            'katex',
             'lucide-react',
             'clsx',
             'tailwind-merge',
             'framer-motion',
-            '@mlc-ai/web-llm',
         ],
         esbuildOptions: {
             target: 'esnext'

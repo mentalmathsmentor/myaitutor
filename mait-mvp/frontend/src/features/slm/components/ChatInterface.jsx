@@ -31,6 +31,9 @@ const ChatInterface = ({ onBack }) => {
             }
         };
         init();
+        return () => {
+            modelService.unloadModel();
+        };
     }, []);
 
     const scrollToBottom = () => {

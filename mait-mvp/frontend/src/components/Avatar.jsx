@@ -1,5 +1,5 @@
 import React from 'react';
-import mateAvatar from '../assets/mate-avatar.png';
+import mateAvatar from '../assets/mate-avatar.webp';
 
 const Avatar = ({ message }) => {
     return (
@@ -11,6 +11,7 @@ const Avatar = ({ message }) => {
                 <img
                     src={mateAvatar}
                     alt="Mate Avatar"
+                    loading="lazy"
                     className="w-28 h-auto drop-shadow-2xl transition-all duration-300 transform group-hover:scale-110 group-hover:-rotate-3 animate-float"
                 />
 

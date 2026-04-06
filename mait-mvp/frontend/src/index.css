@@ -109,6 +109,7 @@ body {
   border-radius: 50%;
   filter: blur(80px);
   opacity: 0.4;
+  will-change: transform;
   animation: orb-float 20s ease-in-out infinite;
 }
 
@@ -1120,5 +1121,28 @@ body {
 @layer utilities {
   .animate-progress {
     animation: progress 3s linear forwards;
+  }
+}
+
+/* Mobile performance: disable expensive GPU effects */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .orb {
+    animation: none !important;
+    filter: blur(40px);
+    opacity: 0.2;
+    will-change: auto;
+  }
+
+  .orb-3 {
+    display: none;
+  }
+
+  .math-particle,
+  .math-particles {
+    display: none;
+  }
+
+  .noise-overlay::before {
+    display: none;
   }
 }

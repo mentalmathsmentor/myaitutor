@@ -4,7 +4,6 @@ import { Search, CheckCircle2, ChevronRight, ChevronDown, ListPlus, Edit3 } from
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 import MathInput from '../MathInput';
 
 export default function Step2Topics({

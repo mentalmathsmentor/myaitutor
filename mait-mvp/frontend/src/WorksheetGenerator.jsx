@@ -673,8 +673,24 @@ export default function WorksheetGenerator({ navigate }) {
               Your worksheet instructions have been copied to your clipboard. Paste them into the Gemini Gem to generate your worksheet.
             </p>
             <div className="mt-5">
-              <img src={modelSelectorHint} alt="Select Deep Think mode" className="mx-auto rounded-2xl border border-white/10" />
+              <img src={modelSelectorHint} alt="Select Deep Think mode" loading="lazy" className="mx-auto rounded-2xl border border-white/10" />
             </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(generatePrompt());
+                  setIsCopied(true);
+                  setTimeout(() => setIsCopied(false), 2000);
+                } catch {
+                  // silently fail — primary copy already happened
+                }
+              }}
+              className="mx-auto mt-3 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
+            >
+              <Copy size={14} />
+              {isCopied ? 'Copied!' : 'Copy prompt again'}
+            </button>
             {!showCloseButton && (
               <div className="mt-5">
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
@@ -1364,7 +1380,15 @@ export default function WorksheetGenerator({ navigate }) {
               </div>
               <div className="space-y-3">
                 <p className="text-sm text-white/60">Make sure Deep Think / Extended Thinking is selected for best results.</p>
-                <img src={modelSelectorHint} alt="Select thinking mode" className="rounded-2xl border border-white/10" />
+                <img src={modelSelectorHint} alt="Select thinking mode" loading="lazy" className="rounded-2xl border border-white/10" />
+                <button
+                  type="button"
+                  onClick={copyToClipboard}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
+                >
+                  <Copy size={14} />
+                  Copy prompt to clipboard
+                </button>
               </div>
             </div>
           </div>
