@@ -28,6 +28,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { buildWorksheetRequest } from './features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from './features/worksheet/utils/renderGemHandoffPrompt';
+import ZeroCodeOnboardingModal from './features/onboarding/components/ZeroCodeOnboardingModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
 
@@ -640,6 +641,7 @@ export default function WorksheetGenerator({ navigate }) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(147,51,234,0.2),_transparent_36%),linear-gradient(180deg,_rgba(46,16,101,0.32)_0%,_rgba(8,12,24,0.94)_32%,_rgba(8,12,24,1)_100%)] pt-24 pb-10">
+      <ZeroCodeOnboardingModal />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,_rgba(168,85,247,0.12),_transparent_32%),radial-gradient(circle_at_86%_18%,_rgba(139,92,246,0.14),_transparent_28%),radial-gradient(circle_at_50%_100%,_rgba(91,33,182,0.1),_transparent_30%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#190b34]/70 via-[#140d2d]/35 to-transparent" />
       <div className="relative">
