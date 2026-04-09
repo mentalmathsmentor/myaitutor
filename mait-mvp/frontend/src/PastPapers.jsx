@@ -354,13 +354,13 @@ export default function PastPapers({ navigate }) {
     }
 
     return (
-        <div className="h-screen pt-14 flex flex-col overflow-hidden bg-cosmic noise-overlay">
+        <div className="min-h-screen pt-14 flex flex-col bg-cosmic noise-overlay">
 
             {/* Body: sidebar + viewer */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1">
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
-                <aside className="w-64 shrink-0 flex flex-col overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
+                <aside className="w-64 shrink-0 flex flex-col border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm relative z-0">
 
                     {/* Exam Timer */}
                     <ExamTimer suggestedDuration={suggestedDuration} />
@@ -473,7 +473,7 @@ export default function PastPapers({ navigate }) {
 
                 {/* ── Viewer ──────────────────────────────────────────────── */}
                 {/* ── Resource Dashboard ────────────────────────────────────────── */}
-                <main className="flex-1 overflow-y-auto custom-scrollbar bg-background/20">
+                <main className="flex-1 bg-background/20">
                     <div className="max-w-5xl mx-auto px-6 py-12">
                         {/* Intro Section */}
                         <div className="mb-12">

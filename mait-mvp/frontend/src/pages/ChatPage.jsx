@@ -17,47 +17,26 @@ import { API_URL } from '../config/api'
 import { getSavedAuthUser } from '../lib/auth'
 import { navigateTo } from '../lib/navigation'
 
+import { useUIStore } from '../stores/uiStore'
+import { useChatStore } from '../stores/chatStore'
+import { useModelStore } from '../stores/modelStore'
+import { useTimerStore } from '../stores/timerStore'
+
 export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode }) {
-    const [showLocalChat, setShowLocalChat] = useState(false)
-    const [showMobileSyllabus, setShowMobileSyllabus] = useState(false)
+    const { showLocalChat, setShowLocalChat, showMobileSyllabus, setShowMobileSyllabus, showKeystrokePanel, setShowKeystrokePanel, showOverlay, setShowOverlay, showAutoSavePrompt, setShowAutoSavePrompt, showQueueConfirm, setShowQueueConfirm, autoSaveEnabled, setAutoSaveEnabled, isIdle, setIsIdle } = useUIStore();
+    const { messages, setMessages, input, setInput, loading, setLoading, context, setContext, messageQueue, setMessageQueue, enqueue, dequeue, pendingQueue, setPendingQueue, clearHistory } = useChatStore();
+    const { isModelReady, setModelReady, modelLoading, setModelLoading, downloadProgress, setDownloadProgress, demoModelSize, setDemoModelSize, localBrainChoice, setLocalBrainChoice, loadedModelName, setLoadedModelName, downloadError, setDownloadError, webGPUError, setWebGPUError, showModelSwitchConfirm, setShowModelSwitchConfirm, cachedModels, setCachedModels } = useModelStore();
+    const { currentTime, tick, studyTimerRunning, setStudyTimerRunning, studyTimerSeconds, setStudyTimerSeconds, startTimer, stopTimer, resetTimer, incrementTimer } = useTimerStore();
 
-    const [context, setContext] = useState(null)
-    const [messages, setMessages] = useState([
-        { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
-    ])
-
-    const [input, setInput] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [modelLoading, setModelLoading] = useState("Initializing...")
-    const [isModelReady, setIsModelReady] = useState(false)
-    const [downloadProgress, setDownloadProgress] = useState(null)
-    const [showOverlay, setShowOverlay] = useState(false)
-    const [messageQueue, setMessageQueue] = useState([])
     const [userProfile, setUserProfile] = useState(() => {
         const saved = getSavedAuthUser();
         return { nickname: saved?.name?.split(' ')[0] || 'Mate', subject: 'Mathematics Advanced' };
     })
-    const [currentTime, setCurrentTime] = useState(new Date())
-    const [showKeystrokePanel, setShowKeystrokePanel] = useState(false)
-    const [studyTimerRunning, setStudyTimerRunning] = useState(false)
-    const [studyTimerSeconds, setStudyTimerSeconds] = useState(0)
+    
     const endOfMsgRef = useRef(null)
-
-    const [demoModelSize, setDemoModelSize] = useState('balanced')
-    const [localBrainChoice, setLocalBrainChoice] = useState(null)
-    const [downloadError, setDownloadError] = useState(null)
-    const [webGPUError, setWebGPUError] = useState(null)
-    const [showModelSwitchConfirm, setShowModelSwitchConfirm] = useState(null)
-    const [loadedModelName, setLoadedModelName] = useState(null)
-    const [showAutoSavePrompt, setShowAutoSavePrompt] = useState(false)
-    const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem('mait_autosave') === 'true')
     const autoSavePromptShown = useRef(false)
-    const [pendingQueue, setPendingQueue] = useState([])
-    const [showQueueConfirm, setShowQueueConfirm] = useState(null)
-    const [cachedModels, setCachedModels] = useState({})
 
     // Inactivity Tracker State
-    const [isIdle, setIsIdle] = useState(false)
     const idleTimeoutRef = useRef(null)
     const lastActivityRef = useRef(0)
     const currentTimeoutDelay = useRef(5000)

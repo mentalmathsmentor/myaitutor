@@ -24,9 +24,11 @@ import MathInput from '../components/MathInput';
 import syllabusData from '../syllabus_data.json';
 import stageSubjects from '../stage_subjects.json';
 import modelSelectorHint from '../assets/gemini-model-selector.png';
+import canvasHint from '../assets/canvas-hint.png';
+import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
-import { InlineCanvas } from '../components/canvas/InlineCanvas';
+// import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
 import { API_URL } from '@/config/api';
 
@@ -175,7 +177,12 @@ export default function WorksheetStudio({ setCurrentSection }) {
     return String(Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
   });
   const [firstTimeMode, setFirstTimeMode] = useState(false);
-  const [selectedPoints, setSelectedPoints] = useState([]);
+  const [selectedPoints, setSelectedPoints] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mait_ws_selectedPoints');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [includeName, setIncludeName] = useState(() => {
     const saved = localStorage.getItem('mait_ws_name');
     return saved !== null ? saved === 'true' : true;
@@ -184,12 +191,11 @@ export default function WorksheetStudio({ setCurrentSection }) {
     const saved = localStorage.getItem('mait_ws_date');
     return saved !== null ? saved === 'true' : true;
   });
-  const [mode, setMode] = useState('A');
   const [numQuestions, setNumQuestions] = useState(() => {
     const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
     return Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved));
   });
-  const [rawQuestions, setRawQuestions] = useState('');
+  const [rawQuestions, setRawQuestions] = useState(() => localStorage.getItem('mait_ws_rawQuestions') || '');
   const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || 'Dynamic Space');
   const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true');
   const [generateAnswerKey, setGenerateAnswerKey] = useState(() => localStorage.getItem('mait_ws_answerKey') === 'true');
@@ -252,27 +258,27 @@ export default function WorksheetStudio({ setCurrentSection }) {
   useEffect(() => {
     const subjectsForStage = stageSubjects[selectedStage];
     if (subjectsForStage) {
-      const nextSubject = Object.keys(subjectsForStage)[0];
-      setSelectedSubject(nextSubject);
-      setMode(MANUAL_ONLY_SUBJECTS.has(nextSubject) ? 'B' : 'A');
-      setCustomSubject('');
+      if (!subjectsForStage[selectedSubject]) {
+        const nextSubject = Object.keys(subjectsForStage)[0];
+        setSelectedSubject(nextSubject);
+        setCustomSubject('');
+      } else {
+      }
     } else {
-      setSelectedSubject('Other');
-      setMode('B');
+      if (selectedSubject !== 'Other') {
+        setSelectedSubject('Other');
+        setMode('B');
+      }
     }
   }, [selectedStage]);
 
 
 
   useEffect(() => {
-    setSelectedPoints([]);
-  }, [selectedStage, selectedSubject]);
+    localStorage.setItem('mait_ws_rawQuestions', rawQuestions);
+    localStorage.setItem('mait_ws_selectedPoints', JSON.stringify(selectedPoints));
+  }, [rawQuestions, selectedPoints]);
 
-  useEffect(() => {
-    if (selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) {
-      setMode('B');
-    }
-  }, [selectedSubject]);
 
   const legacySyllabusYear = useMemo(() => {
     if (selectedStage === 'Stage 4 (Yr 7-8)') {
@@ -432,7 +438,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   const validateSelection = () => {
-    const hasSyllabusPoints = mode === 'A' && selectedPoints.length > 0;
+    const hasSyllabusPoints = selectedPoints.length > 0;
     const hasManualText = rawQuestions.trim().length > 0;
 
     if (!hasSyllabusPoints && !hasManualText) {
@@ -628,8 +634,15 @@ export default function WorksheetStudio({ setCurrentSection }) {
       setCurrentStep(targetStep);
       return;
     }
-    if (targetStep === currentStep + 1 && canProceed()) {
-      setCurrentStep(targetStep);
+    if (targetStep === currentStep + 1) {
+      if (canProceed()) {
+        setCurrentStep(targetStep);
+      } else {
+        setIsShaking(true);
+        setShowErrorToast(true);
+        setTimeout(() => setIsShaking(false), 500);
+        setTimeout(() => setShowErrorToast(false), 3000);
+      }
     }
   };
 
@@ -644,9 +657,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(147,51,234,0.2),_transparent_36%),linear-gradient(180deg,_rgba(46,16,101,0.32)_0%,_rgba(8,12,24,0.94)_32%,_rgba(8,12,24,1)_100%)] pt-24 pb-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,_rgba(168,85,247,0.12),_transparent_32%),radial-gradient(circle_at_86%_18%,_rgba(139,92,246,0.14),_transparent_28%),radial-gradient(circle_at_50%_100%,_rgba(91,33,182,0.1),_transparent_30%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#190b34]/70 via-[#140d2d]/35 to-transparent" />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#1A0B2E] via-[#0D0B12] to-[#0A1128] pt-24 pb-10">
       <div className="relative">
       {showErrorToast && (
         <div className="fixed top-20 left-1/2 z-[110] -translate-x-1/2">
@@ -710,6 +721,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
             </h1>
             <p className="text-white/60">Worksheet instructions, syllabus controls, and landing polish tuned for easier teacher use.</p>
           </div>
+          
         </motion.div>
 
         <motion.div
@@ -794,7 +806,6 @@ export default function WorksheetStudio({ setCurrentSection }) {
                           type="button"
                           onClick={() => {
                             setSelectedSubject(subject);
-                            setMode(MANUAL_ONLY_SUBJECTS.has(subject) ? 'B' : 'A');
                           }}
                           className={`flex items-center rounded-2xl border px-4 py-3 text-left transition ${
                             selectedSubject === subject
@@ -809,7 +820,6 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         type="button"
                         onClick={() => {
                           setSelectedSubject('Other');
-                          setMode('B');
                         }}
                         className={`flex items-center px-4 py-3 rounded-lg text-left transition-all ${
                           selectedSubject === 'Other'
@@ -867,44 +877,18 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         <p className="text-sm text-white/50">The original syllabus hierarchy and prerequisite merge are restored here.</p>
                       </div>
                     </div>
-                    <div className="flex rounded-2xl border border-white/10 bg-white/5 p-1">
-                      <button
-                        type="button"
-                        onClick={() => setMode('A')}
-                        className={`rounded-xl px-4 py-2 text-sm transition ${mode === 'A' ? 'bg-mait-cosmic/20 text-white' : 'text-white/55 hover:text-white'}`}
-                      >
-                        Official syllabus
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMode('B')}
-                        className={`rounded-xl px-4 py-2 text-sm transition ${mode === 'B' ? 'bg-mait-cosmic/20 text-white' : 'text-white/55 hover:text-white'}`}
-                      >
-                        Manual entry
-                      </button>
-                    </div>
+                    
                   </div>
 
-                  {mode === 'B' || selectedSubject === 'Other' ? (
-                    <div className="space-y-4">
-                      {(selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) && (
-                        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
-                          {selectedSubject === 'Other'
-                            ? 'This subject uses manual entry only. Add your own topic brief or question instructions below.'
-                            : `${selectedSubject} is currently manual-entry only. The selected subject will still be injected into the final worksheet instructions.`}
-                        </div>
-                      )}
-                      <MathInput
-                        value={rawQuestions}
-                        onChange={setRawQuestions}
-                        placeholder={`Paste the exact ${displaySubject} brief, topic list, or teacher instructions here...`}
-                        rows={14}
-                        className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
-                        inputClassName="min-h-[360px] w-full rounded-3xl border border-white/10 bg-black/25 p-4 pr-24 text-sm text-white outline-none transition focus:border-mait-cyan/40"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
+                  
+                  <div className="space-y-6">
+                    {(selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
+                        {selectedSubject === 'Other'
+                          ? 'This subject uses manual entry only. Add your own topic brief or question instructions below.'
+                          : `${selectedSubject} is currently manual-entry only. The selected subject will still be injected into the final worksheet instructions.`}
+                      </div>
+                    ) : (
                       <div className={`overflow-hidden rounded-3xl border border-white/10 bg-black/20 ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}>
                         <div className="flex flex-wrap items-center gap-4 border-b border-white/10 bg-white/5 p-4">
                           <div className="relative min-w-[220px] flex-1">
@@ -1038,19 +1022,20 @@ export default function WorksheetStudio({ setCurrentSection }) {
                           )}
                         </div>
                       </div>
+                    )}
 
-                      <div className="space-y-3">
-                        <label className="text-xs uppercase tracking-[0.25em] text-white/45">Additional Brief / Custom Questions (Optional)</label>
-                        <MathInput
-                          value={rawQuestions}
-                          onChange={setRawQuestions}
-                          placeholder="Add specific textbook questions or teacher notes to include alongside the syllabus points..."
-                          rows={6}
-                          inputClassName="min-h-[120px] w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
-                        />
-                      </div>
+                    <div className="space-y-3">
+                      <label className="text-xs uppercase tracking-[0.25em] text-white/45">Additional Brief / Custom Questions</label>
+                      <MathInput
+                        value={rawQuestions}
+                        onChange={setRawQuestions}
+                        placeholder={selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject) ? `Paste the exact ${selectedSubject} brief, topic list, or teacher instructions here...` : "Add specific textbook questions or teacher notes to include alongside the syllabus points (optional)..."}
+                        rows={MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 14 : 6}
+                        className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
+                        inputClassName={`w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40 ${MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 'min-h-[360px] pb-10 pr-24' : 'min-h-[120px] pb-10 pr-24'}`}
+                      />
                     </div>
-                  )}
+                  </div>
                 </motion.div>
               )}
 
@@ -1295,35 +1280,37 @@ export default function WorksheetStudio({ setCurrentSection }) {
               {currentStep < steps.length - 1 ? (
                 <button
                   type="button"
-                  onClick={() => canProceed() && setCurrentStep((step) => Math.min(step + 1, steps.length - 1))}
+                  onClick={() => {
+                    if (canProceed()) {
+                      setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+                    } else {
+                      setIsShaking(true);
+                      setShowErrorToast(true);
+                      setTimeout(() => setIsShaking(false), 500);
+                      setTimeout(() => setShowErrorToast(false), 3000);
+                    }
+                  }}
                   className="rounded-2xl bg-mait-cosmic px-5 py-3 text-sm font-semibold text-white transition hover:scale-[1.01]"
                 >
                   Continue
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCanvasWorksheetRequest(buildWorksheetRequest(getWorksheetRequestParams()));
-                      setShowCanvas(true);
-                      setTimeout(() => {
-                        const el = document.getElementById('mait-native-canvas-container');
-                        if (el) {
-                          const y = el.getBoundingClientRect().top + window.scrollY - 100;
-                          window.scrollTo({ top: y, behavior: 'smooth' });
-                        }
-                      }, 150);
-                    }}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+                  <a
+                    href="https://myaitutor.au/worksheets"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/40 cursor-not-allowed transition group hover:bg-white/[0.08]"
+                    title="In development - see product announcement"
+                    onClick={(e) => { e.preventDefault(); window.open('https://myaitutor.au/worksheets', '_blank'); }}
                   >
-                    <Code2 className="h-4 w-4" />
-                    Edit in Canvas
-                  </button>
+                    <Code2 className="h-4 w-4 opacity-50" />
+                    <span>Edit in Canvas</span>
+                  </a>
                   <button
                     type="button"
                     onClick={copyToClipboard}
-                    className="flex items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-6 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01]"
+                    className={`flex items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-mait-cosmic'} px-6 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01]`}
                   >
                     <Copy className="h-4 w-4" />
                     <span>Launch Gemini</span>
@@ -1370,7 +1357,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 <button
                   type="button"
                   onClick={copyToClipboard}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]"
+                  className={`flex w-full items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-mait-cosmic'} px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]`}
                 >
                   <Copy className="h-4 w-4" />
                   <span className="flex flex-col leading-tight">
@@ -1391,46 +1378,25 @@ export default function WorksheetStudio({ setCurrentSection }) {
               )}
             </div>
 
-            <div className="glass-card rounded-3xl p-5 flex flex-col items-center">
-              <img 
-                src={modelSelectorHint} 
-                alt="Gemini Thinking mode selector" 
-                className="h-40 w-40 rounded-2xl border border-white/10 object-cover object-[15%_10%] shadow-lg" 
-              />
+            <div className="glass-card rounded-3xl p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-mait-cyan/15 text-mait-cyan">
+                  <ExternalLink className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white">Prompt handoff tips</h3>
+                  <p className="text-xs text-white/50">Always visible so teachers can check Canvas and model setup without toggling anything.</p>
+                </div>
+              </div>
+              <div className="grid gap-3">
+                <img src={canvasHint} alt="Gemini canvas hint" className="rounded-2xl border border-white/10" />
+                <img src={modelSelectorHint} alt="Gemini model selector hint" className="rounded-2xl border border-white/10" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Inline Canvas - Full Width Layout outside main grid */}
-        <AnimatePresence>
-          {showCanvas && (
-            <motion.div
-              id="mait-native-canvas-container"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mt-12 w-full"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <LayoutTemplate className="w-5 h-5 text-mait-cyan" />
-                  MAIT Native Canvas
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-white/50 text-sm">Dual-pane LaTeX Editor</span>
-                  <button
-                    onClick={() => setShowCanvas(false)}
-                    className="text-sm px-3 py-1.5 rounded-lg border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition"
-                  >
-                    Hide
-                  </button>
-                </div>
-              </div>
-              
-              <InlineCanvas config={canvasConfig} worksheetRequest={canvasWorksheetRequest} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Inline Canvas Temporarily Disabled For Free Tier UX Polish */}
 
         <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="glass-card-strong overflow-hidden rounded-3xl">
@@ -1454,9 +1420,10 @@ export default function WorksheetStudio({ setCurrentSection }) {
             </div>
           </div>
 
-          <div className="glass-card-strong rounded-3xl p-6">
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
+          <div className="flex flex-col gap-8">
+            <div className="glass-card-strong rounded-3xl p-6">
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
               <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
               <button
                 type="button"
@@ -1500,6 +1467,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
               </details>
             </div>
           </div>
+
+          <FeedbackBox />
+        </div>
         </div>
       </div>
       </div>

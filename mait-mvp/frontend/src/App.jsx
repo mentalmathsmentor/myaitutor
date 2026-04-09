@@ -99,11 +99,7 @@ function AppRoutes() {
                     } />
 
                     <Route path="/worksheets" element={
-                        <MarketingPageShell>
-                            <div className="pt-20 lg:pt-24 max-w-7xl mx-auto px-4 pb-12">
-                                <ErrorBoundary><WorksheetStudio setCurrentSection={legacyNavigate} /></ErrorBoundary>
-                            </div>
-                        </MarketingPageShell>
+                        <ErrorBoundary><WorksheetStudio setCurrentSection={legacyNavigate} /></ErrorBoundary>
                     } />
 
                     <Route path="/privacy" element={

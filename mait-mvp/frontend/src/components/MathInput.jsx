@@ -134,11 +134,18 @@ export default function MathInput({
                 <button
                     type="button"
                     onClick={() => setShowKeyboard((prev) => !prev)}
-                    className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-white/70 transition hover:border-mait-cyan/40 hover:text-mait-cyan"
+                    className="absolute left-3 bottom-3 inline-flex items-center gap-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-white/70 transition hover:border-mait-cyan/40 hover:text-mait-cyan"
                 >
                     <Calculator size={12} />
                     Math
                     <ChevronDown size={12} className={`transition-transform ${showKeyboard ? 'rotate-180' : ''}`} />
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { onChange(''); setSelection({start: 0, end: 0}); }}
+                    className="absolute right-3 bottom-3 rounded-lg bg-red-500/10 border border-red-500/20 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-red-400 transition hover:bg-red-500/20 hover:text-red-300"
+                >
+                    Clear
                 </button>
             </div>
 

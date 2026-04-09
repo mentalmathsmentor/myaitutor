@@ -203,7 +203,7 @@ const ModelConsentGate = ({
 
                     <p className="text-xs text-muted-foreground text-center">
                         On mobile or limited data? Try our full mode instead which processes in the cloud.<br />
-                        <a href="#/worksheets" className="text-accent hover:underline inline-flex items-center mt-2 group">
+                        <a href="/worksheets" className="text-accent hover:underline inline-flex items-center mt-2 group">
                             Try Full Mode <Zap size={10} className="ml-1 group-hover:translate-x-0.5 transition-transform" />
                         </a>
                     </p>

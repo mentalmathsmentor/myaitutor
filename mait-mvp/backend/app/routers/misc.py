@@ -23,7 +23,7 @@ class FeedbackRequest(BaseModel):
 
 
 @router.post("/api/feedback")
-@limiter.limit("5/minute")
+@limiter.limit("1/minute")
 async def submit_feedback(request: Request, body: FeedbackRequest):
     """Handle user feedback via the frontend forms."""
     resend_api_key = os.getenv("RESEND_API_KEY")
@@ -45,7 +45,7 @@ async def submit_feedback(request: Request, body: FeedbackRequest):
 
         r = resend.Emails.send({
             "from": "MAIT System <onboarding@resend.dev>",
-            "to": "mentor@mentalmaths.au",
+            "to": "work.daray@gmail.com",
             "subject": f"MAIT Feedback: {body.context}",
             "html": html_content
         })

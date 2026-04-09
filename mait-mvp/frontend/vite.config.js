@@ -11,6 +11,7 @@ export default defineConfig({
         },
     },
     build: {
+        chunkSizeWarningLimit: 6500, // Account for massive ML models
         rollupOptions: {
             output: {
                 manualChunks: {

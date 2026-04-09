@@ -1,18 +1,18 @@
 {
     "Early Stage 1 (Kindy)": {
-        "English": [
-            "Phonics",
-            "Decodables",
-            "Reading Comprehension",
-            "Handwriting",
-            "Speaking and Listening"
-        ],
         "Mathematics": [
             "Counting to 30",
             "Addition and Subtraction (1-digit)",
             "Length and Mass",
             "2D Shapes and 3D Objects",
             "Time (Days of the week, Hours)"
+        ],
+        "English": [
+            "Phonics",
+            "Decodables",
+            "Reading Comprehension",
+            "Handwriting",
+            "Speaking and Listening"
         ],
         "Science": [
             "Living Things",
@@ -28,18 +28,18 @@
         ]
     },
     "Stage 1 (Yr 1-2)": {
-        "English": [
-            "Phonics and Word Knowledge",
-            "Fluency and Comprehension",
-            "Creating Texts",
-            "Grammar and Punctuation"
-        ],
         "Mathematics": [
             "Addition and Subtraction (2-digit)",
             "Multiplication and Division (Basics)",
             "Fractions (Halves, Quarters)",
             "Length, Area, Volume and Mass",
             "Position and 2D/3D Space"
+        ],
+        "English": [
+            "Phonics and Word Knowledge",
+            "Fluency and Comprehension",
+            "Creating Texts",
+            "Grammar and Punctuation"
         ],
         "Science": [
             "Living World",
@@ -55,18 +55,18 @@
         ]
     },
     "Stage 2 (Yr 3-4)": {
-        "English": [
-            "Reading Fluency and Comprehension",
-            "Spelling Rules and Morphology",
-            "Creating Written Texts",
-            "Understanding Literature Contexts"
-        ],
         "Mathematics": [
             "Base-10 and Place Value",
             "Multiplication (Up to 10x10)",
             "Fractions & Decimals (Tenths, Hundredths)",
             "Measurement & Geometry",
             "Data Representation (Graphs)"
+        ],
+        "English": [
+            "Reading Fluency and Comprehension",
+            "Spelling Rules and Morphology",
+            "Creating Written Texts",
+            "Understanding Literature Contexts"
         ],
         "Science": [
             "Living World",
@@ -82,18 +82,18 @@
         ]
     },
     "Stage 3 (Yr 5-6)": {
-        "English": [
-            "Advanced Comprehension Strategies",
-            "Literary Analysis",
-            "Persuasive and Informative Writing",
-            "Advanced Grammar & Sentence Structure"
-        ],
         "Mathematics": [
             "Operations with Fractions & Decimals",
             "Percentages and Financial Mathematics",
             "Angles, Symmetry and Transformation",
             "Volume, Capacity and Mass",
             "Probability and Data Analysis"
+        ],
+        "English": [
+            "Advanced Comprehension Strategies",
+            "Literary Analysis",
+            "Persuasive and Informative Writing",
+            "Advanced Grammar & Sentence Structure"
         ],
         "Science": [
             "Living World",
