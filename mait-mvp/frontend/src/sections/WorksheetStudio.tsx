@@ -678,6 +678,14 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 className="h-56 w-56 rounded-2xl border border-white/10 object-cover object-[15%_10%] shadow-2xl" 
               />
             </div>
+            <button
+              type="button"
+              onClick={copyToClipboard}
+              className="mx-auto mt-3 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
+            >
+              <Copy size={14} />
+              {isCopied ? 'Copied!' : 'Copy prompt again'}
+            </button>
             {!showCloseButton && (
               <div className="mt-5">
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
@@ -1434,6 +1442,14 @@ export default function WorksheetStudio({ setCurrentSection }) {
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
               <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
+              <button
+                type="button"
+                onClick={copyToClipboard}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
+              >
+                <Copy size={14} />
+                Copy prompt to clipboard
+              </button>
             </div>
 
             <div className="space-y-4">
