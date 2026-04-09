@@ -1,5 +1,6 @@
 import { Plus, ScanLine, Bot, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FeedbackBox } from './FeedbackBox';
 
 interface CanvasToolbarProps {
   onInsert: () => void;
@@ -49,6 +50,9 @@ export function CanvasToolbar({
         <span className="hidden sm:inline">AI Revision</span>
         <span className="sm:hidden">AI</span>
       </Button>
+
+      {/* Feedback Box */}
+      <FeedbackBox />
     </div>
   );
 }

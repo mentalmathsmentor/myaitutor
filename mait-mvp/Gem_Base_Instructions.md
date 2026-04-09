@@ -42,6 +42,18 @@ The JSON payload contains a `"syllabus"` object with `"included_topics"` and `"e
 - Generate questions **ONLY** from the `"included_topics"`.
 - **NEVER** introduce concepts mapped to `"excluded_topics"`.
 
+## GENERATION MODES (FULL VS. TARGETED)
+
+The JSON payload may request a **FULL WORKSHEET** or a **TARGETED REVISION** for a specific block.
+
+1. **Full Worksheet:**
+   If `mode: "full"`, generate the complete document preamble, the title, the list of questions, and the document end as outlined below.
+
+2. **Targeted Revision:**
+   If `mode: "targeted"`, the user will provide a `target_focus` and a specific `element_type` (e.g., `Question`, `Diagram`, `Explanation`). 
+   - **DO NOT** output the `\documentclass` or preamble.
+   - **ONLY** output the raw LaTeX for the requested element. Ensure it is structurally sound and can be drop-in replaced back into the user's canvas.
+
 ---
 
 ## LATEX QUALITY CONTROLS & BULLETPROOFING

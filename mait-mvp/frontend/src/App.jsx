@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import Navigation from './components/Navigation'
 import NewLandingPage from './NewLandingPage'
@@ -11,18 +12,16 @@ import MarketingPageShell from './components/MarketingPageShell'
 import LoginModal from './components/LoginModal'
 import useAuth from './hooks/useAuth'
 import { API_URL } from './config/api'
-import { getPageFromPath, navigateTo } from './lib/navigation'
 
-function App() {
-    const [page, setPage] = useState(getPageFromPath)
+function AppRoutes() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    
+    // Determine logical page name from path for Navigation active state
+    // e.g. "/" -> "landing", "/resources" -> "resources"
+    const page = location.pathname === '/' ? 'landing' : location.pathname.substring(1);
+    
     const [showLoginModal, setShowLoginModal] = useState(false)
-
-    // Clean URL routing — browser back/forward support
-    useEffect(() => {
-        const onNav = () => setPage(getPageFromPath());
-        window.addEventListener('popstate', onNav);
-        return () => window.removeEventListener('popstate', onNav);
-    }, []);
 
     // Auth
     const {
@@ -35,10 +34,10 @@ function App() {
     } = useAuth(API_URL, {
         onLoginSuccess: () => {
             setShowLoginModal(false);
-            navigateTo('app');
+            navigate('/app');
         },
         onLogout: () => {
-            navigateTo('landing');
+            navigate('/');
         },
     });
 
@@ -49,12 +48,18 @@ function App() {
         setShowLoginModal(true);
     };
 
+    // Provide a shim string-based navigate for child components that expect it
+    const legacyNavigate = (targetPage) => {
+        if (targetPage === 'landing') navigate('/');
+        else navigate(`/${targetPage}`);
+    };
+
     const loginModal = (
         <LoginModal
             show={showLoginModal}
             onClose={() => setShowLoginModal(false)}
             onSubmit={handleLoginSubmit}
-            onDemo={() => { setShowLoginModal(false); navigateTo('demo'); }}
+            onDemo={() => { setShowLoginModal(false); navigate('/demo'); }}
             onGoogleSuccess={handleGoogleSuccess}
             authLoading={authLoading}
         />
@@ -63,97 +68,79 @@ function App() {
     const nav = (
         <Navigation
             currentPage={page}
-            navigate={navigateTo}
+            navigate={legacyNavigate}
             onLoginClick={handleLoginClick}
             authUser={authUser}
             onLogout={handleLogout}
         />
     );
 
-    // Chat pages (app / demo) — full-screen chat experience
-    if (page === 'app' || page === 'demo') {
-        return (
-            <>
-                {nav}
-                <ChatPage
-                    studentId={studentId}
-                    authUser={authUser}
-                    handleLogout={handleLogout}
-                    isDemoMode={page === 'demo'}
-                />
-            </>
-        );
-    }
+    return (
+        <>
+            {nav}
+            <Routes>
+                <Route path="/" element={
+                    <ErrorBoundary><NewLandingPage navigate={legacyNavigate} onLoginClick={handleLoginClick} /></ErrorBoundary>
+                } />
+                
+                <Route path="/resources" element={
+                    <MarketingPageShell>
+                        <div className="pt-20 lg:pt-24">
+                            <ErrorBoundary><AIResources /></ErrorBoundary>
+                        </div>
+                    </MarketingPageShell>
+                } />
 
-    // Marketing / content pages
-    if (page === 'landing') {
-        return (
-            <>
-                {nav}
-                <ErrorBoundary><NewLandingPage navigate={navigateTo} onLoginClick={handleLoginClick} /></ErrorBoundary>
-                {loginModal}
-            </>
-        )
-    }
+                <Route path="/worksheets" element={
+                    <MarketingPageShell>
+                        <div className="pt-20 lg:pt-24 max-w-7xl mx-auto px-4 pb-12">
+                            <ErrorBoundary><WorksheetStudio setCurrentSection={legacyNavigate} /></ErrorBoundary>
+                        </div>
+                    </MarketingPageShell>
+                } />
 
-    if (page === 'resources') {
-        return (
-            <>
-                {nav}
-                <MarketingPageShell>
-                    <div className="pt-20 lg:pt-24">
-                        <ErrorBoundary><AIResources /></ErrorBoundary>
-                    </div>
-                </MarketingPageShell>
-                {loginModal}
-            </>
-        )
-    }
+                <Route path="/privacy" element={
+                    <MarketingPageShell>
+                        <div className="pt-20 lg:pt-24">
+                            <ErrorBoundary><PrivacyPolicy navigate={legacyNavigate} /></ErrorBoundary>
+                        </div>
+                    </MarketingPageShell>
+                } />
 
-    if (page === 'worksheets') {
-        return (
-            <>
-                {nav}
-                <MarketingPageShell>
-                    <div className="pt-20 lg:pt-24 max-w-7xl mx-auto px-4 pb-12">
-                        <ErrorBoundary><WorksheetStudio setCurrentSection={navigateTo} /></ErrorBoundary>
-                    </div>
-                </MarketingPageShell>
-                {loginModal}
-            </>
-        )
-    }
+                <Route path="/pastpapers" element={
+                    <MarketingPageShell>
+                        <div className="pt-20 lg:pt-24 min-h-screen">
+                            <ErrorBoundary><PastPapers /></ErrorBoundary>
+                        </div>
+                    </MarketingPageShell>
+                } />
 
-    if (page === 'privacy') {
-        return (
-            <>
-                {nav}
-                <MarketingPageShell>
-                    <div className="pt-20 lg:pt-24">
-                        <ErrorBoundary><PrivacyPolicy navigate={navigateTo} /></ErrorBoundary>
-                    </div>
-                </MarketingPageShell>
-                {loginModal}
-            </>
-        )
-    }
+                {/* Chat interfaces */}
+                <Route path="/app" element={
+                    <ChatPage
+                        studentId={studentId}
+                        authUser={authUser}
+                        handleLogout={handleLogout}
+                        isDemoMode={false}
+                    />
+                } />
 
-    if (page === 'pastpapers') {
-        return (
-            <>
-                {nav}
-                <MarketingPageShell>
-                    <div className="pt-20 lg:pt-24 min-h-screen">
-                        <ErrorBoundary><PastPapers /></ErrorBoundary>
-                    </div>
-                </MarketingPageShell>
-                {loginModal}
-            </>
-        )
-    }
-
-    // Fallback
-    return null;
+                <Route path="/demo" element={
+                    <ChatPage
+                        studentId={studentId}
+                        authUser={authUser}
+                        handleLogout={handleLogout}
+                        isDemoMode={true}
+                    />
+                } />
+                
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            {loginModal}
+        </>
+    );
 }
 
-export default App
+export default AppRoutes
+
