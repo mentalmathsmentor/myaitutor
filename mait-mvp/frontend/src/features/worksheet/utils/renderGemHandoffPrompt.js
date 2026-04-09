@@ -32,9 +32,13 @@ export function renderGemHandoffPrompt(request) {
   handoff += `- **MODE:** ${settings.mode}\n\n`;
 
   if (request.legacyFields.manual_prompt) {
-    handoff += `**MANUAL INSTRUCTIONS:**\n${request.legacyFields.manual_prompt}\n\n`;
-  } else {
-    handoff += `**SYLLABUS PACKET:**\n`;
+    handoff += `**MANUAL INSTRUCTIONS & CUSTOM TOPICS:**\n${request.legacyFields.manual_prompt}\n\n`;
+  }
+
+  const hasPacketData = packet.dotPoints.length > 0 || packet.outcomes.length > 0 || packet.include.length > 0;
+  
+  if (hasPacketData || !request.legacyFields.manual_prompt) {
+    handoff += `**SYLLABUS PACKET (NESA ALIGNED):**\n`;
     const dotPointsStr = formatArray("Relevant Dot-Points", packet.dotPoints);
     if (dotPointsStr) handoff += `${dotPointsStr}\n`;
     

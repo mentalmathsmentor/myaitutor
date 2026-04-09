@@ -432,7 +432,10 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   const validateSelection = () => {
-    if ((mode === 'A' && selectedPoints.length === 0) || (mode === 'B' && rawQuestions.trim().length === 0)) {
+    const hasSyllabusPoints = mode === 'A' && selectedPoints.length > 0;
+    const hasManualText = rawQuestions.trim().length > 0;
+
+    if (!hasSyllabusPoints && !hasManualText) {
       setIsShaking(true);
       setShowErrorToast(true);
       setTimeout(() => setIsShaking(false), 500);
@@ -635,7 +638,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
       return selectedStage && selectedSubject && (selectedSubject !== 'Other' || customSubject.trim() !== '');
     }
     if (currentStep === 1) {
-      return mode === 'A' ? selectedPoints.length > 0 : rawQuestions.trim() !== '';
+      return selectedPoints.length > 0 || rawQuestions.trim() !== '';
     }
     return true;
   };
@@ -901,137 +904,150 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       />
                     </div>
                   ) : (
-                    <div className={`overflow-hidden rounded-3xl border border-white/10 bg-black/20 ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}>
-                      <div className="flex flex-wrap items-center gap-4 border-b border-white/10 bg-white/5 p-4">
-                        <div className="relative min-w-[220px] flex-1">
-                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-                          <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            placeholder="Find a topic or syllabus point..."
-                            className="w-full rounded-2xl border border-white/10 bg-black/20 py-2 pl-10 pr-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
-                          />
+                    <div className="space-y-6">
+                      <div className={`overflow-hidden rounded-3xl border border-white/10 bg-black/20 ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}>
+                        <div className="flex flex-wrap items-center gap-4 border-b border-white/10 bg-white/5 p-4">
+                          <div className="relative min-w-[220px] flex-1">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                            <input
+                              type="text"
+                              value={searchQuery}
+                              onChange={(event) => setSearchQuery(event.target.value)}
+                              placeholder="Find a topic or syllabus point..."
+                              className="w-full rounded-2xl border border-white/10 bg-black/20 py-2 pl-10 pr-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
+                            />
+                          </div>
+                          <div className="text-xs uppercase tracking-[0.25em] text-mait-cyan">{selectedPoints.length} selected</div>
+                          {selectedPoints.length > 0 && (
+                            <button type="button" onClick={() => setSelectedPoints([])} className="text-xs uppercase tracking-[0.2em] text-white/50 transition hover:text-white">
+                              Clear all
+                            </button>
+                          )}
                         </div>
-                        <div className="text-xs uppercase tracking-[0.25em] text-mait-cyan">{selectedPoints.length} selected</div>
-                        {selectedPoints.length > 0 && (
-                          <button type="button" onClick={() => setSelectedPoints([])} className="text-xs uppercase tracking-[0.2em] text-white/50 transition hover:text-white">
-                            Clear all
-                          </button>
-                        )}
-                      </div>
 
-                      <div className="max-h-[540px] overflow-y-auto overflow-x-hidden p-4">
-                        {legacySyllabusYear ? (
-                          <div className="space-y-4">
-                            {filteredModules.map((moduleName) => (
-                              <div key={moduleName} className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <button type="button" onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
-                                    {expandedModules[moduleName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                  </button>
-                                  <label className="flex flex-1 cursor-pointer items-center gap-3">
+                        <div className="max-h-[440px] overflow-y-auto overflow-x-hidden p-4">
+                          {legacySyllabusYear ? (
+                            <div className="space-y-4">
+                              {filteredModules.map((moduleName) => (
+                                <div key={moduleName} className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
+                                      {expandedModules[moduleName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                    </button>
+                                    <label className="flex flex-1 cursor-pointer items-center gap-3">
+                                      <input
+                                        type="checkbox"
+                                        checked={isModuleSelected(moduleName)}
+                                        onChange={() => toggleModuleSelection(moduleName)}
+                                        className="h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                      />
+                                      <span className="text-sm font-semibold text-white">{moduleName}</span>
+                                    </label>
+                                  </div>
+
+                                  {(expandedModules[moduleName] || searchQuery) && (
+                                    <div className="ml-6 space-y-3 border-l border-white/10 pl-4">
+                                      {Object.keys(currentSyllabus[moduleName] || {}).map((subtopic) => {
+                                        const points = currentSyllabus[moduleName][subtopic] || [];
+                                        const query = searchQuery.toLowerCase().trim();
+                                        if (
+                                          query &&
+                                          !subtopic.toLowerCase().includes(query) &&
+                                          !points.some((point) => getLabel(point).toLowerCase().includes(query))
+                                        ) {
+                                          return null;
+                                        }
+
+                                        return (
+                                          <div key={subtopic} className="space-y-2">
+                                            <div className="flex min-w-0 items-center gap-2">
+                                              <button type="button" onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
+                                                {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                              </button>
+                                              <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isSubtopicSelected(moduleName, subtopic)}
+                                                  onChange={() => toggleSubtopicSelection(moduleName, subtopic)}
+                                                  className="h-4 w-4 flex-shrink-0 rounded border-white/20 accent-mait-cyan"
+                                                />
+                                                <span className="truncate text-xs font-medium uppercase tracking-[0.18em] text-white/55">{subtopic}</span>
+                                              </label>
+                                            </div>
+
+                                            {(expandedSubtopics[subtopic] || searchQuery) && (
+                                              <div className="ml-6 grid gap-2">
+                                                    {points.map((point) => (
+                                                  <label
+                                                    key={point.id || point}
+                                                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
+                                                      selectedPoints.includes(getId(point))
+                                                        ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
+                                                        : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
+                                                    }`}
+                                                  >
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={selectedPoints.includes(point.id || point)}
+                                                      onChange={() => handlePointToggle(point)}
+                                                      className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                                    />
+                                                    <span className="text-xs leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
+                                                  </label>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : currentTopicsList && currentTopicsList.length > 0 ? (
+                            <div className="grid gap-3">
+                              {currentTopicsList
+                                .filter((topic) => {
+                                  const lbl = typeof topic === 'object' ? topic.label : topic;
+                                  return (lbl || '').toLowerCase().includes(searchQuery.toLowerCase());
+                                })
+                                .map((topic) => (
+                                  <label
+                                    key={topic.id || topic}
+                                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
+                                      selectedPoints.includes(topic.id || topic)
+                                        ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
+                                        : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
+                                    }`}
+                                  >
                                     <input
                                       type="checkbox"
-                                      checked={isModuleSelected(moduleName)}
-                                      onChange={() => toggleModuleSelection(moduleName)}
-                                      className="h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                      checked={selectedPoints.includes(topic.id || topic)}
+                                      onChange={() => handlePointToggle(topic)}
+                                      className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
                                     />
-                                    <span className="text-sm font-semibold text-white">{moduleName}</span>
+                                    <span className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(topic) }} />
                                   </label>
-                                </div>
+                                ))}
+                            </div>
+                          ) : (
+                            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/55">
+                              No predefined topic list exists for this subject yet. Switch to manual entry if you want to specify it yourself.
+                            </div>
+                          )}
+                        </div>
+                      </div>
 
-                                {(expandedModules[moduleName] || searchQuery) && (
-                                  <div className="ml-6 space-y-3 border-l border-white/10 pl-4">
-                                    {Object.keys(currentSyllabus[moduleName] || {}).map((subtopic) => {
-                                      const points = currentSyllabus[moduleName][subtopic] || [];
-                                      const query = searchQuery.toLowerCase().trim();
-                                      if (
-                                        query &&
-                                        !subtopic.toLowerCase().includes(query) &&
-                                        !points.some((point) => getLabel(point).toLowerCase().includes(query))
-                                      ) {
-                                        return null;
-                                      }
-
-                                      return (
-                                        <div key={subtopic} className="space-y-2">
-                                          <div className="flex min-w-0 items-center gap-2">
-                                            <button type="button" onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
-                                              {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                            </button>
-                                            <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                                              <input
-                                                type="checkbox"
-                                                checked={isSubtopicSelected(moduleName, subtopic)}
-                                                onChange={() => toggleSubtopicSelection(moduleName, subtopic)}
-                                                className="h-4 w-4 flex-shrink-0 rounded border-white/20 accent-mait-cyan"
-                                              />
-                                              <span className="truncate text-xs font-medium uppercase tracking-[0.18em] text-white/55">{subtopic}</span>
-                                            </label>
-                                          </div>
-
-                                          {(expandedSubtopics[subtopic] || searchQuery) && (
-                                            <div className="ml-6 grid gap-2">
-                                                  {points.map((point) => (
-                                                <label
-                                                  key={point.id || point}
-                                                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
-                                                    selectedPoints.includes(getId(point))
-                                                      ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
-                                                      : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
-                                                  }`}
-                                                >
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={selectedPoints.includes(point.id || point)}
-                                                    onChange={() => handlePointToggle(point)}
-                                                    className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
-                                                  />
-                                                  <span className="text-xs leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
-                                                </label>
-                                              ))}
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : currentTopicsList && currentTopicsList.length > 0 ? (
-                          <div className="grid gap-3">
-                            {currentTopicsList
-                              .filter((topic) => {
-                                const lbl = typeof topic === 'object' ? topic.label : topic;
-                                return (lbl || '').toLowerCase().includes(searchQuery.toLowerCase());
-                              })
-                              .map((topic) => (
-                                <label
-                                  key={topic.id || topic}
-                                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
-                                    selectedPoints.includes(topic.id || topic)
-                                      ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
-                                      : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
-                                  }`}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedPoints.includes(topic.id || topic)}
-                                    onChange={() => handlePointToggle(topic)}
-                                    className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
-                                  />
-                                  <span className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(topic) }} />
-                                </label>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/55">
-                            No predefined topic list exists for this subject yet. Switch to manual entry if you want to specify it yourself.
-                          </div>
-                        )}
+                      <div className="space-y-3">
+                        <label className="text-xs uppercase tracking-[0.25em] text-white/45">Additional Brief / Custom Questions (Optional)</label>
+                        <MathInput
+                          value={rawQuestions}
+                          onChange={setRawQuestions}
+                          placeholder="Add specific textbook questions or teacher notes to include alongside the syllabus points..."
+                          rows={6}
+                          inputClassName="min-h-[120px] w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
+                        />
                       </div>
                     </div>
                   )}
