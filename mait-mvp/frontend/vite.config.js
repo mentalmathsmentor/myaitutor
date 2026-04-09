@@ -10,6 +10,25 @@ export default defineConfig({
             '@': fileURLToPath(new URL('./src', import.meta.url))
         },
     },
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+                    'math-vendor': ['mathjs', 'katex', 'react-markdown', 'rehype-katex', 'remark-math'],
+                    'ui-vendor': ['framer-motion', 'lucide-react', 'cmdk', 'sonner'],
+                    'radix-vendor': [
+                        '@radix-ui/react-dialog', 
+                        '@radix-ui/react-popover', 
+                        '@radix-ui/react-select', 
+                        '@radix-ui/react-accordion',
+                        '@radix-ui/react-tabs'
+                    ],
+                    'ai-vendor': ['@mlc-ai/web-llm']
+                }
+            }
+        }
+    },
     plugins: [react()],
     server: {
         watch: {

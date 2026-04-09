@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary'
 import Navigation from './components/Navigation'
-import NewLandingPage from './NewLandingPage'
-import AIResources from './AIResources'
-import WorksheetStudio from './sections/WorksheetStudio'
-import PastPapers from './PastPapers'
-import PrivacyPolicy from './pages/PrivacyPolicy'
-import ChatPage from './pages/ChatPage'
 import MarketingPageShell from './components/MarketingPageShell'
 import LoginModal from './components/LoginModal'
 import useAuth from './hooks/useAuth'
 import { API_URL } from './config/api'
+
+// Lazy Load Heavy Route Components
+const NewLandingPage = lazy(() => import('./NewLandingPage'))
+const AIResources = lazy(() => import('./AIResources'))
+const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'))
+const PastPapers = lazy(() => import('./PastPapers'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const ChatPage = lazy(() => import('./pages/ChatPage'))
 
 function AppRoutes() {
     const location = useLocation();
@@ -78,65 +80,71 @@ function AppRoutes() {
     return (
         <>
             {nav}
-            <Routes>
-                <Route path="/" element={
-                    <ErrorBoundary><NewLandingPage navigate={legacyNavigate} onLoginClick={handleLoginClick} /></ErrorBoundary>
-                } />
-                
-                <Route path="/resources" element={
-                    <MarketingPageShell>
-                        <div className="pt-20 lg:pt-24">
-                            <ErrorBoundary><AIResources /></ErrorBoundary>
-                        </div>
-                    </MarketingPageShell>
-                } />
+            <Suspense fallback={
+                <div className="min-h-screen w-full flex items-center justify-center bg-mait-dark">
+                    <div className="w-8 h-8 border-4 border-mait-cyan border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }>
+                <Routes>
+                    <Route path="/" element={
+                        <ErrorBoundary><NewLandingPage navigate={legacyNavigate} onLoginClick={handleLoginClick} /></ErrorBoundary>
+                    } />
+                    
+                    <Route path="/resources" element={
+                        <MarketingPageShell>
+                            <div className="pt-20 lg:pt-24">
+                                <ErrorBoundary><AIResources /></ErrorBoundary>
+                            </div>
+                        </MarketingPageShell>
+                    } />
 
-                <Route path="/worksheets" element={
-                    <MarketingPageShell>
-                        <div className="pt-20 lg:pt-24 max-w-7xl mx-auto px-4 pb-12">
-                            <ErrorBoundary><WorksheetStudio setCurrentSection={legacyNavigate} /></ErrorBoundary>
-                        </div>
-                    </MarketingPageShell>
-                } />
+                    <Route path="/worksheets" element={
+                        <MarketingPageShell>
+                            <div className="pt-20 lg:pt-24 max-w-7xl mx-auto px-4 pb-12">
+                                <ErrorBoundary><WorksheetStudio setCurrentSection={legacyNavigate} /></ErrorBoundary>
+                            </div>
+                        </MarketingPageShell>
+                    } />
 
-                <Route path="/privacy" element={
-                    <MarketingPageShell>
-                        <div className="pt-20 lg:pt-24">
-                            <ErrorBoundary><PrivacyPolicy navigate={legacyNavigate} /></ErrorBoundary>
-                        </div>
-                    </MarketingPageShell>
-                } />
+                    <Route path="/privacy" element={
+                        <MarketingPageShell>
+                            <div className="pt-20 lg:pt-24">
+                                <ErrorBoundary><PrivacyPolicy navigate={legacyNavigate} /></ErrorBoundary>
+                            </div>
+                        </MarketingPageShell>
+                    } />
 
-                <Route path="/pastpapers" element={
-                    <MarketingPageShell>
-                        <div className="pt-20 lg:pt-24 min-h-screen">
-                            <ErrorBoundary><PastPapers /></ErrorBoundary>
-                        </div>
-                    </MarketingPageShell>
-                } />
+                    <Route path="/pastpapers" element={
+                        <MarketingPageShell>
+                            <div className="pt-20 lg:pt-24 min-h-screen">
+                                <ErrorBoundary><PastPapers /></ErrorBoundary>
+                            </div>
+                        </MarketingPageShell>
+                    } />
 
-                {/* Chat interfaces */}
-                <Route path="/app" element={
-                    <ChatPage
-                        studentId={studentId}
-                        authUser={authUser}
-                        handleLogout={handleLogout}
-                        isDemoMode={false}
-                    />
-                } />
+                    {/* Chat interfaces */}
+                    <Route path="/app" element={
+                        <ChatPage
+                            studentId={studentId}
+                            authUser={authUser}
+                            handleLogout={handleLogout}
+                            isDemoMode={false}
+                        />
+                    } />
 
-                <Route path="/demo" element={
-                    <ChatPage
-                        studentId={studentId}
-                        authUser={authUser}
-                        handleLogout={handleLogout}
-                        isDemoMode={true}
-                    />
-                } />
-                
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                    <Route path="/demo" element={
+                        <ChatPage
+                            studentId={studentId}
+                            authUser={authUser}
+                            handleLogout={handleLogout}
+                            isDemoMode={true}
+                        />
+                    } />
+                    
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </Suspense>
             {loginModal}
         </>
     );
