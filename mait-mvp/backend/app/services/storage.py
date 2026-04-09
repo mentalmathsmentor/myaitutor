@@ -77,6 +77,125 @@ async def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_users_student_id
             ON users(student_id)
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS documents (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                kind TEXT DEFAULT 'artifact',
+                source TEXT DEFAULT 'manual',
+                metadata_json TEXT DEFAULT '{}',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_documents_student_id
+            ON documents(student_id)
+        """)
+        # Migrate existing documents table to add new columns if missing
+        cursor = await db.execute("PRAGMA table_info(documents)")
+        doc_columns = [row[1] for row in await cursor.fetchall()]
+        if "kind" not in doc_columns:
+            await db.execute("ALTER TABLE documents ADD COLUMN kind TEXT DEFAULT 'artifact'")
+        if "source" not in doc_columns:
+            await db.execute("ALTER TABLE documents ADD COLUMN source TEXT DEFAULT 'manual'")
+        if "metadata_json" not in doc_columns:
+            await db.execute("ALTER TABLE documents ADD COLUMN metadata_json TEXT DEFAULT '{}'")
+        # 2. Document Elements Migration Logic
+        # Check for legacy table
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_fragments'")
+        has_fragments = await cursor.fetchone() is not None
+        
+        cursor = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='document_elements'")
+        has_elements = await cursor.fetchone() is not None
+        
+        if has_fragments:
+            if has_elements:
+                # Accidental double-creation scenario. Drop the new empty one to unblock rename.
+                await db.execute("DROP TABLE document_elements")
+            # Safely rename the old table
+            await db.execute("ALTER TABLE document_fragments RENAME TO document_elements")
+            
+        # Ensure the table is created properly for new installations
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS document_elements (
+                id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                sort_key TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                label TEXT,
+                content_latex TEXT,
+                metadata_json TEXT DEFAULT '{}',
+                version_id TEXT,
+                is_locked BOOLEAN DEFAULT 0,
+                is_collapsed BOOLEAN DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # Apply any pending column changes if table existed before rename
+        cursor = await db.execute("PRAGMA table_info(document_elements)")
+        columns = [row[1] for row in await cursor.fetchall()]
+        if "role" in columns and "kind" not in columns:
+            await db.execute("ALTER TABLE document_elements RENAME COLUMN role TO kind")
+        if "order_index" in columns and "sort_key" not in columns:
+            await db.execute("ALTER TABLE document_elements RENAME COLUMN order_index TO sort_key")
+        if "label" not in columns:
+            await db.execute("ALTER TABLE document_elements ADD COLUMN label TEXT")
+        if "version_id" not in columns:
+            await db.execute("ALTER TABLE document_elements ADD COLUMN version_id TEXT")
+        if "is_locked" not in columns:
+            await db.execute("ALTER TABLE document_elements ADD COLUMN is_locked BOOLEAN DEFAULT 0")
+        if "is_collapsed" not in columns:
+            await db.execute("ALTER TABLE document_elements ADD COLUMN is_collapsed BOOLEAN DEFAULT 0")
+
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_elements_document_id
+            ON document_elements(document_id)
+        """)
+
+        # document_revisions — stores per-element AI revision history
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS document_revisions (
+                id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                element_id TEXT,
+                instruction_text TEXT,
+                provider TEXT DEFAULT 'manual',
+                input_snapshot TEXT,
+                output_snapshot TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_revisions_document_id
+            ON document_revisions(document_id)
+        """)
+
+        # artifact_builds — stores compilation build records
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS artifact_builds (
+                id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'queued',
+                pdf_path TEXT,
+                error_message_human TEXT,
+                build_log TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                completed_at DATETIME,
+                FOREIGN KEY(document_id) REFERENCES documents(id) ON DELETE CASCADE
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_builds_document_id
+            ON artifact_builds(document_id)
+        """)
+
         await db.commit()
 
 

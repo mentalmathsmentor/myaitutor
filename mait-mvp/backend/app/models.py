@@ -25,12 +25,16 @@ class DocumentSource(str, Enum):
     CHAT = "chat"
     MANUAL = "manual"
 
-class FragmentKind(str, Enum):
+class ElementKind(str, Enum):
     PREAMBLE = "preamble"
     HEADER = "header"
     QUESTION = "question"
+    DIAGRAM = "diagram"
+    INSTRUCTION = "instruction"
+    WORKED_EXAMPLE = "worked_example"
     FOOTER = "footer"
     TEXT_BLOCK = "text_block"
+    MCQ_OPTIONS = "mcq_options"
 
 class FatigueMetric(BaseModel):
     current_score: int = Field(default=0, ge=0, le=100)
@@ -114,11 +118,16 @@ class Document(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 
-class ArtifactDocumentFragment(BaseModel):
+class ArtifactDocumentElement(BaseModel):
     id: str
     document_id: str
-    order_index: int
-    kind: FragmentKind
+    sort_key: str
+    kind: ElementKind
+    label: str = "Element"
     content_latex: str
     metadata_json: str = "{}"
     version_id: str
+    is_locked: bool = False
+    is_collapsed: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

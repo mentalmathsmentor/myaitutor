@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -17,20 +17,18 @@ import {
   Settings,
   Sparkles,
   X,
+  Code2,
+  LayoutTemplate
 } from 'lucide-react';
-import MathInput from './components/MathInput';
-import syllabusData from './syllabus_data.json';
-import stageSubjects from './stage_subjects.json';
-import modelSelectorHint from './assets/gemini-model-selector.png';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
-import { buildWorksheetRequest } from './features/worksheet/utils/buildWorksheetRequest';
-import { renderGemHandoffPrompt } from './features/worksheet/utils/renderGemHandoffPrompt';
-import ZeroCodeOnboardingModal from './features/onboarding/components/ZeroCodeOnboardingModal';
+import MathInput from '../components/MathInput';
+import syllabusData from '../syllabus_data.json';
+import stageSubjects from '../stage_subjects.json';
+import modelSelectorHint from '../assets/gemini-model-selector.png';
+import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
+import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
+import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
+import { API_URL } from '@/config/api';
 
 const STAGES = Object.keys(stageSubjects);
 const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)', 'Dynamic Space'];
@@ -132,11 +130,13 @@ function formatStageLabel(stage) {
   return stage;
 }
 
-export default function WorksheetGenerator({ navigate }) {
+export default function WorksheetStudio({ setCurrentSection }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState('');
   const [generationSuccess, setGenerationSuccess] = useState('');
+  const [showCanvas, setShowCanvas] = useState(false);
+  const [canvasWorksheetRequest, setCanvasWorksheetRequest] = useState(null);
 
   const [showWarning, setShowWarning] = useState(false);
   const [showCloseButton, setShowCloseButton] = useState(false);
@@ -317,13 +317,6 @@ export default function WorksheetGenerator({ navigate }) {
     return buildMergedSyllabus(legacySyllabusYear);
   }, [legacySyllabusYear]);
 
-  const hasSyllabusData = useMemo(
-    () => currentSyllabus && Object.keys(currentSyllabus).length > 0 && !MANUAL_ONLY_SUBJECTS.has(selectedSubject) && selectedSubject !== 'Other',
-    [currentSyllabus, selectedSubject]
-  );
-
-  const deferredRawQuestions = useDeferredValue(rawQuestions);
-
   const currentTopicsList = useMemo(() => {
     if (legacySyllabusYear) {
       return null;
@@ -342,6 +335,9 @@ export default function WorksheetGenerator({ navigate }) {
 
   const filteredModules = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
+    if (!query) {
+      return Object.keys(currentSyllabus);
+    }
     if (!query) {
       return Object.keys(currentSyllabus);
     }
@@ -381,6 +377,14 @@ export default function WorksheetGenerator({ navigate }) {
   }, [currentSyllabus, filteredModules, searchQuery]);
 
   const displaySubject = selectedSubject === 'Other' && customSubject.trim() ? customSubject.trim() : selectedSubject;
+
+  const canvasConfig = useMemo(() => ({
+    yearLevel: formatStageLabel(selectedStage),
+    subject: displaySubject,
+    topics: selectedPoints.map(id => getLabel(id)),
+    questionCount: numQuestions,
+    difficulty: difficulty === 'Mostly Easy' ? 1 : difficulty === 'Exam-Style' ? 5 : 3
+  }), [selectedStage, displaySubject, selectedPoints, numQuestions, difficulty]);
   const yearLevel = getStageYearLevel(selectedStage);
   const canGeneratePdf = Boolean(yearLevel) && isMathsSubject(displaySubject);
 
@@ -428,8 +432,7 @@ export default function WorksheetGenerator({ navigate }) {
   };
 
   const validateSelection = () => {
-    const hasTopicSelection = hasSyllabusData ? (selectedPoints.length > 0 || rawQuestions.trim().length > 0) : rawQuestions.trim().length > 0;
-    if (!hasTopicSelection) {
+    if ((mode === 'A' && selectedPoints.length === 0) || (mode === 'B' && rawQuestions.trim().length === 0)) {
       setIsShaking(true);
       setShowErrorToast(true);
       setTimeout(() => setIsShaking(false), 500);
@@ -477,9 +480,7 @@ export default function WorksheetGenerator({ navigate }) {
     pedagogicalWordProblems,
     pedagogicalMultiStep,
     selectedPoints,
-    syllabusData: currentSyllabus,
-    firstTimeMode,
-    includeCanvasSetup,
+    syllabusData: currentSyllabus // pass the merged syllabus or raw data
   });
 
   const generatePrompt = () => {
@@ -527,7 +528,7 @@ export default function WorksheetGenerator({ navigate }) {
       await navigator.clipboard.writeText(generatePrompt());
       setIsCopied(true);
       setGenerationError('');
-      setGenerationSuccess('Copied! Your worksheet instructions are ready to paste.');
+      setGenerationSuccess('Instructions generated, copied, and ready for Gemini Canvas.');
       setShowWarning(true);
       setShowCloseButton(false);
       if (launchTimeoutRef.current) {
@@ -634,14 +635,13 @@ export default function WorksheetGenerator({ navigate }) {
       return selectedStage && selectedSubject && (selectedSubject !== 'Other' || customSubject.trim() !== '');
     }
     if (currentStep === 1) {
-      return hasSyllabusData ? (selectedPoints.length > 0 || rawQuestions.trim() !== '') : rawQuestions.trim() !== '';
+      return mode === 'A' ? selectedPoints.length > 0 : rawQuestions.trim() !== '';
     }
     return true;
   };
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(147,51,234,0.2),_transparent_36%),linear-gradient(180deg,_rgba(46,16,101,0.32)_0%,_rgba(8,12,24,0.94)_32%,_rgba(8,12,24,1)_100%)] pt-24 pb-10">
-      {/* <ZeroCodeOnboardingModal /> Temporarily disabled until demo video is ready */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,_rgba(168,85,247,0.12),_transparent_32%),radial-gradient(circle_at_86%_18%,_rgba(139,92,246,0.14),_transparent_28%),radial-gradient(circle_at_50%_100%,_rgba(91,33,182,0.1),_transparent_30%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#190b34]/70 via-[#140d2d]/35 to-transparent" />
       <div className="relative">
@@ -670,29 +670,14 @@ export default function WorksheetGenerator({ navigate }) {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/15 text-green-400">
               <CheckCircle2 size={30} />
             </div>
-            <h3 className="text-3xl font-bold text-green-400">Copied!</h3>
-            <p className="mt-3 text-sm text-white/65">
-              Your worksheet instructions have been copied to your clipboard. Paste them into the Gemini Gem to generate your worksheet.
-            </p>
-            <div className="mt-5">
-              <img src={modelSelectorHint} alt="Select Deep Think mode" loading="lazy" className="mx-auto rounded-2xl border border-white/10" />
+            <h3 className="text-3xl font-bold text-white">Instructions ready</h3>
+            <div className="mx-auto mt-6 flex justify-center">
+              <img 
+                src={modelSelectorHint} 
+                alt="Gemini Thinking mode selector" 
+                className="h-56 w-56 rounded-2xl border border-white/10 object-cover object-[15%_10%] shadow-2xl" 
+              />
             </div>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(generatePrompt());
-                  setIsCopied(true);
-                  setTimeout(() => setIsCopied(false), 2000);
-                } catch {
-                  // silently fail — primary copy already happened
-                }
-              }}
-              className="mx-auto mt-3 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-            >
-              <Copy size={14} />
-              {isCopied ? 'Copied!' : 'Copy prompt again'}
-            </button>
             {!showCloseButton && (
               <div className="mt-5">
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
@@ -708,14 +693,6 @@ export default function WorksheetGenerator({ navigate }) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center justify-between">
           <div>
-            <button
-              type="button"
-              onClick={() => navigate?.('landing')}
-              className="mb-2 flex items-center gap-2 text-sm text-white/60 transition hover:text-white"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Back to home
-            </button>
             <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
               <FileText className="h-8 w-8 text-mait-cyan" />
               Worksheet Studio
@@ -823,29 +800,38 @@ export default function WorksheetGenerator({ navigate }) {
                           setSelectedSubject('Other');
                           setMode('B');
                         }}
-                        className={`flex items-center rounded-2xl border px-4 py-3 text-left transition ${
+                        className={`flex items-center px-4 py-3 rounded-lg text-left transition-all ${
                           selectedSubject === 'Other'
-                            ? 'border-mait-cyan/50 bg-mait-cyan/10 text-white'
-                            : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white'
+                            ? 'bg-mait-cosmic/20 border border-mait-cosmic/50 text-white shadow-[0_0_15px_-3px_rgba(168,85,247,0.5)]'
+                            : 'bg-white/[0.03] text-white/70 hover:text-white border border-dashed border-white/30'
                         }`}
                       >
-                        Other
+                        <span className="flex items-center gap-2 font-medium">
+                          <Sparkles className="w-4 h-4" />
+                          Other (Custom)
+                        </span>
                       </button>
                     </div>
-                  </div>
 
-                  {selectedSubject === 'Other' && (
-                    <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <label className="text-xs uppercase tracking-[0.25em] text-white/45">Custom subject</label>
-                      <input
-                        type="text"
-                        value={customSubject}
-                        onChange={(event) => setCustomSubject(event.target.value)}
-                        placeholder="e.g. Commerce"
-                        className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-mait-cyan/40"
-                      />
-                    </div>
-                  )}
+                    <AnimatePresence>
+                      {selectedSubject === 'Other' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden mt-4"
+                        >
+                          <input
+                            type="text"
+                            placeholder="Enter custom subject name..."
+                            value={customSubject}
+                            onChange={(e) => setCustomSubject(e.target.value)}
+                            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-white/40 focus:border-mait-cyan focus:outline-none transition-colors"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                   <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
                     <label className="text-xs uppercase tracking-[0.25em] text-white/45">Optional header label</label>
@@ -862,195 +848,185 @@ export default function WorksheetGenerator({ navigate }) {
 
               {currentStep === 1 && (
                 <motion.div key="topics" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -18 }} className="space-y-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-mait-cyan/15 text-sm font-bold text-mait-cyan">2</div>
-                    <div>
-                      <h2 className="text-xl font-bold text-white">Topics and dot-points</h2>
-                      <p className="text-sm text-white/50">The original syllabus hierarchy and prerequisite merge are restored here.</p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-mait-cyan/15 text-sm font-bold text-mait-cyan">2</div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white">Topics and dot-points</h2>
+                        <p className="text-sm text-white/50">The original syllabus hierarchy and prerequisite merge are restored here.</p>
+                      </div>
+                    </div>
+                    <div className="flex rounded-2xl border border-white/10 bg-white/5 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setMode('A')}
+                        className={`rounded-xl px-4 py-2 text-sm transition ${mode === 'A' ? 'bg-mait-cosmic/20 text-white' : 'text-white/55 hover:text-white'}`}
+                      >
+                        Official syllabus
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMode('B')}
+                        className={`rounded-xl px-4 py-2 text-sm transition ${mode === 'B' ? 'bg-mait-cosmic/20 text-white' : 'text-white/55 hover:text-white'}`}
+                      >
+                        Manual entry
+                      </button>
                     </div>
                   </div>
 
-                  {hasSyllabusData ? (
-                    <>
-                      <div className={`overflow-hidden rounded-3xl border border-white/10 bg-black/20 ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}>
-                        <div className="flex flex-wrap items-center gap-4 border-b border-white/10 bg-white/5 p-4">
-                          <div className="relative min-w-[220px] flex-1">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(event) => setSearchQuery(event.target.value)}
-                              placeholder="Find a topic or syllabus point..."
-                              className="w-full rounded-2xl border border-white/10 bg-black/20 py-2 pl-10 pr-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
-                            />
-                          </div>
-                          <div className="text-xs uppercase tracking-[0.25em] text-mait-cyan">{selectedPoints.length} selected</div>
-                          {selectedPoints.length > 0 && (
-                            <button type="button" onClick={() => setSelectedPoints([])} className="text-xs uppercase tracking-[0.2em] text-white/50 transition hover:text-white">
-                              Clear all
-                            </button>
-                          )}
+                  {mode === 'B' || selectedSubject === 'Other' ? (
+                    <div className="space-y-4">
+                      {(selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) && (
+                        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
+                          {selectedSubject === 'Other'
+                            ? 'This subject uses manual entry only. Add your own topic brief or question instructions below.'
+                            : `${selectedSubject} is currently manual-entry only. The selected subject will still be injected into the final worksheet instructions.`}
                         </div>
+                      )}
+                      <MathInput
+                        value={rawQuestions}
+                        onChange={setRawQuestions}
+                        placeholder={`Paste the exact ${displaySubject} brief, topic list, or teacher instructions here...`}
+                        rows={14}
+                        className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
+                        inputClassName="min-h-[360px] w-full rounded-3xl border border-white/10 bg-black/25 p-4 pr-24 text-sm text-white outline-none transition focus:border-mait-cyan/40"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`overflow-hidden rounded-3xl border border-white/10 bg-black/20 ${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}>
+                      <div className="flex flex-wrap items-center gap-4 border-b border-white/10 bg-white/5 p-4">
+                        <div className="relative min-w-[220px] flex-1">
+                          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+                          <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(event) => setSearchQuery(event.target.value)}
+                            placeholder="Find a topic or syllabus point..."
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 py-2 pl-10 pr-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
+                          />
+                        </div>
+                        <div className="text-xs uppercase tracking-[0.25em] text-mait-cyan">{selectedPoints.length} selected</div>
+                        {selectedPoints.length > 0 && (
+                          <button type="button" onClick={() => setSelectedPoints([])} className="text-xs uppercase tracking-[0.2em] text-white/50 transition hover:text-white">
+                            Clear all
+                          </button>
+                        )}
+                      </div>
 
-                        <div className="max-h-[540px] overflow-y-auto p-4">
-                          {legacySyllabusYear ? (
-                            <div className="space-y-4">
-                              {filteredModules.map((moduleName) => (
-                                <div key={moduleName} className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
-                                      {expandedModules[moduleName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                    </button>
-                                    <label className="flex flex-1 cursor-pointer items-center gap-3">
-                                      <input
-                                        type="checkbox"
-                                        checked={isModuleSelected(moduleName)}
-                                        onChange={() => toggleModuleSelection(moduleName)}
-                                        className="h-4 w-4 rounded border-white/20 accent-mait-cyan"
-                                      />
-                                      <span className="text-sm font-semibold text-white">{moduleName}</span>
-                                    </label>
-                                  </div>
-
-                                  {(expandedModules[moduleName] || searchQuery) && (
-                                    <div className="ml-6 space-y-3 border-l border-white/10 pl-4">
-                                      {Object.keys(currentSyllabus[moduleName] || {}).map((subtopic) => {
-                                        const points = currentSyllabus[moduleName][subtopic] || [];
-                                        const query = searchQuery.toLowerCase().trim();
-                                        if (
-                                          query &&
-                                          !subtopic.toLowerCase().includes(query) &&
-                                          !points.some((point) => getLabel(point).toLowerCase().includes(query))
-                                        ) {
-                                          return null;
-                                        }
-
-                                        return (
-                                          <div key={subtopic} className="space-y-2">
-                                            <div className="flex items-center gap-2">
-                                              <button type="button" onClick={() => toggleSubtopic(subtopic)} className="rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
-                                                {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                              </button>
-                                              <label className="flex flex-1 cursor-pointer items-center gap-3">
-                                                <input
-                                                  type="checkbox"
-                                                  checked={isSubtopicSelected(moduleName, subtopic)}
-                                                  onChange={() => toggleSubtopicSelection(moduleName, subtopic)}
-                                                  className="h-4 w-4 rounded border-white/20 accent-mait-cyan"
-                                                />
-                                                <span className="truncate text-xs font-medium uppercase tracking-[0.18em] text-white/55">{subtopic}</span>
-                                              </label>
-                                            </div>
-
-                                            {(expandedSubtopics[subtopic] || searchQuery) && (
-                                              <div className="ml-6 grid gap-2">
-                                                {points.map((point) => (
-                                                  <label
-                                                    key={point.id || point}
-                                                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
-                                                      selectedPoints.includes(getId(point))
-                                                        ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
-                                                        : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
-                                                    }`}
-                                                  >
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={selectedPoints.includes(point.id || point)}
-                                                      onChange={() => handlePointToggle(point)}
-                                                      className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
-                                                    />
-                                                    <span className="text-xs leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
-                                                  </label>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : currentTopicsList && currentTopicsList.length > 0 ? (
-                            <div className="grid gap-3">
-                              {currentTopicsList
-                                .filter((topic) => {
-                                  const lbl = typeof topic === 'object' ? topic.label : topic;
-                                  return (lbl || '').toLowerCase().includes(searchQuery.toLowerCase());
-                                })
-                                .map((topic) => (
-                                  <label
-                                    key={topic.id || topic}
-                                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
-                                      selectedPoints.includes(topic.id || topic)
-                                        ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
-                                        : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
-                                    }`}
-                                  >
+                      <div className="max-h-[540px] overflow-y-auto overflow-x-hidden p-4">
+                        {legacySyllabusYear ? (
+                          <div className="space-y-4">
+                            {filteredModules.map((moduleName) => (
+                              <div key={moduleName} className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <button type="button" onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
+                                    {expandedModules[moduleName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                  </button>
+                                  <label className="flex flex-1 cursor-pointer items-center gap-3">
                                     <input
                                       type="checkbox"
-                                      checked={selectedPoints.includes(topic.id || topic)}
-                                      onChange={() => handlePointToggle(topic)}
-                                      className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                      checked={isModuleSelected(moduleName)}
+                                      onChange={() => toggleModuleSelection(moduleName)}
+                                      className="h-4 w-4 rounded border-white/20 accent-mait-cyan"
                                     />
-                                    <span className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(topic) }} />
+                                    <span className="text-sm font-semibold text-white">{moduleName}</span>
                                   </label>
-                                ))}
-                            </div>
-                          ) : (
-                            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/55">
-                              No predefined topic list exists for this subject yet.
-                            </div>
-                          )}
-                        </div>
+                                </div>
+
+                                {(expandedModules[moduleName] || searchQuery) && (
+                                  <div className="ml-6 space-y-3 border-l border-white/10 pl-4">
+                                    {Object.keys(currentSyllabus[moduleName] || {}).map((subtopic) => {
+                                      const points = currentSyllabus[moduleName][subtopic] || [];
+                                      const query = searchQuery.toLowerCase().trim();
+                                      if (
+                                        query &&
+                                        !subtopic.toLowerCase().includes(query) &&
+                                        !points.some((point) => getLabel(point).toLowerCase().includes(query))
+                                      ) {
+                                        return null;
+                                      }
+
+                                      return (
+                                        <div key={subtopic} className="space-y-2">
+                                          <div className="flex min-w-0 items-center gap-2">
+                                            <button type="button" onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
+                                              {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                            </button>
+                                            <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                                              <input
+                                                type="checkbox"
+                                                checked={isSubtopicSelected(moduleName, subtopic)}
+                                                onChange={() => toggleSubtopicSelection(moduleName, subtopic)}
+                                                className="h-4 w-4 flex-shrink-0 rounded border-white/20 accent-mait-cyan"
+                                              />
+                                              <span className="truncate text-xs font-medium uppercase tracking-[0.18em] text-white/55">{subtopic}</span>
+                                            </label>
+                                          </div>
+
+                                          {(expandedSubtopics[subtopic] || searchQuery) && (
+                                            <div className="ml-6 grid gap-2">
+                                                  {points.map((point) => (
+                                                <label
+                                                  key={point.id || point}
+                                                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
+                                                    selectedPoints.includes(getId(point))
+                                                      ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
+                                                      : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
+                                                  }`}
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={selectedPoints.includes(point.id || point)}
+                                                    onChange={() => handlePointToggle(point)}
+                                                    className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                                  />
+                                                  <span className="text-xs leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(point) }} />
+                                                </label>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : currentTopicsList && currentTopicsList.length > 0 ? (
+                          <div className="grid gap-3">
+                            {currentTopicsList
+                              .filter((topic) => {
+                                const lbl = typeof topic === 'object' ? topic.label : topic;
+                                return (lbl || '').toLowerCase().includes(searchQuery.toLowerCase());
+                              })
+                              .map((topic) => (
+                                <label
+                                  key={topic.id || topic}
+                                  className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
+                                    selectedPoints.includes(topic.id || topic)
+                                      ? 'border-mait-cyan/30 bg-mait-cyan/10 text-white'
+                                      : 'border-white/10 bg-white/5 text-white/70 hover:border-white/20'
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedPoints.includes(topic.id || topic)}
+                                    onChange={() => handlePointToggle(topic)}
+                                    className="mt-0.5 h-4 w-4 rounded border-white/20 accent-mait-cyan"
+                                  />
+                                  <span className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderLatex(topic) }} />
+                                </label>
+                              ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/55">
+                            No predefined topic list exists for this subject yet. Switch to manual entry if you want to specify it yourself.
+                          </div>
+                        )}
                       </div>
-                    </>
-                  ) : (
-                    <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
-                      {selectedSubject === 'Other'
-                        ? 'This subject uses manual entry only. Add your own topic brief or question instructions below.'
-                        : `${selectedSubject} is currently manual-entry only. The selected subject will still be injected into the final worksheet instructions.`}
                     </div>
                   )}
-
-                  <div className="mt-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs uppercase tracking-[0.25em] text-white/45">
-                        {hasSyllabusData ? 'Additional notes (optional)' : 'Topic brief or question instructions'}
-                      </label>
-                      {rawQuestions.trim() && (
-                        <button
-                          type="button"
-                          onClick={() => setRawQuestions('')}
-                          className="flex items-center gap-1 text-xs uppercase tracking-[0.2em] text-white/50 transition hover:text-white"
-                        >
-                          <X size={12} />
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                    <MathInput
-                      value={rawQuestions}
-                      onChange={setRawQuestions}
-                      placeholder={hasSyllabusData
-                        ? 'Add extra topics, specific question styles, or teacher notes...'
-                        : `Paste the exact ${displaySubject} brief, topic list, or teacher instructions here...`}
-                      rows={hasSyllabusData ? 4 : 14}
-                      className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
-                      inputClassName={`${hasSyllabusData ? 'min-h-[120px]' : 'min-h-[360px]'} w-full rounded-3xl border border-white/10 bg-black/25 p-4 pr-24 text-sm text-white outline-none transition focus:border-mait-cyan/40`}
-                    />
-                    {deferredRawQuestions.trim() && (
-                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <p className="mb-2 text-[10px] uppercase tracking-[0.25em] text-white/40">Preview</p>
-                        <div className="prose prose-invert prose-sm max-w-none text-white/70">
-                          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                            {deferredRawQuestions}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </motion.div>
               )}
 
@@ -1301,7 +1277,34 @@ export default function WorksheetGenerator({ navigate }) {
                   Continue
                 </button>
               ) : (
-                <div className="text-sm text-white/45">Review the summary panel before generating.</div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCanvasWorksheetRequest(buildWorksheetRequest(getWorksheetRequestParams()));
+                      setShowCanvas(true);
+                      setTimeout(() => {
+                        const el = document.getElementById('mait-native-canvas-container');
+                        if (el) {
+                          const y = el.getBoundingClientRect().top + window.scrollY - 100;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                      }, 150);
+                    }}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+                  >
+                    <Code2 className="h-4 w-4" />
+                    Edit in Canvas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyToClipboard}
+                    className="flex items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-6 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01]"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span>Launch Gemini</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1325,12 +1328,6 @@ export default function WorksheetGenerator({ navigate }) {
                   <span>Selected points</span>
                   <span className="text-white">{selectedPoints.length}</span>
                 </div>
-                {rawQuestions.trim() && (
-                  <div className="flex items-start justify-between text-white/60">
-                    <span>Manual topics</span>
-                    <span className="max-w-[180px] truncate text-right text-white">{rawQuestions.trim().length > 60 ? rawQuestions.trim().slice(0, 60) + '...' : rawQuestions.trim()}</span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between text-white/60">
                   <span>Questions</span>
                   <span className="text-white">{numQuestions}</span>
@@ -1349,7 +1346,7 @@ export default function WorksheetGenerator({ navigate }) {
                 <button
                   type="button"
                   onClick={copyToClipboard}
-                  className={`flex w-full items-center justify-center gap-3 rounded-2xl ${currentStep === 3 ? 'bg-green-500 hover:bg-green-600' : 'bg-mait-cosmic'} px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]`}
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]"
                 >
                   <Copy className="h-4 w-4" />
                   <span className="flex flex-col leading-tight">
@@ -1370,31 +1367,46 @@ export default function WorksheetGenerator({ navigate }) {
               )}
             </div>
 
-            <div className="glass-card rounded-3xl p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-mait-cyan/15 text-mait-cyan">
-                  <ExternalLink className="h-4 w-4" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-white">Prompt handoff tips</h3>
-                  <p className="text-xs text-white/50">Quick tips for pasting your instructions into the Gemini Gem.</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm text-white/60">Make sure Deep Think / Extended Thinking is selected for best results.</p>
-                <img src={modelSelectorHint} alt="Select thinking mode" loading="lazy" className="rounded-2xl border border-white/10" />
-                <button
-                  type="button"
-                  onClick={copyToClipboard}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-                >
-                  <Copy size={14} />
-                  Copy prompt to clipboard
-                </button>
-              </div>
+            <div className="glass-card rounded-3xl p-5 flex flex-col items-center">
+              <img 
+                src={modelSelectorHint} 
+                alt="Gemini Thinking mode selector" 
+                className="h-40 w-40 rounded-2xl border border-white/10 object-cover object-[15%_10%] shadow-lg" 
+              />
             </div>
           </div>
         </div>
+
+        {/* Inline Canvas - Full Width Layout outside main grid */}
+        <AnimatePresence>
+          {showCanvas && (
+            <motion.div
+              id="mait-native-canvas-container"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mt-12 w-full"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <LayoutTemplate className="w-5 h-5 text-mait-cyan" />
+                  MAIT Native Canvas
+                </h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-white/50 text-sm">Dual-pane LaTeX Editor</span>
+                  <button
+                    onClick={() => setShowCanvas(false)}
+                    className="text-sm px-3 py-1.5 rounded-lg border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition"
+                  >
+                    Hide
+                  </button>
+                </div>
+              </div>
+              
+              <InlineCanvas config={canvasConfig} worksheetRequest={canvasWorksheetRequest} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-10 grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="glass-card-strong overflow-hidden rounded-3xl">
@@ -1421,7 +1433,7 @@ export default function WorksheetGenerator({ navigate }) {
           <div className="glass-card-strong rounded-3xl p-6">
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
-              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Gem workflow.</p>
+              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
             </div>
 
             <div className="space-y-4">
@@ -1441,7 +1453,7 @@ export default function WorksheetGenerator({ navigate }) {
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  The custom Gemini Gem has built-in instructions that make it easy to edit, regenerate, and selectively tweak worksheet sections after the initial prompt is pasted.
+                  Gemini Canvas makes it much easier to edit, regenerate, and selectively tweak worksheet sections after the initial instructions are produced.
                 </div>
               </details>
 

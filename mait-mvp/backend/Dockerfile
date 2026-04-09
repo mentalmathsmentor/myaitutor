@@ -6,10 +6,14 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PORT 8000
 
-# Install system dependencies (needed for FAISS and PDF generation if using pdflatex)
+# Install system dependencies (FAISS, pdflatex for LaTeX compilation)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libsqlite3-dev \
+    texlive-latex-recommended \
+    texlive-fonts-recommended \
+    texlive-latex-extra \
+    texlive-pictures \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory

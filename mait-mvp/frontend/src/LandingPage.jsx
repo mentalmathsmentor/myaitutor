@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { BrainCircuit, Battery, Moon, ArrowRight, Lock, Sparkles, Play, GraduationCap, BookOpen, Lightbulb, MessageCircle, FileText, Check, ClipboardList, Users } from 'lucide-react'
+import { API_URL } from './config/api'
 
 const SYLLABI = [
     { label: 'Standard', url: 'https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-standard-11-12-2024/overview', color: 'text-cyan-400', className: 'course-card-standard' },
@@ -122,7 +123,6 @@ export default function LandingPage({ navigate, onLoginClick }) {
     const [visitLoaded, setVisitLoaded] = useState(false)
 
     useEffect(() => {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com'
         const timeout = setTimeout(() => setVisitLoaded(true), 3000)
         fetch(`${API_URL}/visit`, { method: 'POST' })
             .then(r => r.json())
@@ -458,7 +458,6 @@ function WaitlistForm() {
 
         setStatus('loading')
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'https://myaitutor-54iv.onrender.com';
             const res = await fetch(`${API_URL}/subscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

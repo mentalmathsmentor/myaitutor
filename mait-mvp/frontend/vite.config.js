@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
     base: '/',
+    resolve: {
+        alias: {
+            '@': fileURLToPath(new URL('./src', import.meta.url))
+        },
+    },
     plugins: [react()],
     server: {
         watch: {
@@ -19,6 +25,7 @@ export default defineConfig({
             '/keystroke-metrics': 'http://localhost:8000',
             '/keystroke-profile': 'http://localhost:8000',
             '/auth': 'http://localhost:8000',
+            '/canvas': 'http://localhost:8000',
         }
     },
     optimizeDeps: {

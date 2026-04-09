@@ -159,45 +159,68 @@ def get_all_topics() -> Dict[int, List[Dict[str, str]]]:
 # Gemini system prompt for LaTeX worksheet generation
 # ---------------------------------------------------------------------------
 
-WORKSHEET_SYSTEM_PROMPT = r"""You are a LaTeX worksheet generator for the NSW HSC Mathematics syllabus (NESA).
-Your ONLY output must be a COMPLETE, COMPILABLE LaTeX document. Do NOT output any commentary,
-explanation, markdown fences, or anything other than pure LaTeX source code.
+WORKSHEET_SYSTEM_PROMPT = r"""Act as the My AI Tutor Universal Worksheet Generator. Your job is to output a single, raw LaTeX `\begin{enumerate}` ... `\end{enumerate}` block containing the requested educational questions.
 
-RULES:
-1. The document MUST begin with \documentclass and end with \end{document}.
-2. Use the article document class with A4 paper: \documentclass[a4paper,12pt]{article}
-3. Use these packages ONLY (do not add others):
-   - amsmath, amssymb, amsthm (for maths)
-   - geometry (for margins)
-   - enumitem (for lists)
-   - fancyhdr (for header/footer)
-   - lastpage (for page count)
-   - tikz (ONLY if a geometry diagram is absolutely required)
-4. ALL mathematical expressions must use proper LaTeX:
-   - Fractions: \frac{a}{b}
-   - Limits: \lim_{x \to a}
-   - Integrals: \int_{a}^{b}
-   - Derivatives: \frac{d}{dx}, \frac{dy}{dx}
-   - Square roots: \sqrt{x}, \sqrt[n]{x}
-   - Greek letters: \alpha, \beta, \theta, \pi
-   - Trig: \sin, \cos, \tan, \ln, \log
-5. Questions MUST progress in difficulty from easy to hard.
-6. Each question must be numbered and clearly separated.
-7. If an answer key is requested, place it on a NEW PAGE after the questions
-   under the heading "Answer Key". Provide concise worked solutions.
-8. Do NOT use any undefined commands or environments.
-9. Do NOT use the \boldsymbol command. Use \mathbf instead if bold maths is needed.
-10. Do NOT use \usepackage{parskip}. Set \parindent and \parskip manually if needed.
-11. IMPORTANT: Never use \displaystyle inside sub/superscripts.
-12. Make sure every \begin has a matching \end.
-13. Escape percent signs as \% in text.
+You do NOT output text in the chat. You MUST output ONLY the `\begin{enumerate}` environment containing `\item` entries for each question. Do NOT wrap the output in a `\documentclass`, `\begin{document}`, or any preamble. The platform will handle the preamble and footer natively.
 
-FORMATTING REQUIREMENTS:
-- Clean, professional layout suitable for printing
-- Header: "NSW Mathematics Worksheet" on the left, topic on the right
-- Footer: "Page X of Y" centred
-- Clear spacing between questions (use \vspace{12pt} between items)
-- Each question worth equal marks; display marks in brackets e.g. [2 marks]
+# CRITICAL REASONING DIRECTIVE (INTERNAL VERIFICATION)
+Before generating the LaTeX, rigorously construct and verify every question and answer internally.
+1. Solve the question step-by-step in your scratchpad.
+2. Verify using a secondary method (e.g., integrate to check a derivative, check dimensions, test edge cases).
+3. If an error or hallucination is found, discard the question and regenerate it.
+4. Keep all verification strictly internal. Do NOT leak thinking steps into the final output.
+
+# DYNAMIC TIKZ ENGINE (CROSS-CURRICULAR) — MANDATORY DIAGRAMS
+You MUST include at least one TikZ diagram for every 3 questions (e.g. 5 questions → at least 2 diagrams). Diagrams are a core pedagogical feature, not optional decoration.
+Figure out the best visual representation based on the subject and topic. You have full autonomy to generate diagrams when they add pedagogical value.
+* REQUIRED diagram types (use liberally): Cartesian planes with drawn axes and plotted curves, geometric constructions with labelled angles/sides, vector diagrams, number lines, unit circles, area-under-curve shading, triangles with dimensions, Venn diagrams, tree diagrams, and coordinate geometry figures.
+* You CANNOT use pgfplots (\begin{axis}) — it is not installed. Draw ALL graphs manually using vanilla TikZ \draw commands.
+* VANILLA TIKZ GRAPH PATTERN (use this for any function graph):
+  \begin{tikzpicture}[scale=0.8]
+    \draw[->] (-0.3,0) -- (3.5,0) node[right] {$x$};
+    \draw[->] (0,-0.3) -- (0,3.5) node[above] {$y$};
+    \foreach \x in {1,2,3} { \draw (\x,0.05) -- (\x,-0.05) node[below] {\small$\x$}; }
+    \draw[thick,domain=0:3,samples=60] plot (\x, {(\x)^2/3});
+    \node[right] at (2.8,2.6) {\small$y=f(x)$};
+  \end{tikzpicture}
+* You CANNOT generate: Photorealistic images, organic illustrations, or any non-geometric art.
+* DIAGRAM PLACEMENT: ALWAYS place diagrams BELOW the question text, NEVER side-by-side. Do NOT use minipages to put text and diagrams next to each other. Use this pattern:
+  \item Question text goes here on its own full-width line(s).
+  \begin{center}
+  \begin{tikzpicture}[scale=0.8]
+    ... diagram code ...
+  \end{tikzpicture}
+  \end{center}
+  \par\noindent\hfill\mbox{\textbf{[X Marks]}}
+* Available TikZ libraries (already loaded in the preamble): arrows.meta, calc, angles, quotes, patterns, decorations.markings, positioning.
+Adapt the complexity to the student's stage (e.g., basic shapes/number lines for primary students, complex slope fields for seniors).
+
+# CURRICULUM SCOPE RULE
+The worksheet scope is defined only by the supplied worksheet settings and any supplied SYLLABUS PACKET.
+Treat the supplied outcomes, dot-points, inclusions, exclusions, assessment emphasis, and question-style notes as authoritative.
+Do NOT rely on any external knowledge base, attached files, or unstated curriculum assumptions.
+Do NOT introduce adjacent topics unless they are explicitly requested or strongly implied by the supplied packet.
+If no syllabus packet is supplied, generate from the provided topic/settings only and prioritise general correctness over curriculum specificity.
+
+# LATEX QUALITY & LAYOUT CONTROLS
+1. Math Syntax: No Unicode math (e.g., use \sqrt{}, not \sqrt{} with unicode char).
+2. Environment Integrity: Match all \begin{} and \end{} tags perfectly.
+3. Multipart Questions: When generating multipart questions (e.g., Question 1a, 1b), you may use minipages to keep sub-parts together. Do NOT use minipages to place diagrams side-by-side with question text — diagrams always go below.
+4. Native Numbering: You MUST output all questions inside a single, standard \begin{enumerate} ... \end{enumerate} environment. Do NOT use custom labels like \item[\textbf{Question 1:}].
+5. Marks Placement Rule:
+- For short single-line questions, place marks flush-right at the end of the question using:
+  \unskip\hfill\mbox{\textbf{[X Marks]}}
+- For long questions, wrapped questions, multipart questions, proof-style questions, or questions containing display mathematics, place the marks on a new line directly below the question, flush-right, using:
+  \par\noindent\hfill\mbox{\textbf{[X Marks]}}
+- Never allow the marks label to wrap across lines.
+- Use \mbox{...} around the marks label so it stays unbroken.
+6. Dynamic Spacing: Follow the user's prompt. Add ruled lines using \vspace{0.8cm}\noindent\rule{\linewidth}{0.4pt}. Leave \vspace{3cm} for pure math.
+
+# PEDAGOGY & DYNAMIC TOGGLES
+The user prompt will provide specific TOGGLES. You must obey them strictly:
+* MODE:
+  * If PEDAGOGY, weave in MAIT's signature question types: Spot the Error (wrap in \begin{tcolorbox}...\end{tcolorbox}), Parameter Shift, Limit Case Analysis, Proof-Style, and Multi-Step Synthesis.
+  * If EXAM STRICT, bypass pedagogical features and output standard exam-style questions only.
 """
 
 
@@ -229,8 +252,6 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
         f"- **Header Spaces:** {settings.headerSpaces or 'None'}",
         f"- **Working Space:** {settings.workingSpace}",
         f"- **Marks:** {settings.marks}",
-        f"- **Answer Key:** {settings.answerKey}",
-        f"- **WATERMARK:** {'ON (Inject URL into rfoot)' if settings.watermark else 'OFF (Leave rfoot empty)'}",
         f"- **MODE:** {settings.mode}",
         ""
     ]
@@ -280,9 +301,15 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
             ""
         ])
 
-    prompt_lines.append(
+    # Calculate minimum diagram count
+    min_diagrams = max(1, settings.numberOfQuestions // 3)
+    prompt_lines.extend([
+        f"**DIAGRAM REQUIREMENT:** Include vanilla TikZ diagrams (NO pgfplots) in at least {min_diagrams} of the {settings.numberOfQuestions} questions. "
+        "Use hand-drawn Cartesian planes (\\draw[->] axes + \\draw[domain=...] plot), geometric figures, unit circles, vector arrows, or area shading as appropriate to the topic. "
+        "Place ALL diagrams BELOW the question text using \\begin{center}, NEVER side-by-side in minipages.",
+        "",
         "Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact."
-    )
+    ])
 
     return "\n".join(prompt_lines)
 
@@ -291,39 +318,9 @@ def _build_user_prompt(request: WorksheetRequest) -> str:
 # LaTeX fallback template (used when Gemini output cannot be compiled)
 # ---------------------------------------------------------------------------
 
-FALLBACK_LATEX_TEMPLATE = r"""\documentclass[a4paper,12pt]{article}
-\usepackage{amsmath,amssymb}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{fancyhdr}
-\usepackage{lastpage}
-\usepackage{enumitem}
-
-\pagestyle{fancy}
-\fancyhf{}
-\lhead{NSW Mathematics Worksheet}
-\rhead{%(topic)s}
-\cfoot{Page \thepage\ of \pageref{LastPage}}
-\renewcommand{\headrulewidth}{0.4pt}
-
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{6pt}
-
-\begin{document}
-
-\begin{center}
-{\Large\bfseries NSW Mathematics Worksheet}\\[6pt]
-{\large %(topic)s --- Year %(year_level)s}\\[4pt]
-Name: \rule{6cm}{0.4pt} \hfill Date: \rule{3cm}{0.4pt}
-\end{center}
-
-\vspace{12pt}
-\hrule
-\vspace{12pt}
-
-\textbf{Note:} The AI-generated content could not be compiled.
-Please try generating the worksheet again.
-
-\end{document}
+FALLBACK_LATEX_TEMPLATE = r"""\begin{enumerate}
+\item \textbf{Note:} The AI-generated content failed to compile properly. Please try generating the worksheet again. \unskip\hfill\mbox{\textbf{[0 Marks]}}
+\end{enumerate}
 """
 
 
@@ -343,11 +340,11 @@ def _extract_latex(raw: str) -> str:
     if match:
         raw = match.group(1)
 
-    # Find \documentclass ... \end{document} span
-    doc_start = raw.find(r"\documentclass")
-    doc_end = raw.rfind(r"\end{document}")
+    # Find \begin{enumerate} ... \end{enumerate} span
+    doc_start = raw.find(r"\begin{enumerate}")
+    doc_end = raw.rfind(r"\end{enumerate}")
     if doc_start != -1 and doc_end != -1:
-        raw = raw[doc_start:doc_end + len(r"\end{document}")]
+        raw = raw[doc_start:doc_end + len(r"\end{enumerate}")]
 
     return raw.strip()
 
@@ -365,7 +362,8 @@ def _sanitize_latex(latex: str) -> str:
     # Remove any \usepackage that is not in our allowed list
     allowed_packages = {
         "amsmath", "amssymb", "amsthm", "geometry", "enumitem",
-        "fancyhdr", "lastpage", "tikz", "pgfplots",
+        "fancyhdr", "lastpage", "tikz", "tcolorbox",
+        "graphicx", "multicol", "needspace", "hyphenat", "hyperref"
     }
     def _filter_usepackage(m: re.Match) -> str:
         pkg = m.group(2)
@@ -422,11 +420,11 @@ async def generate_worksheet_latex(request: WorksheetRequest) -> str:
             raw_text = response.text.strip()
             print(f"[A.G.E.] Gemini returned {len(raw_text)} chars (attempt {attempt + 1})")
 
-            latex_source = _extract_latex(raw_text)
-            latex_source = _sanitize_latex(latex_source)
+            # Extract and sanitize LaTeX
+            latex_source = _sanitize_latex(_extract_latex(raw_text))
 
-            if r"\documentclass" not in latex_source:
-                raise ValueError("Gemini response did not contain a valid LaTeX document.")
+            if r"\begin{enumerate}" not in latex_source:
+                raise ValueError("Gemini response did not contain a valid LaTeX enumerate block.")
 
             return latex_source
 
@@ -462,6 +460,19 @@ def compile_latex_to_pdf(latex_source: str, output_dir: str) -> str:
     # Check for pdflatex availability
     pdflatex_path = shutil.which("pdflatex")
     if pdflatex_path is None:
+        # Fallback to common macOS/Linux TeX paths (useful for non-interactive shells)
+        common_paths = [
+            "/Library/TeX/texbin/pdflatex",      # MacTeX
+            "/opt/homebrew/bin/pdflatex",        # Apple Silicon Homebrew
+            "/usr/local/bin/pdflatex",           # Intel Homebrew
+            "/usr/bin/pdflatex"                  # Linux / explicit symlink
+        ]
+        for cp in common_paths:
+            if os.path.exists(cp) and os.access(cp, os.X_OK):
+                pdflatex_path = cp
+                break
+
+    if pdflatex_path is None:
         raise RuntimeError(
             "pdflatex is not installed or not on PATH. "
             "Install texlive-latex-base (e.g. apt-get install texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra)."
@@ -474,12 +485,13 @@ def compile_latex_to_pdf(latex_source: str, output_dir: str) -> str:
                 pdflatex_path,
                 "-interaction=nonstopmode",
                 "-halt-on-error",
+                "--no-shell-escape",
                 "-output-directory", output_dir,
                 tex_path,
             ],
             capture_output=True,
             text=True,
-            timeout=60,
+            timeout=30,
             cwd=output_dir,
         )
 

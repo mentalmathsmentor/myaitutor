@@ -173,10 +173,12 @@
             "Statistical Analysis"
         ],
         "Mathematics Extension 1": [
-            "Functions and Polynomials",
-            "Trigonometry",
-            "Calculus",
-            "Combinatorics"
+            "Further Work with Functions",
+            "Polynomials",
+            "Inverse Trigonometric Functions",
+            "Further Trigonometric Identities",
+            "Rates of Change",
+            "Working with Combinatorics"
         ],
         "English": [],
         "Chemistry": [],
@@ -199,18 +201,20 @@
             "Statistical Analysis"
         ],
         "Mathematics Extension 1": [
-            "Proof",
-            "Vectors",
-            "Trigonometric Functions",
-            "Calculus",
-            "Statistical Analysis"
+            "Proof by Mathematical Induction",
+            "Vectors in Two Dimensions",
+            "Trigonometric Equations",
+            "Further Calculus Skills",
+            "Applications of Calculus",
+            "The Binomial Distribution"
         ],
         "Mathematics Extension 2": [
-            "Proof",
-            "Vectors",
-            "Complex Numbers",
-            "Calculus",
-            "Mechanics"
+            "The Nature of Proof",
+            "3D Vectors",
+            "Introduction to Complex Numbers",
+            "Using Complex Numbers",
+            "Further Integration",
+            "Applications of Calculus to Mechanics"
         ],
         "Physics": [
             "Advanced Mechanics",
