@@ -20,6 +20,8 @@ export function buildWorksheetRequest(params) {
     removeWatermark,
     syllabusContextMode,
     textbooksProvided,
+    firstTimeMode,
+    includeCanvasSetup,
     // Pedagogy
     pedagogicalSpotError,
     pedagogicalParameterShift,
@@ -53,13 +55,17 @@ export function buildWorksheetRequest(params) {
   if (includeDate) headerSpaces.push('Include Date line.');
 
   const syllabusPacket = buildSyllabusPacket({ selectedStage, selectedSubject: displaySubject, selectedPoints, syllabusData });
-  const topicSummary = mode === 'A' 
+  const hasSelectedPoints = selectedPoints && selectedPoints.length > 0;
+  const topicSummary = hasSelectedPoints
     ? syllabusPacket.topicSummary
     : (rawQuestions.trim() ? rawQuestions.trim() : `${selectedStage} ${displaySubject}`);
 
   let customInstructions = '';
   if (syllabusContextMode === 'Provide') customInstructions += 'I will upload the syllabus. ';
   if (textbooksProvided) customInstructions += 'I will upload textbooks/resources. ';
+  if (firstTimeMode) customInstructions += 'FIRST TIME MODE: This is the user\'s first time. Greet them warmly and explain how to iterate on the worksheet. ';
+  if (includeCanvasSetup) customInstructions += 'INCLUDE CANVAS SETUP GUIDE: Add Canvas setup tips to your greeting. ';
+  if (hasSelectedPoints && rawQuestions.trim()) customInstructions += 'ADDITIONAL TEACHER NOTES: ' + rawQuestions.trim() + ' ';
 
   return {
     requestVersion: "2",

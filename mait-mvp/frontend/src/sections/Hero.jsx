@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import { useIsMobileOrReduced } from '../hooks/useIsMobileOrReduced';
 import { 
   Brain, 
   Sparkles, 
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 
 export default function Hero({ scrollToSection, navigate, onLoginClick }) {
+  const shouldReduce = useIsMobileOrReduced();
   const [typedText, setTypedText] = useState('');
   const fullText = 'No wukkas, mate. Let\'s crack this together.';
   const containerRef = useRef(null);
@@ -51,35 +53,45 @@ export default function Hero({ scrollToSection, navigate, onLoginClick }) {
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Floating Orbs */}
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-mait-cosmic/20 blur-3xl"
-          animate={{
-            x: [0, 50, 0],
-            y: [0, -30, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-mait-cyan/15 blur-3xl"
-          animate={{
-            x: [0, -40, 0],
-            y: [0, 40, 0],
-            scale: [1, 1.15, 1],
-          }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-mait-nebula/10 blur-3xl"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-        />
-        
+        {shouldReduce ? (
+          <>
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-mait-cosmic/20 blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-mait-cyan/15 blur-3xl" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-mait-nebula/10 blur-3xl" />
+          </>
+        ) : (
+          <>
+            <motion.div
+              className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-mait-cosmic/20 blur-3xl"
+              animate={{
+                x: [0, 50, 0],
+                y: [0, -30, 0],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-mait-cyan/15 blur-3xl"
+              animate={{
+                x: [0, -40, 0],
+                y: [0, 40, 0],
+                scale: [1, 1.15, 1],
+              }}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-mait-nebula/10 blur-3xl"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+            />
+          </>
+        )}
+
         {/* Grid Pattern */}
         <div className="absolute inset-0 grid-pattern opacity-50" />
-        
+
         {/* Particle Stars */}
-        {[...Array(20)].map((_, i) => (
+        {!shouldReduce && [...Array(8)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 rounded-full bg-white"

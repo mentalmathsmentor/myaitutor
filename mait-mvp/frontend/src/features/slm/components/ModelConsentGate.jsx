@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Download, BrainCircuit, XCircle, Zap, FlaskConical, AlertCircle } from 'lucide-react';
+import { Download, BrainCircuit, XCircle, Zap, FlaskConical, AlertCircle, AlertTriangle } from 'lucide-react';
+import { useIsMobileOrReduced } from '../../../hooks/useIsMobileOrReduced';
+import { modelService } from '../services/ModelService';
 
 const ModelConsentGate = ({
     models,
@@ -8,10 +10,12 @@ const ModelConsentGate = ({
     onCancel,
     downloadProgress
 }) => {
+    const isMobile = useIsMobileOrReduced();
     // Checkbox state
     const [keepCached, setKeepCached] = useState(() => {
         return localStorage.getItem('mait_webllm_cache_preference') === 'true';
     });
+    const [localCachedModels, setLocalCachedModels] = useState(cachedModels);
 
     const handleModelSelect = (modelKey) => {
         // Save preference
@@ -62,6 +66,27 @@ const ModelConsentGate = ({
 
     const availableKeys = ['tiny', 'balanced', 'quality'];
 
+    if (isMobile) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
+                <div className="max-w-md w-full space-y-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-8 text-center animate-reveal">
+                    <AlertTriangle className="mx-auto h-10 w-10 text-amber-400" />
+                    <h3 className="text-lg font-semibold text-white">Not available on mobile</h3>
+                    <p className="text-sm text-white/60">
+                        Local AI requires a desktop browser with at least 4GB of free RAM.
+                        The models are 1.2–2.2 GB and need significant processing power.
+                    </p>
+                    <button
+                        onClick={onCancel}
+                        className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-white transition hover:bg-primary/80"
+                    >
+                        Use Cloud Mode instead
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="flex-1 flex flex-col items-center justify-center p-4 py-12 lg:py-20 overflow-y-auto w-full">
             <div className="max-w-4xl w-full space-y-8 animate-reveal mx-auto relative z-10 pt-10">
@@ -85,7 +110,7 @@ const ModelConsentGate = ({
                     {availableKeys.map(key => {
                         const model = models[key];
                         if (!model) return null;
-                        const isCached = cachedModels[key];
+                        const isCached = localCachedModels[key];
                         
                         let Icon = BrainCircuit;
                         let glowClass = 'hover:border-primary/50 hover:shadow-primary/10 border-surface-2';
@@ -141,6 +166,17 @@ const ModelConsentGate = ({
                                         </>
                                     )}
                                 </button>
+                                {isCached && (
+                                    <button
+                                        onClick={async () => {
+                                            await modelService.unloadModel(false);
+                                            setLocalCachedModels(prev => ({ ...prev, [key]: false }));
+                                        }}
+                                        className="mt-2 text-xs text-white/40 underline transition hover:text-white/70 relative z-10 w-full text-center"
+                                    >
+                                        Clear cached model ({model.estimatedSizeMB ? (model.estimatedSizeMB / 1000).toFixed(1) : '?'} GB)
+                                    </button>
+                                )}
                             </div>
                         );
                     })}

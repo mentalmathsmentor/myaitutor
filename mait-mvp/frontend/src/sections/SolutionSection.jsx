@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
+import { useIsMobileOrReduced } from '../hooks/useIsMobileOrReduced';
 import { 
   Shield, 
   Zap, 
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function SolutionSection() {
+  const shouldReduce = useIsMobileOrReduced();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -99,14 +101,18 @@ export default function SolutionSection() {
       {/* Background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-mait-cosmic/30 to-transparent" />
-        <motion.div
-          className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full bg-mait-cosmic/10 blur-3xl"
-          animate={{ 
-            scale: [1, 1.1, 1],
-            x: [0, 20, 0],
-          }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
+        {shouldReduce ? (
+          <div className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full bg-mait-cosmic/10 blur-3xl" />
+        ) : (
+          <motion.div
+            className="absolute bottom-1/4 left-1/4 w-96 h-96 rounded-full bg-mait-cosmic/10 blur-3xl"
+            animate={{
+              scale: [1, 1.1, 1],
+              x: [0, 20, 0],
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
+        )}
       </div>
 
       <div ref={ref} className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

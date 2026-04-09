@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
+import { useIsMobileOrReduced } from '../hooks/useIsMobileOrReduced';
 import { 
   FileText, 
   Clock, 
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function AGEDemo({ navigate }) {
+  const shouldReduce = useIsMobileOrReduced();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const [activeStep, setActiveStep] = useState(0);
@@ -57,14 +59,18 @@ export default function AGEDemo({ navigate }) {
       {/* Background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-mait-cyan/30 to-transparent" />
-        <motion.div
-          className="absolute top-1/2 right-0 w-[500px] h-[500px] rounded-full bg-mait-cyan/5 blur-3xl"
-          animate={{ 
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3]
-          }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
+        {shouldReduce ? (
+          <div className="absolute top-1/2 right-0 w-[500px] h-[500px] rounded-full bg-mait-cyan/5 blur-3xl" />
+        ) : (
+          <motion.div
+            className="absolute top-1/2 right-0 w-[500px] h-[500px] rounded-full bg-mait-cyan/5 blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+          />
+        )}
       </div>
 
       <div ref={ref} className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
