@@ -360,7 +360,7 @@ export default function PastPapers({ navigate }) {
             <div className="flex flex-1">
 
                 {/* ── Sidebar ─────────────────────────────────────────────── */}
-                <aside className="w-64 shrink-0 flex flex-col border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm relative z-0">
+                <aside className="w-64 shrink-0 flex flex-col sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto border-r border-surface-2 bg-surface-1/30 backdrop-blur-sm">
 
                     {/* Exam Timer */}
                     <ExamTimer suggestedDuration={suggestedDuration} />

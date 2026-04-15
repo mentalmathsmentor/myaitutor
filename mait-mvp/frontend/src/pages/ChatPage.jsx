@@ -86,7 +86,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
 
         setDownloadError(null);
         setWebGPUError(null);
-        setIsModelReady(false);
+        setModelReady(false);
 
         const modelInfo = modelService.constructor.getAvailableModels()[effectiveModelSize];
         const estimatedMB = modelInfo?.estimatedSizeMB || 200;
@@ -118,7 +118,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
                 setDownloadProgress(null);
                 setShowOverlay(false);
             }, 2000);
-            setIsModelReady(true);
+            setModelReady(true);
             setDownloadError(null);
         }).catch(err => {
             console.error("Local Brain Init Error", err);
@@ -156,7 +156,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
         const newSize = showModelSwitchConfirm;
         setShowModelSwitchConfirm(null);
         setDemoModelSize(newSize);
-        setIsModelReady(false);
+        setModelReady(false);
         setDownloadProgress(null);
         setDownloadError(null);
         setLoadedModelName(null);
@@ -330,7 +330,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     }, [messages]);
 
     useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        const timer = setInterval(() => tick(), 1000);
         return () => clearInterval(timer);
     }, []);
 
