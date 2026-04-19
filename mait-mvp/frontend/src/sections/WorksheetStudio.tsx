@@ -1385,11 +1385,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-white">Prompt handoff tips</h3>
-                  <p className="text-xs text-white/50">Always visible so teachers can check Canvas and model setup without toggling anything.</p>
                 </div>
               </div>
               <div className="grid gap-3">
-                <img src={canvasHint} alt="Gemini canvas hint" className="rounded-2xl border border-white/10" />
                 <img src={modelSelectorHint} alt="Gemini model selector hint" className="rounded-2xl border border-white/10" />
               </div>
             </div>
@@ -1425,14 +1423,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
               <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
-              <button
-                type="button"
-                onClick={copyToClipboard}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-              >
-                <Copy size={14} />
-                Copy prompt to clipboard
-              </button>
+
             </div>
 
             <div className="space-y-4">
