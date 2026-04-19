@@ -1,150 +1,52 @@
-import { useState, Suspense, lazy } from 'react'
-import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import ErrorBoundary from './components/ErrorBoundary'
-import Navigation from './components/Navigation'
-import MarketingPageShell from './components/MarketingPageShell'
-import LoginModal from './components/LoginModal'
-import useAuth from './hooks/useAuth'
-import { API_URL } from './config/api'
+import { useState, useEffect, Suspense, lazy } from 'react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
-// Lazy Load Heavy Route Components
-const NewLandingPage = lazy(() => import('./NewLandingPage'))
-const AIResources = lazy(() => import('./AIResources'))
-const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'))
-const PastPapers = lazy(() => import('./PastPapers'))
-const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
-const ChatPage = lazy(() => import('./pages/ChatPage'))
+// Lazy load heavy components
+const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'));
+// import ChatPage from './sections/ChatPage';
 
-function AppRoutes() {
-    const location = useLocation();
-    const navigate = useNavigate();
-    
-    // Determine logical page name from path for Navigation active state
-    // e.g. "/" -> "landing", "/resources" -> "resources"
-    const page = location.pathname === '/' ? 'landing' : location.pathname.substring(1);
-    
-    const [showLoginModal, setShowLoginModal] = useState(false)
+export default function App() {
+  const [currentRoute, setCurrentRoute] = useState(() => window.location.hash.replace('#', '') || 'home');
 
-    // Auth
-    const {
-        authUser,
-        studentId,
-        authLoading,
-        handleLoginSubmit,
-        handleGoogleSuccess,
-        handleLogout: rawLogout,
-    } = useAuth(API_URL, {
-        onLoginSuccess: () => {
-            setShowLoginModal(false);
-            navigate('/app');
-        },
-        onLogout: () => {
-            navigate('/');
-        },
-    });
-
-    const handleLogout = rawLogout;
-
-    const handleLoginClick = () => {
-        if (page === 'app') return;
-        setShowLoginModal(true);
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentRoute(window.location.hash.replace('#', '') || 'home');
     };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
-    // Provide a shim string-based navigate for child components that expect it
-    const legacyNavigate = (targetPage) => {
-        if (targetPage === 'landing') navigate('/');
-        else navigate(`/${targetPage}`);
-    };
+  const navigate = (path) => {
+    window.location.hash = path;
+  };
 
-    const loginModal = (
-        <LoginModal
-            show={showLoginModal}
-            onClose={() => setShowLoginModal(false)}
-            onSubmit={handleLoginSubmit}
-            onDemo={() => { setShowLoginModal(false); navigate('/demo'); }}
-            onGoogleSuccess={handleGoogleSuccess}
-            authLoading={authLoading}
-        />
-    );
+  return (
+    <div className="min-h-screen bg-mait-space text-gray-200 font-outfit selection:bg-mait-cosmic/30">
+      <nav className="flex items-center justify-between p-4 border-b border-white/10 backdrop-blur-md">
+        <h1 className="text-xl font-bold bg-gradient-to-r from-mait-cosmic to-mait-cyan bg-clip-text text-transparent">
+          MAIT.
+        </h1>
+        <div className="flex gap-4">
+          <button onClick={() => navigate('home')} className="hover:text-mait-cyan transition-colors">Home</button>
+          <button onClick={() => navigate('studio')} className="hover:text-mait-cyan transition-colors">Studio</button>
+        </div>
+      </nav>
 
-    const nav = (
-        <Navigation
-            currentPage={page}
-            navigate={legacyNavigate}
-            onLoginClick={handleLoginClick}
-            authUser={authUser}
-            onLogout={handleLogout}
-        />
-    );
-
-    return (
-        <>
-            {nav}
-            <Suspense fallback={
-                <div className="min-h-screen w-full flex items-center justify-center bg-mait-dark">
-                    <div className="w-8 h-8 border-4 border-mait-cyan border-t-transparent rounded-full animate-spin"></div>
-                </div>
-            }>
-                <Routes>
-                    <Route path="/" element={
-                        <ErrorBoundary><NewLandingPage navigate={legacyNavigate} onLoginClick={handleLoginClick} /></ErrorBoundary>
-                    } />
-                    
-                    <Route path="/resources" element={
-                        <MarketingPageShell>
-                            <div className="pt-20 lg:pt-24">
-                                <ErrorBoundary><AIResources /></ErrorBoundary>
-                            </div>
-                        </MarketingPageShell>
-                    } />
-
-                    <Route path="/worksheets" element={
-                        <ErrorBoundary><WorksheetStudio setCurrentSection={legacyNavigate} /></ErrorBoundary>
-                    } />
-
-                    <Route path="/privacy" element={
-                        <MarketingPageShell>
-                            <div className="pt-20 lg:pt-24">
-                                <ErrorBoundary><PrivacyPolicy navigate={legacyNavigate} /></ErrorBoundary>
-                            </div>
-                        </MarketingPageShell>
-                    } />
-
-                    <Route path="/pastpapers" element={
-                        <MarketingPageShell>
-                            <div className="pt-20 lg:pt-24 min-h-screen">
-                                <ErrorBoundary><PastPapers /></ErrorBoundary>
-                            </div>
-                        </MarketingPageShell>
-                    } />
-
-                    {/* Chat interfaces */}
-                    <Route path="/app" element={
-                        <ChatPage
-                            studentId={studentId}
-                            authUser={authUser}
-                            handleLogout={handleLogout}
-                            isDemoMode={false}
-                        />
-                    } />
-
-                    <Route path="/demo" element={
-                        <ChatPage
-                            studentId={studentId}
-                            authUser={authUser}
-                            handleLogout={handleLogout}
-                            isDemoMode={true}
-                        />
-                    } />
-                    
-                    {/* Fallback */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-            </Suspense>
-            {loginModal}
-        </>
-    );
+      <main className="p-6">
+        <Suspense fallback={<div className="text-mait-cyan animate-pulse">Loading modules...</div>}>
+          {currentRoute === 'home' && (
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold mb-4">Welcome back to the Hub.</h2>
+              {/* Home Component Details */}
+            </div>
+          )}
+          
+          {currentRoute === 'studio' && (
+            <WorksheetStudio navigate={navigate} />
+          )}
+        </Suspense>
+      </main>
+    </div>
+  );
 }
-
-export default AppRoutes
-
