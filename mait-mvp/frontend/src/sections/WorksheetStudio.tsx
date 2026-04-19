@@ -489,7 +489,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
     pedagogicalWordProblems,
     pedagogicalMultiStep,
     selectedPoints,
-    syllabusData: currentSyllabus // pass the merged syllabus or raw data
+    syllabusData: currentSyllabus, // pass the merged syllabus or raw data
+    firstTimeMode,
+    includeCanvasSetup
   });
 
   const generatePrompt = () => {
@@ -534,7 +536,28 @@ export default function WorksheetStudio({ setCurrentSection }) {
     }
 
     try {
-      await navigator.clipboard.writeText(generatePrompt());
+      const promptText = generatePrompt();
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(promptText);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = promptText;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (!successful) {
+          throw new Error('Fallback execCommand failed');
+        }
+      }
+
       setIsCopied(true);
       setGenerationError('');
       setGenerationSuccess('Instructions generated, copied, and ready for Gemini Canvas.');
@@ -551,7 +574,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
       setTimeout(() => setIsCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy worksheet prompt:', error);
-      setGenerationError('Could not copy the worksheet prompt.');
+      setGenerationError('Could not copy the worksheet prompt: ' + (error.message || 'Clipboard unavailable'));
     }
   };
 
