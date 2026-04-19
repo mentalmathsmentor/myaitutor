@@ -707,6 +707,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
               <CheckCircle2 size={30} />
             </div>
             <h3 className="text-3xl font-bold text-white">Instructions ready</h3>
+            <p className="mt-2 text-sm text-white/60">Press Ctrl+V (or Cmd+V) to paste the instructions into Gemini.</p>
             <div className="mx-auto mt-6 flex justify-center">
               <img 
                 src={modelSelectorHint} 
@@ -714,14 +715,24 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 className="h-56 w-56 rounded-2xl border border-white/10 object-cover object-[15%_10%] shadow-2xl" 
               />
             </div>
-            <button
-              type="button"
-              onClick={copyToClipboard}
-              className="mx-auto mt-3 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-            >
-              <Copy size={14} />
-              {isCopied ? 'Copied!' : 'Copy prompt again'}
-            </button>
+            <div className="mx-auto mt-4 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={copyToClipboard}
+                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
+              >
+                <Copy size={14} />
+                {isCopied ? 'Copied!' : 'Copy prompt again'}
+              </button>
+              <button
+                type="button"
+                onClick={() => window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank')}
+                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
+              >
+                <ExternalLink size={14} />
+                Launch Gemini
+              </button>
+            </div>
             {!showCloseButton && (
               <div className="mt-5">
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
