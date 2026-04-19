@@ -468,7 +468,6 @@ export default function WorksheetStudio({ setCurrentSection }) {
     selectedStage,
     selectedSubject,
     customSubject,
-    mode,
     rawQuestions,
     numQuestions,
     difficulty,

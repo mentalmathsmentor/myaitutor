@@ -6,7 +6,6 @@ export function buildWorksheetRequest(params) {
     selectedStage,
     selectedSubject,
     customSubject,
-    mode,
     rawQuestions,
     numQuestions,
     difficulty,
@@ -86,7 +85,7 @@ export function buildWorksheetRequest(params) {
     pedagogicalDrills: pedagogicalDrills,
     customInstructions: customInstructions,
     legacyFields: {
-      manual_prompt: mode === 'B' ? rawQuestions.trim() : '',
+      manual_prompt: (!hasSelectedPoints && rawQuestions.trim()) ? rawQuestions.trim() : '',
       context_source: syllabusContextMode === 'Search' ? 'web' : syllabusContextMode === 'Provide' || textbooksProvided ? 'syllabus' : 'builtin'
     }
   };
