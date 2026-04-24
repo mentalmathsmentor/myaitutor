@@ -7,7 +7,10 @@ python-multipart
 requests
 google-genai
 python-dotenv
-aiosqlite
+asyncpg>=0.29
+sqlalchemy[asyncio]>=2.0
+alembic>=1.13
+python-dateutil>=2.9
 # RAG dependencies
 sentence-transformers
 pypdf
