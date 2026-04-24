@@ -1,15 +1,18 @@
 """
 Educational agent with RAG-based context retrieval and Bloom's Taxonomy progression.
 """
+import asyncio
+
 from app.models import StudentContext
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from .gemini_client import get_gemini_response, format_response_as_text
 from .blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from .syllabus_service import syllabus_service
 from . import storage
-import asyncio
 
 
-async def generate_response_async(query: str, context: StudentContext) -> str:
+async def generate_response_async(query: str, context: StudentContext, session: AsyncSession) -> str:
     """
     Generate response using Gemini with RAG-retrieved context.
     Context size is automatically adjusted based on fatigue state.
@@ -38,10 +41,10 @@ async def generate_response_async(query: str, context: StudentContext) -> str:
         syllabus_context = ""
 
     # 5. Fetch conversation history from storage
-    conversation_history = await storage.get_history(context.student_id, limit=20)
+    conversation_history = await storage.get_history(session, context.student_id, limit=20)
 
     # Prune history if token estimate exceeds budget
-    token_estimate = await storage.get_history_token_estimate(context.student_id)
+    token_estimate = await storage.get_history_token_estimate(session, context.student_id)
     if token_estimate > 6000 and conversation_history:
         # Truncate from oldest until under budget
         while conversation_history and token_estimate > 6000:
@@ -68,13 +71,13 @@ async def generate_response_async(query: str, context: StudentContext) -> str:
     # 8. Save both messages to conversation history
     formatted_response = format_response_as_text(gemini_response)
     await storage.save_message(
-        context.student_id, "user", query,
+        session, context.student_id, "user", query,
         fatigue_state=fatigue.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
     await storage.save_message(
-        context.student_id, "assistant", formatted_response,
+        session, context.student_id, "assistant", formatted_response,
         fatigue_state=fatigue.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
@@ -90,6 +93,6 @@ async def execute_verification_code(response_text: str) -> str:
     return response_text
 
 
-def generate_response(query: str, context: StudentContext) -> str:
+def generate_response(query: str, context: StudentContext, session: AsyncSession) -> str:
     """Synchronous wrapper for backward compatibility."""
-    return asyncio.run(generate_response_async(query, context))
+    return asyncio.run(generate_response_async(query, context, session))

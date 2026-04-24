@@ -16,6 +16,15 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from .deps import limiter
 from .services import storage
 from .routers import auth, chat, canvas, worksheet, analytics, misc, questions
+from .routers.analytics import (
+    classify_consistency,
+    classify_error_tendency,
+    classify_thinking_pattern,
+    classify_typing_speed,
+)
+
+syllabus_service = chat.syllabus_service
+wellness_engine = chat.wellness_engine
 
 # Initialize Sentry for error tracking
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -36,10 +45,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.on_event("startup")
 async def startup_event():
-    """Startup event - initialize SQLite database."""
+    """Startup event - verify Postgres connectivity."""
     print("MAIT Backend starting...")
     await storage.init_db()
-    print("SQLite database initialized.")
+    print("Postgres connection verified.")
     print("RAG system enabled (FAISS backend).")
     print("Application startup complete.")
 

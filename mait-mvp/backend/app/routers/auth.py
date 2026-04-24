@@ -1,11 +1,12 @@
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..db.session import get_db
 from ..services import storage
 from ..services.auth import verify_google_token
-from ..deps import get_or_create_context
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -38,7 +39,7 @@ async def verify_access_code(body: AccessCodeRequest):
 
 
 @router.post("/google")
-async def google_login(body: GoogleLoginRequest):
+async def google_login(body: GoogleLoginRequest, db: AsyncSession = Depends(get_db)):
     """
     Verify a Google ID token and return/create the associated student.
     """
@@ -48,9 +49,10 @@ async def google_login(body: GoogleLoginRequest):
 
     google_id = user_info["google_id"]
 
-    existing_user = await storage.get_user_by_google_id(google_id)
+    existing_user = await storage.get_user_by_google_id(db, google_id)
     if existing_user:
         user = await storage.upsert_user(
+            db,
             google_id=google_id,
             student_id=existing_user["student_id"],
             email=user_info["email"],
@@ -65,6 +67,7 @@ async def google_login(body: GoogleLoginRequest):
 
     student_id = f"google_{google_id}"
     user = await storage.upsert_user(
+        db,
         google_id=google_id,
         student_id=student_id,
         email=user_info["email"],
@@ -79,7 +82,7 @@ async def google_login(body: GoogleLoginRequest):
 
 
 @router.post("/migrate")
-async def migrate_student_data(body: MigrateRequest):
+async def migrate_student_data(body: MigrateRequest, db: AsyncSession = Depends(get_db)):
     """Migrate data from an anonymous student_id to a Google-based student_id."""
     old_id = body.old_student_id
     new_id = body.new_student_id
@@ -87,26 +90,27 @@ async def migrate_student_data(body: MigrateRequest):
     if old_id == new_id:
         return {"status": "no_migration_needed"}
 
-    old_context = await storage.get_context(old_id)
-    new_context = await storage.get_context(new_id)
+    old_context = await storage.get_context(db, old_id)
+    new_context = await storage.get_context(db, new_id)
 
     migrated = []
 
     if old_context and not new_context:
         old_context.student_id = new_id
-        await storage.save_context(new_id, old_context)
+        await storage.save_context(db, new_id, old_context)
         migrated.append("context")
 
-    old_history = await storage.get_history(old_id, limit=200)
+    old_history = await storage.get_history(db, old_id, limit=200)
     if old_history:
         for msg in old_history:
             await storage.save_message(
+                db,
                 new_id, msg["role"], msg["content"],
                 fatigue_state=msg.get("fatigue_state"),
                 blooms_level=msg.get("blooms_level"),
                 topic=msg.get("topic"),
             )
-        await storage.clear_history(old_id)
+        await storage.clear_history(db, old_id)
         migrated.append("conversation_history")
 
     return {
@@ -118,9 +122,9 @@ async def migrate_student_data(body: MigrateRequest):
 
 
 @router.get("/me/{student_id}")
-async def get_user_profile(student_id: str):
+async def get_user_profile(student_id: str, db: AsyncSession = Depends(get_db)):
     """Get the user profile associated with a student_id."""
-    user = await storage.get_user_by_student_id(student_id)
+    user = await storage.get_user_by_student_id(db, student_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user

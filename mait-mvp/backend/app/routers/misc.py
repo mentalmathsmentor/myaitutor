@@ -1,10 +1,12 @@
 import os
 
 import resend
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
+from ..db.session import get_db
 from ..deps import limiter
 from ..services import storage
 
@@ -61,10 +63,10 @@ class SubscribeRequest(BaseModel):
 
 
 @router.post("/subscribe")
-async def subscribe_waitlist(request: SubscribeRequest):
-    """Save waitlist email to SQLite database."""
+async def subscribe_waitlist(body: SubscribeRequest, db: AsyncSession = Depends(get_db)):
+    """Save waitlist email to Postgres."""
     try:
-        await storage.save_email(request.email)
+        await storage.save_email(db, body.email)
         return {"status": "success", "message": "Joined waitlist"}
     except Exception as e:
         return {"status": "error", "message": str(e)}

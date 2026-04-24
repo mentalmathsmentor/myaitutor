@@ -1,8 +1,9 @@
-import os
 from datetime import datetime
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..db.session import get_db
 from ..models import KeystrokeSubmission, KeystrokeProfile
 from ..services import storage
 from ..deps import get_or_create_context
@@ -54,9 +55,12 @@ def classify_error_tendency(errors: int, chars: int) -> str:
 
 
 @router.post("/keystroke-metrics")
-async def submit_keystroke_metrics(submission: KeystrokeSubmission):
+async def submit_keystroke_metrics(
+    submission: KeystrokeSubmission,
+    db: AsyncSession = Depends(get_db),
+):
     """Submit keystroke metrics for a typing session."""
-    context = await get_or_create_context(submission.student_id)
+    context = await get_or_create_context(submission.student_id, db)
     profile = context.keystroke_profile
     metrics = submission.metrics
 
@@ -96,40 +100,41 @@ async def submit_keystroke_metrics(submission: KeystrokeSubmission):
     profile.session_history = profile.session_history[-49:] + [metrics]
 
     context.keystroke_profile = profile
-    await storage.save_context(submission.student_id, context)
+    await storage.save_context(db, submission.student_id, context)
 
     return {"status": "success", "profile": profile}
 
 
 @router.get("/keystroke-profile/{student_id}")
-async def get_keystroke_profile(student_id: str):
+async def get_keystroke_profile(student_id: str, db: AsyncSession = Depends(get_db)):
     """Get the keystroke psychometric profile for a student."""
-    context = await get_or_create_context(student_id)
+    context = await get_or_create_context(student_id, db)
     return {"student_id": student_id, "profile": context.keystroke_profile}
 
 
 @router.delete("/keystroke-profile/{student_id}")
-async def reset_keystroke_profile(student_id: str):
+async def reset_keystroke_profile(student_id: str, db: AsyncSession = Depends(get_db)):
     """Reset keystroke profile for a student."""
-    context = await get_or_create_context(student_id)
+    context = await get_or_create_context(student_id, db)
     context.keystroke_profile = KeystrokeProfile()
-    await storage.save_context(student_id, context)
+    await storage.save_context(db, student_id, context)
     return {"status": "success", "message": "Keystroke profile reset"}
 
 
 @router.post("/visit")
-async def record_visit():
+async def record_visit(db: AsyncSession = Depends(get_db)):
     """Increment visit counter and return the new count."""
     try:
-        count = await storage.increment_visit_count()
+        count = await storage.increment_visit_count(db)
         return {"count": count}
     except Exception:
         return {"count": 0}
 
 
 @router.get("/visits")
-async def get_visits():
-    if not os.path.exists("data/visits.log"):
+async def get_visits(db: AsyncSession = Depends(get_db)):
+    try:
+        count = await storage.get_visit_count(db)
+    except Exception:
         return {"count": 0}
-    with open("data/visits.log") as f:
-        return {"count": len(f.readlines())}
+    return {"count": count}

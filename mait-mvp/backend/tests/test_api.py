@@ -3,7 +3,8 @@ Tests for FastAPI endpoints using TestClient.
 All external services (Gemini API, SQLite storage) are mocked.
 """
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 from datetime import datetime
 
 from fastapi.testclient import TestClient
@@ -24,31 +25,107 @@ async def _mock_init_db():
     _mock_store.clear()
 
 
-async def _mock_get_context(student_id: str):
+async def _mock_get_context(_session, student_id: str):
     """Retrieve context from in-memory store."""
     return _mock_store.get(student_id)
 
 
-async def _mock_save_context(student_id: str, context: StudentContext):
+async def _mock_save_context(_session, student_id: str, context: StudentContext):
     """Save context to in-memory store."""
     _mock_store[student_id] = context
 
 
-async def _mock_save_email(email: str):
+async def _mock_save_email(_session, email: str):
     """Save email to in-memory store."""
     _mock_store.setdefault("__emails__", []).append(email)
+
+
+async def _mock_clear_history(_session, student_id: str):
+    """Clear mocked conversation history for a student."""
+    _mock_store.pop(f"history:{student_id}", None)
+
+
+async def _mock_get_history(_session, student_id: str, limit: int = 20):
+    history = _mock_store.get(f"history:{student_id}", [])
+    return history[-limit:]
+
+
+async def _mock_save_message(
+    _session,
+    student_id: str,
+    role: str,
+    content: str,
+    fatigue_state: str = None,
+    blooms_level: str = None,
+    topic: str = None,
+):
+    history = _mock_store.setdefault(f"history:{student_id}", [])
+    history.append(
+        {
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now().isoformat(),
+            "fatigue_state": fatigue_state,
+            "blooms_level": blooms_level,
+            "topic": topic,
+        }
+    )
+
+
+async def _mock_get_history_token_estimate(_session, student_id: str):
+    history = _mock_store.get(f"history:{student_id}", [])
+    return sum(len(msg["content"]) for msg in history) // 4
+
+
+async def _mock_increment_visit_count(_session):
+    _mock_store["visit_count"] = _mock_store.get("visit_count", 0) + 1
+    return _mock_store["visit_count"]
+
+
+async def _mock_get_visit_count(_session):
+    return _mock_store.get("visit_count", 0)
 
 
 @pytest.fixture(autouse=True)
 def mock_storage():
     """Patch the storage module so no real SQLite database is used."""
     _mock_store.clear()
-    with patch("app.main.storage") as storage_mock:
-        storage_mock.init_db = AsyncMock(side_effect=_mock_init_db)
-        storage_mock.get_context = AsyncMock(side_effect=_mock_get_context)
-        storage_mock.save_context = AsyncMock(side_effect=_mock_save_context)
-        storage_mock.save_email = AsyncMock(side_effect=_mock_save_email)
-        yield storage_mock
+    init_db_mock = AsyncMock(side_effect=_mock_init_db)
+    get_context_mock = AsyncMock(side_effect=_mock_get_context)
+    save_context_mock = AsyncMock(side_effect=_mock_save_context)
+    save_email_mock = AsyncMock(side_effect=_mock_save_email)
+    clear_history_mock = AsyncMock(side_effect=_mock_clear_history)
+    get_history_mock = AsyncMock(side_effect=_mock_get_history)
+    save_message_mock = AsyncMock(side_effect=_mock_save_message)
+    get_history_token_estimate_mock = AsyncMock(side_effect=_mock_get_history_token_estimate)
+    increment_visit_count_mock = AsyncMock(side_effect=_mock_increment_visit_count)
+    get_visit_count_mock = AsyncMock(side_effect=_mock_get_visit_count)
+
+    with patch("app.services.storage.init_db", new=init_db_mock), \
+        patch("app.services.storage.get_context", new=get_context_mock), \
+        patch("app.services.storage.save_context", new=save_context_mock), \
+        patch("app.services.storage.save_email", new=save_email_mock), \
+        patch("app.services.storage.clear_history", new=clear_history_mock), \
+        patch("app.services.storage.get_history", new=get_history_mock), \
+        patch("app.services.storage.save_message", new=save_message_mock), \
+        patch(
+            "app.services.storage.get_history_token_estimate",
+            new=get_history_token_estimate_mock,
+        ), \
+        patch("app.services.storage.increment_visit_count", new=increment_visit_count_mock), \
+        patch("app.services.storage.get_visit_count", new=get_visit_count_mock):
+        yield SimpleNamespace(
+            init_db=init_db_mock,
+            get_context=get_context_mock,
+            save_context=save_context_mock,
+            save_email=save_email_mock,
+            clear_history=clear_history_mock,
+            get_history=get_history_mock,
+            save_message=save_message_mock,
+            get_history_token_estimate=get_history_token_estimate_mock,
+            increment_visit_count=increment_visit_count_mock,
+            get_visit_count=get_visit_count_mock,
+        )
     _mock_store.clear()
 
 
@@ -242,17 +319,17 @@ class TestResetEndpoint:
         response = client.post("/reset/alice")
         assert response.status_code == 200
         data = response.json()
-        assert data["fatigue_metric"]["current_score"] == 0
-        assert data["fatigue_metric"]["status"] == "FRESH"
-        assert data["student_id"] == "alice"
+        assert data["context"]["fatigue_metric"]["current_score"] == 0
+        assert data["context"]["fatigue_metric"]["status"] == "FRESH"
+        assert data["context"]["student_id"] == "alice"
 
     def test_reset_nonexistent_student(self, client):
         """Resetting a non-existent student should create a fresh context."""
         response = client.post("/reset/ghost")
         assert response.status_code == 200
         data = response.json()
-        assert data["student_id"] == "ghost"
-        assert data["fatigue_metric"]["current_score"] == 0
+        assert data["context"]["student_id"] == "ghost"
+        assert data["context"]["fatigue_metric"]["current_score"] == 0
 
 
 # ===========================================================================
@@ -446,7 +523,8 @@ class TestSubscribeEndpoint:
     def test_subscribe_saves_email(self, client, mock_storage):
         """POST /subscribe should call storage.save_email."""
         client.post("/subscribe", json={"email": "alice@example.com"})
-        mock_storage.save_email.assert_called_once_with("alice@example.com")
+        mock_storage.save_email.assert_called_once()
+        assert _mock_store["__emails__"] == ["alice@example.com"]
 
 
 # ===========================================================================

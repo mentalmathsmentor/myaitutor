@@ -5,8 +5,8 @@ This conftest.py patches heavy third-party modules (pypdf, docx, sentence-transf
 google.genai) at the sys.modules level BEFORE any test file imports app.main.
 This avoids needing to install these large packages just to run unit tests.
 """
+import os
 import sys
-from types import ModuleType
 from unittest.mock import MagicMock
 
 # ---------------------------------------------------------------------------
@@ -19,7 +19,6 @@ _MOCK_MODULES = [
     "pypdf",
     "docx",
     "sentence_transformers",
-    "google",
     "google.genai",
     "google.genai.types",
 ]
@@ -27,11 +26,12 @@ _MOCK_MODULES = [
 for mod_name in _MOCK_MODULES:
     if mod_name not in sys.modules:
         mock_mod = MagicMock()
-        # For google.genai, ensure sub-attribute access works
-        if mod_name == "google":
-            mock_mod.genai = MagicMock()
-            mock_mod.genai.types = MagicMock()
         sys.modules[mod_name] = mock_mod
+
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql+asyncpg://mait:mait_dev_password@localhost:5432/mait_dev",
+)
 
 # ---------------------------------------------------------------------------
 # Now safe to import app-level code
