@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mait
+      POSTGRES_PASSWORD: mait_dev_password
+      POSTGRES_DB: mait_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - mait_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mait"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mait_postgres_data:
