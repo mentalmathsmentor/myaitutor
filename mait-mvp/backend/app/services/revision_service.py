@@ -4,15 +4,19 @@ Per-element AI revision service for the MAIT Native Canvas.
 Uses Gemini Flash to revise individual LaTeX fragments based on teacher instructions.
 Stores revision history in the document_revisions table.
 """
-import asyncio
-import os
-import uuid
-from datetime import datetime
-from typing import Optional, List
 
-import aiosqlite
-from .storage import _DB_PATH
-from .gemini_client import get_client, MODEL_ID
+from __future__ import annotations
+
+import asyncio
+from typing import Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
+from ..db.models import Document, DocumentElement, DocumentRevision
+from ..db.serializers import generate_public_id, serialize_revision, utc_now
+from .gemini_client import MODEL_ID, get_client
 
 FRAGMENT_REVISION_SYSTEM_PROMPT = r"""You are a LaTeX worksheet editor for NSW HSC Mathematics.
 You will receive ONE fragment of a LaTeX worksheet and an editing instruction.
@@ -38,35 +42,25 @@ INSTRUCTION: {instruction}
 Output the revised fragment only."""
 
 
-async def create_revision(element_id: str, instruction: str) -> dict:
-    """
-    Request an AI revision for a specific element.
+async def _get_element_with_document(session: AsyncSession, element_id: str) -> DocumentElement | None:
+    result = await session.execute(
+        select(DocumentElement)
+        .options(joinedload(DocumentElement.document))
+        .where(DocumentElement.public_id == element_id)
+    )
+    return result.scalar_one_or_none()
 
-    1. Fetches the element to snapshot its current content.
-    2. Calls Gemini to produce a revised LaTeX fragment.
-    3. Stores the revision in document_revisions with status='pending'.
-    4. Returns the revision dict.
-    """
+
+async def create_revision(session: AsyncSession, element_id: str, instruction: str) -> dict:
     from google.genai import types
 
-    # 1. Fetch the element
-    async with aiosqlite.connect(_DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(
-            "SELECT id, document_id, kind, label, content_latex FROM document_elements WHERE id = ?",
-            (element_id,),
-        )
-        row = await cursor.fetchone()
-        if not row:
-            raise ValueError(f"Element {element_id} not found")
+    element = await _get_element_with_document(session, element_id)
+    if element is None:
+        raise ValueError(f"Element {element_id} not found")
 
-    document_id = row["document_id"]
-    kind = row["kind"]
-    label = row["label"]
-    input_snapshot = row["content_latex"]
-
-    # 2. Call Gemini
-    user_prompt = _build_revision_prompt(kind, label, input_snapshot, instruction)
+    document = element.document
+    input_snapshot = element.content_latex or ""
+    user_prompt = _build_revision_prompt(element.kind, element.label or "Element", input_snapshot, instruction)
     config = types.GenerateContentConfig(
         system_instruction=FRAGMENT_REVISION_SYSTEM_PROMPT,
         max_output_tokens=1500,
@@ -84,153 +78,118 @@ async def create_revision(element_id: str, instruction: str) -> dict:
             timeout=30.0,
         )
         output_snapshot = response.text.strip()
-    except Exception as e:
-        # Store a failed revision
-        rev_id = f"rev_{uuid.uuid4().hex[:12]}"
-        now = datetime.now().isoformat()
-        async with aiosqlite.connect(_DB_PATH) as db:
-            await db.execute(
-                """INSERT INTO document_revisions
-                   (id, document_id, element_id, instruction_text, provider, input_snapshot, output_snapshot, status, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (rev_id, document_id, element_id, instruction, "gemini", input_snapshot, "", "failed", now),
+    except Exception as exc:
+        revision = DocumentRevision(
+            public_id=generate_public_id("rev"),
+            document=document,
+            element=element,
+            instruction_text=instruction,
+            provider="gemini",
+            input_snapshot=input_snapshot,
+            output_snapshot="",
+            status="failed",
+            created_at=utc_now(),
+        )
+        session.add(revision)
+        await session.commit()
+        await session.refresh(revision)
+        revision.document = document
+        revision.element = element
+        raise RuntimeError(f"Gemini revision failed: {exc}")
+
+    revision = DocumentRevision(
+        public_id=generate_public_id("rev"),
+        document=document,
+        element=element,
+        instruction_text=instruction,
+        provider="gemini",
+        input_snapshot=input_snapshot,
+        output_snapshot=output_snapshot,
+        status="pending",
+        created_at=utc_now(),
+    )
+    session.add(revision)
+    await session.commit()
+    await session.refresh(revision)
+    revision.document = document
+    revision.element = element
+    return serialize_revision(revision)
+
+
+async def apply_revision(session: AsyncSession, revision_id: str) -> dict:
+    result = await session.execute(
+        select(DocumentRevision)
+        .options(
+            joinedload(DocumentRevision.document),
+            joinedload(DocumentRevision.element),
+        )
+        .where(DocumentRevision.public_id == revision_id)
+    )
+    revision = result.scalar_one_or_none()
+    if revision is None:
+        raise ValueError(f"Revision {revision_id} not found")
+    if revision.status != "pending":
+        raise ValueError(f"Revision {revision_id} is not pending (status={revision.status})")
+
+    if revision.element is not None:
+        revision.element.content_latex = revision.output_snapshot
+        revision.element.updated_at = utc_now()
+    revision.status = "applied"
+    await session.commit()
+    await session.refresh(revision)
+    return serialize_revision(revision)
+
+
+async def reject_revision(session: AsyncSession, revision_id: str) -> dict:
+    result = await session.execute(
+        select(DocumentRevision)
+        .options(
+            joinedload(DocumentRevision.document),
+            joinedload(DocumentRevision.element),
+        )
+        .where(DocumentRevision.public_id == revision_id)
+    )
+    revision = result.scalar_one_or_none()
+    if revision is None:
+        raise ValueError(f"Revision {revision_id} not found")
+
+    revision.status = "rejected"
+    await session.commit()
+    await session.refresh(revision)
+    return serialize_revision(revision)
+
+
+async def list_revisions(
+    session: AsyncSession,
+    document_id: str,
+    element_id: Optional[str] = None,
+) -> list[dict]:
+    document_result = await session.execute(select(Document).where(Document.public_id == document_id))
+    document = document_result.scalar_one_or_none()
+    if document is None:
+        return []
+
+    query = (
+        select(DocumentRevision)
+        .options(
+            joinedload(DocumentRevision.document),
+            joinedload(DocumentRevision.element),
+        )
+        .where(DocumentRevision.document_id == document.id)
+        .order_by(DocumentRevision.created_at.desc())
+    )
+
+    if element_id:
+        element_result = await session.execute(
+            select(DocumentElement).where(
+                DocumentElement.public_id == element_id,
+                DocumentElement.document_id == document.id,
             )
-            await db.commit()
-        raise RuntimeError(f"Gemini revision failed: {e}")
-
-    # 3. Store revision
-    rev_id = f"rev_{uuid.uuid4().hex[:12]}"
-    now = datetime.now().isoformat()
-
-    async with aiosqlite.connect(_DB_PATH) as db:
-        await db.execute(
-            """INSERT INTO document_revisions
-               (id, document_id, element_id, instruction_text, provider, input_snapshot, output_snapshot, status, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (rev_id, document_id, element_id, instruction, "gemini", input_snapshot, output_snapshot, "pending", now),
         )
-        await db.commit()
+        element = element_result.scalar_one_or_none()
+        if element is None:
+            return []
+        query = query.where(DocumentRevision.element_id == element.id)
 
-    return {
-        "id": rev_id,
-        "document_id": document_id,
-        "element_id": element_id,
-        "instruction_text": instruction,
-        "provider": "gemini",
-        "input_snapshot": input_snapshot,
-        "output_snapshot": output_snapshot,
-        "status": "pending",
-        "created_at": now,
-    }
-
-
-async def apply_revision(revision_id: str) -> dict:
-    """
-    Apply a pending revision: update the element's content_latex to the revision's output.
-    """
-    async with aiosqlite.connect(_DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-
-        cursor = await db.execute(
-            "SELECT * FROM document_revisions WHERE id = ?", (revision_id,)
-        )
-        rev = await cursor.fetchone()
-        if not rev:
-            raise ValueError(f"Revision {revision_id} not found")
-        if rev["status"] != "pending":
-            raise ValueError(f"Revision {revision_id} is not pending (status={rev['status']})")
-
-        now = datetime.now().isoformat()
-
-        # Update element content
-        await db.execute(
-            "UPDATE document_elements SET content_latex = ?, updated_at = ? WHERE id = ?",
-            (rev["output_snapshot"], now, rev["element_id"]),
-        )
-
-        # Mark revision as applied
-        await db.execute(
-            "UPDATE document_revisions SET status = 'applied' WHERE id = ?",
-            (revision_id,),
-        )
-        await db.commit()
-
-    return {
-        "id": rev["id"],
-        "document_id": rev["document_id"],
-        "element_id": rev["element_id"],
-        "instruction_text": rev["instruction_text"],
-        "provider": rev["provider"],
-        "input_snapshot": rev["input_snapshot"],
-        "output_snapshot": rev["output_snapshot"],
-        "status": "applied",
-        "created_at": rev["created_at"],
-    }
-
-
-async def reject_revision(revision_id: str) -> dict:
-    """Mark a pending revision as rejected."""
-    async with aiosqlite.connect(_DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-
-        cursor = await db.execute(
-            "SELECT * FROM document_revisions WHERE id = ?", (revision_id,)
-        )
-        rev = await cursor.fetchone()
-        if not rev:
-            raise ValueError(f"Revision {revision_id} not found")
-
-        await db.execute(
-            "UPDATE document_revisions SET status = 'rejected' WHERE id = ?",
-            (revision_id,),
-        )
-        await db.commit()
-
-    return {
-        "id": rev["id"],
-        "document_id": rev["document_id"],
-        "element_id": rev["element_id"],
-        "instruction_text": rev["instruction_text"],
-        "provider": rev["provider"],
-        "input_snapshot": rev["input_snapshot"],
-        "output_snapshot": rev["output_snapshot"],
-        "status": "rejected",
-        "created_at": rev["created_at"],
-    }
-
-
-async def list_revisions(document_id: str, element_id: Optional[str] = None) -> List[dict]:
-    """List revisions for a document, optionally filtered by element."""
-    async with aiosqlite.connect(_DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-
-        if element_id:
-            cursor = await db.execute(
-                """SELECT * FROM document_revisions
-                   WHERE document_id = ? AND element_id = ?
-                   ORDER BY created_at DESC""",
-                (document_id, element_id),
-            )
-        else:
-            cursor = await db.execute(
-                """SELECT * FROM document_revisions
-                   WHERE document_id = ?
-                   ORDER BY created_at DESC""",
-                (document_id,),
-            )
-
-        rows = await cursor.fetchall()
-        return [
-            {
-                "id": row["id"],
-                "document_id": row["document_id"],
-                "element_id": row["element_id"],
-                "instruction_text": row["instruction_text"],
-                "provider": row["provider"],
-                "input_snapshot": row["input_snapshot"],
-                "output_snapshot": row["output_snapshot"],
-                "status": row["status"],
-                "created_at": row["created_at"],
-            }
-            for row in rows
-        ]
+    result = await session.execute(query)
+    return [serialize_revision(revision) for revision in result.scalars().all()]

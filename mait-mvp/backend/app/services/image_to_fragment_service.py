@@ -8,8 +8,9 @@ fragment objects, and persists them to the database.
 import asyncio
 import base64
 import json
-import os
 from typing import List, Optional, Tuple
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .gemini_client import get_client, MODEL_ID
 from .element_service import create_element, get_elements
@@ -68,6 +69,7 @@ def _make_sort_keys_after(after_key: str, count: int) -> List[str]:
 
 
 async def vision_parse(
+    session: AsyncSession,
     image_base64: str,
     image_mime_type: str,
     doc_id: str,
@@ -126,7 +128,7 @@ async def vision_parse(
 
     # Determine insertion sort_key
     if not insert_after_sort_key:
-        existing = await get_elements(doc_id)
+        existing = await get_elements(session, doc_id)
         insert_after_sort_key = existing[-1]["sortKey"] if existing else "a0"
 
     sort_keys = _make_sort_keys_after(insert_after_sort_key, len(fragment_data))
@@ -135,6 +137,7 @@ async def vision_parse(
     saved: List[dict] = []
     for i, frag in enumerate(fragment_data):
         elem = await create_element(
+            session,
             document_id=doc_id,
             sort_key=sort_keys[i],
             kind=frag.get("kind", "question"),

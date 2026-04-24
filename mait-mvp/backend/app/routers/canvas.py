@@ -1,8 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..db.session import get_db
 from ..services.artifact_engine import WorksheetRequest, generate_worksheet_latex, compile_latex_to_pdf
 from ..services.document_service import create_document, get_document, get_documents_by_student, delete_document
 from ..services.element_service import create_element, get_elements, update_element, delete_element
@@ -53,7 +55,11 @@ class VisionParseRequest(BaseModel):
 
 @router.post("/generate")
 @limiter.limit("5/minute")
-async def canvas_generate(request: Request, body: CanvasGenerateRequest):
+async def canvas_generate(
+    request: Request,
+    body: CanvasGenerateRequest,
+    db: AsyncSession = Depends(get_db),
+):
     await verify_student_auth(request, body.student_id)
 
     try:
@@ -68,12 +74,13 @@ async def canvas_generate(request: Request, body: CanvasGenerateRequest):
         safe_title = escape_latex(title)
         element_data = parse_monolithic_latex(latex_source, safe_title)
 
-        doc = await create_document(body.student_id, title)
+        doc = await create_document(db, body.student_id, title)
         doc_id = doc["id"]
 
         saved_elements = []
         for elem in element_data:
             saved_elem = await create_element(
+                db,
                 document_id=doc_id,
                 sort_key=elem["sort_key"],
                 kind=elem["kind"],
@@ -91,27 +98,41 @@ async def canvas_generate(request: Request, body: CanvasGenerateRequest):
 
 
 @router.get("/documents")
-async def list_canvas_documents(request: Request, student_id: str):
+async def list_canvas_documents(
+    request: Request,
+    student_id: str,
+    db: AsyncSession = Depends(get_db),
+):
     await verify_student_auth(request, student_id)
-    docs = await get_documents_by_student(student_id)
+    docs = await get_documents_by_student(db, student_id)
     return {"documents": docs}
 
 
 @router.get("/documents/{doc_id}")
-async def get_canvas_document(request: Request, doc_id: str):
-    doc = await get_document(doc_id)
+async def get_canvas_document(
+    request: Request,
+    doc_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    doc = await get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    elements = await get_elements(doc_id)
+    elements = await get_elements(db, doc_id)
     return {"document": doc, "elements": elements}
 
 
 @router.post("/documents/{doc_id}/elements")
-async def create_canvas_element(request: Request, doc_id: str, body: ElementCreateRequest):
-    doc = await get_document(doc_id)
+async def create_canvas_element(
+    request: Request,
+    doc_id: str,
+    body: ElementCreateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    doc = await get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     element = await create_element(
+        db,
         document_id=doc_id,
         sort_key=body.sortKey,
         kind=body.kind,
@@ -124,25 +145,38 @@ async def create_canvas_element(request: Request, doc_id: str, body: ElementCrea
 
 
 @router.put("/elements/{elem_id}")
-async def update_canvas_element(request: Request, elem_id: str, body: ElementUpdateRequest):
+async def update_canvas_element(
+    request: Request,
+    elem_id: str,
+    body: ElementUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+):
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
-    updated = await update_element(elem_id, updates)
+    updated = await update_element(db, elem_id, updates)
     if not updated:
         raise HTTPException(status_code=404, detail="Element not found")
     return {"element": updated}
 
 
 @router.delete("/elements/{elem_id}")
-async def delete_canvas_element(request: Request, elem_id: str):
-    deleted = await delete_element(elem_id)
+async def delete_canvas_element(
+    request: Request,
+    elem_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await delete_element(db, elem_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Element not found")
     return {"status": "deleted"}
 
 
 @router.delete("/documents/{doc_id}")
-async def delete_canvas_document(request: Request, doc_id: str):
-    deleted = await delete_document(doc_id)
+async def delete_canvas_document(
+    request: Request,
+    doc_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await delete_document(db, doc_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"status": "deleted"}
@@ -168,9 +202,14 @@ async def compile_canvas_pdf(request: Request, body: CompileRequest):
 
 
 @router.post("/elements/{elem_id}/revise")
-async def revise_canvas_element(request: Request, elem_id: str, body: ReviseRequest):
+async def revise_canvas_element(
+    request: Request,
+    elem_id: str,
+    body: ReviseRequest,
+    db: AsyncSession = Depends(get_db),
+):
     try:
-        revision = await create_revision(elem_id, body.instruction)
+        revision = await create_revision(db, elem_id, body.instruction)
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -179,26 +218,39 @@ async def revise_canvas_element(request: Request, elem_id: str, body: ReviseRequ
 
 
 @router.post("/revisions/{rev_id}/apply")
-async def apply_canvas_revision(request: Request, rev_id: str):
+async def apply_canvas_revision(
+    request: Request,
+    rev_id: str,
+    db: AsyncSession = Depends(get_db),
+):
     try:
-        revision = await apply_revision(rev_id)
+        revision = await apply_revision(db, rev_id)
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.post("/revisions/{rev_id}/reject")
-async def reject_canvas_revision(request: Request, rev_id: str):
+async def reject_canvas_revision(
+    request: Request,
+    rev_id: str,
+    db: AsyncSession = Depends(get_db),
+):
     try:
-        revision = await reject_revision(rev_id)
+        revision = await reject_revision(db, rev_id)
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/documents/{doc_id}/revisions")
-async def list_canvas_revisions(request: Request, doc_id: str, element_id: Optional[str] = None):
-    revisions = await list_revisions(doc_id, element_id)
+async def list_canvas_revisions(
+    request: Request,
+    doc_id: str,
+    element_id: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    revisions = await list_revisions(db, doc_id, element_id)
     return {"revisions": revisions}
 
 
@@ -206,17 +258,22 @@ async def list_canvas_revisions(request: Request, doc_id: str, element_id: Optio
 
 
 @router.post("/documents/{doc_id}/vision-parse")
-async def vision_parse_document(request: Request, doc_id: str, body: VisionParseRequest):
+async def vision_parse_document(
+    request: Request,
+    doc_id: str,
+    body: VisionParseRequest,
+    db: AsyncSession = Depends(get_db),
+):
     from ..services.image_to_fragment_service import vision_parse
 
-    doc = await get_document(doc_id)
+    doc = await get_document(db, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
     # Resolve insertion sort_key from element id if provided
     insert_after_sort_key = None
     if body.insert_after_element_id:
-        elements = await get_elements(doc_id)
+        elements = await get_elements(db, doc_id)
         for e in elements:
             if e["id"] == body.insert_after_element_id:
                 insert_after_sort_key = e["sortKey"]
@@ -224,7 +281,7 @@ async def vision_parse_document(request: Request, doc_id: str, body: VisionParse
 
     try:
         elements, placeholders_used = await vision_parse(
-            body.image_base64, body.image_mime_type, doc_id, insert_after_sort_key
+            db, body.image_base64, body.image_mime_type, doc_id, insert_after_sort_key
         )
         return {
             "elements": elements,
