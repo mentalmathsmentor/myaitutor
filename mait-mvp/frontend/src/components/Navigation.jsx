@@ -6,13 +6,25 @@ import {
   Menu, 
   X,
   ChevronRight,
+  ChevronDown,
   Home, 
   BookOpen, 
   Play, 
   Lock, 
   GraduationCap, 
-  LogOut
+  LogOut,
+  Info,
+  HelpCircle,
+  Shield,
+  School,
+  Mail
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const NAV_ITEMS = [
     { id: 'landing', label: 'Home', icon: Home },
@@ -20,6 +32,14 @@ const NAV_ITEMS = [
     { id: 'worksheets', label: 'Worksheets', icon: FileText },
     { id: 'pastpapers', label: 'Past Papers', icon: GraduationCap },
     { id: 'demo', label: 'Free Demo', icon: Play },
+]
+
+const INFO_ITEMS = [
+    { id: 'about', label: 'About', icon: Info },
+    { id: 'help', label: 'Help', icon: HelpCircle },
+    { id: 'privacy', label: 'Privacy', icon: Shield },
+    { id: 'pilot', label: 'Pilot Program', icon: School },
+    { id: 'contact', label: 'Contact', icon: Mail },
 ]
 
 export default function Navigation({ 
@@ -109,6 +129,38 @@ export default function Navigation({
                   </button>
                 );
               })}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`px-4 py-2 text-sm transition-all duration-200 rounded-lg border flex items-center gap-1.5 ${
+                      INFO_ITEMS.some((item) => item.id === currentPage)
+                        ? 'text-mait-cyan bg-mait-cyan/10 border-mait-cyan/20'
+                        : 'text-white/70 hover:text-white hover:bg-white/5 border-transparent'
+                    }`}
+                  >
+                    Info
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="min-w-56 rounded-xl border-white/10 bg-mait-space/95 p-2 text-white shadow-2xl backdrop-blur-xl"
+                >
+                  {INFO_ITEMS.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={item.id}
+                        onSelect={() => navigate(item.id)}
+                        className="cursor-pointer rounded-lg px-3 py-2.5 text-white/75 outline-none transition-colors focus:bg-mait-cyan/10 focus:text-mait-cyan"
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Right side: Auth + CTA + Mobile Toggle */}
@@ -193,6 +245,33 @@ export default function Navigation({
               <div className="space-y-2">
                 {/* Mobile Navigation Links */}
                 {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  const active = currentPage === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        navigate(item.id);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-colors ${
+                        active
+                          ? 'bg-mait-cyan/20 text-mait-cyan'
+                          : 'text-white/80 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon size={16} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+
+                <div className="border-t border-white/10 my-4" />
+
+                <div className="px-4 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/35">
+                  Info
+                </div>
+                {INFO_ITEMS.map((item) => {
                   const Icon = item.icon;
                   const active = currentPage === item.id;
                   return (
