@@ -59,14 +59,13 @@ export default function Footer({ navigate }) {
           </motion.div>
           
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-            Ready to Transform
+            Want to test MAIT
             <br />
-            <span className="gradient-text">Your Teaching Workflow?</span>
+            <span className="gradient-text">with one Year 12 class?</span>
           </h2>
           
           <p className="text-white/60 max-w-xl mx-auto mb-8">
-            Join the 2026 Pilot Program and be among the first to experience 
-            the Sovereign Educational AI platform.
+            The school pilot is deliberately small: one class, one term, real worksheet and tutoring use, and honest feedback before anything broader.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -106,7 +105,7 @@ export default function Footer({ navigate }) {
               </div>
             </div>
             <p className="text-white/50 text-sm mb-4">
-              The Sovereign Educational AI platform for NSW HSC students and educators.
+              An Australian AI study mate and worksheet platform for NSW HSC students and educators.
             </p>
             <div className="flex gap-3">
               {[

@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     question: 'What subjects does MAIT cover currently?',
-    answer: 'MAIT currently focuses on NSW HSC Mathematics, especially Year 12 Mathematics Advanced workflows. The broader roadmap includes more HSC subjects, but the current product should not be treated as complete coverage for every course yet.',
+    answer: 'MAIT currently focuses on NSW Year 12 Mathematics Advanced workflows. Other courses are roadmap territory, so do not treat MAIT as complete coverage for every HSC subject or maths pathway yet.',
   },
   {
     question: 'How do I report a bug or suggest a feature?',
