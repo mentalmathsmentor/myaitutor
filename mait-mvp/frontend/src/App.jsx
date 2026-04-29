@@ -14,6 +14,7 @@ const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'))
 const PastPapers = lazy(() => import('./PastPapers'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
+const HelpPage = lazy(() => import('./pages/HelpPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 
 function AppRoutes() {
@@ -114,6 +115,12 @@ function AppRoutes() {
                     <Route path="/about" element={
                         <MarketingPageShell>
                             <ErrorBoundary><AboutPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
+                    <Route path="/help" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><HelpPage /></ErrorBoundary>
                         </MarketingPageShell>
                     } />
 
