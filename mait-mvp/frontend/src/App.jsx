@@ -4,6 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Navigation from './components/Navigation'
 import MarketingPageShell from './components/MarketingPageShell'
 import LoginModal from './components/LoginModal'
+import { Toaster } from './components/ui/sonner'
 import useAuth from './hooks/useAuth'
 import { API_URL } from './config/api'
 
@@ -15,6 +16,7 @@ const PastPapers = lazy(() => import('./PastPapers'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const HelpPage = lazy(() => import('./pages/HelpPage'))
+const PilotPage = lazy(() => import('./pages/PilotPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 
 function AppRoutes() {
@@ -124,6 +126,12 @@ function AppRoutes() {
                         </MarketingPageShell>
                     } />
 
+                    <Route path="/pilot" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><PilotPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
                     <Route path="/pastpapers" element={
                         <MarketingPageShell>
                             <div className="pt-20 lg:pt-24 min-h-screen">
@@ -156,6 +164,7 @@ function AppRoutes() {
                 </Routes>
             </Suspense>
             {loginModal}
+            <Toaster richColors position="bottom-right" />
         </>
     );
 }
