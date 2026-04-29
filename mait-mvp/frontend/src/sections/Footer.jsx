@@ -5,8 +5,6 @@ import {
   Mail, 
   ExternalLink,
   Github,
-  Twitter,
-  Linkedin,
   Sparkles,
   Heart
 } from 'lucide-react';
@@ -20,19 +18,18 @@ export default function Footer({ navigate }) {
       { label: 'Worksheet Studio', action: () => navigate('worksheets') },
       { label: 'Features', href: '#features' },
       { label: 'Architecture', href: '#architecture' },
-      { label: 'Demo', href: '#demo' },
+      { label: 'Demo', action: () => navigate('demo') },
     ],
     resources: [
-      { label: 'NESA Syllabus', href: 'https://educationstandards.nsw.edu.au', external: true },
-      { label: 'Documentation', href: '#' },
-      { label: 'API Reference', href: '#' },
-      { label: 'GitHub', href: '#', external: true },
+      { label: 'NESA Syllabus', href: 'https://educationstandards.nsw.edu.au/wps/portal/nesa/11-12/stage-6-learning-areas/stage-6-mathematics', external: true },
+      { label: 'Help', action: () => navigate('help') },
+      { label: 'GitHub / Code', href: 'https://github.com/mentalmathsmentor/myaitutor', external: true },
     ],
     company: [
-      { label: 'About', href: '#' },
-      { label: 'Pilot Program', href: '#' },
-      { label: 'Contact', href: 'mailto:mentor@mentalmaths.au' },
-      { label: 'Privacy', href: '#' },
+      { label: 'About', action: () => navigate('about') },
+      { label: 'Pilot Program', action: () => navigate('pilot') },
+      { label: 'Contact', action: () => navigate('contact') },
+      { label: 'Privacy', action: () => navigate('privacy') },
     ],
   };
 
@@ -80,13 +77,13 @@ export default function Footer({ navigate }) {
               <Brain className="w-5 h-5" />
               Try Worksheet Studio
             </button>
-            <a
-              href="mailto:mentor@mentalmaths.au"
+            <button
+              onClick={() => navigate('pilot')}
               className="btn-glass text-white px-8 py-4 rounded-xl flex items-center justify-center gap-2"
             >
               <Mail className="w-5 h-5" />
               Contact for Pilot
-            </a>
+            </button>
           </div>
         </motion.div>
 
@@ -113,13 +110,14 @@ export default function Footer({ navigate }) {
             </p>
             <div className="flex gap-3">
               {[
-                { icon: Twitter, href: '#' },
-                { icon: Linkedin, href: '#' },
-                { icon: Github, href: '#' },
+                { icon: Github, href: 'https://github.com/mentalmathsmentor/myaitutor', label: 'MAIT GitHub repository' },
               ].map((social, index) => (
                 <a
                   key={index}
                   href={social.href}
+                  aria-label={social.label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-9 h-9 rounded-lg glass-card flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
                 >
                   <social.icon className="w-4 h-4" />
@@ -160,15 +158,24 @@ export default function Footer({ navigate }) {
             <ul className="space-y-2">
               {links.resources.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    target={link.external ? '_blank' : undefined}
-                    rel={link.external ? 'noopener noreferrer' : undefined}
-                    className="text-white/50 hover:text-white text-sm transition-colors flex items-center gap-1"
-                  >
-                    {link.label}
-                    {link.external && <ExternalLink className="w-3 h-3" />}
-                  </a>
+                  {'action' in link ? (
+                    <button
+                      onClick={link.action}
+                      className="text-white/50 hover:text-white text-sm transition-colors"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <a
+                      href={link.href}
+                      target={link.external ? '_blank' : undefined}
+                      rel={link.external ? 'noopener noreferrer' : undefined}
+                      className="text-white/50 hover:text-white text-sm transition-colors flex items-center gap-1"
+                    >
+                      {link.label}
+                      {link.external && <ExternalLink className="w-3 h-3" />}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -180,12 +187,12 @@ export default function Footer({ navigate }) {
             <ul className="space-y-2">
               {links.company.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
+                  <button
+                    onClick={link.action}
                     className="text-white/50 hover:text-white text-sm transition-colors"
                   >
                     {link.label}
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -223,7 +230,7 @@ export default function Footer({ navigate }) {
           className="mt-8 text-center"
         >
           <p className="text-white/30 text-xs">
-            Architected by Darayat Ilham Chowdhury — Mechatronics & Computer Science, UNSW
+            Architected by Darayat Ilham Chowdhury — Bachelor of Education (in progress), Macquarie University
           </p>
           <p className="text-white/20 text-xs mt-1">
             Award-Winning Senior Mathematics Tutor | Mental Maths Mentor
