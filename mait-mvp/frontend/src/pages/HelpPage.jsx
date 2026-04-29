@@ -65,7 +65,7 @@ export default function HelpPage() {
             <article key={item.question} className="rounded-2xl border border-white/10 bg-white/[0.035] p-6">
               <div className="flex gap-4">
                 <HelpCircle className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold">{item.question}</h2>
                   <p className="mt-3 leading-7 text-white/62">{item.answer}</p>
                 </div>
@@ -76,7 +76,7 @@ export default function HelpPage() {
 
         <section className="mt-10 rounded-2xl border border-mait-cyan/20 bg-mait-cyan/5 p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="min-w-0">
               <h2 className="text-xl font-semibold">Still need a hand?</h2>
               <p className="mt-2 text-sm leading-6 text-white/60">
                 Send a short note and include the page or tool you were using.

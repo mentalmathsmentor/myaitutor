@@ -57,7 +57,7 @@ export default function PrivacyPolicy() {
               <article key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-6">
                 <div className="flex gap-4">
                   <Icon className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-                  <div>
+                  <div className="min-w-0">
                     <h2 className="text-xl font-semibold">{item.title}</h2>
                     <p className="mt-3 leading-7 text-white/62">{item.body}</p>
                   </div>
@@ -108,7 +108,7 @@ export default function PrivacyPolicy() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-3">
               <Shield className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-xl font-semibold">Privacy contact</h2>
                 <p className="mt-2 text-sm leading-6 text-white/60">
                   For privacy questions, access requests, corrections, or deletion requests, contact MAIT directly.

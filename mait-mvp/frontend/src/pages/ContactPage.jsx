@@ -73,7 +73,7 @@ export default function ContactPage() {
     <main className="min-h-screen px-4 pb-24 pt-28 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         <section className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-mait-cyan/80">
               Contact
             </p>
@@ -87,7 +87,7 @@ export default function ContactPage() {
             <div className="rounded-2xl border border-mait-cyan/20 bg-mait-cyan/5 p-6">
               <div className="flex gap-3">
                 <MessageSquare className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-xl font-semibold">Good messages include context</h2>
                   <p className="mt-3 text-sm leading-7 text-white/62">
                     If you are reporting a bug, mention the page, what you expected, and what happened. If you are a teacher or school administrator, include the year group or workflow you care about.
@@ -97,7 +97,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
+          <form onSubmit={handleSubmit} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="space-y-2">
                 <Label htmlFor="name" className="text-white/70">Name</Label>
@@ -145,7 +145,7 @@ export default function ContactPage() {
               )}
             </Button>
 
-            <p className="mt-4 text-center text-sm text-white/45">
+            <p className="mt-4 break-words text-center text-sm text-white/45">
               Email fallback: <a href="mailto:mentor@mentalmaths.au" className="text-mait-cyan hover:text-white">mentor@mentalmaths.au</a>
             </p>
           </form>
@@ -154,7 +154,7 @@ export default function ContactPage() {
         <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.035] p-6">
           <div className="flex gap-3">
             <Mail className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-            <p className="leading-7 text-white/62">
+            <p className="min-w-0 leading-7 text-white/62">
               The form uses MAIT's existing Resend-backed feedback route and sends to mentor@mentalmaths.au. The mailto fallback stays here for schools or networks where forms are blocked.
             </p>
           </div>

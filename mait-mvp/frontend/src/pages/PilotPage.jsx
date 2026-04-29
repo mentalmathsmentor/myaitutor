@@ -88,7 +88,7 @@ export default function PilotPage() {
     <main className="min-h-screen px-4 pb-24 pt-28 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <section className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-          <div className="space-y-7">
+          <div className="min-w-0 space-y-7">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-mait-cyan/80">
               School pilot
             </p>
@@ -102,7 +102,7 @@ export default function PilotPage() {
             <div className="rounded-2xl border border-mait-cyan/20 bg-mait-cyan/5 p-6">
               <div className="flex gap-3">
                 <Sparkles className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-xl font-semibold">What is included</h2>
                   <ul className="mt-4 space-y-3 text-sm leading-6 text-white/65">
                     {included.map((item) => (
@@ -117,7 +117,7 @@ export default function PilotPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
+          <form onSubmit={handleSubmit} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
             <div className="mb-6">
               <h2 className="text-2xl font-bold">Register interest</h2>
               <p className="mt-2 text-sm leading-6 text-white/55">
@@ -165,7 +165,7 @@ export default function PilotPage() {
               )}
             </Button>
 
-            <p className="mt-4 text-center text-sm text-white/45">
+            <p className="mt-4 break-words text-center text-sm text-white/45">
               Prefer email? <a href="mailto:mentor@mentalmaths.au?subject=MAIT%20School%20Pilot" className="text-mait-cyan hover:text-white">mentor@mentalmaths.au</a>
             </p>
           </form>
@@ -204,7 +204,7 @@ export default function PilotPage() {
         <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.035] p-6">
           <div className="flex gap-3">
             <CalendarDays className="mt-1 h-5 w-5 shrink-0 text-mait-cyan" />
-            <p className="leading-7 text-white/62">
+            <p className="min-w-0 leading-7 text-white/62">
               The pilot is intentionally narrow: one class, one term, enough real classroom use to learn honestly, and no broad school rollout before the agreement, consent, and support expectations are clear.
             </p>
           </div>

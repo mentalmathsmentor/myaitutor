@@ -24,7 +24,7 @@ export default function AboutPage() {
     <main className="min-h-screen px-4 pb-24 pt-28 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-mait-cyan/80">
               About MAIT
             </p>
@@ -57,7 +57,7 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <aside className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
+          <aside className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl backdrop-blur">
             <div className="flex aspect-[4/5] items-center justify-center rounded-xl border border-dashed border-mait-cyan/30 bg-mait-cyan/5 text-center">
               <div className="px-8">
                 <GraduationCap className="mx-auto mb-4 h-10 w-10 text-mait-cyan" />
