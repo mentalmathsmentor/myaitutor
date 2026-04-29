@@ -13,6 +13,7 @@ const AIResources = lazy(() => import('./AIResources'))
 const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'))
 const PastPapers = lazy(() => import('./PastPapers'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 
 function AppRoutes() {
@@ -110,6 +111,12 @@ function AppRoutes() {
                         </MarketingPageShell>
                     } />
 
+                    <Route path="/about" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><AboutPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
                     <Route path="/pastpapers" element={
                         <MarketingPageShell>
                             <div className="pt-20 lg:pt-24 min-h-screen">
@@ -147,4 +154,3 @@ function AppRoutes() {
 }
 
 export default AppRoutes
-
