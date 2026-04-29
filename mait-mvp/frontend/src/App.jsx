@@ -17,6 +17,7 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const HelpPage = lazy(() => import('./pages/HelpPage'))
 const PilotPage = lazy(() => import('./pages/PilotPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 
 function AppRoutes() {
@@ -129,6 +130,12 @@ function AppRoutes() {
                     <Route path="/pilot" element={
                         <MarketingPageShell>
                             <ErrorBoundary><PilotPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
+                    <Route path="/contact" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><ContactPage /></ErrorBoundary>
                         </MarketingPageShell>
                     } />
 
