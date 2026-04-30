@@ -32,7 +32,9 @@ const ChatInterface = ({ onBack }) => {
         };
         init();
         return () => {
-            modelService.unloadModel();
+            // LOCAL CORE mode: respect the same cache preference as demo mode
+            const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
+            modelService.unloadModel(keepCached);
         };
     }, []);
 

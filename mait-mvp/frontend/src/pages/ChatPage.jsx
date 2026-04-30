@@ -422,14 +422,27 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             };
             checkCache();
 
-            // Setup teardown
-            const handleBeforeUnload = () => {
+            // Setup teardown on tab/browser close.
+            // beforeunload and pagehide are synchronous — we must NOT await anything here.
+            // clearCachesSync() fires delete promises without awaiting, giving them the
+            // best chance of completing before the browser kills the page.
+            const handleTabClose = (e) => {
                 const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
-                modelService.unloadModel(keepCached);
+                if (!keepCached) {
+                    modelService.clearCachesSync();
+                }
             };
-            window.addEventListener('beforeunload', handleBeforeUnload);
+            // pagehide fires reliably across browsers; persisted=true means bfcache (page coming back).
+            const handlePageHide = (e) => {
+                if (!e.persisted) handleTabClose();
+            };
+            window.addEventListener('beforeunload', handleTabClose);
+            window.addEventListener('pagehide', handlePageHide);
+
             return () => {
-                window.removeEventListener('beforeunload', handleBeforeUnload);
+                window.removeEventListener('beforeunload', handleTabClose);
+                window.removeEventListener('pagehide', handlePageHide);
+                // SPA navigation: async is fine here — page stays alive
                 const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
                 modelService.unloadModel(keepCached);
             };

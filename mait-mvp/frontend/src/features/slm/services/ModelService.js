@@ -82,6 +82,8 @@ class ModelService {
         this.lastProgressBytes = 0;
         this.lastProgressTime = null;
         this.downloadSpeedMBps = null;
+        // Populated after model loads so clearCachesSync() needs no async work
+        this.knownCacheNames = null;
     }
 
     /**
@@ -202,6 +204,48 @@ class ModelService {
         this.downloadSpeedMBps = null;
     }
 
+    /**
+     * Sniff and store current model cache names so clearCachesSync() needs no async work.
+     * Called (fire-and-forget) after the model finishes loading.
+     */
+    async sniffCacheNames() {
+        if (typeof caches === 'undefined') return;
+        try {
+            const names = await caches.keys();
+            this.knownCacheNames = names.filter(n =>
+                n.includes('webllm') || n.includes('mlc') ||
+                n.includes('wasm')   || n.includes('model')
+            );
+        } catch (e) {
+            console.warn('Cache sniff failed (non-fatal):', e);
+        }
+    }
+
+    /**
+     * Start cache deletion synchronously (fire-and-forget promises).
+     * Safe to call from a beforeunload / pagehide handler — no awaiting needed.
+     * Falls back to a full keys() scan if sniffCacheNames() was never called.
+     */
+    clearCachesSync() {
+        if (typeof caches === 'undefined') return;
+        if (this.knownCacheNames) {
+            // Fast path: we already know the names
+            for (const name of this.knownCacheNames) {
+                caches.delete(name).catch(() => {});
+            }
+        } else {
+            // Slow path: async key scan — best effort, may not complete before tab closes
+            caches.keys().then(names => {
+                for (const name of names) {
+                    if (name.includes('webllm') || name.includes('mlc') ||
+                        name.includes('wasm')   || name.includes('model')) {
+                        caches.delete(name).catch(() => {});
+                    }
+                }
+            }).catch(() => {});
+        }
+    }
+
     async _doInitialize(onProgress) {
         const modelConfig = this.currentModelInfo;
         const estimatedMB = modelConfig.estimatedSizeMB;
@@ -260,6 +304,8 @@ class ModelService {
             wrapProgress(`Ready (${modelConfig.name})`, 100);
             this.status = 'READY';
             this.initPromise = null; // Clear so future calls can re-init if needed
+            // Pre-sniff cache names so clearCachesSync() works synchronously on tab close
+            this.sniffCacheNames();
             return modelConfig.name;
         } catch (err) {
             console.error("Critical: Failed to load local model.", err);
@@ -336,33 +382,37 @@ class ModelService {
     }
 
     /**
-     * Unload the model and clear cache if requested
-     * @param {boolean} shouldCache - If false, deletes all webllm/model caches
+     * Unload the model and clear cache if requested.
+     * Use for SPA navigation and component unmount (async context — page stays alive).
+     * For tab/browser close use clearCachesSync() + beforeunload/pagehide instead.
+     * @param {boolean} shouldCache - If false, deletes all webllm/mlc/wasm/model caches
      */
     async unloadModel(shouldCache = false) {
         if (this.engine) {
+            const engineRef = this.engine;
+            this.engine = null;
             try {
-                await this.engine.unload();
+                await engineRef.unload();
             } catch (e) {
                 console.warn("Engine unload error:", e);
             }
-            this.engine = null;
-            // Additional dispose to clear GPU memory as per user request
-            if (this.engine && typeof this.engine.dispose === 'function') {
-                try { this.engine.dispose(); } catch (e) {}
+            if (typeof engineRef.dispose === 'function') {
+                try { engineRef.dispose(); } catch (e) {}
             }
         }
-        
+
         await this.reset();
 
         if (!shouldCache && typeof caches !== 'undefined') {
             try {
                 const cacheNames = await caches.keys();
                 for (const name of cacheNames) {
-                    if (name.includes('webllm') || name.includes('model')) {
+                    if (name.includes('webllm') || name.includes('mlc') ||
+                        name.includes('wasm')   || name.includes('model')) {
                         await caches.delete(name);
                     }
                 }
+                this.knownCacheNames = null;
                 console.log("Model caches cleared.");
             } catch (e) {
                 console.warn("Failed to clear caches:", e);
