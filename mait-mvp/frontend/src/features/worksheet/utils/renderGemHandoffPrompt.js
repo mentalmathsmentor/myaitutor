@@ -10,13 +10,9 @@ export function renderGemHandoffPrompt(request) {
     return cleanArr.length > 0 ? `- **${label}:** ${cleanArr.join(', ')}` : '';
   };
 
-  // Condense topic for title: if multiple points, use the first one + " (Mixed)"
   const topicSummary = ensureString(request.topicSummary);
-  const topicParts = topicSummary.split('|').map(s => s.trim()).filter(Boolean);
-  const firstTopic = topicParts[0] || 'Mathematics';
-  const condensedTopic = topicParts.length > 1 ? `${firstTopic} (Mixed)` : firstTopic;
 
-  let handoff = `**${settings.course} ${condensedTopic} Worksheet**\n\n`;
+  let handoff = `**${settings.course} [Generate a concise 1-3 word summary of the topics] Worksheet**\n\n`;
   handoff += `**USER WORKSHEET REQUEST:**\n\n`;
 
   handoff += `**WORKSHEET SETTINGS:**\n`;
