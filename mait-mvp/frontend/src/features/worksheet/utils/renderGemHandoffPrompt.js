@@ -28,7 +28,11 @@ export function renderGemHandoffPrompt(request) {
   handoff += `- **Working Space:** ${settings.workingSpace}\n`;
   if (settings.marks !== 'No marks.') handoff += `- **Marks:** ${settings.marks}\n`;
   if (settings.answerKey !== 'No answer key.') handoff += `- **Answer Key:** ${settings.answerKey}\n`;
-  if (!settings.watermark) handoff += `- **WATERMARK:** OFF (Leave rfoot empty)\n`;
+  if (settings.watermark) {
+    handoff += `- **WATERMARK:** ON (Set rfoot to "myaitutor.au/worksheets")\n`;
+  } else {
+    handoff += `- **WATERMARK:** OFF (Leave rfoot empty)\n`;
+  }
   handoff += `- **MODE:** ${settings.mode}\n\n`;
 
   if (request.legacyFields.manual_prompt) {
