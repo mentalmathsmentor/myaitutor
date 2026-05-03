@@ -4,9 +4,9 @@
 // Model options - small for demo (fast download), large for full quality
 const MODELS = {
     tiny: {
-        id: "SmolLM2-1.7B-Instruct-q4f16_1-MLC",
-        name: "SmolLM2 1.7B",
-        displayName: "Tiny (SmolLM2 1.7B)",
+        id: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+        name: "Qwen2.5 1.5B",
+        displayName: "Tiny (Qwen2.5 1.5B)",
         estimatedSizeMB: 1200,
         description: "Ultra-fast loading, for low-end devices",
         icon: "zap"

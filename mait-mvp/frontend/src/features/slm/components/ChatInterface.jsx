@@ -17,12 +17,21 @@ const ChatInterface = ({ onBack }) => {
     useEffect(() => {
         const init = async () => {
             try {
-                // ChatInterface is used for LOCAL CORE (full app mode) - always use 'large' model
+                // Detect mobile to prevent QuotaExceededError and use a smaller model
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const targetModel = isMobile ? 'tiny' : 'large';
+
+                if (isMobile) {
+                    setStatusMsg("Clearing old caches...");
+                    await modelService.unloadModel(false); // aggressively clear to make room
+                }
+
+                // ChatInterface is used for LOCAL CORE (full app mode)
                 const modelName = await modelService.initialize((report) => {
                     // Handle both old string format and new object format
                     const text = typeof report === 'string' ? report : (report.text || "Loading...");
                     setStatusMsg(text);
-                }, 'large');
+                }, targetModel);
                 setStatus("ready");
                 setStatusMsg(`Active: ${modelName}`);
             } catch (e) {
