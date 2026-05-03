@@ -339,6 +339,31 @@ export default function WorksheetStudio({ setCurrentSection }) {
     return typeof p === 'string' ? p : String(p || '');
   };
 
+  // Prune stale selectedPoints whenever the syllabus context changes (stage/subject switch).
+  // Without this, ids from a previous subject persist in localStorage and leak into the prompt.
+  useEffect(() => {
+    if (!currentSyllabus || Object.keys(currentSyllabus).length === 0) {
+      if (selectedPoints.length > 0) setSelectedPoints([]);
+      return;
+    }
+    const validIds = new Set();
+    const collect = (node) => {
+      if (Array.isArray(node)) {
+        node.forEach((p) => { const id = getId(p); if (id) validIds.add(id); });
+      } else if (node && typeof node === 'object') {
+        Object.values(node).forEach(collect);
+      }
+    };
+    collect(currentSyllabus);
+    if (currentTopicsList) {
+      currentTopicsList.forEach((p) => { const id = getId(p); if (id) validIds.add(id); });
+    }
+    setSelectedPoints((prev) => {
+      const filtered = prev.filter((id) => validIds.has(id));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [currentSyllabus, currentTopicsList]);
+
   const filteredModules = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) {
