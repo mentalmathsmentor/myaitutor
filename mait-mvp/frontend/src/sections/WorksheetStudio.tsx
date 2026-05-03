@@ -170,12 +170,11 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [pedagogicalProofStyle, setPedagogicalProofStyle] = useState(() => localStorage.getItem('mait_ws_pedagogicalProofStyle') === 'true');
   const [pedagogicalWordProblems, setPedagogicalWordProblems] = useState(() => localStorage.getItem('mait_ws_pedagogicalWordProblems') === 'true');
   const [pedagogicalMultiStep, setPedagogicalMultiStep] = useState(() => localStorage.getItem('mait_ws_pedagogicalMultiStep') === 'true');
-  const [showWatermark, setShowWatermark] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_showWatermark');
+  const [removeWatermark, setRemoveWatermark] = useState(() => {
+    const saved = localStorage.getItem('mait_ws_removeWatermark');
     if (saved !== null) return saved === 'true';
-    // Migration: if a legacy removeWatermark key exists, invert it; otherwise default true.
-    const legacy = localStorage.getItem('mait_ws_removeWatermark');
-    return legacy === null ? true : legacy !== 'true';
+    const legacy = localStorage.getItem('mait_ws_showWatermark');
+    return legacy === null ? false : legacy !== 'true';
   });
   const [includeWorkedSolutions, setIncludeWorkedSolutions] = useState(false);
   const [numInput, setNumInput] = useState(() => {
@@ -240,7 +239,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
     localStorage.setItem('mait_ws_pedagogicalProofStyle', pedagogicalProofStyle.toString());
     localStorage.setItem('mait_ws_pedagogicalWordProblems', pedagogicalWordProblems.toString());
     localStorage.setItem('mait_ws_pedagogicalMultiStep', pedagogicalMultiStep.toString());
-    localStorage.setItem('mait_ws_showWatermark', showWatermark.toString());
+    localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
   }, [
     selectedStage,
     selectedSubject,
@@ -258,7 +257,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
     pedagogicalProofStyle,
     pedagogicalWordProblems,
     pedagogicalMultiStep,
-    showWatermark,
+    removeWatermark,
   ]);
 
   useEffect(() => {
@@ -480,7 +479,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
     includeName,
     includeDate,
     schoolName,
-    showWatermark,
+    removeWatermark,
     syllabusContextMode,
     textbooksProvided,
     pedagogicalSpotError,
@@ -1280,7 +1279,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         onChange: setIncludeWorkedSolutions,
                       },
                       { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
-                      { label: 'Watermark', note: 'Footer link to myaitutor.au/worksheets', checked: showWatermark, onChange: setShowWatermark },
+                      { label: 'Remove Watermark', note: 'Omit footer link to myaitutor.au/worksheets', checked: removeWatermark, onChange: setRemoveWatermark },
                     ].map((item) => (
                       <label key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
                         <input

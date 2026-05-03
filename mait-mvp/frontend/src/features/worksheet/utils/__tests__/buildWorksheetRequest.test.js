@@ -34,7 +34,7 @@ const baseParams = {
   includeName: true,
   includeDate: true,
   schoolName: '',
-  showWatermark: true,
+  removeWatermark: false,
   syllabusContextMode: 'Off',
   textbooksProvided: false,
   firstTimeMode: false,
@@ -121,8 +121,8 @@ describe('buildWorksheetRequest', () => {
     expect(result.worksheetSettings.answerKey).toContain('worked solutions');
   });
 
-  it('sets watermark to false when showWatermark is false', () => {
-    const result = buildWorksheetRequest({ ...baseParams, showWatermark: false });
+  it('sets watermark to false when removeWatermark is true', () => {
+    const result = buildWorksheetRequest({ ...baseParams, removeWatermark: true });
     expect(result.worksheetSettings.watermark).toBe(false);
   });
 

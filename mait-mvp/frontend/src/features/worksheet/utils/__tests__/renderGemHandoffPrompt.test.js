@@ -26,9 +26,9 @@ describe('renderGemHandoffPrompt', () => {
     }
   };
 
-  it('renders watermark ON correctly', () => {
+  it('omits watermark instruction when ON (default)', () => {
     const prompt = renderGemHandoffPrompt(baseRequest);
-    expect(prompt).toContain('- **WATERMARK:** ON (Set rfoot to "myaitutor.au/worksheets")');
+    expect(prompt).not.toContain('WATERMARK');
   });
 
   it('renders watermark OFF correctly', () => {

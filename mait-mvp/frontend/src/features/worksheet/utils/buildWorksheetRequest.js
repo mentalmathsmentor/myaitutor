@@ -16,7 +16,7 @@ export function buildWorksheetRequest(params) {
     includeName,
     includeDate,
     schoolName,
-    showWatermark,
+    removeWatermark,
     syllabusContextMode,
     textbooksProvided,
     firstTimeMode,
@@ -77,7 +77,7 @@ export function buildWorksheetRequest(params) {
       workingSpace: workingSpace,
       marks: includeMarks ? 'Assign and right-align marks.' : 'No marks.',
       answerKey: answerKeyStatus,
-      watermark: showWatermark,
+      watermark: !removeWatermark,
       mode: pedagogicalDrills.length === 0 ? 'EXAM STRICT (Pure questions only, no pedagogy tools)' : 'PEDAGOGY (Weave in selected pedagogy tools)'
     },
     topicSummary: topicSummary,
