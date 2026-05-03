@@ -366,46 +366,17 @@ export default function WorksheetStudio({ setCurrentSection }) {
 
   const filteredModules = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query) {
-      return Object.keys(currentSyllabus);
-    }
-    if (!query) {
-      return Object.keys(currentSyllabus);
-    }
-
-    return Object.keys(currentSyllabus).filter((moduleName) => {
-      if (moduleName.toLowerCase().includes(query)) {
-        return true;
-      }
-      return Object.entries(currentSyllabus[moduleName] || {}).some(([subtopic, points]) => {
-        if (subtopic.toLowerCase().includes(query)) {
-          return true;
-        }
-        return points.some((point) => getLabel(point).toLowerCase().includes(query));
-      });
+    const moduleNames = Object.keys(currentSyllabus);
+    if (!query) return moduleNames;
+    return moduleNames.filter((moduleName) => {
+      if (moduleName.toLowerCase().includes(query)) return true;
+      return Object.entries(currentSyllabus[moduleName] || {}).some(
+        ([subtopic, points]) =>
+          subtopic.toLowerCase().includes(query) ||
+          points.some((point) => getLabel(point).toLowerCase().includes(query))
+      );
     });
   }, [currentSyllabus, searchQuery]);
-
-  useEffect(() => {
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) {
-      return;
-    }
-
-    const nextModules = {};
-    const nextSubtopics = {};
-    for (const moduleName of filteredModules) {
-      nextModules[moduleName] = true;
-      for (const [subtopic, points] of Object.entries(currentSyllabus[moduleName] || {})) {
-        if (subtopic.toLowerCase().includes(query) || points.some((point) => getLabel(point).toLowerCase().includes(query))) {
-          nextSubtopics[subtopic] = true;
-        }
-      }
-    }
-
-    setExpandedModules((prev) => ({ ...prev, ...nextModules }));
-    setExpandedSubtopics((prev) => ({ ...prev, ...nextSubtopics }));
-  }, [currentSyllabus, filteredModules, searchQuery]);
 
   const displaySubject = selectedSubject === 'Other' && customSubject.trim() ? customSubject.trim() : selectedSubject;
 
