@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 
@@ -6,8 +8,10 @@ from ..services import wellness_engine, educational_agent, storage
 from ..services.syllabus_service import syllabus_service
 from ..services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from ..deps import verify_student_auth, get_or_create_context, limiter
+from ..logging_config import hash_identifier, log_event
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class InteractionRequest(BaseModel):
@@ -73,10 +77,10 @@ async def query_api(request: Request, body: InteractionRequest):
             "mastery_score": context.pedagogical_state.mastery_score
         }
 
-    context = wellness_engine.update_fatigue(context, request.complexity)
+    context = wellness_engine.update_fatigue(context, body.complexity)
 
     topic = context.pedagogical_state.current_topic or "Mathematics"
-    demonstrated_level = assess_response_level(request.query, topic)
+    demonstrated_level = assess_response_level(body.query, topic)
     bloom_instruction = get_bloom_teaching_strategy(context.pedagogical_state.blooms_level)
 
     context = advance_bloom_level(context, demonstrated_level)
@@ -85,46 +89,56 @@ async def query_api(request: Request, body: InteractionRequest):
 
     try:
         syllabus_context = syllabus_service.get_relevant_context(
-            query=request.query,
+            query=body.query,
             fatigue_status=context.fatigue_metric.status,
             year=None
         )
     except Exception as e:
-        print(f"RAG retrieval failed in /query (non-fatal): {e}")
+        log_event(
+            logger,
+            "rag_retrieval_error",
+            level=logging.WARNING,
+            message="RAG retrieval failed in /query",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(body.student_id),
+            current_topic=topic,
+        )
         syllabus_context = ""
 
-    conversation_history = await storage.get_history(request.student_id, limit=20)
+    conversation_history = await storage.get_history(body.student_id, limit=20)
 
-    token_estimate = await storage.get_history_token_estimate(request.student_id)
+    token_estimate = await storage.get_history_token_estimate(body.student_id)
     if token_estimate > 6000 and conversation_history:
         while conversation_history and token_estimate > 6000:
             removed = conversation_history.pop(0)
             token_estimate -= len(removed["content"]) // 4
 
     gemini_response = await get_gemini_response(
-        question=request.query,
+        question=body.query,
         syllabus_context=syllabus_context,
         fatigue_state=context.fatigue_metric.status,
         current_topic=topic,
         bloom_instruction=bloom_instruction,
-        conversation_history=conversation_history
+        conversation_history=conversation_history,
+        student_id=body.student_id,
     )
 
     response_text = gemini_response.get("text", "")
     await storage.save_message(
-        request.student_id, "user", request.query,
+        body.student_id, "user", body.query,
         fatigue_state=context.fatigue_metric.status.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
     await storage.save_message(
-        request.student_id, "assistant", response_text,
+        body.student_id, "assistant", response_text,
         fatigue_state=context.fatigue_metric.status.value,
         blooms_level=context.pedagogical_state.blooms_level.value,
         topic=topic
     )
 
-    await storage.save_context(request.student_id, context)
+    await storage.save_context(body.student_id, context)
 
     return {
         "sections": gemini_response.get("sections", [gemini_response.get("text", "Error")]),

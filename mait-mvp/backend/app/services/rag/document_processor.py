@@ -2,6 +2,7 @@
 Document processor for NESA syllabus PDFs and DOCX files.
 Implements syllabus-aware chunking that preserves topic code structure.
 """
+import logging
 import re
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -11,6 +12,9 @@ import pypdf
 from docx import Document as DocxDocument
 
 from .config import TOPIC_CODE_PATTERN, CONTENT_CODE_PATTERN, MAX_CHUNK_SIZE
+from app.logging_config import log_event
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -220,17 +224,34 @@ class DocumentProcessor:
 
         for file_path in file_paths:
             if not file_path.exists():
-                print(f"Warning: File not found: {file_path}")
+                log_event(
+                    logger,
+                    "rag_document_missing",
+                    level=logging.WARNING,
+                    path=str(file_path),
+                )
                 continue
 
             try:
-                print(f"Processing: {file_path.name}")
+                log_event(logger, "rag_document_processing", source_filename=file_path.name)
                 text = self.extract_text(file_path)
                 chunks = self.chunk_by_content_code(text, file_path.name)
                 all_chunks.extend(chunks)
-                print(f"  -> Created {len(chunks)} chunks")
+                log_event(
+                    logger,
+                    "rag_document_processed",
+                    source_filename=file_path.name,
+                    chunk_count=len(chunks),
+                )
             except Exception as e:
-                print(f"Error processing {file_path}: {e}")
+                log_event(
+                    logger,
+                    "rag_document_processing_failed",
+                    level=logging.ERROR,
+                    path=str(file_path),
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                )
 
         # Deduplicate by ID (prefer longer content)
         seen = {}
@@ -239,5 +260,5 @@ class DocumentProcessor:
                 seen[chunk.id] = chunk
 
         final_chunks = list(seen.values())
-        print(f"\nTotal unique chunks: {len(final_chunks)}")
+        log_event(logger, "rag_documents_deduplicated", unique_chunk_count=len(final_chunks))
         return final_chunks

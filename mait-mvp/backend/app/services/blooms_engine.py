@@ -4,8 +4,12 @@ Bloom's Taxonomy Adaptive Progression Engine.
 Assesses student cognitive level from their queries, tracks mastery,
 and provides teaching strategy instructions for the Gemini system prompt.
 """
+import logging
 import re
 from app.models import BloomsLevel, StudentContext
+from app.logging_config import hash_identifier, log_event
+
+logger = logging.getLogger(__name__)
 
 
 # Ordered list for level progression (lowest to highest)
@@ -176,7 +180,16 @@ def advance_bloom_level(context: StudentContext, demonstrated_level: BloomsLevel
         # Advance to the next level
         ped.blooms_level = BLOOMS_ORDER[current_index + 1]
         ped.mastery_score = 0.0  # Reset mastery for the new level
-        print(f"BLOOM ADVANCE: {current_level.value} -> {ped.blooms_level.value}")
+        log_event(
+            logger,
+            "pedagogy_state_changed",
+            action="bloom_level_advanced",
+            student_id_hash=hash_identifier(context.student_id),
+            previous_blooms_level=current_level.value,
+            new_blooms_level=ped.blooms_level.value,
+            demonstrated_level=demonstrated_level.value,
+            mastery_score=ped.mastery_score,
+        )
 
     context.pedagogical_state = ped
     return context

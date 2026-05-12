@@ -5,7 +5,9 @@ Uses Gemini Flash to revise individual LaTeX fragments based on teacher instruct
 Stores revision history in the document_revisions table.
 """
 import asyncio
+import logging
 import os
+import time
 import uuid
 from datetime import datetime
 from typing import Optional, List
@@ -13,6 +15,14 @@ from typing import Optional, List
 import aiosqlite
 from .storage import _DB_PATH
 from .gemini_client import get_client, MODEL_ID
+from app.logging_config import (
+    hash_identifier,
+    log_event,
+    text_preview,
+    usage_metadata_from_response,
+)
+
+logger = logging.getLogger(__name__)
 
 FRAGMENT_REVISION_SYSTEM_PROMPT = r"""You are a LaTeX worksheet editor for NSW HSC Mathematics.
 You will receive ONE fragment of a LaTeX worksheet and an editing instruction.
@@ -38,7 +48,12 @@ INSTRUCTION: {instruction}
 Output the revised fragment only."""
 
 
-async def create_revision(element_id: str, instruction: str) -> dict:
+async def create_revision(
+    element_id: str,
+    instruction: str,
+    *,
+    actor_student_id: Optional[str] = None,
+) -> dict:
     """
     Request an AI revision for a specific element.
 
@@ -74,6 +89,21 @@ async def create_revision(element_id: str, instruction: str) -> dict:
     )
 
     client = get_client()
+    gemini_request_id = uuid.uuid4().hex
+    started = time.perf_counter()
+    log_event(
+        logger,
+        "gemini_request",
+        gemini_request_id=gemini_request_id,
+        call_site="revision_service.create_revision",
+        model=MODEL_ID,
+        prompt=text_preview(user_prompt),
+        system_prompt=text_preview(FRAGMENT_REVISION_SYSTEM_PROMPT),
+        student_id_hash=hash_identifier(actor_student_id),
+        document_id_hash=hash_identifier(document_id),
+        element_id_hash=hash_identifier(element_id),
+        verification_status="not_applicable",
+    )
     try:
         response = await asyncio.wait_for(
             client.aio.models.generate_content(
@@ -84,8 +114,39 @@ async def create_revision(element_id: str, instruction: str) -> dict:
             timeout=30.0,
         )
         output_snapshot = response.text.strip()
+        latency_ms = round((time.perf_counter() - started) * 1000, 2)
+        log_event(
+            logger,
+            "gemini_response",
+            gemini_request_id=gemini_request_id,
+            call_site="revision_service.create_revision",
+            model=MODEL_ID,
+            latency_ms=latency_ms,
+            response=text_preview(output_snapshot),
+            **usage_metadata_from_response(response),
+            student_id_hash=hash_identifier(actor_student_id),
+            document_id_hash=hash_identifier(document_id),
+            element_id_hash=hash_identifier(element_id),
+            verification_status="not_applicable",
+        )
     except Exception as e:
         # Store a failed revision
+        latency_ms = round((time.perf_counter() - started) * 1000, 2)
+        log_event(
+            logger,
+            "gemini_error",
+            level=logging.ERROR,
+            gemini_request_id=gemini_request_id,
+            call_site="revision_service.create_revision",
+            model=MODEL_ID,
+            latency_ms=latency_ms,
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(actor_student_id),
+            document_id_hash=hash_identifier(document_id),
+            element_id_hash=hash_identifier(element_id),
+            verification_status="failed",
+        )
         rev_id = f"rev_{uuid.uuid4().hex[:12]}"
         now = datetime.now().isoformat()
         async with aiosqlite.connect(_DB_PATH) as db:
@@ -111,6 +172,16 @@ async def create_revision(element_id: str, instruction: str) -> dict:
         )
         await db.commit()
 
+    log_event(
+        logger,
+        "canvas_operation",
+        action="revision_created",
+        document_id_hash=hash_identifier(document_id),
+        element_id_hash=hash_identifier(element_id),
+        revision_id_hash=hash_identifier(rev_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        changed_fields=["instruction_text", "output_snapshot", "status"],
+    )
     return {
         "id": rev_id,
         "document_id": document_id,
@@ -124,7 +195,11 @@ async def create_revision(element_id: str, instruction: str) -> dict:
     }
 
 
-async def apply_revision(revision_id: str) -> dict:
+async def apply_revision(
+    revision_id: str,
+    *,
+    actor_student_id: Optional[str] = None,
+) -> dict:
     """
     Apply a pending revision: update the element's content_latex to the revision's output.
     """
@@ -155,6 +230,16 @@ async def apply_revision(revision_id: str) -> dict:
         )
         await db.commit()
 
+    log_event(
+        logger,
+        "canvas_operation",
+        action="revision_applied",
+        document_id_hash=hash_identifier(rev["document_id"]),
+        element_id_hash=hash_identifier(rev["element_id"]),
+        revision_id_hash=hash_identifier(revision_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        changed_fields=["content_latex", "revision_status"],
+    )
     return {
         "id": rev["id"],
         "document_id": rev["document_id"],
@@ -168,7 +253,11 @@ async def apply_revision(revision_id: str) -> dict:
     }
 
 
-async def reject_revision(revision_id: str) -> dict:
+async def reject_revision(
+    revision_id: str,
+    *,
+    actor_student_id: Optional[str] = None,
+) -> dict:
     """Mark a pending revision as rejected."""
     async with aiosqlite.connect(_DB_PATH) as db:
         db.row_factory = aiosqlite.Row
@@ -186,6 +275,16 @@ async def reject_revision(revision_id: str) -> dict:
         )
         await db.commit()
 
+    log_event(
+        logger,
+        "canvas_operation",
+        action="revision_rejected",
+        document_id_hash=hash_identifier(rev["document_id"]),
+        element_id_hash=hash_identifier(rev["element_id"]),
+        revision_id_hash=hash_identifier(revision_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        changed_fields=["revision_status"],
+    )
     return {
         "id": rev["id"],
         "document_id": rev["document_id"],

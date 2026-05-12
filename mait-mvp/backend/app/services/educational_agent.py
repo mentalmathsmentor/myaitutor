@@ -1,12 +1,17 @@
 """
 Educational agent with RAG-based context retrieval and Bloom's Taxonomy progression.
 """
+import logging
+
 from app.models import StudentContext
 from .gemini_client import get_gemini_response, format_response_as_text
 from .blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from .syllabus_service import syllabus_service
 from . import storage
+from app.logging_config import hash_identifier, log_event
 import asyncio
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_response_async(query: str, context: StudentContext) -> str:
@@ -34,7 +39,16 @@ async def generate_response_async(query: str, context: StudentContext) -> str:
             year=None
         )
     except Exception as e:
-        print(f"RAG retrieval failed (non-fatal): {e}")
+        log_event(
+            logger,
+            "rag_retrieval_error",
+            level=logging.WARNING,
+            message="RAG retrieval failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(context.student_id),
+            current_topic=topic,
+        )
         syllabus_context = ""
 
     # 5. Fetch conversation history from storage
@@ -55,7 +69,8 @@ async def generate_response_async(query: str, context: StudentContext) -> str:
         fatigue_state=fatigue,
         current_topic=topic,
         bloom_instruction=bloom_instruction,
-        conversation_history=conversation_history
+        conversation_history=conversation_history,
+        student_id=context.student_id,
     )
 
     # 7. Process Code Verification (Execute Python blocks)
