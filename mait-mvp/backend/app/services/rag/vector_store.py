@@ -1,5 +1,6 @@
 # FAISS vector store management for syllabus chunks.
 import json
+import logging
 import os
 from typing import List, Dict, Optional
 
@@ -9,6 +10,9 @@ import faiss
 from .config import FAISS_INDEX_DIR, FAISS_INDEX_FILE, FAISS_METADATA_FILE, EMBEDDING_DIMENSIONS
 from .embeddings import embedding_service
 from .document_processor import SyllabusChunk
+from app.logging_config import log_event
+
+logger = logging.getLogger(__name__)
 
 
 class VectorStore:
@@ -27,7 +31,7 @@ class VectorStore:
         if self._initialized:
             return
 
-        print("Initializing FAISS vector store...")
+        log_event(logger, "rag_vector_store_initializing")
 
         # Create persist directory if needed
         os.makedirs(FAISS_INDEX_DIR, exist_ok=True)
@@ -46,10 +50,22 @@ class VectorStore:
                 self._documents = self._metadata.get("documents", [])
                 self._metadatas = self._metadata.get("metadatas", [])
                 self._initialized = True
-                print(f"FAISS index loaded from disk with {self.index.ntotal} vectors")
+                log_event(
+                    logger,
+                    "rag_vector_store_loaded",
+                    vector_count=self.index.ntotal,
+                    index_path=str(index_path),
+                )
                 return
             except Exception as e:
-                print(f"Warning: Failed to load FAISS index from disk: {e}")
+                log_event(
+                    logger,
+                    "rag_vector_store_load_failed",
+                    level=logging.WARNING,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    index_path=str(index_path),
+                )
 
         # Create a new empty index (Inner Product for cosine similarity on normalized vectors)
         self.index = faiss.IndexFlatIP(EMBEDDING_DIMENSIONS)
@@ -57,7 +73,7 @@ class VectorStore:
         self._documents: List[str] = []
         self._metadatas: List[Dict] = []
         self._initialized = True
-        print("FAISS vector store initialized (empty)")
+        log_event(logger, "rag_vector_store_initialized_empty")
 
     def _save_to_disk(self):
         """Persist the FAISS index and metadata to disk."""
@@ -71,7 +87,12 @@ class VectorStore:
                 "documents": self._documents,
                 "metadatas": self._metadatas,
             }, f)
-        print(f"FAISS index saved to disk ({self.index.ntotal} vectors)")
+        log_event(
+            logger,
+            "rag_vector_store_saved",
+            vector_count=self.index.ntotal,
+            index_path=str(index_path),
+        )
 
     def add_chunks(self, chunks: List[SyllabusChunk]) -> int:
         """Add syllabus chunks to the vector store (upsert behavior)."""

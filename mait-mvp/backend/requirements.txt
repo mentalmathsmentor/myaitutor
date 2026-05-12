@@ -20,3 +20,4 @@ slowapi
 google-auth
 sentry-sdk
 resend==2.23.0
+python-json-logger

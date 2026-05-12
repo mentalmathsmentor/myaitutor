@@ -4,12 +4,14 @@ Question Generation API Routes
 Modular question generation with smart tier routing.
 """
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..deps import verify_student_auth, limiter
+from ..logging_config import hash_identifier, log_event
 from ..services.question_router import (
     QuestionGenerationRequest,
     RegenerationRequest,
@@ -19,6 +21,7 @@ from ..services.question_router import (
 )
 
 router = APIRouter(prefix="/questions", tags=["questions"])
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -75,7 +78,11 @@ async def generate(request: Request, body: GenerateQuestionsBody):
             )
 
     try:
-        questions = await generate_questions(body.request, force_tier=force_tier)
+        questions = await generate_questions(
+            body.request,
+            force_tier=force_tier,
+            student_id=body.student_id,
+        )
 
         return {
             "questions": [q.model_dump() for q in questions],
@@ -84,7 +91,16 @@ async def generate(request: Request, body: GenerateQuestionsBody):
         }
 
     except Exception as e:
-        print(f"[Questions] Generation error: {e}")
+        log_event(
+            logger,
+            "question_generation_error",
+            level=logging.ERROR,
+            message="Question generation failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(body.student_id),
+            topic=body.request.topic_summary,
+        )
         raise HTTPException(status_code=502, detail=str(e))
 
 
@@ -104,7 +120,7 @@ async def regenerate(request: Request, body: RegenerateBody):
             topic=body.topic,
             marks=body.marks,
         )
-        question = await regenerate_question(regen_request)
+        question = await regenerate_question(regen_request, student_id=body.student_id)
 
         return {
             "question": question.model_dump(),
@@ -112,5 +128,14 @@ async def regenerate(request: Request, body: RegenerateBody):
         }
 
     except Exception as e:
-        print(f"[Questions] Regeneration error: {e}")
+        log_event(
+            logger,
+            "question_regeneration_error",
+            level=logging.ERROR,
+            message="Question regeneration failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(body.student_id),
+            topic=body.topic,
+        )
         raise HTTPException(status_code=502, detail=str(e))

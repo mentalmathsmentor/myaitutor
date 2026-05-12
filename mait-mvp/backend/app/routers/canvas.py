@@ -1,4 +1,5 @@
 from typing import Optional
+import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -11,8 +12,14 @@ from ..services.revision_service import (
     create_revision, apply_revision, reject_revision, list_revisions,
 )
 from ..deps import verify_student_auth, limiter
+from ..logging_config import hash_identifier, log_event, text_preview
 
 router = APIRouter(prefix="/canvas", tags=["canvas"])
+logger = logging.getLogger(__name__)
+
+
+def _actor_student_id(request: Request) -> Optional[str]:
+    return request.headers.get("X-Student-Id") or request.headers.get("x-student-id")
 
 
 class CanvasGenerateRequest(BaseModel):
@@ -57,7 +64,10 @@ async def canvas_generate(request: Request, body: CanvasGenerateRequest):
     await verify_student_auth(request, body.student_id)
 
     try:
-        latex_source = await generate_worksheet_latex(body.worksheet_request)
+        latex_source = await generate_worksheet_latex(
+            body.worksheet_request,
+            student_id=body.student_id,
+        )
         title = f"{body.worksheet_request.worksheetSettings.subject} Worksheet"
         if body.worksheet_request.topicSummary:
             title = body.worksheet_request.topicSummary[:40]
@@ -84,9 +94,28 @@ async def canvas_generate(request: Request, body: CanvasGenerateRequest):
             )
             saved_elements.append(saved_elem)
 
+        log_event(
+            logger,
+            "canvas_operation",
+            action="document_generated",
+            document_id_hash=hash_identifier(doc_id),
+            student_id_hash=hash_identifier(body.student_id),
+            changed_fields=["document", "document_elements"],
+            inserted_count=len(saved_elements),
+            worksheet_subject=body.worksheet_request.worksheetSettings.subject,
+            worksheet_course=body.worksheet_request.worksheetSettings.course,
+        )
         return {"document": doc, "elements": saved_elements}
     except Exception as e:
-        print(f"[Canvas Generate] Error: {e}")
+        log_event(
+            logger,
+            "canvas_operation_error",
+            level=logging.ERROR,
+            action="document_generated",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(body.student_id),
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -94,6 +123,13 @@ async def canvas_generate(request: Request, body: CanvasGenerateRequest):
 async def list_canvas_documents(request: Request, student_id: str):
     await verify_student_auth(request, student_id)
     docs = await get_documents_by_student(student_id)
+    log_event(
+        logger,
+        "canvas_operation",
+        action="documents_listed",
+        student_id_hash=hash_identifier(student_id),
+        returned_count=len(docs),
+    )
     return {"documents": docs}
 
 
@@ -103,6 +139,14 @@ async def get_canvas_document(request: Request, doc_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     elements = await get_elements(doc_id)
+    log_event(
+        logger,
+        "canvas_operation",
+        action="document_loaded",
+        document_id_hash=hash_identifier(doc_id),
+        student_id_hash=hash_identifier(_actor_student_id(request)),
+        returned_count=len(elements),
+    )
     return {"document": doc, "elements": elements}
 
 
@@ -120,6 +164,16 @@ async def create_canvas_element(request: Request, doc_id: str, body: ElementCrea
         is_locked=body.isLocked,
         is_collapsed=body.isCollapsed,
     )
+    log_event(
+        logger,
+        "canvas_operation",
+        action="element_created",
+        document_id_hash=hash_identifier(doc_id),
+        element_id_hash=hash_identifier(element["id"]),
+        student_id_hash=hash_identifier(_actor_student_id(request)),
+        changed_fields=["document_elements"],
+        element_kind=body.kind,
+    )
     return {"element": element}
 
 
@@ -129,6 +183,15 @@ async def update_canvas_element(request: Request, elem_id: str, body: ElementUpd
     updated = await update_element(elem_id, updates)
     if not updated:
         raise HTTPException(status_code=404, detail="Element not found")
+    log_event(
+        logger,
+        "canvas_operation",
+        action="element_updated",
+        document_id_hash=hash_identifier(updated.get("documentId")),
+        element_id_hash=hash_identifier(elem_id),
+        student_id_hash=hash_identifier(_actor_student_id(request)),
+        changed_fields=sorted(updates.keys()),
+    )
     return {"element": updated}
 
 
@@ -137,6 +200,14 @@ async def delete_canvas_element(request: Request, elem_id: str):
     deleted = await delete_element(elem_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Element not found")
+    log_event(
+        logger,
+        "canvas_operation",
+        action="element_deleted",
+        element_id_hash=hash_identifier(elem_id),
+        student_id_hash=hash_identifier(_actor_student_id(request)),
+        changed_fields=["document_elements"],
+    )
     return {"status": "deleted"}
 
 
@@ -145,6 +216,14 @@ async def delete_canvas_document(request: Request, doc_id: str):
     deleted = await delete_document(doc_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
+    log_event(
+        logger,
+        "canvas_operation",
+        action="document_deleted",
+        document_id_hash=hash_identifier(doc_id),
+        student_id_hash=hash_identifier(_actor_student_id(request)),
+        changed_fields=["document", "document_elements", "document_revisions"],
+    )
     return {"status": "deleted"}
 
 
@@ -155,12 +234,37 @@ async def compile_canvas_pdf(request: Request, body: CompileRequest):
 
     output_dir = tempfile.mkdtemp(prefix="mait_canvas_compile_")
     try:
+        log_event(
+            logger,
+            "canvas_operation",
+            action="document_compile_requested",
+            student_id_hash=hash_identifier(_actor_student_id(request)),
+            changed_fields=["artifact_build"],
+            latex_source=text_preview(body.latex_source),
+        )
         pdf_path = compile_latex_to_pdf(body.latex_source, output_dir)
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
         b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        log_event(
+            logger,
+            "canvas_operation",
+            action="document_compile_succeeded",
+            student_id_hash=hash_identifier(_actor_student_id(request)),
+            changed_fields=["artifact_build"],
+            pdf_bytes_length=len(pdf_bytes),
+        )
         return {"success": True, "pdfUrl": f"data:application/pdf;base64,{b64_pdf}"}
     except Exception as e:
+        log_event(
+            logger,
+            "canvas_operation_error",
+            level=logging.ERROR,
+            action="document_compile_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            student_id_hash=hash_identifier(_actor_student_id(request)),
+        )
         return {"success": False, "error": str(e)}
 
 
@@ -170,7 +274,11 @@ async def compile_canvas_pdf(request: Request, body: CompileRequest):
 @router.post("/elements/{elem_id}/revise")
 async def revise_canvas_element(request: Request, elem_id: str, body: ReviseRequest):
     try:
-        revision = await create_revision(elem_id, body.instruction)
+        revision = await create_revision(
+            elem_id,
+            body.instruction,
+            actor_student_id=_actor_student_id(request),
+        )
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -181,7 +289,10 @@ async def revise_canvas_element(request: Request, elem_id: str, body: ReviseRequ
 @router.post("/revisions/{rev_id}/apply")
 async def apply_canvas_revision(request: Request, rev_id: str):
     try:
-        revision = await apply_revision(rev_id)
+        revision = await apply_revision(
+            rev_id,
+            actor_student_id=_actor_student_id(request),
+        )
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -190,7 +301,10 @@ async def apply_canvas_revision(request: Request, rev_id: str):
 @router.post("/revisions/{rev_id}/reject")
 async def reject_canvas_revision(request: Request, rev_id: str):
     try:
-        revision = await reject_revision(rev_id)
+        revision = await reject_revision(
+            rev_id,
+            actor_student_id=_actor_student_id(request),
+        )
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -199,6 +313,15 @@ async def reject_canvas_revision(request: Request, rev_id: str):
 @router.get("/documents/{doc_id}/revisions")
 async def list_canvas_revisions(request: Request, doc_id: str, element_id: Optional[str] = None):
     revisions = await list_revisions(doc_id, element_id)
+    log_event(
+        logger,
+        "canvas_operation",
+        action="revisions_listed",
+        document_id_hash=hash_identifier(doc_id),
+        element_id_hash=hash_identifier(element_id),
+        student_id_hash=hash_identifier(_actor_student_id(request)),
+        returned_count=len(revisions),
+    )
     return {"revisions": revisions}
 
 
@@ -224,7 +347,11 @@ async def vision_parse_document(request: Request, doc_id: str, body: VisionParse
 
     try:
         elements, placeholders_used = await vision_parse(
-            body.image_base64, body.image_mime_type, doc_id, insert_after_sort_key
+            body.image_base64,
+            body.image_mime_type,
+            doc_id,
+            insert_after_sort_key,
+            actor_student_id=_actor_student_id(request),
         )
         return {
             "elements": elements,
@@ -232,5 +359,14 @@ async def vision_parse_document(request: Request, doc_id: str, body: VisionParse
             "total_elements": len(elements),
         }
     except Exception as e:
-        print(f"[Vision Parse] Error: {e}")
+        log_event(
+            logger,
+            "canvas_operation_error",
+            level=logging.ERROR,
+            action="vision_parse_failed",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            document_id_hash=hash_identifier(doc_id),
+            student_id_hash=hash_identifier(_actor_student_id(request)),
+        )
         raise HTTPException(status_code=500, detail=str(e))

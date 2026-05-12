@@ -13,11 +13,13 @@ Follows the same async + lazy-loading Gemini pattern as gemini_client.py.
 """
 
 import asyncio
+import logging
 import os
 import re
 import shutil
 import subprocess
 import tempfile
+import time
 import uuid
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -25,6 +27,14 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from .gemini_client import get_client, MODEL_ID
+from app.logging_config import (
+    hash_identifier,
+    log_event,
+    text_preview,
+    usage_metadata_from_response,
+)
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -384,7 +394,12 @@ def _sanitize_latex(latex: str) -> str:
     return latex
 
 
-async def generate_worksheet_latex(request: WorksheetRequest) -> str:
+async def generate_worksheet_latex(
+    request: WorksheetRequest,
+    *,
+    student_id: Optional[str] = None,
+    document_id: Optional[str] = None,
+) -> str:
     """
     Call Gemini to generate LaTeX source for a maths worksheet.
 
@@ -406,6 +421,25 @@ async def generate_worksheet_latex(request: WorksheetRequest) -> str:
     last_error: Optional[Exception] = None
 
     for attempt in range(max_retries):
+        gemini_request_id = uuid.uuid4().hex
+        started = time.perf_counter()
+        log_event(
+            logger,
+            "gemini_request",
+            gemini_request_id=gemini_request_id,
+            call_site="artifact_engine.generate_worksheet_latex",
+            model=MODEL_ID,
+            attempt=attempt + 1,
+            max_retries=max_retries,
+            prompt=text_preview(user_prompt),
+            system_prompt=text_preview(system_prompt),
+            student_id_hash=hash_identifier(student_id),
+            document_id_hash=hash_identifier(document_id),
+            worksheet_course=request.worksheetSettings.course,
+            worksheet_subject=request.worksheetSettings.subject,
+            question_count=request.worksheetSettings.numberOfQuestions,
+            verification_status="pending",
+        )
         try:
             client_instance = get_client()
             response = await asyncio.wait_for(
@@ -418,23 +452,87 @@ async def generate_worksheet_latex(request: WorksheetRequest) -> str:
             )
 
             raw_text = response.text.strip()
-            print(f"[A.G.E.] Gemini returned {len(raw_text)} chars (attempt {attempt + 1})")
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
 
             # Extract and sanitize LaTeX
             latex_source = _sanitize_latex(_extract_latex(raw_text))
 
             if r"\begin{enumerate}" not in latex_source:
+                log_event(
+                    logger,
+                    "gemini_response",
+                    level=logging.WARNING,
+                    gemini_request_id=gemini_request_id,
+                    call_site="artifact_engine.generate_worksheet_latex",
+                    model=MODEL_ID,
+                    attempt=attempt + 1,
+                    latency_ms=latency_ms,
+                    response=text_preview(raw_text),
+                    sanitized_response=text_preview(latex_source),
+                    **usage_metadata_from_response(response),
+                    student_id_hash=hash_identifier(student_id),
+                    document_id_hash=hash_identifier(document_id),
+                    verification_status="failed",
+                    verification_reason="missing_enumerate_environment",
+                )
                 raise ValueError("Gemini response did not contain a valid LaTeX enumerate block.")
 
+            log_event(
+                logger,
+                "gemini_response",
+                gemini_request_id=gemini_request_id,
+                call_site="artifact_engine.generate_worksheet_latex",
+                model=MODEL_ID,
+                attempt=attempt + 1,
+                latency_ms=latency_ms,
+                response=text_preview(raw_text),
+                sanitized_response=text_preview(latex_source),
+                **usage_metadata_from_response(response),
+                student_id_hash=hash_identifier(student_id),
+                document_id_hash=hash_identifier(document_id),
+                verification_status="passed",
+            )
             return latex_source
 
         except asyncio.TimeoutError:
             last_error = TimeoutError(f"Gemini API timed out (attempt {attempt + 1}/{max_retries})")
-            print(f"[A.G.E.] {last_error}")
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            log_event(
+                logger,
+                "gemini_error",
+                level=logging.WARNING,
+                gemini_request_id=gemini_request_id,
+                call_site="artifact_engine.generate_worksheet_latex",
+                model=MODEL_ID,
+                attempt=attempt + 1,
+                max_retries=max_retries,
+                latency_ms=latency_ms,
+                error_type="TimeoutError",
+                error_message=str(last_error),
+                student_id_hash=hash_identifier(student_id),
+                document_id_hash=hash_identifier(document_id),
+                verification_status="failed",
+            )
 
         except Exception as e:
             last_error = e
-            print(f"[A.G.E.] Gemini error (attempt {attempt + 1}): {e}")
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            log_event(
+                logger,
+                "gemini_error",
+                level=logging.WARNING if attempt < max_retries - 1 else logging.ERROR,
+                gemini_request_id=gemini_request_id,
+                call_site="artifact_engine.generate_worksheet_latex",
+                model=MODEL_ID,
+                attempt=attempt + 1,
+                max_retries=max_retries,
+                latency_ms=latency_ms,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                student_id_hash=hash_identifier(student_id),
+                document_id_hash=hash_identifier(document_id),
+                verification_status="failed",
+            )
             if "429" in str(e) or "ResourceExhausted" in str(e):
                 await asyncio.sleep(base_delay * (2 ** attempt))
             else:
@@ -452,6 +550,14 @@ def compile_latex_to_pdf(latex_source: str, output_dir: str) -> str:
     """
     tex_filename = "worksheet.tex"
     tex_path = os.path.join(output_dir, tex_filename)
+
+    started = time.perf_counter()
+    log_event(
+        logger,
+        "latex_compile_start",
+        output_dir=output_dir,
+        latex_source=text_preview(latex_source),
+    )
 
     # Write LaTeX source
     with open(tex_path, "w", encoding="utf-8") as f:
@@ -504,6 +610,17 @@ def compile_latex_to_pdf(latex_source: str, output_dir: str) -> str:
                     lines = lf.readlines()
                     log_tail = "".join(lines[-40:])
 
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            log_event(
+                logger,
+                "latex_compile_failed",
+                level=logging.ERROR,
+                output_dir=output_dir,
+                pass_num=pass_num,
+                latency_ms=latency_ms,
+                log_tail=text_preview(log_tail, limit=1000),
+                stderr=text_preview(result.stderr, limit=500),
+            )
             raise RuntimeError(
                 f"pdflatex compilation failed (pass {pass_num}).\n"
                 f"--- LOG TAIL ---\n{log_tail}\n"
@@ -512,12 +629,32 @@ def compile_latex_to_pdf(latex_source: str, output_dir: str) -> str:
 
     pdf_path = os.path.join(output_dir, "worksheet.pdf")
     if not os.path.exists(pdf_path):
+        log_event(
+            logger,
+            "latex_compile_failed",
+            level=logging.ERROR,
+            output_dir=output_dir,
+            error_type="MissingPdfError",
+            error_message="pdflatex completed but worksheet.pdf was not created.",
+        )
         raise RuntimeError("pdflatex completed but worksheet.pdf was not created.")
 
+    latency_ms = round((time.perf_counter() - started) * 1000, 2)
+    log_event(
+        logger,
+        "latex_compile_success",
+        output_dir=output_dir,
+        pdf_path=pdf_path,
+        latency_ms=latency_ms,
+    )
     return pdf_path
 
 
-async def generate_worksheet_pdf(request: WorksheetRequest) -> str:
+async def generate_worksheet_pdf(
+    request: WorksheetRequest,
+    *,
+    student_id: Optional[str] = None,
+) -> str:
     """
     End-to-end pipeline: Gemini -> LaTeX -> PDF.
 
@@ -526,14 +663,31 @@ async def generate_worksheet_pdf(request: WorksheetRequest) -> str:
     """
     # Create a unique temp directory for this worksheet
     output_dir = tempfile.mkdtemp(prefix="mait_worksheet_")
-    print(f"[A.G.E.] Working directory: {output_dir}")
+    log_event(
+        logger,
+        "worksheet_generation_start",
+        output_dir=output_dir,
+        student_id_hash=hash_identifier(student_id),
+        worksheet_course=request.worksheetSettings.course,
+        worksheet_subject=request.worksheetSettings.subject,
+        topic_summary=text_preview(request.topicSummary),
+        question_count=request.worksheetSettings.numberOfQuestions,
+    )
 
     try:
         # Step 1: Generate LaTeX via Gemini
-        latex_source = await generate_worksheet_latex(request)
+        latex_source = await generate_worksheet_latex(request, student_id=student_id)
     except RuntimeError as e:
         # Gemini failed entirely -- use the fallback template
-        print(f"[A.G.E.] Gemini generation failed, using fallback template: {e}")
+        log_event(
+            logger,
+            "worksheet_generation_fallback",
+            level=logging.WARNING,
+            output_dir=output_dir,
+            student_id_hash=hash_identifier(student_id),
+            error_type=type(e).__name__,
+            error_message=str(e),
+        )
         latex_source = FALLBACK_LATEX_TEMPLATE % {
             "topic": request.topicSummary.replace("&", r"\&"),
             "year_level": request.worksheetSettings.course,
@@ -544,8 +698,15 @@ async def generate_worksheet_pdf(request: WorksheetRequest) -> str:
         pdf_path = compile_latex_to_pdf(latex_source, output_dir)
     except RuntimeError as first_compile_error:
         # Compilation failed -- try fallback template
-        print(f"[A.G.E.] First compilation failed: {first_compile_error}")
-        print("[A.G.E.] Attempting fallback template...")
+        log_event(
+            logger,
+            "worksheet_compile_fallback",
+            level=logging.WARNING,
+            output_dir=output_dir,
+            student_id_hash=hash_identifier(student_id),
+            error_type=type(first_compile_error).__name__,
+            error_message=str(first_compile_error),
+        )
 
         fallback_dir = tempfile.mkdtemp(prefix="mait_worksheet_fallback_")
         fallback_source = FALLBACK_LATEX_TEMPLATE % {
@@ -565,5 +726,12 @@ async def generate_worksheet_pdf(request: WorksheetRequest) -> str:
                 f"Original error: {first_compile_error}"
             )
 
-    print(f"[A.G.E.] PDF generated: {pdf_path}")
+    log_event(
+        logger,
+        "worksheet_generation_success",
+        pdf_path=pdf_path,
+        student_id_hash=hash_identifier(student_id),
+        worksheet_course=request.worksheetSettings.course,
+        worksheet_subject=request.worksheetSettings.subject,
+    )
     return pdf_path

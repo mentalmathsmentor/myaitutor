@@ -8,11 +8,22 @@ fragment objects, and persists them to the database.
 import asyncio
 import base64
 import json
+import logging
 import os
+import time
+import uuid
 from typing import List, Optional, Tuple
 
 from .gemini_client import get_client, MODEL_ID
 from .element_service import create_element, get_elements
+from app.logging_config import (
+    hash_identifier,
+    log_event,
+    text_preview,
+    usage_metadata_from_response,
+)
+
+logger = logging.getLogger(__name__)
 
 VISION_PARSE_SYSTEM_PROMPT = r"""You are a maths worksheet digitizer for NSW HSC Mathematics.
 You will receive a photograph of a maths question, diagram, or worksheet section.
@@ -72,6 +83,7 @@ async def vision_parse(
     image_mime_type: str,
     doc_id: str,
     insert_after_sort_key: Optional[str] = None,
+    actor_student_id: Optional[str] = None,
 ) -> Tuple[List[dict], int]:
     """
     Parse an image into LaTeX fragment objects via Gemini Flash vision.
@@ -105,6 +117,22 @@ async def vision_parse(
     )
 
     client = get_client()
+    gemini_request_id = uuid.uuid4().hex
+    started = time.perf_counter()
+    log_event(
+        logger,
+        "gemini_request",
+        gemini_request_id=gemini_request_id,
+        call_site="image_to_fragment_service.vision_parse",
+        model=MODEL_ID,
+        prompt=text_preview("Convert this image into LaTeX worksheet fragments."),
+        system_prompt=text_preview(VISION_PARSE_SYSTEM_PROMPT),
+        image_mime_type=image_mime_type,
+        image_bytes_length=len(image_bytes),
+        document_id_hash=hash_identifier(doc_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        verification_status="pending_json_parse",
+    )
     response = await asyncio.wait_for(
         client.aio.models.generate_content(
             model=MODEL_ID,
@@ -116,13 +144,43 @@ async def vision_parse(
 
     # Parse JSON from response — strip markdown fences if present
     raw = response.text.strip()
+    latency_ms = round((time.perf_counter() - started) * 1000, 2)
+    log_event(
+        logger,
+        "gemini_response",
+        gemini_request_id=gemini_request_id,
+        call_site="image_to_fragment_service.vision_parse",
+        model=MODEL_ID,
+        latency_ms=latency_ms,
+        response=text_preview(raw),
+        **usage_metadata_from_response(response),
+        document_id_hash=hash_identifier(doc_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        verification_status="pending_json_parse",
+    )
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[1]  # remove opening fence line
     if raw.endswith("```"):
         raw = raw.rsplit("```", 1)[0]
     raw = raw.strip()
 
-    fragment_data: list = json.loads(raw)
+    try:
+        fragment_data: list = json.loads(raw)
+    except Exception as e:
+        log_event(
+            logger,
+            "gemini_verification",
+            level=logging.ERROR,
+            call_site="image_to_fragment_service.vision_parse",
+            gemini_request_id=gemini_request_id,
+            error_type=type(e).__name__,
+            error_message=str(e),
+            response=text_preview(raw),
+            document_id_hash=hash_identifier(doc_id),
+            student_id_hash=hash_identifier(actor_student_id),
+            verification_status="failed",
+        )
+        raise
 
     # Determine insertion sort_key
     if not insert_after_sort_key:
@@ -150,4 +208,25 @@ async def vision_parse(
         if "tcolorbox" in f.get("content_latex", "") and "dashed" in f.get("content_latex", "")
     )
 
+    log_event(
+        logger,
+        "gemini_verification",
+        call_site="image_to_fragment_service.vision_parse",
+        gemini_request_id=gemini_request_id,
+        parsed_element_count=len(fragment_data),
+        placeholders_used=placeholders,
+        document_id_hash=hash_identifier(doc_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        verification_status="passed",
+    )
+    log_event(
+        logger,
+        "canvas_operation",
+        action="vision_parse_inserted_elements",
+        document_id_hash=hash_identifier(doc_id),
+        student_id_hash=hash_identifier(actor_student_id),
+        changed_fields=["document_elements"],
+        inserted_count=len(saved),
+        placeholders_used=placeholders,
+    )
     return saved, placeholders

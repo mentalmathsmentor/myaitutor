@@ -2,10 +2,14 @@
 Embedding model wrapper using sentence-transformers directly.
 No ChromaDB dependency - works with FAISS vector store.
 """
+import logging
 from typing import List
 import numpy as np
 
 from .config import EMBEDDING_MODEL
+from app.logging_config import log_event
+
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
@@ -23,14 +27,21 @@ class EmbeddingService:
         """Initialize the embedding model (lazy loading)."""
         if self._initialized:
             return
-        print(f"Loading embedding model: {EMBEDDING_MODEL}")
+        log_event(logger, "embedding_model_loading", model=EMBEDDING_MODEL)
         try:
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(EMBEDDING_MODEL)
             self._initialized = True
-            print(f"Embedding model loaded successfully")
+            log_event(logger, "embedding_model_loaded", model=EMBEDDING_MODEL)
         except Exception as e:
-            print(f"Warning: Failed to load embedding model: {e}")
+            log_event(
+                logger,
+                "embedding_model_load_failed",
+                level=logging.WARNING,
+                model=EMBEDDING_MODEL,
+                error_type=type(e).__name__,
+                error_message=str(e),
+            )
             self.model = None
             self._initialized = False
 

@@ -1,6 +1,15 @@
+import logging
 import os
+import time
+import uuid
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from app.models import FatigueStatus
+from app.logging_config import (
+    hash_identifier,
+    log_event,
+    text_preview,
+    usage_metadata_from_response,
+)
 
 if TYPE_CHECKING:
     from google import genai
@@ -10,6 +19,7 @@ if TYPE_CHECKING:
 client = None
 # Default: Flash-Lite for cost efficiency. Override with gemini-3.1-pro-preview for complex Extension 2 queries.
 MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite-preview")
+logger = logging.getLogger(__name__)
 
 def get_client():
     global client
@@ -77,7 +87,8 @@ async def get_gemini_response(
     fatigue_state: FatigueStatus = FatigueStatus.FRESH,
     current_topic: str = "Mathematics Advanced",
     bloom_instruction: str = "",
-    conversation_history: Optional[List[dict]] = None
+    conversation_history: Optional[List[dict]] = None,
+    student_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Async client for Gemini 2.0 Flash (Preview) integration.
@@ -156,8 +167,28 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
 
     max_retries = 3
     base_delay = 2
+    prompt_text_for_logging = "\n\n".join([system_prompt, user_prompt])
 
     for attempt in range(max_retries):
+        gemini_request_id = uuid.uuid4().hex
+        started = time.perf_counter()
+        log_event(
+            logger,
+            "gemini_request",
+            gemini_request_id=gemini_request_id,
+            call_site="gemini_client.get_gemini_response",
+            model=MODEL_ID,
+            attempt=attempt + 1,
+            max_retries=max_retries,
+            prompt=text_preview(prompt_text_for_logging),
+            context={
+                "current_topic": current_topic,
+                "fatigue_state": getattr(fatigue_state, "value", str(fatigue_state)),
+                "history_count": len(conversation_history or []),
+            },
+            student_id_hash=hash_identifier(student_id),
+            verification_status="not_applicable",
+        )
         try:
             # Generate response using Gemini Async (New SDK)
             client_instance = get_client()
@@ -172,7 +203,20 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
 
             # Get the response text
             response_text = response.text.strip()
-            print(f"DEBUG: Gemini Raw Response: {response_text[:200]}...")
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            log_event(
+                logger,
+                "gemini_response",
+                gemini_request_id=gemini_request_id,
+                call_site="gemini_client.get_gemini_response",
+                model=MODEL_ID,
+                attempt=attempt + 1,
+                latency_ms=latency_ms,
+                response=text_preview(response_text),
+                **usage_metadata_from_response(response),
+                student_id_hash=hash_identifier(student_id),
+                verification_status="not_applicable",
+            )
 
             # Split into sections by double newline for chunking
             sections = [s.strip() for s in response_text.split('\n\n') if s.strip()]
@@ -184,18 +228,46 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
             }
 
         except asyncio.TimeoutError:
-            print(f"Gemini API Timeout (Attempt {attempt + 1}/{max_retries})")
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            log_event(
+                logger,
+                "gemini_error",
+                level=logging.WARNING,
+                gemini_request_id=gemini_request_id,
+                call_site="gemini_client.get_gemini_response",
+                model=MODEL_ID,
+                attempt=attempt + 1,
+                max_retries=max_retries,
+                latency_ms=latency_ms,
+                error_type="TimeoutError",
+                error_message="Gemini API timeout",
+                student_id_hash=hash_identifier(student_id),
+                verification_status="not_applicable",
+            )
             if attempt == max_retries - 1:
                 return {"text": "Server timeout. Please try again.", "sections": ["Server timeout. Please try again."], "source": "api"}
 
         except Exception as e:
-            print(f"Gemini API Error (Attempt {attempt + 1}): {e}")
+            latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            log_event(
+                logger,
+                "gemini_error",
+                level=logging.WARNING if attempt < max_retries - 1 else logging.ERROR,
+                gemini_request_id=gemini_request_id,
+                call_site="gemini_client.get_gemini_response",
+                model=MODEL_ID,
+                attempt=attempt + 1,
+                max_retries=max_retries,
+                latency_ms=latency_ms,
+                error_type=type(e).__name__,
+                error_message=str(e),
+                student_id_hash=hash_identifier(student_id),
+                verification_status="not_applicable",
+            )
             if "429" in str(e) or "ResourceExhausted" in str(e):
                  await asyncio.sleep(base_delay * (2 ** attempt))
             else:
                  if attempt == max_retries - 1:
-                     import logging
-                     logging.error(f"Gemini API error: {str(e)}")
                      return {"text": "Something went wrong processing your question. Please try again.", "sections": ["Something went wrong processing your question. Please try again."], "source": "api"}
                  await asyncio.sleep(1)
 
