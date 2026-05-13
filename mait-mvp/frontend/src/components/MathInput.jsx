@@ -56,22 +56,8 @@ export default function MathInput({
 }) {
     const inputRef = useRef(null);
     const [showKeyboard, setShowKeyboard] = useState(false);
-    const selectionRef = useRef({ start: 0, end: 0 });
-
-    const updateSelection = () => {
-        const node = inputRef.current;
-        if (!node) {
-            return;
-        }
-        selectionRef.current = {
-            start: node.selectionStart ?? 0,
-            end: node.selectionEnd ?? 0,
-        };
-    };
-
     const handleChange = (event) => {
         onChange(event.target.value);
-        updateSelection();
     };
 
     const handleKeyDown = (event) => {
@@ -88,8 +74,8 @@ export default function MathInput({
         }
 
         const node = inputRef.current;
-        const start = node?.selectionStart ?? selectionRef.current.start ?? value.length;
-        const end = node?.selectionEnd ?? selectionRef.current.end ?? value.length;
+        const start = node?.selectionStart ?? value.length;
+        const end = node?.selectionEnd ?? value.length;
         const nextValue = `${value.slice(0, start)}${token.insert}${value.slice(end)}`;
         const nextCursor = start + (token.cursorOffset ?? token.insert.length);
 
@@ -115,15 +101,6 @@ export default function MathInput({
                     onChange={handleChange}
                     onKeyDown={handleKeyDown}
                     onKeyUp={onKeyUp}
-                    onFocus={(event) => {
-                        updateSelection();
-                        onFocus?.(event);
-                    }}
-                    onBlur={(event) => {
-                        updateSelection();
-                        onBlur?.(event);
-                    }}
-                    onMouseUp={updateSelection}
                     className={inputClassName}
                 />
                 <button
