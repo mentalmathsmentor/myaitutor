@@ -123,8 +123,7 @@ export default function MathInput({
                         updateSelection();
                         onBlur?.(event);
                     }}
-                    onClick={updateSelection}
-                    onSelect={updateSelection}
+                    onMouseUp={updateSelection}
                     className={inputClassName}
                 />
                 <button
