@@ -14,6 +14,7 @@ import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 from .deps import limiter
+from .db.session import engine
 from .services import storage
 from .routers import auth, chat, canvas, worksheet, analytics, misc, questions
 from .routers.analytics import (
@@ -51,6 +52,12 @@ async def startup_event():
     print("Postgres connection verified.")
     print("RAG system enabled (FAISS backend).")
     print("Application startup complete.")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Shutdown event - close pooled Postgres connections."""
+    await engine.dispose()
 
 
 # CORS - environment-based origins

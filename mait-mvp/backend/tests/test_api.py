@@ -132,7 +132,42 @@ def mock_storage():
 @pytest.fixture
 def client():
     """Create a TestClient for the FastAPI app."""
-    return TestClient(app)
+    class StudentHeaderClient:
+        def __init__(self):
+            self._client = TestClient(app)
+
+        def _student_id_for(self, url: str, kwargs: dict) -> str:
+            body = kwargs.get("json")
+            if isinstance(body, dict) and isinstance(body.get("student_id"), str):
+                return body["student_id"]
+
+            parts = str(url).split("?", 1)[0].strip("/").split("/")
+            if len(parts) >= 2 and parts[0] in {"context", "history", "keystroke-profile", "reset"}:
+                return parts[1]
+
+            return "default_user"
+
+        def _request(self, method: str, url: str, **kwargs):
+            headers = dict(kwargs.pop("headers", {}) or {})
+            headers.setdefault("X-Student-Id", self._student_id_for(url, kwargs))
+            return getattr(self._client, method)(url, headers=headers, **kwargs)
+
+        def get(self, url: str, **kwargs):
+            return self._request("get", url, **kwargs)
+
+        def post(self, url: str, **kwargs):
+            return self._request("post", url, **kwargs)
+
+        def delete(self, url: str, **kwargs):
+            return self._request("delete", url, **kwargs)
+
+        def put(self, url: str, **kwargs):
+            return self._request("put", url, **kwargs)
+
+        def __getattr__(self, name: str):
+            return getattr(self._client, name)
+
+    return StudentHeaderClient()
 
 
 # ===========================================================================

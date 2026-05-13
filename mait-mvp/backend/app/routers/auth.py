@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
+from ..deps import get_current_student_id
 from ..services import storage
 from ..services.auth import verify_google_token
 
@@ -83,47 +84,19 @@ async def google_login(body: GoogleLoginRequest, db: AsyncSession = Depends(get_
 
 @router.post("/migrate")
 async def migrate_student_data(body: MigrateRequest, db: AsyncSession = Depends(get_db)):
-    """Migrate data from an anonymous student_id to a Google-based student_id."""
-    old_id = body.old_student_id
-    new_id = body.new_student_id
-
-    if old_id == new_id:
-        return {"status": "no_migration_needed"}
-
-    old_context = await storage.get_context(db, old_id)
-    new_context = await storage.get_context(db, new_id)
-
-    migrated = []
-
-    if old_context and not new_context:
-        old_context.student_id = new_id
-        await storage.save_context(db, new_id, old_context)
-        migrated.append("context")
-
-    old_history = await storage.get_history(db, old_id, limit=200)
-    if old_history:
-        for msg in old_history:
-            await storage.save_message(
-                db,
-                new_id, msg["role"], msg["content"],
-                fatigue_state=msg.get("fatigue_state"),
-                blooms_level=msg.get("blooms_level"),
-                topic=msg.get("topic"),
-            )
-        await storage.clear_history(db, old_id)
-        migrated.append("conversation_history")
-
-    return {
-        "status": "migrated",
-        "migrated": migrated,
-        "old_student_id": old_id,
-        "new_student_id": new_id,
-    }
+    # Endpoint disabled pending JWT migration.
+    raise HTTPException(status_code=410, detail="Student migration is disabled")
 
 
 @router.get("/me/{student_id}")
-async def get_user_profile(student_id: str, db: AsyncSession = Depends(get_db)):
+async def get_user_profile(
+    student_id: str,
+    current_student_id: str = Depends(get_current_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Get the user profile associated with a student_id."""
+    if student_id != current_student_id:
+        raise HTTPException(status_code=404, detail="User not found")
     user = await storage.get_user_by_student_id(db, student_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

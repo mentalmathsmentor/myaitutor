@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
 from ..services.artifact_engine import WorksheetRequest, generate_worksheet_latex, compile_latex_to_pdf
-from ..services.document_service import create_document, get_document, get_documents_by_student, delete_document
-from ..services.element_service import create_element, get_elements, update_element, delete_element
+from ..services.document_service import create_document, get_document_for_student, get_documents_by_student, delete_document_for_student
+from ..services.element_service import create_element_for_student, get_elements_for_student, update_element_for_student, delete_element_for_student
 from ..services.latex_decomposer import parse_monolithic_latex
 from ..services.revision_service import (
-    create_revision, apply_revision, reject_revision, list_revisions,
+    create_revision_for_student, apply_revision_for_student, reject_revision_for_student, list_revisions_for_student,
 )
-from ..deps import verify_student_auth, limiter
+from ..deps import get_current_student_id, verify_student_auth, limiter
 
 router = APIRouter(prefix="/canvas", tags=["canvas"])
 
@@ -58,9 +58,12 @@ class VisionParseRequest(BaseModel):
 async def canvas_generate(
     request: Request,
     body: CanvasGenerateRequest,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     await verify_student_auth(request, body.student_id)
+    if body.student_id != student_id:
+        raise HTTPException(status_code=404, detail="Student not found")
 
     try:
         latex_source = await generate_worksheet_latex(body.worksheet_request)
@@ -79,9 +82,10 @@ async def canvas_generate(
 
         saved_elements = []
         for elem in element_data:
-            saved_elem = await create_element(
+            saved_elem = await create_element_for_student(
                 db,
                 document_id=doc_id,
+                student_id=student_id,
                 sort_key=elem["sort_key"],
                 kind=elem["kind"],
                 label=elem.get("label", "Element"),
@@ -101,9 +105,12 @@ async def canvas_generate(
 async def list_canvas_documents(
     request: Request,
     student_id: str,
+    current_student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     await verify_student_auth(request, student_id)
+    if student_id != current_student_id:
+        raise HTTPException(status_code=404, detail="Student not found")
     docs = await get_documents_by_student(db, student_id)
     return {"documents": docs}
 
@@ -112,12 +119,13 @@ async def list_canvas_documents(
 async def get_canvas_document(
     request: Request,
     doc_id: str,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    doc = await get_document(db, doc_id)
+    doc = await get_document_for_student(db, doc_id, student_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    elements = await get_elements(db, doc_id)
+    elements = await get_elements_for_student(db, doc_id, student_id)
     return {"document": doc, "elements": elements}
 
 
@@ -126,14 +134,16 @@ async def create_canvas_element(
     request: Request,
     doc_id: str,
     body: ElementCreateRequest,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    doc = await get_document(db, doc_id)
+    doc = await get_document_for_student(db, doc_id, student_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    element = await create_element(
+    element = await create_element_for_student(
         db,
         document_id=doc_id,
+        student_id=student_id,
         sort_key=body.sortKey,
         kind=body.kind,
         label=body.label,
@@ -149,10 +159,11 @@ async def update_canvas_element(
     request: Request,
     elem_id: str,
     body: ElementUpdateRequest,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
-    updated = await update_element(db, elem_id, updates)
+    updated = await update_element_for_student(db, elem_id, student_id, updates)
     if not updated:
         raise HTTPException(status_code=404, detail="Element not found")
     return {"element": updated}
@@ -162,9 +173,10 @@ async def update_canvas_element(
 async def delete_canvas_element(
     request: Request,
     elem_id: str,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    deleted = await delete_element(db, elem_id)
+    deleted = await delete_element_for_student(db, elem_id, student_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Element not found")
     return {"status": "deleted"}
@@ -174,9 +186,10 @@ async def delete_canvas_element(
 async def delete_canvas_document(
     request: Request,
     doc_id: str,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    deleted = await delete_document(db, doc_id)
+    deleted = await delete_document_for_student(db, doc_id, student_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
     return {"status": "deleted"}
@@ -206,10 +219,11 @@ async def revise_canvas_element(
     request: Request,
     elem_id: str,
     body: ReviseRequest,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        revision = await create_revision(db, elem_id, body.instruction)
+        revision = await create_revision_for_student(db, elem_id, student_id, body.instruction)
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -221,10 +235,11 @@ async def revise_canvas_element(
 async def apply_canvas_revision(
     request: Request,
     rev_id: str,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        revision = await apply_revision(db, rev_id)
+        revision = await apply_revision_for_student(db, rev_id, student_id)
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -234,10 +249,11 @@ async def apply_canvas_revision(
 async def reject_canvas_revision(
     request: Request,
     rev_id: str,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        revision = await reject_revision(db, rev_id)
+        revision = await reject_revision_for_student(db, rev_id, student_id)
         return {"revision": revision}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -248,9 +264,10 @@ async def list_canvas_revisions(
     request: Request,
     doc_id: str,
     element_id: Optional[str] = None,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
-    revisions = await list_revisions(db, doc_id, element_id)
+    revisions = await list_revisions_for_student(db, doc_id, student_id, element_id)
     return {"revisions": revisions}
 
 
@@ -262,18 +279,19 @@ async def vision_parse_document(
     request: Request,
     doc_id: str,
     body: VisionParseRequest,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     from ..services.image_to_fragment_service import vision_parse
 
-    doc = await get_document(db, doc_id)
+    doc = await get_document_for_student(db, doc_id, student_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
     # Resolve insertion sort_key from element id if provided
     insert_after_sort_key = None
     if body.insert_after_element_id:
-        elements = await get_elements(db, doc_id)
+        elements = await get_elements_for_student(db, doc_id, student_id)
         for e in elements:
             if e["id"] == body.insert_after_element_id:
                 insert_after_sort_key = e["sortKey"]
@@ -281,7 +299,7 @@ async def vision_parse_document(
 
     try:
         elements, placeholders_used = await vision_parse(
-            db, body.image_base64, body.image_mime_type, doc_id, insert_after_sort_key
+            db, body.image_base64, body.image_mime_type, doc_id, student_id, insert_after_sort_key
         )
         return {
             "elements": elements,
