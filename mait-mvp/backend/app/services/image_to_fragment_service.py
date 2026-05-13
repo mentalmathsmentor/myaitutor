@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .gemini_client import get_client, MODEL_ID
-from .element_service import create_element, get_elements
+from .element_service import create_element_for_student, get_elements_for_student
 
 VISION_PARSE_SYSTEM_PROMPT = r"""You are a maths worksheet digitizer for NSW HSC Mathematics.
 You will receive a photograph of a maths question, diagram, or worksheet section.
@@ -73,6 +73,7 @@ async def vision_parse(
     image_base64: str,
     image_mime_type: str,
     doc_id: str,
+    student_id: str,
     insert_after_sort_key: Optional[str] = None,
 ) -> Tuple[List[dict], int]:
     """
@@ -128,7 +129,7 @@ async def vision_parse(
 
     # Determine insertion sort_key
     if not insert_after_sort_key:
-        existing = await get_elements(session, doc_id)
+        existing = await get_elements_for_student(session, doc_id, student_id)
         insert_after_sort_key = existing[-1]["sortKey"] if existing else "a0"
 
     sort_keys = _make_sort_keys_after(insert_after_sort_key, len(fragment_data))
@@ -136,9 +137,10 @@ async def vision_parse(
     # Persist each fragment
     saved: List[dict] = []
     for i, frag in enumerate(fragment_data):
-        elem = await create_element(
+        elem = await create_element_for_student(
             session,
             document_id=doc_id,
+            student_id=student_id,
             sort_key=sort_keys[i],
             kind=frag.get("kind", "question"),
             label=frag.get("label", "Scanned Element"),

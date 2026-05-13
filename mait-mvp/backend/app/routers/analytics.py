@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
 from ..models import KeystrokeSubmission, KeystrokeProfile
 from ..services import storage
-from ..deps import get_or_create_context
+from ..deps import get_current_student_id, get_or_create_context
 
 router = APIRouter(tags=["analytics"])
 
@@ -57,9 +57,12 @@ def classify_error_tendency(errors: int, chars: int) -> str:
 @router.post("/keystroke-metrics")
 async def submit_keystroke_metrics(
     submission: KeystrokeSubmission,
+    student_id: str = Depends(get_current_student_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Submit keystroke metrics for a typing session."""
+    if submission.student_id != student_id:
+        raise HTTPException(status_code=404, detail="Student not found")
     context = await get_or_create_context(submission.student_id, db)
     profile = context.keystroke_profile
     metrics = submission.metrics
@@ -106,15 +109,27 @@ async def submit_keystroke_metrics(
 
 
 @router.get("/keystroke-profile/{student_id}")
-async def get_keystroke_profile(student_id: str, db: AsyncSession = Depends(get_db)):
+async def get_keystroke_profile(
+    student_id: str,
+    current_student_id: str = Depends(get_current_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Get the keystroke psychometric profile for a student."""
+    if student_id != current_student_id:
+        raise HTTPException(status_code=404, detail="Student not found")
     context = await get_or_create_context(student_id, db)
     return {"student_id": student_id, "profile": context.keystroke_profile}
 
 
 @router.delete("/keystroke-profile/{student_id}")
-async def reset_keystroke_profile(student_id: str, db: AsyncSession = Depends(get_db)):
+async def reset_keystroke_profile(
+    student_id: str,
+    current_student_id: str = Depends(get_current_student_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Reset keystroke profile for a student."""
+    if student_id != current_student_id:
+        raise HTTPException(status_code=404, detail="Student not found")
     context = await get_or_create_context(student_id, db)
     context.keystroke_profile = KeystrokeProfile()
     await storage.save_context(db, student_id, context)

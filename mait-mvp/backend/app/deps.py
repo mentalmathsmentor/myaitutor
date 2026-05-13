@@ -16,6 +16,11 @@ async def verify_student_auth(request: Request, student_id: str):
         raise HTTPException(status_code=403, detail="Unauthorized: Student ID mismatch")
 
 
+async def get_current_student_id(request: Request) -> str:
+    """Return the asserted student ID from the legacy header."""
+    return request.headers.get("X-Student-Id", "")
+
+
 async def get_or_create_context(student_id: str, session: AsyncSession) -> StudentContext:
     context = await storage.get_context(session, student_id)
     if context is None:

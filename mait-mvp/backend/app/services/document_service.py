@@ -37,6 +37,21 @@ async def get_document(session: AsyncSession, document_id: str) -> dict | None:
     return serialize_document(document) if document is not None else None
 
 
+async def get_document_for_student(
+    session: AsyncSession,
+    document_id: str,
+    student_id: str,
+) -> dict | None:
+    result = await session.execute(
+        select(Document).where(
+            Document.public_id == document_id,
+            Document.student_id == student_id,
+        )
+    )
+    document = result.scalar_one_or_none()
+    return serialize_document(document) if document is not None else None
+
+
 async def get_documents_by_student(session: AsyncSession, student_id: str) -> list[dict]:
     result = await session.execute(
         select(Document)
@@ -57,8 +72,48 @@ async def update_document_title(session: AsyncSession, document_id: str, new_tit
     return True
 
 
+async def update_document_title_for_student(
+    session: AsyncSession,
+    document_id: str,
+    student_id: str,
+    new_title: str,
+) -> bool:
+    result = await session.execute(
+        select(Document).where(
+            Document.public_id == document_id,
+            Document.student_id == student_id,
+        )
+    )
+    document = result.scalar_one_or_none()
+    if document is None:
+        return False
+    document.title = new_title
+    document.updated_at = utc_now()
+    await session.commit()
+    return True
+
+
 async def delete_document(session: AsyncSession, document_id: str) -> bool:
     result = await session.execute(select(Document).where(Document.public_id == document_id))
+    document = result.scalar_one_or_none()
+    if document is None:
+        return False
+    await session.delete(document)
+    await session.commit()
+    return True
+
+
+async def delete_document_for_student(
+    session: AsyncSession,
+    document_id: str,
+    student_id: str,
+) -> bool:
+    result = await session.execute(
+        select(Document).where(
+            Document.public_id == document_id,
+            Document.student_id == student_id,
+        )
+    )
     document = result.scalar_one_or_none()
     if document is None:
         return False
