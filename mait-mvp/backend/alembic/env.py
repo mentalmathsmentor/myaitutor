@@ -21,6 +21,13 @@ database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     raise RuntimeError("DATABASE_URL environment variable is not set")
 
+# asyncpg compatibility: replace sslmode=require with ssl=require
+if "sslmode=" in database_url:
+    database_url = database_url.replace("sslmode=require", "ssl=require")
+    database_url = database_url.replace("sslmode=disable", "ssl=disable")
+    database_url = database_url.replace("sslmode=verify-full", "ssl=verify-full")
+    database_url = database_url.replace("sslmode=verify-ca", "ssl=verify-ca")
+
 config.set_main_option("sqlalchemy.url", database_url)
 
 
