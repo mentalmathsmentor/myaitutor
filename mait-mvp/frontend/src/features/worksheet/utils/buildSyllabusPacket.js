@@ -1,24 +1,21 @@
 import syllabusRegistry from '../../../syllabus_registry.json';
 import { ensureStringArray } from './promptHelpers';
 
-function extractLabels(points, syllabusData) {
-  if (!syllabusData) return points;
-  
+function buildIdToLabel(syllabusData) {
   const idToLabel = {};
   const traverse = (obj) => {
-      if (Array.isArray(obj)) {
-          obj.forEach(p => {
-              if (typeof p === 'object' && p !== null && p.id && p.label) {
-                  idToLabel[p.id] = p.label;
-              }
-          });
-      } else if (typeof obj === 'object' && obj !== null) {
-          Object.values(obj).forEach(traverse);
-      }
+    if (Array.isArray(obj)) {
+      obj.forEach(p => {
+        if (typeof p === 'object' && p !== null && p.id && p.label) {
+          idToLabel[p.id] = p.label;
+        }
+      });
+    } else if (typeof obj === 'object' && obj !== null) {
+      Object.values(obj).forEach(traverse);
+    }
   };
-  traverse(syllabusData);
-  
-  return points.map(p => idToLabel[p] || p);
+  if (syllabusData) traverse(syllabusData);
+  return idToLabel;
 }
 
 export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPoints, syllabusData }) {
@@ -34,14 +31,19 @@ export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPo
     };
   }
 
+  const idToLabel = buildIdToLabel(syllabusData);
+
+  // Only process ids that resolve to a label in the current syllabus context.
+  // This prevents stale ids from a prior subject from producing phantom metadata.
+  const resolvedIds = new Set(selectedPoints.filter((id) => idToLabel[id]));
+
   const outcomes = new Set();
   const include = new Set();
   const exclude = new Set();
   const assessmentEmphasis = new Set();
   const questionStyleNotes = new Set();
 
-  selectedPoints.forEach(pointId => {
-    // Attempt match on the stable ID
+  resolvedIds.forEach(pointId => {
     const meta = syllabusRegistry[pointId];
     if (meta) {
       if (meta.outcomes) meta.outcomes.forEach(o => outcomes.add(o));
@@ -52,7 +54,8 @@ export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPo
     }
   });
 
-  const displayLabels = extractLabels(selectedPoints, syllabusData);
+  // Only emit labels for ids that resolved — never fall back to raw id strings.
+  const displayLabels = selectedPoints.map(p => idToLabel[p]).filter(Boolean);
 
   return {
     topicSummary: displayLabels.join(' | '),

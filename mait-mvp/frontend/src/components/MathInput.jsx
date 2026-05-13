@@ -56,25 +56,27 @@ export default function MathInput({
 }) {
     const inputRef = useRef(null);
     const [showKeyboard, setShowKeyboard] = useState(false);
-    const [selection, setSelection] = useState({ start: 0, end: 0 });
+    const selectionRef = useRef({ start: 0, end: 0 });
+    const pendingSelectionRef = useRef(null);
 
     useEffect(() => {
-        if (!inputRef.current) {
+        if (!inputRef.current || !pendingSelectionRef.current) {
             return;
         }
-        inputRef.current.selectionStart = selection.start;
-        inputRef.current.selectionEnd = selection.end;
-    }, [value, selection]);
+        inputRef.current.selectionStart = pendingSelectionRef.current.start;
+        inputRef.current.selectionEnd = pendingSelectionRef.current.end;
+        pendingSelectionRef.current = null;
+    }, [value]);
 
     const updateSelection = () => {
         const node = inputRef.current;
         if (!node) {
             return;
         }
-        setSelection({
+        selectionRef.current = {
             start: node.selectionStart ?? 0,
             end: node.selectionEnd ?? 0,
-        });
+        };
     };
 
     const handleChange = (event) => {
@@ -96,13 +98,13 @@ export default function MathInput({
         }
 
         const node = inputRef.current;
-        const start = node?.selectionStart ?? selection.start ?? value.length;
-        const end = node?.selectionEnd ?? selection.end ?? value.length;
+        const start = node?.selectionStart ?? selectionRef.current.start ?? value.length;
+        const end = node?.selectionEnd ?? selectionRef.current.end ?? value.length;
         const nextValue = `${value.slice(0, start)}${token.insert}${value.slice(end)}`;
         const nextCursor = start + (token.cursorOffset ?? token.insert.length);
 
+        pendingSelectionRef.current = { start: nextCursor, end: nextCursor };
         onChange(nextValue);
-        setSelection({ start: nextCursor, end: nextCursor });
         requestAnimationFrame(() => node?.focus());
     };
 
@@ -142,7 +144,7 @@ export default function MathInput({
                 </button>
                 <button
                     type="button"
-                    onClick={() => { onChange(''); setSelection({start: 0, end: 0}); }}
+                    onClick={() => { pendingSelectionRef.current = {start: 0, end: 0}; onChange(''); }}
                     className="absolute right-3 bottom-3 rounded-lg bg-red-500/10 border border-red-500/20 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-red-400 transition hover:bg-red-500/20 hover:text-red-300"
                 >
                     Clear
