@@ -57,16 +57,6 @@ export default function MathInput({
     const inputRef = useRef(null);
     const [showKeyboard, setShowKeyboard] = useState(false);
     const selectionRef = useRef({ start: 0, end: 0 });
-    const pendingSelectionRef = useRef(null);
-
-    useEffect(() => {
-        if (!inputRef.current || !pendingSelectionRef.current) {
-            return;
-        }
-        inputRef.current.selectionStart = pendingSelectionRef.current.start;
-        inputRef.current.selectionEnd = pendingSelectionRef.current.end;
-        pendingSelectionRef.current = null;
-    }, [value]);
 
     const updateSelection = () => {
         const node = inputRef.current;
@@ -103,9 +93,13 @@ export default function MathInput({
         const nextValue = `${value.slice(0, start)}${token.insert}${value.slice(end)}`;
         const nextCursor = start + (token.cursorOffset ?? token.insert.length);
 
-        pendingSelectionRef.current = { start: nextCursor, end: nextCursor };
         onChange(nextValue);
-        requestAnimationFrame(() => node?.focus());
+        requestAnimationFrame(() => {
+            if (node) {
+                node.focus();
+                node.setSelectionRange(nextCursor, nextCursor);
+            }
+        });
     };
 
     return (
@@ -144,7 +138,15 @@ export default function MathInput({
                 </button>
                 <button
                     type="button"
-                    onClick={() => { pendingSelectionRef.current = {start: 0, end: 0}; onChange(''); }}
+                    onClick={() => { 
+                        onChange(''); 
+                        requestAnimationFrame(() => {
+                            if (inputRef.current) {
+                                inputRef.current.focus();
+                                inputRef.current.setSelectionRange(0, 0);
+                            }
+                        });
+                    }}
                     className="absolute right-3 bottom-3 rounded-lg bg-red-500/10 border border-red-500/20 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-red-400 transition hover:bg-red-500/20 hover:text-red-300"
                 >
                     Clear
