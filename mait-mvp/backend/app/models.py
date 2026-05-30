@@ -131,3 +131,36 @@ class ArtifactDocumentElement(BaseModel):
     is_collapsed: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+
+class ResponsePartType(str, Enum):
+    TEXT = "text"
+    GLASS_BOX = "glass_box"
+    QUESTION_SET = "question_set"
+    ACTIVITY = "activity"
+
+
+class ResponsePartTier(str, Enum):
+    ALL = "all"
+    SUPPORT = "support"
+    CORE = "core"
+    EXTENSION = "extension"
+
+
+class QuestionSetItem(BaseModel):
+    id: Optional[str] = None
+    question_latex: str
+    teacher_answer_latex: Optional[str] = None
+    marks: Optional[int] = None
+
+
+class ExoskeletonResponsePart(BaseModel):
+    type: ResponsePartType
+    tier: ResponsePartTier
+    content: Optional[str] = None
+    questions: Optional[List[QuestionSetItem]] = None
+
+
+class ExoskeletonResponse(BaseModel):
+    parts: List[ExoskeletonResponsePart]
+
