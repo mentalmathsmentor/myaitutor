@@ -30,6 +30,7 @@ class TutorIntent(str, Enum):
     CHALLENGE = "challenge"
     EXPLAIN_ALT = "explain_alt"
     ACTIVITY = "activity"
+    CHAT = "chat"
 
 
 class InitClassRequest(BaseModel):
@@ -260,7 +261,13 @@ async def generate_chat(
     if intent not in INTENT_TEMPLATES:
         raise HTTPException(status_code=400, detail=f"Unsupported intent: {intent}")
 
-    prompt = INTENT_TEMPLATES[intent].format(rag_chunks=retrieved_chunks, year_level=class_obj.year_level, subject=class_obj.subject, ability_tier=class_obj.ability_tier)
+    prompt = INTENT_TEMPLATES[intent].format(
+        rag_chunks=retrieved_chunks,
+        year_level=class_obj.year_level,
+        subject=class_obj.subject,
+        ability_tier=class_obj.ability_tier,
+        refinements=(body.refinements or "").strip(),
+    )
 
     try:
         response_model = await _generate_exoskeleton_response(prompt)

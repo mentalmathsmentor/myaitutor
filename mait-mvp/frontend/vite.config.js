@@ -46,6 +46,7 @@ export default defineConfig({
             '/keystroke-profile': 'http://localhost:8000',
             '/auth': 'http://localhost:8000',
             '/canvas': 'http://localhost:8000',
+            '/api': 'http://localhost:8000',
         }
     },
     optimizeDeps: {

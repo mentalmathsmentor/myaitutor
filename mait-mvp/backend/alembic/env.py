@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.db.models import Base
+from app.db import tutor_models  # noqa: F401 - register tutor tables on Base.metadata
 
 config = context.config
 

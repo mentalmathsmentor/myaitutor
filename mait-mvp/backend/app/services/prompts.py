@@ -21,7 +21,7 @@ TEACHER-FACING OUTPUT & STRICT FORMATTING:
 - This is a teacher tool. DO include full worked solutions in 'teacher_answer_latex'.
 - FORMATTING CRITICAL: Write your explanations in standard Markdown. 
 - ONLY wrap mathematical symbols, formulas, and equations in LaTeX delimiters. Use `$` for inline math and `$$` for block math.
-- NEVER wrap entire English sentences or paragraphs in `\text{}`.
+- NEVER wrap entire English sentences or paragraphs in `\\text{}`.
 - Use double line breaks (`\n\n`) generously to separate steps in your working out so it is highly readable.
 - 'marks' is optional. Include marks only where they genuinely help (e.g. senior exam-style items).
 
@@ -34,6 +34,7 @@ STAGE CALIBRATION (map year_level -> stage):
 FORMAT:
 - Return only the structured ExoskeletonResponse 'parts'. Use 'text' for framing/explanation, 'glass_box' for a key fact/theorem or a misconception spotlight, 'question_set' for problems, 'activity' for games/collaborative tasks (put the mechanics in 'content').
 - Use 'tier' to label differentiated content ('core' vs 'extension'); use 'all' for anything not differentiated.
+- NEVER use LaTeX environments for lists or formatting (e.g., NO \\begin{enumerate}, \\begin{itemize}, or \\item). You MUST use standard Markdown for lists (1. , 2. , - ). ONLY use LaTeX ($ or $$) for math equations.
 """.strip()
 
 INTENT_TEMPLATES = {
@@ -85,4 +86,12 @@ Syllabus anchors:
 {rag_chunks}
 
 Design one genuinely fun, pedagogically grounded activity on this topic — e.g. a board/whiteboard game, a table-group challenge, or students writing questions for another pair to solve. Stage-appropriate (more movement/game for Stage 4; more structured collaboration for Stage 5-6). Put the setup and mechanics in an 'activity' part's 'content', and include any answer key in 'teacher_answer_latex' if it involves set problems.""",
+
+    "chat": """Class: Year {year_level} | {subject} | {ability_tier}
+Syllabus anchors:
+{rag_chunks}
+
+Teacher Request: {refinements}
+
+Respond directly to the teacher's request. You can output a 'text' part for explanations, or a 'question_set' if they asked for specific problems. Ensure any math is in LaTeX and include 'teacher_answer_latex' if applicable."""
 }

@@ -90,11 +90,31 @@ class User(Base):
 
 class Document(Base):
     __tablename__ = "documents"
-    __table_args__ = (Index("idx_documents_student_id", "student_id"),)
+    __table_args__ = (
+        Index("idx_documents_student_id", "student_id"),
+        Index("idx_documents_tutor_id", "tutor_id"),
+        Index("idx_documents_class_id", "class_id"),
+        Index("idx_documents_thread_id", "thread_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     public_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     student_id: Mapped[str] = mapped_column(String, nullable=False)
+    tutor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tutors.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    class_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tutor_classes.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    thread_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_threads.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     title: Mapped[str] = mapped_column(String, nullable=False)
     kind: Mapped[str] = mapped_column(String, nullable=False, default="artifact", server_default=text("'artifact'"))
     source: Mapped[str] = mapped_column(String, nullable=False, default="manual", server_default=text("'manual'"))
@@ -260,4 +280,3 @@ class VectorChunk(Base):
 
     def __repr__(self) -> str:
         return f"VectorChunk(id={self.id!r}, content_code={self.content_code!r}, subject={self.subject!r})"
-

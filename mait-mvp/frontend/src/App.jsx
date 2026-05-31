@@ -14,6 +14,7 @@ const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'))
 const PastPapers = lazy(() => import('./PastPapers'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
+const TutorWorkspace = lazy(() => import('./features/exoskeleton/Workspace'))
 
 function AppRoutes() {
     const location = useLocation();
@@ -136,6 +137,10 @@ function AppRoutes() {
                             isDemoMode={true}
                         />
                     } />
+
+                    <Route path="/tutor" element={
+                        <ErrorBoundary><TutorWorkspace /></ErrorBoundary>
+                    } />
                     
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
@@ -147,4 +152,3 @@ function AppRoutes() {
 }
 
 export default AppRoutes
-
