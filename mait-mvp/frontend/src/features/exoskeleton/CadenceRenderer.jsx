@@ -23,7 +23,7 @@ function MathMarkdown({ children, className = '' }) {
   }, [children]);
 
   return (
-    <div className={`chat-prose max-w-none text-sm leading-6 text-white/86 ${className}`}>
+    <div className={`chat-prose max-w-none text-sm leading-6 text-white/86 whitespace-pre-wrap break-words prose prose-invert ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -52,7 +52,7 @@ function TextPart({ part }) {
   const isGlass = part.type === 'glass_box'
   return (
     <div
-      className={`max-w-3xl rounded-[8px] border px-4 py-3 shadow-lg ${
+      className={`w-full rounded-[8px] border px-4 py-3 shadow-lg ${
         isGlass
           ? 'border-teal-300/28 bg-teal-300/10 shadow-teal-950/30'
           : 'border-white/10 bg-slate-900/92 shadow-black/30'
@@ -119,7 +119,7 @@ function QuestionSetPanel({ parts }) {
 
   if (tiers.length > 1) {
     return (
-      <div className="max-w-4xl rounded-[8px] border border-cyan-300/18 bg-slate-900/82 p-4">
+      <div className="w-full rounded-[8px] border border-cyan-300/18 bg-slate-900/82 p-4">
         <Tabs defaultValue={tiers[0]}>
           <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start gap-2 rounded-[8px] border border-white/10 bg-black/30 p-2">
             {tiers.map((tier) => (
@@ -151,7 +151,7 @@ function QuestionSetPanel({ parts }) {
 
 function ActivityCard({ part }) {
   return (
-    <div className="max-w-3xl rounded-[8px] border border-teal-300/25 bg-teal-300/10 p-4 shadow-lg shadow-teal-950/25">
+    <div className="w-full rounded-[8px] border border-teal-300/25 bg-teal-300/10 p-4 shadow-lg shadow-teal-950/25">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-teal-100">{part.title || 'Activity'}</h3>
         <span className="rounded-full border border-teal-300/25 bg-black/20 px-2.5 py-1 text-xs capitalize text-teal-100">

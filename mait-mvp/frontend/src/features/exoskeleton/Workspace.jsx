@@ -335,9 +335,8 @@ export default function Workspace() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] bg-[#0A0E17] pt-20 text-white">
-      <div className="flex min-h-[calc(100vh-5rem)]">
-        <aside className="hidden w-80 shrink-0 border-r border-white/10 bg-slate-950/72 p-4 backdrop-blur-xl lg:block">
+    <div className="h-screen w-full overflow-hidden flex bg-[#0A0E17] pt-20 text-white">
+      <aside className="hidden w-80 shrink-0 border-r border-white/10 bg-slate-950/72 overflow-y-auto p-4 backdrop-blur-xl lg:block">
           <div className="mb-5 flex items-center gap-3 rounded-[8px] border border-cyan-300/18 bg-cyan-300/10 p-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-cyan-300 text-slate-950">
               <Sparkles size={18} />
@@ -389,7 +388,7 @@ export default function Workspace() {
           </section>
         </aside>
  
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="flex-1 flex flex-col min-w-0">
           <header className="border-b border-white/10 bg-slate-950/70 px-4 py-4 backdrop-blur-xl sm:px-6">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -400,7 +399,7 @@ export default function Workspace() {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="flex-1 overflow-y-auto p-4 scroll-smooth">
             {messages.length === 0 && !isGenerating ? (
               <div className="flex h-full min-h-80 items-center justify-center">
                 <div className="max-w-md text-center">
@@ -414,7 +413,7 @@ export default function Workspace() {
                 </div>
               </div>
             ) : (
-              <div className="mx-auto flex max-w-5xl flex-col gap-5 pb-4">
+              <div className="max-w-4xl mx-auto w-full space-y-6 pb-4">
                 {messages.map((message) => (
                   <MessageBubble key={message.id} message={message} />
                 ))}
@@ -430,8 +429,8 @@ export default function Workspace() {
             )}
           </div>
 
-          <footer className="border-t border-white/10 bg-slate-950/88 px-4 py-4 backdrop-blur-xl sm:px-6">
-            <div className="mx-auto max-w-5xl">
+          <footer className="shrink-0 border-t border-slate-800 bg-[#0A0E17] p-4 w-full z-10">
+            <div className="mx-auto max-w-4xl">
               <div className="mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
                 <label className="block">
                   <span className="mb-1 block text-xs text-white/45">Topic</span>
@@ -514,7 +513,6 @@ export default function Workspace() {
             </div>
           </footer>
         </main>
-      </div>
 
       {isWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">

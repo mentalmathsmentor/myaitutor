@@ -177,7 +177,7 @@ export default function StartupWizard() {
 
           {step === 0 && (
             <label className="block">
-              <span className="text-sm text-white/70">Class name</span>
+              <span className="text-sm text-white/70">Cohort Nickname (e.g., '12A1 Monday Maths')</span>
               <input
                 value={draft.name}
                 onChange={(event) => updateDraft({ name: event.target.value })}
@@ -188,18 +188,26 @@ export default function StartupWizard() {
           )}
 
           {step === 1 && (
-            <label className="block">
-              <span className="text-sm text-white/70">Year level</span>
-              <select
-                value={draft.year_level}
-                onChange={handleYearChange}
-                className="mt-3 h-14 w-full rounded-[8px] border border-white/10 bg-slate-900 px-4 text-lg text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/20"
-              >
+            <div>
+              <p className="text-sm text-white/70">Year level</p>
+              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
                 {[7, 8, 9, 10, 11, 12].map((year) => (
-                  <option key={year} value={year}>Year {year}</option>
+                  <button
+                    key={year}
+                    type="button"
+                    onClick={() => handleYearChange({ target: { value: year } })}
+                    className={`rounded-[8px] border py-4 text-center transition ${
+                      draft.year_level === year
+                        ? 'border-cyan-300/80 bg-cyan-300/12 text-cyan-100 shadow-[0_0_12px_rgba(103,232,249,0.12)]'
+                        : 'border-white/10 bg-slate-900 text-white/75 hover:border-cyan-300/40 hover:text-white'
+                    }`}
+                  >
+                    <p className="text-xs opacity-60">Year</p>
+                    <p className="mt-0.5 text-2xl font-bold">{year}</p>
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
           )}
 
           {step === 2 && (
@@ -211,9 +219,9 @@ export default function StartupWizard() {
                     key={subject}
                     type="button"
                     onClick={() => updateDraft({ subject })}
-                    className={`rounded-[8px] border px-4 py-4 text-left transition ${
+                    className={`rounded-[8px] border px-4 py-4 text-left font-medium transition ${
                       draft.subject === subject
-                        ? 'border-cyan-300/80 bg-cyan-300/12 text-cyan-100'
+                        ? 'border-cyan-300/80 bg-cyan-300/12 text-cyan-100 shadow-[0_0_12px_rgba(103,232,249,0.12)]'
                         : 'border-white/10 bg-slate-900 text-white/75 hover:border-cyan-300/40 hover:text-white'
                     }`}
                   >
@@ -233,9 +241,9 @@ export default function StartupWizard() {
                     key={tier}
                     type="button"
                     onClick={() => updateDraft({ ability_tier: tier })}
-                    className={`rounded-[8px] border px-4 py-4 text-left transition ${
+                    className={`rounded-[8px] border px-4 py-4 text-left font-medium transition ${
                       draft.ability_tier === tier
-                        ? 'border-teal-300/80 bg-teal-300/12 text-teal-100'
+                        ? 'border-teal-300/80 bg-teal-300/12 text-teal-100 shadow-[0_0_12px_rgba(94,234,212,0.12)]'
                         : 'border-white/10 bg-slate-900 text-white/75 hover:border-teal-300/40 hover:text-white'
                     }`}
                   >
