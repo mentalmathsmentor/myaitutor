@@ -6,7 +6,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import text, select
+from sqlalchemy import text, select, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -160,6 +160,33 @@ async def init_class(
     await db.refresh(class_obj)
     await db.refresh(thread)
     return {"class": _serialize_class(class_obj), "thread": _serialize_thread(thread)}
+
+
+@router.delete("/api/classes/{class_id}")
+async def delete_class(
+    class_id: UUID,
+    tutor_id: UUID = Depends(get_current_tutor),
+    db: AsyncSession = Depends(get_db),
+):
+    class_result = await db.execute(
+        select(TutorClass).where(
+            TutorClass.id == class_id,
+            TutorClass.tutor_id == tutor_id,
+        )
+    )
+    class_obj = class_result.scalar_one_or_none()
+    if class_obj is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    await db.execute(
+        delete(ChatThread).where(
+            ChatThread.class_id == class_id,
+            ChatThread.tutor_id == tutor_id,
+        )
+    )
+    await db.delete(class_obj)
+    await db.commit()
+    return {"status": "ok", "deleted_class_id": str(class_id)}
 
 
 @router.get("/api/topics")

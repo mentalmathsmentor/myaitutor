@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, Dumbbell, Flame, Layers3, Lightbulb, Loader2, MessageSquare, Send, Sparkles, Target } from 'lucide-react'
+import { Activity, Dumbbell, Flame, Layers3, Lightbulb, Loader2, MessageSquare, Send, Sparkles, Target, Trash2 } from 'lucide-react'
 import { useExoskeletonStore } from '@/stores/useExoskeletonStore'
 import CadenceRenderer from './CadenceRenderer'
 import StartupWizard from './StartupWizard'
@@ -132,6 +132,7 @@ export default function Workspace() {
   const setWizardOpen = useExoskeletonStore((state) => state.setWizardOpen)
   const fetchClasses = useExoskeletonStore((state) => state.fetchClasses)
   const fetchThreads = useExoskeletonStore((state) => state.fetchThreads)
+  const deleteClass = useExoskeletonStore((state) => state.deleteClass)
 
   const activeThreadId = activeThread?.id
   const activeSubject = activeClass?.subject || ''
@@ -351,19 +352,40 @@ export default function Workspace() {
             <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-white/40">Cohorts</p>
             <div className="space-y-2">
               {cohorts.map((cohort) => (
-                <button
+                <div
                   key={cohort.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleCohortClick(cohort)}
-                  className={`w-full rounded-[8px] border p-3 text-left transition ${
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleCohortClick(cohort)
+                    }
+                  }}
+                  className={`group/cohort flex w-full cursor-pointer items-start gap-2 rounded-[8px] border p-3 text-left transition ${
                     activeClass?.id === cohort.id
                       ? 'border-cyan-300/60 bg-cyan-300/12'
                       : 'border-white/10 bg-slate-900/70 hover:border-cyan-300/30'
                   }`}
                 >
-                  <p className="text-sm font-semibold text-white">{cohort.name}</p>
-                  <p className="mt-1 text-xs text-white/50">Year {cohort.year_level} · {cohort.subject}</p>
-                </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">{cohort.name}</p>
+                    <p className="mt-1 text-xs text-white/50">Year {cohort.year_level} · {cohort.subject}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      deleteClass(cohort.id)
+                    }}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-white/35 opacity-0 transition hover:bg-red-500/15 hover:text-red-300 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50 group-hover/cohort:opacity-100"
+                    aria-label={`Delete cohort ${cohort.name}`}
+                    title="Delete cohort"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ))}
 
               <button

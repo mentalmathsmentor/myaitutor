@@ -22,6 +22,7 @@ TEACHER-FACING OUTPUT & STRICT FORMATTING:
 - FORMATTING CRITICAL: Write your explanations in standard Markdown. 
 - ONLY wrap mathematical symbols, formulas, and equations in LaTeX delimiters. Use `$` for inline math and `$$` for block math.
 - NEVER wrap entire English sentences or paragraphs in `\\text{}`.
+- NEVER use the `$` symbol for currency or money. It collides with the LaTeX parser. Always use the word 'dollars' (e.g., '500 dollars') or 'cents'.
 - Use double line breaks (`\n\n`) generously to separate steps in your working out so it is highly readable.
 - 'marks' is optional. Include marks only where they genuinely help (e.g. senior exam-style items).
 

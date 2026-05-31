@@ -100,6 +100,42 @@ export const useExoskeletonStore = create((set, get) => ({
     activeThread: thread,
   }),
 
+  deleteClass: async (classId) => {
+    try {
+      const response = await fetch(`/api/classes/${classId}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Failed to delete class')
+
+      set((state) => {
+        const remainingCohorts = state.cohorts.filter((c) => c.id !== classId)
+        const wasActive = state.activeClass?.id === classId
+        const removedThreadId = wasActive ? state.activeThread?.id : null
+
+        const nextMessagesByThread = { ...state.messagesByThread }
+        if (removedThreadId) delete nextMessagesByThread[removedThreadId]
+
+        if (!wasActive) {
+          return {
+            cohorts: remainingCohorts,
+            messagesByThread: nextMessagesByThread,
+          }
+        }
+
+        const nextActive = remainingCohorts[0] || null
+        return {
+          cohorts: remainingCohorts,
+          activeClass: nextActive,
+          activeThread: nextActive?.thread || null,
+          messagesByThread: nextMessagesByThread,
+        }
+      })
+
+      return true
+    } catch (error) {
+      console.error('deleteClass failed:', error)
+      return false
+    }
+  },
+
   setTopicsForSubject: (subject, topics) => set((state) => ({
     topicCache: {
       ...state.topicCache,
