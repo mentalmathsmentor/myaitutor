@@ -179,6 +179,114 @@ async def list_topics(
     return {"subject": subject, "topics": topics}
 
 
+INTENT_LABELS = {
+    "warmup": "Warmup",
+    "lesson_plan": "Lesson Plan",
+    "practice_set": "Practice Set",
+    "challenge": "Boss Challenge",
+    "explain_alt": "Explain Another Way",
+    "activity": "Activity",
+    "chat": "Chat"
+}
+
+
+@router.get("/api/classes")
+async def list_classes(
+    tutor_id: UUID = Depends(get_current_tutor),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(TutorClass).where(TutorClass.tutor_id == tutor_id)
+    )
+    classes = result.scalars().all()
+    return {"classes": [_serialize_class(c) for c in classes]}
+
+
+@router.get("/api/threads/{class_id}")
+async def list_threads(
+    class_id: UUID,
+    tutor_id: UUID = Depends(get_current_tutor),
+    db: AsyncSession = Depends(get_db),
+):
+    class_result = await db.execute(
+        select(TutorClass).where(
+            TutorClass.id == class_id,
+            TutorClass.tutor_id == tutor_id,
+        )
+    )
+    class_obj = class_result.scalar_one_or_none()
+    if class_obj is None:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    threads_result = await db.execute(
+        select(ChatThread).where(
+            ChatThread.class_id == class_id,
+            ChatThread.tutor_id == tutor_id,
+        )
+    )
+    threads = threads_result.scalars().all()
+
+    serialized_threads = []
+    for thread in threads:
+        messages_result = await db.execute(
+            select(Message).where(Message.thread_id == thread.id).order_by(Message.created_at)
+        )
+        messages = messages_result.scalars().all()
+
+        serialized_messages = []
+        for msg in messages:
+            if msg.role == "user":
+                try:
+                    payload = json.loads(msg.content)
+                    intent = payload.get("intent", "chat")
+                    topic = payload.get("topic", "")
+                    refinements = payload.get("refinements", "")
+                    
+                    label = INTENT_LABELS.get(intent, "Teacher")
+                    if intent == "chat":
+                        content_str = refinements or topic
+                    else:
+                        content_str = f"{topic} · {refinements}" if refinements else topic
+                        
+                    serialized_messages.append({
+                        "id": str(msg.id),
+                        "role": "teacher",
+                        "title": label,
+                        "content": content_str,
+                        "created_at": msg.created_at.isoformat() if msg.created_at else None,
+                    })
+                except Exception:
+                    serialized_messages.append({
+                        "id": str(msg.id),
+                        "role": "teacher",
+                        "title": "Teacher",
+                        "content": msg.content,
+                        "created_at": msg.created_at.isoformat() if msg.created_at else None,
+                    })
+            else:
+                try:
+                    payload = json.loads(msg.content)
+                    parts = payload.get("parts", [])
+                except Exception:
+                    parts = []
+                serialized_messages.append({
+                    "id": str(msg.id),
+                    "role": "assistant",
+                    "parts": parts,
+                    "created_at": msg.created_at.isoformat() if msg.created_at else None,
+                })
+
+        serialized_threads.append({
+            "id": str(thread.id),
+            "class_id": str(thread.class_id),
+            "title": thread.title,
+            "created_at": thread.created_at.isoformat() if thread.created_at else None,
+            "messages": serialized_messages,
+        })
+
+    return {"threads": serialized_threads}
+
+
 @router.post("/api/chat/generate", response_model=ExoskeletonResponse)
 async def generate_chat(
     body: GenerateChatRequest,

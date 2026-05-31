@@ -127,6 +127,12 @@ export default function Workspace() {
   const setActiveWorkspace = useExoskeletonStore((state) => state.setActiveWorkspace)
   const setTopicsForSubject = useExoskeletonStore((state) => state.setTopicsForSubject)
   const addMessage = useExoskeletonStore((state) => state.addMessage)
+  
+  const isWizardOpen = useExoskeletonStore((state) => state.isWizardOpen)
+  const setWizardOpen = useExoskeletonStore((state) => state.setWizardOpen)
+  const fetchClasses = useExoskeletonStore((state) => state.fetchClasses)
+  const fetchThreads = useExoskeletonStore((state) => state.fetchThreads)
+
   const activeThreadId = activeThread?.id
   const activeSubject = activeClass?.subject || ''
   const messages = useExoskeletonStore((state) => (
@@ -145,6 +151,7 @@ export default function Workspace() {
   const [isLoadingTopics, setIsLoadingTopics] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState('')
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
 
   useEffect(() => {
     if (!activeSubject) return
@@ -180,6 +187,33 @@ export default function Workspace() {
       setSelectedTopic(topics[0])
     }
   }, [selectedTopic, topics])
+
+  useEffect(() => {
+    async function loadData() {
+      setIsInitialLoading(true)
+      const classesList = await fetchClasses()
+      if (classesList.length > 0) {
+        const firstClass = classesList[0]
+        setActiveWorkspace(firstClass, firstClass.thread || null)
+        try {
+          await Promise.all(classesList.map((c) => fetchThreads(c.id)))
+        } catch (err) {
+          console.error('Failed to load threads in parallel:', err)
+        }
+      } else {
+        setWizardOpen(true)
+      }
+      setIsInitialLoading(false)
+    }
+    loadData()
+  }, [])
+
+  const handleCohortClick = async (cohort) => {
+    setActiveWorkspace(cohort, cohort.thread || null)
+    if (!cohort.thread) {
+      await fetchThreads(cohort.id)
+    }
+  }
 
   const selectedCohortLabel = useMemo(() => {
     if (!activeClass) return 'No cohort'
@@ -289,8 +323,15 @@ export default function Workspace() {
   }
 
 
-  if (!activeClass || !activeThread) {
-    return <StartupWizard />
+  if (isInitialLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0A0E17] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-300" />
+          <p className="text-sm font-medium text-white/60">Loading tutor workspace...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -314,9 +355,9 @@ export default function Workspace() {
                 <button
                   key={cohort.id}
                   type="button"
-                  onClick={() => setActiveWorkspace(cohort, cohort.thread)}
+                  onClick={() => handleCohortClick(cohort)}
                   className={`w-full rounded-[8px] border p-3 text-left transition ${
-                    activeClass.id === cohort.id
+                    activeClass?.id === cohort.id
                       ? 'border-cyan-300/60 bg-cyan-300/12'
                       : 'border-white/10 bg-slate-900/70 hover:border-cyan-300/30'
                   }`}
@@ -325,29 +366,37 @@ export default function Workspace() {
                   <p className="mt-1 text-xs text-white/50">Year {cohort.year_level} · {cohort.subject}</p>
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={() => setWizardOpen(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-cyan-300/30 bg-slate-950/40 p-3 text-sm font-semibold text-cyan-300 transition hover:border-cyan-300/60 hover:bg-cyan-300/5 hover:text-cyan-200"
+              >
+                + Add Cohort
+              </button>
             </div>
           </section>
-
+ 
           <section className="mt-6">
             <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-white/40">Thread stream</p>
             <div className="rounded-[8px] border border-white/10 bg-slate-900/70 p-3">
               <div className="flex items-center gap-2">
                 <MessageSquare size={15} className="text-cyan-200" />
-                <p className="text-sm text-white">{activeThread.title}</p>
+                <p className="text-sm text-white">{activeThread?.title || 'No active thread'}</p>
               </div>
               <p className="mt-2 text-xs text-white/45">{messages.length} turns</p>
             </div>
           </section>
         </aside>
-
+ 
         <main className="flex min-w-0 flex-1 flex-col">
           <header className="border-b border-white/10 bg-slate-950/70 px-4 py-4 backdrop-blur-xl sm:px-6">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/70">{activeClass.subject}</p>
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/70">{activeClass?.subject || 'No Subject'}</p>
                 <h1 className="mt-1 text-xl font-semibold text-white">{selectedCohortLabel}</h1>
               </div>
-              <p className="text-sm text-white/50">{activeClass.ability_tier}</p>
+              <p className="text-sm text-white/50">{activeClass?.ability_tier || ''}</p>
             </div>
           </header>
 
@@ -466,6 +515,14 @@ export default function Workspace() {
           </footer>
         </main>
       </div>
+
+      {isWizardOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+          <div className="relative w-full max-w-3xl">
+            <StartupWizard />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

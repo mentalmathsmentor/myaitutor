@@ -17,6 +17,56 @@ export const useExoskeletonStore = create((set, get) => ({
   activeThread: null,
   messagesByThread: {},
   topicCache: {},
+  isWizardOpen: false,
+
+  setWizardOpen: (open) => set({ isWizardOpen: open }),
+
+  fetchClasses: async () => {
+    try {
+      const response = await fetch('/api/classes')
+      if (!response.ok) throw new Error('Failed to fetch classes')
+      const data = await response.json()
+      const classes = data.classes || []
+      set({ cohorts: classes })
+      return classes
+    } catch (error) {
+      console.error('fetchClasses failed:', error)
+      return []
+    }
+  },
+
+  fetchThreads: async (classId) => {
+    try {
+      const response = await fetch(`/api/threads/${classId}`)
+      if (!response.ok) throw new Error('Failed to fetch threads')
+      const data = await response.json()
+      const threads = data.threads || []
+      if (threads.length > 0) {
+        const mainThread = threads[0]
+        set((state) => {
+          const updatedCohorts = state.cohorts.map((c) => {
+            if (c.id === classId) {
+              return { ...c, thread: mainThread }
+            }
+            return c
+          })
+
+          const isActive = state.activeClass && state.activeClass.id === classId
+
+          return {
+            cohorts: updatedCohorts,
+            messagesByThread: {
+              ...state.messagesByThread,
+              [mainThread.id]: mainThread.messages || [],
+            },
+            activeThread: isActive ? mainThread : state.activeThread,
+          }
+        })
+      }
+    } catch (error) {
+      console.error('fetchThreads failed:', error)
+    }
+  },
 
   updateWizardDraft: (patch) => set((state) => ({
     wizardDraft: {
@@ -41,6 +91,7 @@ export const useExoskeletonStore = create((set, get) => ({
         ...state.messagesByThread,
         [thread.id]: state.messagesByThread[thread.id] || [],
       },
+      isWizardOpen: false,
     }
   }),
 

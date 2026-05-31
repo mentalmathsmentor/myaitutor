@@ -42,6 +42,8 @@ export default function StartupWizard() {
   const updateDraft = useExoskeletonStore((state) => state.updateWizardDraft)
   const launchWorkspace = useExoskeletonStore((state) => state.launchWorkspace)
   const resetWizardDraft = useExoskeletonStore((state) => state.resetWizardDraft)
+  const setWizardOpen = useExoskeletonStore((state) => state.setWizardOpen)
+  const cohorts = useExoskeletonStore((state) => state.cohorts)
 
   const [step, setStep] = useState(0)
   const [isLaunching, setIsLaunching] = useState(false)
@@ -90,6 +92,7 @@ export default function StartupWizard() {
       const payload = await response.json()
       launchWorkspace(payload)
       resetWizardDraft()
+      setWizardOpen(false)
     } catch (launchError) {
       if (import.meta.env.DEV) {
         const classId = crypto.randomUUID()
@@ -114,6 +117,7 @@ export default function StartupWizard() {
           },
         })
         resetWizardDraft()
+        setWizardOpen(false)
         return
       }
       setError(launchError.message || 'Could not launch workspace')
@@ -131,8 +135,20 @@ export default function StartupWizard() {
               <p className="font-mono text-xs uppercase tracking-[0.24em] text-cyan-300">Tutor Exoskeleton V1</p>
               <h1 className="mt-2 text-2xl font-semibold text-white">Launch a teaching workspace</h1>
             </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-[8px] border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
-              <Rocket size={20} />
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-[8px] border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+                <Rocket size={20} />
+              </div>
+              {cohorts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setWizardOpen(false)}
+                  className="flex h-11 w-11 items-center justify-center rounded-[8px] border border-white/10 bg-slate-900/60 text-white/60 transition hover:border-white/20 hover:text-white"
+                  title="Close wizard"
+                >
+                  <span className="text-xl font-light">×</span>
+                </button>
+              )}
             </div>
           </div>
           <div className="mt-6 grid grid-cols-5 gap-2">
