@@ -1,3 +1,5 @@
+> ⚠️ SUPERSEDED 12/06/2026 by /MAIT_ARCHITECTURE_CANON.md — do not build against this document.
+
 # Architectural State Audit
 **Date:** 19th April 2026
 **Target:** `main` Branch (MAIT MVP)

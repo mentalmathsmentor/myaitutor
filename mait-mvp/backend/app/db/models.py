@@ -7,6 +7,8 @@ from sqlalchemy import BigInteger, Boolean, CheckConstraint, DateTime, ForeignKe
 from sqlalchemy import String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
+
 
 
 class Base(DeclarativeBase):
@@ -88,11 +90,31 @@ class User(Base):
 
 class Document(Base):
     __tablename__ = "documents"
-    __table_args__ = (Index("idx_documents_student_id", "student_id"),)
+    __table_args__ = (
+        Index("idx_documents_student_id", "student_id"),
+        Index("idx_documents_tutor_id", "tutor_id"),
+        Index("idx_documents_class_id", "class_id"),
+        Index("idx_documents_thread_id", "thread_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     public_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     student_id: Mapped[str] = mapped_column(String, nullable=False)
+    tutor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tutors.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    class_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tutor_classes.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    thread_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_threads.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     title: Mapped[str] = mapped_column(String, nullable=False)
     kind: Mapped[str] = mapped_column(String, nullable=False, default="artifact", server_default=text("'artifact'"))
     source: Mapped[str] = mapped_column(String, nullable=False, default="manual", server_default=text("'manual'"))
@@ -221,3 +243,40 @@ class ArtifactBuild(Base):
 
     def __repr__(self) -> str:
         return f"ArtifactBuild(public_id={self.public_id!r}, status={self.status!r})"
+
+
+class VectorChunk(Base):
+    __tablename__ = "vector_chunks"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    syllabus_node_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    year_level: Mapped[str | None] = mapped_column(String, nullable=True)
+    subject: Mapped[str | None] = mapped_column(String, nullable=True)
+    chunk_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
+    embedding: Mapped[Any] = mapped_column(Vector(768), nullable=True)
+    source_document: Mapped[str | None] = mapped_column(String, nullable=True)
+    ingested_at: Mapped[Any] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    syllabus_json_version: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    __table_args__ = (
+        Index(
+            "idx_vector_chunks_embedding",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+        Index("idx_vector_chunks_content_code", "content_code"),
+        Index("idx_vector_chunks_year_subject", "year_level", "subject"),
+    )
+
+    def __repr__(self) -> str:
+        return f"VectorChunk(id={self.id!r}, content_code={self.content_code!r}, subject={self.subject!r})"

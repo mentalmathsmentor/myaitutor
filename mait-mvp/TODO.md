@@ -7,6 +7,8 @@
 - [ ] Replace X-Student-Id header trust with JWT auth (Google OAuth)
 - [ ] Add tutor_id multi-tenancy to canvas tables
 - [ ] Split DB transactions from Gemini API calls to prevent pool starvation under load
+- [ ] Build NESA .docx → syllabus.json parser (preserves hierarchy, math notation, cross-references)
+- [ ] Aether cron job to re-ingest NESA updates weekly, diff against existing JSON, only re-embed changed chunks
 
 ## Features
 - [ ] Tutor account creation and dashboard
@@ -15,3 +17,6 @@
 - [ ] Tutor activity dashboard (summary of student work between sessions)
 - [ ] NSW HSC RAG corpus with pgvector
 - [ ] Cerberus autonomous adversarial testing
+
+## Architecture
+- [ ] Keep syllabus.json as canonical artifact, version it in git, pgvector is derived from it

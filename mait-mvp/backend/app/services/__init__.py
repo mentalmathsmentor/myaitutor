@@ -8,4 +8,4 @@ Contains:
 - artifact_engine: A.G.E. - Artifact Generation Engine (worksheet PDF generation)
 """
 
-__all__ = ['wellness_engine', 'educational_agent', 'gemini_client', 'artifact_engine', 'storage', 'blooms_engine']
+__all__ = ['wellness_engine', 'educational_agent', 'gemini_client', 'artifact_engine', 'storage', 'blooms_engine', 'prompts']

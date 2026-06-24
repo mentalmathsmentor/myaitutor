@@ -2,11 +2,13 @@ from fastapi import HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from .models import StudentContext
 from .services import storage
 
 limiter = Limiter(key_func=get_remote_address)
+LOCAL_DEV_TUTOR_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 
 async def verify_student_auth(request: Request, student_id: str):
@@ -26,6 +28,11 @@ async def get_current_student_id(request: Request) -> str:
     if not header_id:
         raise HTTPException(status_code=401, detail="Missing X-Student-Id header")
     return header_id
+
+
+async def get_current_tutor() -> UUID:
+    """Local-dev tutor auth bypass for Tutor Exoskeleton V1."""
+    return LOCAL_DEV_TUTOR_ID
 
 
 async def get_or_create_context(student_id: str, session: AsyncSession) -> StudentContext:
