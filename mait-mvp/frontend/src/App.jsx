@@ -138,7 +138,7 @@ function AppRoutes() {
                         />
                     } />
 
-                    <Route path="/tutor" element={
+                    <Route path="/teach" element={
                         <ErrorBoundary><TutorWorkspace /></ErrorBoundary>
                     } />
                     
