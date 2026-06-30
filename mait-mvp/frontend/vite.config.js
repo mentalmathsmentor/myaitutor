@@ -1,6 +1,41 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
+import fs from 'fs'
+import path from 'path'
+
+function caseInsensitivePDFs() {
+    return {
+        name: 'case-insensitive-pdfs',
+        configureServer(server) {
+            server.middlewares.use((req, res, next) => {
+                if (req.url) {
+                    const urlLower = req.url.toLowerCase();
+                    if (urlLower.endsWith('isnsw_example_secondary.pdf') && req.url !== '/ISNSW_Example_SECONDARY.pdf') {
+                        req.url = '/ISNSW_Example_SECONDARY.pdf';
+                    } else if (urlLower.endsWith('isnsw_example.pdf') && req.url !== '/ISNSW_Example.pdf') {
+                        req.url = '/ISNSW_Example.pdf';
+                    }
+                }
+                next();
+            });
+        },
+        closeBundle() {
+            const distDir = path.resolve(process.cwd(), 'dist');
+            if (fs.existsSync(distDir)) {
+                const sec = path.join(distDir, 'ISNSW_Example_SECONDARY.pdf');
+                if (fs.existsSync(sec)) {
+                    fs.copyFileSync(sec, path.join(distDir, 'isnsw_example_secondary.pdf'));
+                    fs.copyFileSync(sec, path.join(distDir, 'ISNSW_Example_Secondary.pdf'));
+                }
+                const prim = path.join(distDir, 'ISNSW_Example.pdf');
+                if (fs.existsSync(prim)) {
+                    fs.copyFileSync(prim, path.join(distDir, 'isnsw_example.pdf'));
+                }
+            }
+        }
+    };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -30,7 +65,7 @@ export default defineConfig({
             }
         }
     },
-    plugins: [react()],
+    plugins: [react(), caseInsensitivePDFs()],
     server: {
         watch: {
             usePolling: true,
