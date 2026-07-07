@@ -1,4 +1,3 @@
-from enum import Enum
 import json
 from typing import Any
 from uuid import UUID
@@ -13,21 +12,12 @@ from ..db.tutor_models import ChatThread, Message, Tutor, TutorClass
 from ..db.session import get_db
 from ..models import ExoskeletonResponse, FatigueStatus, StudentContext
 from ..services import generation_engine, wellness_engine, educational_agent, storage
+from ..services.generation_engine import TutorIntent
 from ..services.syllabus_service import syllabus_service
 from ..services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from ..deps import get_current_tutor, verify_student_auth, get_or_create_context, limiter
 
 router = APIRouter()
-
-
-class TutorIntent(str, Enum):
-    WARMUP = "warmup"
-    LESSON_PLAN = "lesson_plan"
-    PRACTICE_SET = "practice_set"
-    CHALLENGE = "challenge"
-    EXPLAIN_ALT = "explain_alt"
-    ACTIVITY = "activity"
-    CHAT = "chat"
 
 
 class InitClassRequest(BaseModel):
@@ -289,16 +279,31 @@ async def generate_chat(
     if thread is None:
         raise HTTPException(status_code=404, detail="Thread not found for class")
 
+    # The router owns retrieval (directive §2): embed the free text (or the
+    # topic as fallback), run the locked pgvector query, and hand the engine
+    # the pre-formatted chunk block.
     intent = body.intent.value
+    refinements = (body.refinements or "").strip()
     try:
-        result = await generation_engine.generate_teach_response(
+        query_embedding = await generation_engine.embed_query(refinements or body.topic)
+        rows = await generation_engine.retrieve_chunks(
             db,
-            intent=intent,
-            topic=body.topic,
             subject=class_obj.subject,
+            topic=body.topic,
+            query_embedding=query_embedding,
+        )
+        citations = generation_engine.build_citations(rows)
+        rag_chunks = generation_engine.format_rag_chunks(rows)
+
+        response_model = await generation_engine.generate_teach_response(
+            intent=body.intent,
+            topic=body.topic,
             year_level=class_obj.year_level,
+            subject=class_obj.subject,
             ability_tier=class_obj.ability_tier,
-            refinements=body.refinements,
+            refinements=refinements,
+            rag_chunks=rag_chunks,
+            student_context="",  # Tutor V1 socket — no session/student source yet
         )
     except generation_engine.UnsupportedIntentError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -306,9 +311,6 @@ async def generate_chat(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-    response_model = result.response
-    citations = result.citations
 
     user_content = json.dumps(
         {

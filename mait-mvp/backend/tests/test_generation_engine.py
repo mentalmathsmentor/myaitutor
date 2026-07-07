@@ -1,10 +1,11 @@
 """
-Integration tests for app/services/generation_engine.py (Teach Revamp Phase D).
+Tests for app/services/generation_engine.py, built to the Phase C checklist
+in Fable_Teach_Revamp_Prompt.md (v3) — items 1-10 are covered explicitly and
+labelled, plus engine error paths and the router-side retrieval toolkit.
 
-Covers the full engine pipeline — embed -> retrieve -> prompt -> Gemini native
-structured output -> validated ExoskeletonResponse — on BOTH happy and error
-paths. The Gemini SDK and the database session are faked; no network, no DB.
+The Gemini SDK and the database session are faked; no network, no DB.
 """
+import asyncio
 import sys
 from contextlib import contextmanager
 from types import SimpleNamespace
@@ -23,9 +24,10 @@ from app.models import (
 from app.services import generation_engine
 from app.services.generation_engine import (
     EMPTY_RETRIEVAL_NOTICE,
+    STUDENT_CONTEXT_HEADER,
     EmbeddingError,
     GenerationError,
-    GenerationResult,
+    TutorIntent,
     UnsupportedIntentError,
     build_citations,
     build_prompt,
@@ -34,7 +36,7 @@ from app.services.generation_engine import (
     generate_structured_response,
     generate_teach_response,
 )
-from app.services.prompts import SYSTEM_INSTRUCTION_CORE
+from app.services.prompts import INTENT_TEMPLATES, SYSTEM_INSTRUCTION_CORE
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +62,30 @@ SAMPLE_RESPONSE = ExoskeletonResponse(
             ],
         ),
     ]
+)
+
+SAMPLE_RAG_CHUNKS = (
+    "[Chunk 1] content_code=MA4-IND-C-01 topic=Indices source=stage4_mathematics.docx\n"
+    "Index laws: multiply powers with the same base by adding indices."
+)
+
+ENGINE_KWARGS = dict(
+    intent=TutorIntent.PRACTICE_SET,
+    topic="Indices",
+    year_level=8,
+    subject="Stage 4 Mathematics",
+    ability_tier="Core",
+    refinements="focus on negative indices",
+    rag_chunks=SAMPLE_RAG_CHUNKS,
+)
+
+PROMPT_KWARGS = dict(
+    intent="practice_set",
+    rag_chunks=SAMPLE_RAG_CHUNKS,
+    year_level=8,
+    subject="Stage 4 Mathematics",
+    ability_tier="Core",
+    refinements="",
 )
 
 
@@ -127,172 +153,203 @@ def gemini_response(parsed=None, text=None):
 
 
 # ---------------------------------------------------------------------------
-# Happy path: full pipeline
+# Phase C checklist (Fable_Teach_Revamp_Prompt.md v3) — items 1-10
 # ---------------------------------------------------------------------------
 
-class TestGenerateTeachResponseHappyPath:
+class TestPhaseCChecklist:
     @pytest.mark.asyncio
-    async def test_full_pipeline_returns_result_with_citations(self):
-        rows = make_rows()
-        db = FakeRetrievalSession(rows)
+    async def test_01_schema_valid_parts_round_trip(self):
+        """C1: schema-valid ExoskeletonResponse parts round-trip correctly."""
+        with fresh_gemini(generate_return=gemini_response(parsed=SAMPLE_RESPONSE)):
+            response = await generate_teach_response(**ENGINE_KWARGS)
+
+        assert response is SAMPLE_RESPONSE
+        round_tripped = ExoskeletonResponse.model_validate_json(
+            response.model_dump_json()
+        )
+        assert round_tripped == SAMPLE_RESPONSE
+        assert round_tripped.parts[1].questions[0].teacher_answer_latex is not None
+
+    def test_02_no_forced_marks_in_template_output(self):
+        """C2: no forced [N Marks] / \\hfill in any built prompt."""
+        for intent in TutorIntent:
+            prompt = build_prompt(**{**PROMPT_KWARGS, "intent": intent.value})
+            assert "[N Marks]" not in prompt
+            assert "\\hfill" not in prompt
+        assert "[N Marks]" not in SYSTEM_INSTRUCTION_CORE
+
+    def test_03_empty_student_context_produces_clean_prompt(self):
+        """C3: empty student_context -> no block, no filler text."""
+        base = build_prompt(**PROMPT_KWARGS)
+        for empty in ("", "   \n  "):
+            prompt = build_prompt(**PROMPT_KWARGS, student_context=empty)
+            assert prompt == base
+            assert STUDENT_CONTEXT_HEADER not in prompt
+            assert "No student context" not in prompt
+
+    def test_04_non_empty_student_context_injected_after_template(self):
+        """C4: non-empty student_context appends the block verbatim, at the end."""
+        profile = (
+            "Last session (2026-07-01): Indices.\n"
+            "Nailed: index laws. Struggled: negative indices.\n"
+            "Active vault: sign errors under time pressure."
+        )
+        prompt = build_prompt(**PROMPT_KWARGS, student_context=profile)
+        template_only = build_prompt(**PROMPT_KWARGS)
+        assert prompt == f"{template_only}\n\n{STUDENT_CONTEXT_HEADER}\n{profile}"
+
+    def test_05_list_environment_ban_holds_in_system_instruction(self):
+        """C5: the system instruction bans LaTeX list environments."""
+        assert "NEVER use LaTeX environments" in SYSTEM_INSTRUCTION_CORE
+        assert "\\begin{enumerate}" in SYSTEM_INSTRUCTION_CORE  # named in the ban
+        assert "\\begin{itemize}" in SYSTEM_INSTRUCTION_CORE
+        # And no template smuggles a list environment in as actual formatting.
+        for intent, template in INTENT_TEMPLATES.items():
+            assert "\\begin{enumerate}" not in template, intent
+            assert "\\begin{itemize}" not in template, intent
+
+    @pytest.mark.asyncio
+    async def test_06_max_output_tokens_8000_configured(self):
+        """C6: max_output_tokens=8000 is set on the Gemini config."""
+        with fresh_gemini(
+            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
+        ) as (genai_mod, _):
+            await generate_teach_response(**ENGINE_KWARGS)
+
+        config_kwargs = genai_mod.types.GenerateContentConfig.call_args.kwargs
+        assert config_kwargs["max_output_tokens"] == 8000
+
+    @pytest.mark.asyncio
+    async def test_07_rag_chunks_pass_through_unmodified(self):
+        """C7: the rag_chunks string reaches the prompt verbatim."""
+        with fresh_gemini(
+            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
+        ) as (_, client):
+            await generate_teach_response(**ENGINE_KWARGS)
+
+        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
+        assert SAMPLE_RAG_CHUNKS in contents
+
+    @pytest.mark.asyncio
+    async def test_08_invalid_gemini_json_raises_clear_error(self):
+        """C8: invalid JSON on the model_validate_json fallback path."""
+        with fresh_gemini(
+            generate_return=gemini_response(parsed=None, text="not json at all")
+        ):
+            with pytest.raises(GenerationError) as exc_info:
+                await generate_structured_response("prompt")
+
+        assert "invalid ExoskeletonResponse" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_09_empty_rag_chunks_produces_clean_fallback_prompt(self):
+        """C9: zero retrieval results -> 'No exact topic chunks' message."""
+        assert format_rag_chunks([]) == EMPTY_RETRIEVAL_NOTICE  # router-side
 
         with fresh_gemini(
             generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
-        ) as (genai_mod, client):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.1] * 768),
-            ) as embed_mock:
-                result = await generate_teach_response(
-                    db,
-                    intent="practice_set",
-                    topic="Indices",
-                    subject="Stage 4 Mathematics",
-                    year_level=8,
-                    ability_tier="Core",
-                    refinements="focus on negative indices",
-                )
+        ) as (_, client):
+            await generate_teach_response(**{**ENGINE_KWARGS, "rag_chunks": ""})
 
-        assert isinstance(result, GenerationResult)
-        assert result.response is SAMPLE_RESPONSE
-
-        # Refinements (free text) drive the embedding query, per Canon §4.
-        embed_mock.assert_awaited_once_with("focus on negative indices")
-
-        # Retrieval used the locked subject + exact-topic filter.
-        _, params = db.calls[0]
-        assert params["subject"] == "Stage 4 Mathematics"
-        assert params["topic"] == "Indices"
-        assert params["query_embedding"].startswith("[0.1,")
-
-        # Citations mirror the retrieved rows.
-        assert len(result.citations) == 2
-        assert result.citations[0]["content_code"] == "MA4-IND-C-01"
-        assert result.citations[0]["topic"] == "Indices"
-        assert result.citations[0]["distance"] == pytest.approx(0.21)
-        assert result.citations[0]["id"] == str(rows[0]["id"])
-
-        # The prompt carries the chunks; the system instruction does NOT
-        # ride in the user turn any more (it is native config now).
         contents = client.aio.models.generate_content.call_args.kwargs["contents"]
-        assert "Index laws" in contents
-        assert "focus on negative indices" not in contents  # practice_set has no {refinements}
-        assert SYSTEM_INSTRUCTION_CORE not in contents
+        assert EMPTY_RETRIEVAL_NOTICE in contents  # engine-side defence
 
+    @pytest.mark.asyncio
+    async def test_10_sixty_second_timeout_configured(self):
+        """C10: the 60s Gemini call timeout is configured and enforced."""
+        assert generation_engine.GENERATION_TIMEOUT_SECONDS == 60.0
+
+        with fresh_gemini(generate_side_effect=asyncio.TimeoutError()):
+            with pytest.raises(GenerationError) as exc_info:
+                await generate_structured_response("prompt")
+        assert "timed out after 60s" in str(exc_info.value)
+
+
+# ---------------------------------------------------------------------------
+# Canonical interface & native structured output
+# ---------------------------------------------------------------------------
+
+class TestEngineInterface:
     @pytest.mark.asyncio
     async def test_native_structured_output_config(self):
-        """Phase C: system_instruction + response_schema wired natively."""
-        db = FakeRetrievalSession(make_rows())
-
         with fresh_gemini(
             generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
         ) as (genai_mod, client):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.0] * 768),
-            ):
-                await generate_teach_response(
-                    db,
-                    intent="warmup",
-                    topic="Indices",
-                    subject="Stage 4 Mathematics",
-                    year_level=8,
-                    ability_tier="Core",
-                    refinements=None,
-                )
+            await generate_teach_response(**ENGINE_KWARGS)
 
         config_kwargs = genai_mod.types.GenerateContentConfig.call_args.kwargs
         assert config_kwargs["system_instruction"] == SYSTEM_INSTRUCTION_CORE
         assert config_kwargs["response_mime_type"] == "application/json"
         assert config_kwargs["response_schema"] is ExoskeletonResponse
         assert config_kwargs["temperature"] == 0.4
-        assert config_kwargs["max_output_tokens"] == 8000
 
         call_kwargs = client.aio.models.generate_content.call_args.kwargs
         assert call_kwargs["model"] == "gemini-3.5-flash"
+        # System instruction is native config, not concatenated user turn.
+        assert SYSTEM_INSTRUCTION_CORE not in call_kwargs["contents"]
 
     @pytest.mark.asyncio
-    async def test_topic_is_embedding_fallback_when_no_refinements(self):
-        db = FakeRetrievalSession(make_rows())
-
-        with fresh_gemini(generate_return=gemini_response(parsed=SAMPLE_RESPONSE)):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.0] * 768),
-            ) as embed_mock:
-                await generate_teach_response(
-                    db,
-                    intent="challenge",
-                    topic="Indices",
-                    subject="Stage 4 Mathematics",
-                    year_level=8,
-                    ability_tier="Core",
-                    refinements="   ",
-                )
-
-        embed_mock.assert_awaited_once_with("Indices")
-
-    @pytest.mark.asyncio
-    async def test_empty_retrieval_uses_notice_and_empty_citations(self):
-        db = FakeRetrievalSession([])
-
-        with fresh_gemini(
-            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
-        ) as (_, client):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.0] * 768),
+    async def test_intent_accepts_enum_and_string(self):
+        for intent in (TutorIntent.WARMUP, "warmup"):
+            with fresh_gemini(
+                generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
             ):
-                result = await generate_teach_response(
-                    db,
-                    intent="lesson_plan",
-                    topic="Quaternions",
-                    subject="Stage 4 Mathematics",
-                    year_level=8,
-                    ability_tier="Core",
-                    refinements=None,
+                response = await generate_teach_response(
+                    **{**ENGINE_KWARGS, "intent": intent}
                 )
+            assert response is SAMPLE_RESPONSE
 
-        assert result.citations == []
-        assert result.rag_chunks == EMPTY_RETRIEVAL_NOTICE
-        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
-        assert EMPTY_RETRIEVAL_NOTICE in contents
-
-
-# ---------------------------------------------------------------------------
-# Error paths
-# ---------------------------------------------------------------------------
-
-class TestGenerateTeachResponseErrorPaths:
     @pytest.mark.asyncio
     async def test_unsupported_intent_raises_before_generation(self):
-        db = FakeRetrievalSession(make_rows())
-
         with fresh_gemini(
             generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
         ) as (_, client):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.0] * 768),
-            ):
-                with pytest.raises(UnsupportedIntentError) as exc_info:
-                    await generate_teach_response(
-                        db,
-                        intent="interpretive_dance",
-                        topic="Indices",
-                        subject="Stage 4 Mathematics",
-                        year_level=8,
-                        ability_tier="Core",
-                        refinements=None,
-                    )
+            with pytest.raises(UnsupportedIntentError) as exc_info:
+                await generate_teach_response(
+                    **{**ENGINE_KWARGS, "intent": "interpretive_dance"}
+                )
 
         assert "interpretive_dance" in str(exc_info.value)
         client.aio.models.generate_content.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_student_context_flows_through_pipeline(self):
+        profile = "Ben, Y8. Mastered fractions; introduced to indices last session."
+        with fresh_gemini(
+            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
+        ) as (_, client):
+            await generate_teach_response(**ENGINE_KWARGS, student_context=profile)
+
+        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
+        assert contents.endswith(f"{STUDENT_CONTEXT_HEADER}\n{profile}")
+
+
+# ---------------------------------------------------------------------------
+# Error paths beyond the checklist
+# ---------------------------------------------------------------------------
+
+class TestErrorPaths:
+    @pytest.mark.asyncio
+    async def test_gemini_sdk_failure_raises_generation_error(self):
+        with fresh_gemini(generate_side_effect=RuntimeError("503 model overloaded")):
+            with pytest.raises(GenerationError) as exc_info:
+                await generate_structured_response("prompt")
+
+        assert "503 model overloaded" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_empty_response_body_raises_generation_error(self):
+        with fresh_gemini(generate_return=gemini_response(parsed=None, text=None)):
+            with pytest.raises(GenerationError):
+                await generate_structured_response("prompt")
+
+    @pytest.mark.asyncio
+    async def test_schema_violating_parsed_payload_raises_generation_error(self):
+        with fresh_gemini(
+            generate_return=gemini_response(parsed={"parts": [{"bogus": True}]})
+        ):
+            with pytest.raises(GenerationError):
+                await generate_structured_response("prompt")
 
     @pytest.mark.asyncio
     async def test_embedding_failure_raises_embedding_error(self):
@@ -309,52 +366,9 @@ class TestGenerateTeachResponseErrorPaths:
 
         assert "quota exhausted" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_gemini_sdk_failure_raises_generation_error(self):
-        with fresh_gemini(generate_side_effect=RuntimeError("503 model overloaded")):
-            with pytest.raises(GenerationError) as exc_info:
-                await generate_structured_response("prompt")
-
-        assert "503 model overloaded" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_gemini_timeout_raises_generation_error(self):
-        import asyncio
-
-        with fresh_gemini(generate_side_effect=asyncio.TimeoutError()):
-            with pytest.raises(GenerationError) as exc_info:
-                await generate_structured_response("prompt")
-
-        assert "timed out" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_malformed_json_body_raises_generation_error(self):
-        with fresh_gemini(
-            generate_return=gemini_response(parsed=None, text="not json at all")
-        ):
-            with pytest.raises(GenerationError) as exc_info:
-                await generate_structured_response("prompt")
-
-        assert "invalid ExoskeletonResponse" in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_empty_response_body_raises_generation_error(self):
-        with fresh_gemini(generate_return=gemini_response(parsed=None, text=None)):
-            with pytest.raises(GenerationError):
-                await generate_structured_response("prompt")
-
-    @pytest.mark.asyncio
-    async def test_schema_violating_parsed_payload_raises_generation_error(self):
-        # 'parts' items missing the required 'type'/'tier' fields.
-        with fresh_gemini(
-            generate_return=gemini_response(parsed={"parts": [{"bogus": True}]})
-        ):
-            with pytest.raises(GenerationError):
-                await generate_structured_response("prompt")
-
 
 # ---------------------------------------------------------------------------
-# Structured-output parsing fallbacks (native contract, Phase C)
+# Structured-output parsing fallbacks
 # ---------------------------------------------------------------------------
 
 class TestStructuredOutputParsing:
@@ -382,10 +396,35 @@ class TestStructuredOutputParsing:
 
 
 # ---------------------------------------------------------------------------
-# Pure helpers
+# Router-side retrieval toolkit (locked contract; call site moved only)
 # ---------------------------------------------------------------------------
 
-class TestHelpers:
+class TestRetrievalToolkit:
+    @pytest.mark.asyncio
+    async def test_retrieve_chunks_uses_locked_filter(self):
+        db = FakeRetrievalSession(make_rows())
+        rows = await generation_engine.retrieve_chunks(
+            db,
+            subject="Stage 4 Mathematics",
+            topic="Indices",
+            query_embedding=[0.1] * 768,
+        )
+
+        assert len(rows) == 2
+        _, params = db.calls[0]
+        assert params["subject"] == "Stage 4 Mathematics"
+        assert params["topic"] == "Indices"
+        assert params["query_embedding"].startswith("[0.1,")
+
+    def test_build_citations_mirrors_rows(self):
+        rows = make_rows()
+        citations = build_citations(rows)
+        assert len(citations) == 2
+        assert citations[0]["id"] == str(rows[0]["id"])
+        assert citations[0]["content_code"] == "MA4-IND-C-01"
+        assert citations[0]["topic"] == "Indices"
+        assert citations[0]["distance"] == pytest.approx(0.21)
+
     def test_build_citations_handles_null_metadata_and_distance(self):
         row_id = uuid4()
         rows = [
@@ -399,8 +438,7 @@ class TestHelpers:
                 "distance": None,
             }
         ]
-        citations = build_citations(rows)
-        assert citations == [
+        assert build_citations(rows) == [
             {
                 "id": str(row_id),
                 "content_code": None,
@@ -411,31 +449,45 @@ class TestHelpers:
             }
         ]
 
-    def test_format_rag_chunks_empty_returns_notice(self):
-        assert format_rag_chunks([]) == EMPTY_RETRIEVAL_NOTICE
-
     def test_format_rag_chunks_numbers_chunks(self):
         formatted = format_rag_chunks(make_rows())
         assert "[Chunk 1]" in formatted
         assert "[Chunk 2]" in formatted
         assert "Index laws" in formatted
 
-    def test_build_prompt_formats_all_placeholders(self):
+
+# ---------------------------------------------------------------------------
+# Prompt building
+# ---------------------------------------------------------------------------
+
+class TestBuildPrompt:
+    def test_all_placeholders_supplied_for_every_intent(self):
+        for intent in TutorIntent:
+            prompt = build_prompt(
+                intent=intent.value,
+                rag_chunks="CHUNKS_HERE",
+                year_level=11,
+                subject="Mathematics Advanced",
+                ability_tier="Band 5/6",
+                refinements="three questions on the product rule",
+            )
+            assert "CHUNKS_HERE" in prompt
+            assert "Year 11" in prompt
+            assert "Mathematics Advanced" in prompt
+            assert "Band 5/6" in prompt
+
+    def test_chat_intent_includes_refinements(self):
         prompt = build_prompt(
             intent="chat",
-            rag_chunks="CHUNKS_HERE",
-            year_level=11,
-            subject="Mathematics Advanced",
-            ability_tier="Band 5/6",
-            refinements="three questions on the product rule",
+            rag_chunks="CHUNKS",
+            year_level=12,
+            subject="Mathematics Standard 2",
+            ability_tier="Band 3/4",
+            refinements="explain compound interest simply",
         )
-        assert "CHUNKS_HERE" in prompt
-        assert "Year 11" in prompt
-        assert "Mathematics Advanced" in prompt
-        assert "Band 5/6" in prompt
-        assert "three questions on the product rule" in prompt
+        assert "explain compound interest simply" in prompt
 
-    def test_build_prompt_unknown_intent_raises(self):
+    def test_unknown_intent_raises(self):
         with pytest.raises(UnsupportedIntentError):
             build_prompt(
                 intent="nope",
@@ -445,95 +497,3 @@ class TestHelpers:
                 ability_tier="Core",
                 refinements="",
             )
-
-
-# ---------------------------------------------------------------------------
-# student_context socket (Tutor V1 integration seam)
-# ---------------------------------------------------------------------------
-
-class TestStudentContextSocket:
-    PROMPT_KWARGS = dict(
-        intent="practice_set",
-        rag_chunks="CHUNKS",
-        year_level=9,
-        subject="Stage 5 Mathematics",
-        ability_tier="Core+Path",
-        refinements="",
-    )
-
-    def test_non_empty_context_is_appended(self):
-        profile = "Aisha, Y9. Solid on linear equations; shaky on indices; sign errors under time pressure."
-        prompt = build_prompt(**self.PROMPT_KWARGS, student_context=profile)
-        assert generation_engine.STUDENT_CONTEXT_HEADER in prompt
-        assert prompt.endswith(profile)
-
-    def test_empty_context_adds_nothing(self):
-        base = build_prompt(**self.PROMPT_KWARGS)
-        for empty in (None, "", "   \n  "):
-            prompt = build_prompt(**self.PROMPT_KWARGS, student_context=empty)
-            assert prompt == base
-            assert generation_engine.STUDENT_CONTEXT_HEADER not in prompt
-
-    def test_template_declared_placeholder_is_filled_inline(self):
-        # Future Chairman-authored templates may declare {student_context};
-        # the socket must fill it inline instead of appending a block.
-        template = "Class: Year {year_level} | {subject} | {ability_tier}\n{rag_chunks}\nProfile: {student_context}"
-        with patch.dict(
-            generation_engine.INTENT_TEMPLATES, {"practice_set": template}
-        ):
-            prompt = build_prompt(**self.PROMPT_KWARGS, student_context="loves cricket stats")
-        assert "Profile: loves cricket stats" in prompt
-        assert generation_engine.STUDENT_CONTEXT_HEADER not in prompt
-
-    @pytest.mark.asyncio
-    async def test_pipeline_passes_student_context_through(self):
-        db = FakeRetrievalSession(make_rows())
-        profile = "Ben, Y8. Mastered fractions; introduced to indices last session."
-
-        with fresh_gemini(
-            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
-        ) as (_, client):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.0] * 768),
-            ):
-                await generate_teach_response(
-                    db,
-                    intent="practice_set",
-                    topic="Indices",
-                    subject="Stage 4 Mathematics",
-                    year_level=8,
-                    ability_tier="Core",
-                    refinements=None,
-                    student_context=profile,
-                )
-
-        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
-        assert generation_engine.STUDENT_CONTEXT_HEADER in contents
-        assert profile in contents
-
-    @pytest.mark.asyncio
-    async def test_pipeline_omits_context_block_when_absent(self):
-        db = FakeRetrievalSession(make_rows())
-
-        with fresh_gemini(
-            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
-        ) as (_, client):
-            with patch.object(
-                generation_engine,
-                "embed_query",
-                new=AsyncMock(return_value=[0.0] * 768),
-            ):
-                await generate_teach_response(
-                    db,
-                    intent="practice_set",
-                    topic="Indices",
-                    subject="Stage 4 Mathematics",
-                    year_level=8,
-                    ability_tier="Core",
-                    refinements=None,
-                )
-
-        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
-        assert generation_engine.STUDENT_CONTEXT_HEADER not in contents

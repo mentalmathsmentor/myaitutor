@@ -1,32 +1,38 @@
 """
-MAIT Teach Generation Engine.
+MAIT Teach Generation Engine (Custom Gem Killer).
 
-Extracted from the /api/chat/generate router (Teach Endpoint Revamp, Phase B).
-Owns the full generation pipeline for tutor-facing content:
+Built to Fable_Teach_Revamp_Prompt.md (v3) §2 and Phase B, within the
+MAIT_ARCHITECTURE_CANON.md contracts (§2 generation stack, §4 retrieval,
+§5 response shape, §8 guardrails).
 
-    embed query -> pgvector retrieval -> prompt assembly -> Gemini structured
-    output -> validated ExoskeletonResponse
+Separation of concerns (directive §2, canonical interface):
+- The PUBLIC engine function `generate_teach_response` does NOT own
+  retrieval. It receives the pre-formatted `rag_chunks` string and owns
+  prompt assembly + the Gemini structured-output call only.
+- The retrieval toolkit (embed_query, retrieve_chunks, build_citations,
+  format_rag_chunks) lives in this module — the directive's fence permits
+  MOVING the retrieval call into the service — but it is invoked by the
+  ROUTER, which passes the formatted result in.
 
-The router keeps ownership checks (tutor/class/thread) and message
-persistence; this module is HTTP-free and ORM-entity-free.
+Canonical parameters (directive §2 — exactly these inputs):
+    intent, topic, year_level, subject, ability_tier,
+    refinements="", rag_chunks, student_context=""
 
-Explicit parameter interface (LOCKED):
-    generate_teach_response(db, *, intent, topic, subject, year_level,
-                            ability_tier, refinements)
-Scalar, keyword-only parameters. No Request objects, no ORM entities,
-no untyped dict payloads across this boundary.
+student_context contract (Vesper-derived, directive §2):
+- Injected VERBATIM after the intent template as "\\n\\nStudent Context:\\n..."
+  ONLY when non-empty. Empty string -> no block, no filler text.
+- This engine never produces or parses the profile string; the post-session
+  extraction pipeline (future build) owns the format.
+- AUTOPHAGY GUARD (Vesper rule): callers must only ever populate this field
+  with human-asserted content (tutor observations, outcome taps). Never
+  inject previous AI-generated outputs as student context.
 
-Canon compliance (MAIT_ARCHITECTURE_CANON.md):
-- §2: gemini-3.5-flash, max_output_tokens=8000, native structured output
-  (response_mime_type="application/json" + response_schema).
-- §2/§3: embeddings via models/gemini-embedding-2 @ output_dimensionality=768.
-- §4: retrieval = subject + exact metadata_json->>'topic', cosine order,
-  LIMIT 3, NO year_level filter, NO distance cap.
-- §5: response shape is ExoskeletonResponse from app/models.py (unchanged).
+Retrieval is LOCKED (directive §2 / Canon §4): the SQL shape, embedding
+model, and vector_chunks are unchanged — the call site merely moved.
 """
 
 import asyncio
-from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 from sqlalchemy import text
@@ -35,6 +41,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models import ExoskeletonResponse
 from .gemini_client import get_client
 from .prompts import INTENT_TEMPLATES, SYSTEM_INSTRUCTION_CORE
+
+
+class TutorIntent(str, Enum):
+    WARMUP = "warmup"
+    LESSON_PLAN = "lesson_plan"
+    PRACTICE_SET = "practice_set"
+    CHALLENGE = "challenge"
+    EXPLAIN_ALT = "explain_alt"
+    ACTIVITY = "activity"
+    CHAT = "chat"
+
 
 GENERATION_MODEL = "gemini-3.5-flash"
 GENERATION_TEMPERATURE = 0.4
@@ -48,6 +65,8 @@ RETRIEVAL_LIMIT = 3
 EMPTY_RETRIEVAL_NOTICE = (
     "No exact topic chunks were retrieved for this subject/topic filter."
 )
+
+STUDENT_CONTEXT_HEADER = "Student Context:"
 
 _RETRIEVAL_SQL = text(f"""
     SELECT
@@ -87,14 +106,10 @@ class GenerationError(GenerationEngineError):
     invalid payload that could not be validated as ExoskeletonResponse."""
 
 
-@dataclass(frozen=True)
-class GenerationResult:
-    """Everything the caller needs to respond and persist."""
-
-    response: ExoskeletonResponse
-    citations: list[dict[str, Any]] = field(default_factory=list)
-    rag_chunks: str = ""
-
+# ---------------------------------------------------------------------------
+# Retrieval toolkit — called by the ROUTER (directive §2: the public engine
+# function receives rag_chunks; it does not own retrieval).
+# ---------------------------------------------------------------------------
 
 def _embedding_literal(values: list[float]) -> str:
     return "[" + ",".join(str(float(value)) for value in values) + "]"
@@ -167,8 +182,9 @@ def format_rag_chunks(rows: list[dict[str, Any]]) -> str:
     return formatted or EMPTY_RETRIEVAL_NOTICE
 
 
-STUDENT_CONTEXT_HEADER = "Student context (Tier 1 rolling profile):"
-
+# ---------------------------------------------------------------------------
+# Generation engine proper
+# ---------------------------------------------------------------------------
 
 def build_prompt(
     *,
@@ -178,46 +194,44 @@ def build_prompt(
     subject: str,
     ability_tier: str,
     refinements: str,
-    student_context: str | None = None,
+    student_context: str = "",
 ) -> str:
     """Fill the intent template. Templates are Chairman-authored and are
-    imported verbatim from prompts.py — never rewritten here.
+    imported verbatim from prompts.py — never rewritten here. Every
+    declared placeholder is .format()-supplied on every call.
 
-    student_context is the Tier 1 rolling profile string (Canon §7),
-    injected verbatim. If the template declares a {student_context}
-    placeholder it is filled there; otherwise a delimited block is
-    appended — and ONLY when the context is non-empty.
+    Empty rag_chunks (zero retrieval results) is substituted with the
+    "No exact topic chunks" notice so the grounding admission rule
+    (Canon §5) always has something explicit to work from.
+
+    student_context (directive §2): non-empty -> appended verbatim after
+    the intent template as a "Student Context:" block; empty -> nothing.
     """
     if intent not in INTENT_TEMPLATES:
         raise UnsupportedIntentError(intent)
 
-    template = INTENT_TEMPLATES[intent]
-    clean_context = (student_context or "").strip()
-    format_kwargs = {
-        "rag_chunks": rag_chunks,
-        "year_level": year_level,
-        "subject": subject,
-        "ability_tier": ability_tier,
-        "refinements": refinements,
-    }
-    if "{student_context}" in template:
-        return template.format(**format_kwargs, student_context=clean_context)
+    prompt = INTENT_TEMPLATES[intent].format(
+        rag_chunks=rag_chunks.strip() or EMPTY_RETRIEVAL_NOTICE,
+        year_level=year_level,
+        subject=subject,
+        ability_tier=ability_tier,
+        refinements=refinements,
+    )
 
-    prompt = template.format(**format_kwargs)
+    clean_context = (student_context or "").strip()
     if clean_context:
         prompt = f"{prompt}\n\n{STUDENT_CONTEXT_HEADER}\n{clean_context}"
     return prompt
 
 
 async def generate_structured_response(prompt: str) -> ExoskeletonResponse:
-    """Call Gemini with native structured output (Phase C).
+    """Call Gemini with native structured output.
 
     SYSTEM_INSTRUCTION_CORE rides as the native `system_instruction`
-    (verbatim, per the prompts.py usage contract) instead of being
-    concatenated into the user turn. The parts contract is enforced by
-    `response_schema=ExoskeletonResponse`; the typed `response.parsed`
-    payload is preferred, with validation fallbacks for partial SDK
-    support.
+    (verbatim, per the prompts.py usage contract). The parts contract is
+    enforced by `response_schema=ExoskeletonResponse`; the typed
+    `response.parsed` payload is preferred, with validation fallbacks for
+    partial SDK support.
     """
     from google.genai import types
 
@@ -265,56 +279,40 @@ async def generate_structured_response(prompt: str) -> ExoskeletonResponse:
 
 
 async def generate_teach_response(
-    db: AsyncSession,
     *,
-    intent: str,
+    intent: TutorIntent | str,
     topic: str,
-    subject: str,
     year_level: int,
+    subject: str,
     ability_tier: str,
-    refinements: str | None = None,
-    student_context: str | None = None,
-) -> GenerationResult:
-    """Full teach pipeline: embed -> retrieve -> prompt -> generate.
+    refinements: str = "",
+    rag_chunks: str,
+    student_context: str = "",
+) -> ExoskeletonResponse:
+    """Generate tutor-facing content: prompt assembly -> Gemini -> validated
+    ExoskeletonResponse.
 
-    student_context: optional Tier 1 rolling profile (Tutor V1 socket).
-    Injected only when non-empty; the teacher-sprint router does not
-    populate it yet.
+    Canonical interface per Fable_Teach_Revamp_Prompt.md §2. `topic` is part
+    of the canonical parameter set (the router also uses it as the retrieval
+    filter and embedding fallback); `rag_chunks` arrives pre-formatted from
+    the router's retrieval call and passes through to the template
+    unmodified. `student_context` must contain only human-asserted content
+    (autophagy guard) and is injected verbatim only when non-empty.
 
     Raises:
         UnsupportedIntentError: intent has no template (caller maps to 400).
-        EmbeddingError: embedding call failed (caller maps to 502).
         GenerationError: Gemini call failed/timed out/invalid (caller maps to 502).
     """
-    clean_refinements = (refinements or "").strip()
-
-    # Free text rides in refinements as the embedding text; topic is the
-    # exact-match filter, and the fallback embedding text (Canon §4).
-    query_text = clean_refinements or topic
-    query_embedding = await embed_query(query_text)
-
-    rows = await retrieve_chunks(
-        db,
-        subject=subject,
-        topic=topic,
-        query_embedding=query_embedding,
-    )
-    citations = build_citations(rows)
-    rag_chunks = format_rag_chunks(rows)
+    intent_key = intent.value if isinstance(intent, TutorIntent) else str(intent)
 
     prompt = build_prompt(
-        intent=intent,
+        intent=intent_key,
         rag_chunks=rag_chunks,
         year_level=year_level,
         subject=subject,
         ability_tier=ability_tier,
-        refinements=clean_refinements,
+        refinements=(refinements or "").strip(),
         student_context=student_context,
     )
 
-    response = await generate_structured_response(prompt)
-    return GenerationResult(
-        response=response,
-        citations=citations,
-        rag_chunks=rag_chunks,
-    )
+    return await generate_structured_response(prompt)
