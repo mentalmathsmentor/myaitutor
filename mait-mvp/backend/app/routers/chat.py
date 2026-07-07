@@ -32,7 +32,10 @@ class GenerateChatRequest(BaseModel):
     class_id: UUID
     thread_id: UUID
     intent: TutorIntent
-    topic: str = Field(..., min_length=1, max_length=300)
+    # Optional since the §4 fallback ratification (07/07/2026): open-ended
+    # queries may omit the topic and ride on refinements alone. An explicit
+    # empty string is still rejected.
+    topic: str | None = Field(default=None, min_length=1, max_length=300)
     refinements: str | None = Field(default=None, max_length=2000)
 
 
@@ -284,20 +287,37 @@ async def generate_chat(
     # the pre-formatted chunk block.
     intent = body.intent.value
     refinements = (body.refinements or "").strip()
-    try:
-        query_embedding = await generation_engine.embed_query(refinements or body.topic)
-        rows = await generation_engine.retrieve_chunks(
-            db,
-            subject=class_obj.subject,
-            topic=body.topic,
-            query_embedding=query_embedding,
+    topic = (body.topic or "").strip()
+    if not topic and not refinements:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide a topic or refinements — at least one is required to ground retrieval.",
         )
+    try:
+        query_embedding = await generation_engine.embed_query(refinements or topic)
+        rows = []
+        if topic:
+            rows = await generation_engine.retrieve_chunks(
+                db,
+                subject=class_obj.subject,
+                topic=topic,
+                query_embedding=query_embedding,
+            )
+        if not rows:
+            # §4 ratified fallback (07/07/2026): no topic selected, or the
+            # exact-topic filter came back empty — search subject-wide so
+            # generation stays grounded in the NESA corpus.
+            rows = await generation_engine.retrieve_chunks_subject_only(
+                db,
+                subject=class_obj.subject,
+                query_embedding=query_embedding,
+            )
         citations = generation_engine.build_citations(rows)
         rag_chunks = generation_engine.format_rag_chunks(rows)
 
         response_model = await generation_engine.generate_teach_response(
             intent=body.intent,
-            topic=body.topic,
+            topic=topic,
             year_level=class_obj.year_level,
             subject=class_obj.subject,
             ability_tier=class_obj.ability_tier,
@@ -315,7 +335,7 @@ async def generate_chat(
     user_content = json.dumps(
         {
             "intent": intent,
-            "topic": body.topic,
+            "topic": topic,
             "refinements": body.refinements,
         },
         ensure_ascii=False,

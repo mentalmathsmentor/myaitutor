@@ -165,7 +165,7 @@ class patched_pipeline:
     assertions cover the true citation shape.
     """
 
-    def __init__(self, rows=SAMPLE_ROWS, engine_return=SAMPLE_RESPONSE,
+    def __init__(self, rows=SAMPLE_ROWS, fallback_rows=(), engine_return=SAMPLE_RESPONSE,
                  embed_side_effect=None, engine_side_effect=None):
         self._patches = [
             patch.object(
@@ -180,6 +180,11 @@ class patched_pipeline:
             ),
             patch.object(
                 generation_engine,
+                "retrieve_chunks_subject_only",
+                new=AsyncMock(return_value=list(fallback_rows)),
+            ),
+            patch.object(
+                generation_engine,
                 "generate_teach_response",
                 new=AsyncMock(return_value=engine_return, side_effect=engine_side_effect),
             ),
@@ -188,7 +193,10 @@ class patched_pipeline:
     def __enter__(self):
         mocks = [p.__enter__() for p in self._patches]
         return SimpleNamespace(
-            embed_query=mocks[0], retrieve_chunks=mocks[1], engine=mocks[2]
+            embed_query=mocks[0],
+            retrieve_chunks=mocks[1],
+            retrieve_subject_only=mocks[2],
+            engine=mocks[3],
         )
 
     def __exit__(self, *exc):
@@ -230,6 +238,8 @@ class TestGenerateHappyPath:
             topic="Indices",
             query_embedding=[0.1] * 768,
         )
+        # Exact match returned rows -> no subject-wide fallback.
+        mocks.retrieve_subject_only.assert_not_awaited()
 
         # The engine receives exactly the directive §2 canonical params —
         # no db handle, pre-formatted rag_chunks, empty student_context.
@@ -282,6 +292,69 @@ class TestGenerateHappyPath:
             ExoskeletonResponse.model_validate_json(assistant_msg.content)
             == SAMPLE_RESPONSE
         )
+
+
+# ---------------------------------------------------------------------------
+# §4 subject-only retrieval fallback (ratified 07/07/2026)
+# ---------------------------------------------------------------------------
+
+class TestSubjectFallback:
+    def test_topicless_query_uses_subject_wide_retrieval(self, client, fake_session):
+        body = request_body(refinements="something fun to finish the lesson")
+        del body["topic"]
+
+        with patched_pipeline(fallback_rows=SAMPLE_ROWS) as mocks:
+            response = client.post("/api/chat/generate", json=body)
+
+        assert response.status_code == 200
+        mocks.retrieve_chunks.assert_not_awaited()  # no topic -> no exact filter
+        mocks.retrieve_subject_only.assert_awaited_once_with(
+            fake_session,
+            subject="Stage 4 Mathematics",
+            query_embedding=[0.1] * 768,
+        )
+        # Engine stays grounded on the fallback rows; topic rides as "".
+        kwargs = mocks.engine.await_args.kwargs
+        assert kwargs["topic"] == ""
+        assert kwargs["rag_chunks"] == EXPECTED_RAG_CHUNKS
+
+        # Persistence still records the fallback citations.
+        _, assistant_msg = fake_session.added
+        assert assistant_msg.retrieval_citations == EXPECTED_CITATIONS
+
+    def test_zero_exact_matches_fall_back_to_subject_search(
+        self, client, fake_session
+    ):
+        with patched_pipeline(rows=[], fallback_rows=SAMPLE_ROWS) as mocks:
+            response = client.post("/api/chat/generate", json=request_body())
+
+        assert response.status_code == 200
+        mocks.retrieve_chunks.assert_awaited_once()
+        mocks.retrieve_subject_only.assert_awaited_once()
+        assert mocks.engine.await_args.kwargs["rag_chunks"] == EXPECTED_RAG_CHUNKS
+
+    def test_fallback_with_zero_rows_still_grounds_via_notice(
+        self, client, fake_session
+    ):
+        with patched_pipeline(rows=[], fallback_rows=[]) as mocks:
+            response = client.post("/api/chat/generate", json=request_body())
+
+        assert response.status_code == 200
+        assert (
+            mocks.engine.await_args.kwargs["rag_chunks"]
+            == generation_engine.EMPTY_RETRIEVAL_NOTICE
+        )
+
+    def test_no_topic_and_no_refinements_returns_400(self, client, fake_session):
+        body = request_body(refinements=None)
+        del body["topic"]
+
+        with patched_pipeline() as mocks:
+            response = client.post("/api/chat/generate", json=body)
+
+        assert response.status_code == 400
+        assert "topic or refinements" in response.json()["detail"]
+        mocks.embed_query.assert_not_awaited()
 
 
 # ---------------------------------------------------------------------------
@@ -366,11 +439,16 @@ class TestGenerateErrorPaths:
         )
         assert response.status_code == 422
 
-    def test_missing_topic_rejected_by_validation_422(self, client, fake_session):
+    def test_missing_topic_allowed_since_fallback_ratification(
+        self, client, fake_session
+    ):
+        # Pre-ratification this was a 422; the §4 ruling (07/07/2026) makes a
+        # topic-less request valid when refinements ground the query.
         body = request_body()
         del body["topic"]
-        response = client.post("/api/chat/generate", json=body)
-        assert response.status_code == 422
+        with patched_pipeline(fallback_rows=SAMPLE_ROWS):
+            response = client.post("/api/chat/generate", json=body)
+        assert response.status_code == 200
 
     def test_empty_topic_rejected_by_validation_422(self, client, fake_session):
         response = client.post("/api/chat/generate", json=request_body(topic=""))

@@ -41,6 +41,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models import ExoskeletonResponse
 from .gemini_client import get_client
 from .prompts import INTENT_TEMPLATES, SYSTEM_INSTRUCTION_CORE
+from .security import apply_egress_airlock
 
 
 class TutorIntent(str, Enum):
@@ -84,6 +85,24 @@ _RETRIEVAL_SQL = text(f"""
     LIMIT {RETRIEVAL_LIMIT}
 """)
 
+# §4 ratified fallback (07/07/2026): subject-wide cosine, no topic filter.
+# Same LIMIT, no distance cap, no year_level filter — looser by design,
+# never ungrounded.
+_SUBJECT_FALLBACK_SQL = text(f"""
+    SELECT
+        id,
+        content,
+        content_code,
+        subject,
+        source_document,
+        metadata_json,
+        embedding <=> CAST(:query_embedding AS vector) AS distance
+    FROM vector_chunks
+    WHERE subject = :subject
+    ORDER BY embedding <=> CAST(:query_embedding AS vector)
+    LIMIT {RETRIEVAL_LIMIT}
+""")
+
 
 class GenerationEngineError(Exception):
     """Base class for all generation-engine failures."""
@@ -121,7 +140,7 @@ def _embed_query_sync(query: str) -> list[float]:
     client = get_client()
     response = client.models.embed_content(
         model=EMBEDDING_MODEL,
-        contents=query,
+        contents=apply_egress_airlock(query),  # R2 airlock: last stop before SDK
         config=types.EmbedContentConfig(
             output_dimensionality=EMBEDDING_DIMENSIONALITY
         ),
@@ -151,6 +170,27 @@ async def retrieve_chunks(
             "query_embedding": _embedding_literal(query_embedding),
             "subject": subject,
             "topic": topic,
+        },
+    )
+    return [dict(row) for row in result.mappings().all()]
+
+
+async def retrieve_chunks_subject_only(
+    db: AsyncSession,
+    *,
+    subject: str,
+    query_embedding: list[float],
+) -> list[dict[str, Any]]:
+    """§4 ratified fallback: subject-wide cosine search over the NESA corpus.
+
+    Used when no topic is selected or the exact-topic filter returns zero
+    rows — grounding is preserved (subject scope), never abandoned.
+    """
+    result = await db.execute(
+        _SUBJECT_FALLBACK_SQL,
+        {
+            "query_embedding": _embedding_literal(query_embedding),
+            "subject": subject,
         },
     )
     return [dict(row) for row in result.mappings().all()]
@@ -232,8 +272,15 @@ async def generate_structured_response(prompt: str) -> ExoskeletonResponse:
     enforced by `response_schema=ExoskeletonResponse`; the typed
     `response.parsed` payload is preferred, with validation fallbacks for
     partial SDK support.
+
+    R2 airlock (RATIFIED 07/07/2026): the final compiled prompt passes
+    through the regex egress scrub immediately before the SDK call —
+    this is the single choke point for every generation payload,
+    including refinements and student_context.
     """
     from google.genai import types
+
+    prompt = apply_egress_airlock(prompt)
 
     client = get_client()
     config = types.GenerateContentConfig(
