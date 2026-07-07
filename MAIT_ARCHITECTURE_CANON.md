@@ -1,8 +1,9 @@
 # MAIT (MyAITutor.au) — Canonical Architecture & Decision Record
 
 <!-- verified 12/06/2026 against commit d07a042 (read-only audit; see docs/AUDIT_2026-06-12.md) -->
+<!-- 07/07/2026: Darra ratified R1, R2, R4 + the no-topic chat fallback; Non-Goals (NG) Ledger added as §9 -->
 
-**Last Updated:** 12/06/2026
+**Last Updated:** 07/07/2026
 **Status:** SINGLE SOURCE OF TRUTH. Supersedes `MAIT_May_Architecture.md` and `MAIT_Locked_Architecture.md` (audit 12/06/2026: neither file exists anywhere in this repo — nothing to banner; the only older architecture doc found, `mait-mvp/docs/audits/Architecture_State_Audit_19_April_2026.md`, has been banner-marked). All agents must respect these decisions. Deviations require explicit ruling from Darra — inference-based overrides are forbidden.
 
 **Document layers:**
@@ -76,7 +77,7 @@ LIMIT 3;
 - **NO distance cap** for V1 (0.35 cap rejected: verified good matches sit 0.21–0.29 distance; a cap starves loosely-worded queries).
 - Topic dropdown is fed by: `SELECT DISTINCT metadata_json->>'topic' FROM vector_chunks WHERE subject = :subject AND metadata_json->>'topic' IS NOT NULL`.
 - Free-text from the user maps to **refinements** (semantic ranking), never to the topic filter.
-- Open-ended/chat-intent queries with no selected topic: subject-only filter + cosine (looser by design, never ungrounded). ⚠️ VERIFIED 12/06/2026 — NOT AS BUILT: `/api/chat/generate` (`routers/chat.py`) requires `topic` (Pydantic `min_length=1`) and ALWAYS applies `subject = :subject AND metadata_json->>'topic' = :topic`, LIMIT 3; there is no subject-only fallback path in code. Chat free text rides in `refinements` and is used as the embedding text (`refinements or topic`); the frontend disables chat send until a topic is selected. The ruling above stands as the target behaviour; the gap is logged in docs/AUDIT_2026-06-12.md — implementation requires Darra-sanctioned work, not an audit fix.
+- Open-ended/chat-intent queries with no selected topic: subject-only filter + cosine (looser by design, never ungrounded). **RATIFIED 07/07/2026 (Darra): subject-wide cosine search is the LOCKED fallback — grounding inherits strictly from the NESA corpus (the assessment authority's documents); an ungrounded LLM answer path is forbidden.** ⚠️ VERIFIED 12/06/2026 — NOT AS BUILT: `/api/chat/generate` (`routers/chat.py`) requires `topic` (Pydantic `min_length=1`) and ALWAYS applies `subject = :subject AND metadata_json->>'topic' = :topic`, LIMIT 3; there is no subject-only fallback path in code. Chat free text rides in `refinements` and is used as the embedding text (`refinements or topic`); the frontend disables chat send until a topic is selected. The gap is logged in docs/AUDIT_2026-06-12.md — the 07/07/2026 ratification sanctions closing it as Tutor V1 work.
 
 ---
 
@@ -116,7 +117,7 @@ LIMIT 3;
 - **`topic_mastery`** — per (student_id, subject, topic): `status` enum, `last_seen`, `last_succeeded`, `streak`, timestamps. Topic = the corpus topic string (atomic unit of mastery, ruled).
 - **`question_log`** — per generated question: session FK, student FK, topic, question payload ref, `outcome` enum (`nailed`/`struggled`/`bombed`/`skipped`), optional misconception tag, timestamp. Written by one-tap outcome buttons mid-session.
 - **`mistake_vault`** — structured error triplets: (student FK, topic → failure_mode → error_class), evidence ref (question_log FK), timestamps. Granular errors live here; mastery stays topic-level.
-- **Episodic memory timeline** — extracted memory objects embedded into pgvector (same store, `type`-tagged rows scoped by student_id) OR a sibling table `[ruling pending — see Open Rulings R4]`.
+- **Episodic memory timeline** — RATIFIED 07/07/2026 (R4): stores **extracted data triplets only**, autophagy guard enforced (human-asserted evidence; AI-generated output is never re-ingested as memory). Raw row-by-row chat logs are NOT stored. Residual open detail: physical home for triplet embeddings — sibling `memory_chunks` table vs `type`-tagged `vector_chunks` rows (sibling table remains the recommendation; see Rulings Register §11).
 
 ---
 
@@ -139,10 +140,10 @@ LIMIT 3;
 
 **Memory architecture (two-tier, Vesper-derived with corrections):**
 - Tier 1 — rolling profile: bounded, curated, tutor-editable, always injected as `{student_context}`.
-- Tier 2 — episodic timeline: Flash-Lite extraction (dual-pass) into structured objects, semantically retrievable.
+- Tier 2 — episodic timeline: Flash-Lite extraction (dual-pass) into structured triplet objects, semantically retrievable. RATIFIED 07/07/2026: extracted triplets only — raw chat logs are never stored.
 - **Explicit-assertion rule:** mastery/vault writes require demonstrated evidence (an outcome tap, observed work). Extractor never infers states; unverified = NULL. Tutor-editable ledger UI is the QA mechanism.
 - Vesper's SQLite + Markdown-file watchdog is NOT ported (local-agent pattern). Relational state = Postgres; editability = ledger UI; Markdown = export format for parent reports only.
-- Pseudonymisation middleware (real names → slugs before any external API call, rehydrated for display): ruling pending (R2) but architecture must not preclude it.
+- Pseudonymisation: RATIFIED 07/07/2026 (R2) — **strict regex egress airlock** in the backend service layer. All PII is scrubbed BEFORE any payload reaches the Gemini SDK (generation, embedding, and extraction calls alike); rehydrated app-side for display.
 
 ---
 
@@ -160,6 +161,8 @@ LIMIT 3;
 - NEVER skip `--no-shell-escape` for `pdflatex` subprocesses.
 - NEVER create an `app/models/` package alongside `app/models.py`.
 - NEVER commit mastery/vault state without evidence (explicit-assertion rule).
+- NEVER store raw row-by-row chat logs as episodic memory — extracted, human-evidenced triplets only; AI-generated output is never re-ingested as memory or student context (autophagy guard).
+- NEVER let PII reach the Gemini SDK — every external AI call passes the regex egress airlock in the backend service layer first.
 - NEVER ship multi-tier SLM/WebLLM routing in V1. Hardcode Gemini Flash.
 - NEVER offer Extension 1/2, Science, or IB in the UI while absent from the corpus.
 
@@ -173,7 +176,18 @@ LIMIT 3;
 
 ---
 
-## 9. CLANKA COUNCIL (ROSTER & LANES)
+## 9. NON-GOALS (NG) LEDGER — PERMANENTLY REJECTED ARCHITECTURES
+
+Ratified 07/07/2026 (Darra). These are terminal rejections, not deferrals. Agents must never propose, scaffold, or "improve" toward an entry below; any occurrence found in the repo is legacy to quarantine, not a pattern to extend. (History lives in the Superseded Decisions Log, §12.)
+
+- **NG-1 — FAISS and local ML embedding.** No FAISS, no sentence-transformers/MiniLM, no in-process embedding models of any kind. Replaced by pgvector on Neon + `gemini-embedding-2` @ 768. The legacy FAISS path is boot-quarantined (lazy import + `backend/tests/test_boot_quarantine.py` guard).
+- **NG-2 — Forcing `[N Marks]` on all generations.** Marks are strictly optional (§5). Senior marking criteria are an opt-in feature — never a default, never an appended suffix.
+- **NG-3 — `fatigue_state` on tutor profiles.** Deprecated; dropped from Tutor V1 (`tutor_students`). The legacy student-side wellness/fatigue engine is not a tutor-surface pattern and must not migrate across.
+- **NG-4 — SM-2 scheduling.** No per-item ease factors, no scheduler service. Spaced retrieval = the mastery state machine + interval constants (§7): a SQL view + constants, nothing more.
+
+---
+
+## 10. CLANKA COUNCIL (ROSTER & LANES)
 
 - **Claude Fable 5 (Chairman, this sprint):** architecture, decision arbitration, prompt authorship, plan authorship, verification of agent claims against canon.
 - **Claude Sonnet / Claude Code:** precise execution; frontend via `/frontend-design` skill within MAIT identity.
@@ -186,18 +200,22 @@ LIMIT 3;
 
 ---
 
-## 10. OPEN RULINGS REGISTER (Darra only)
+## 11. RULINGS REGISTER (Darra only)
 
-- **R1 — Science scope:** Year 8 Gem is dual-subject. Ingest NESA Science 7–10 (2023) for V1, or maths-only dogfood? (Maths-only recommended for sprint 1; Science ingest is a clean Antigravity follow-up.)
-- **R2 — Pseudonymisation:** mandatory in V1 (recommended — minors' data to external API; cheap now, expensive retrofit) or deferred?
+### Ratified 07/07/2026
+- **R1 — Science scope: RATIFIED — Maths only for V1.** No NESA Science 7–10 ingest this sprint; the UI offers only the five corpus maths subjects. Science ingest is a Phase 2+ candidate (clean Antigravity follow-up when ruled).
+- **R2 — Pseudonymisation: RATIFIED — strict regex egress airlock.** All PII is scrubbed in the backend service layer BEFORE any payload reaches the Gemini SDK; rehydrated app-side for display. Bypassing the airlock is forbidden (see §8 guardrail).
+- **R4 — Episodic memory storage: RATIFIED — extracted data triplets, autophagy guard enforced.** Structured triplets from human-asserted evidence only; NO raw row-by-row chat logs; AI-generated output is never re-ingested as memory. Residual open detail: sibling `memory_chunks` table vs `type`-tagged `vector_chunks` rows (sibling table remains the recommendation — keeps the locked corpus pure).
+- **No-topic chat fallback (ratified from the §4 gap; no R-number): RATIFIED — subject-wide cosine search.** Grounding inherits strictly from the NESA corpus (the assessment authority); an ungrounded LLM fallback is forbidden. Implementation of the §4 as-built gap is now sanctioned as Tutor V1 work.
+
+### Still open
 - **R3 — Mistake Vault verbatim policy:** store student errors verbatim or paraphrased-only (privacy posture for a child's work)?
-- **R4 — Episodic memory storage:** rows in `vector_chunks` with type tag vs sibling `memory_chunks` table (recommended: sibling table — keeps the locked corpus pure).
 - **R5 — Vision audit (photo of student working):** V1 work package or fast-follow? (Gemini 3.5 Flash is multimodal; it's your live Gem workflow for Extension students — but Extension isn't in corpus, so V1 value is Advanced/Standard/junior work audit.)
 - **R6 — Senior marking-criteria toggle:** include in V1 question generation for Stage 6 sets, or fast-follow?
 
 ---
 
-## 11. SUPERSEDED DECISIONS LOG (do not resurrect)
+## 12. SUPERSEDED DECISIONS LOG (do not resurrect)
 
 | Superseded | Replaced by | When |
 |---|---|---|
