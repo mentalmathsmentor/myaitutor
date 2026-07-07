@@ -167,6 +167,9 @@ def format_rag_chunks(rows: list[dict[str, Any]]) -> str:
     return formatted or EMPTY_RETRIEVAL_NOTICE
 
 
+STUDENT_CONTEXT_HEADER = "Student context (Tier 1 rolling profile):"
+
+
 def build_prompt(
     *,
     intent: str,
@@ -175,18 +178,35 @@ def build_prompt(
     subject: str,
     ability_tier: str,
     refinements: str,
+    student_context: str | None = None,
 ) -> str:
     """Fill the intent template. Templates are Chairman-authored and are
-    imported verbatim from prompts.py — never rewritten here."""
+    imported verbatim from prompts.py — never rewritten here.
+
+    student_context is the Tier 1 rolling profile string (Canon §7),
+    injected verbatim. If the template declares a {student_context}
+    placeholder it is filled there; otherwise a delimited block is
+    appended — and ONLY when the context is non-empty.
+    """
     if intent not in INTENT_TEMPLATES:
         raise UnsupportedIntentError(intent)
-    return INTENT_TEMPLATES[intent].format(
-        rag_chunks=rag_chunks,
-        year_level=year_level,
-        subject=subject,
-        ability_tier=ability_tier,
-        refinements=refinements,
-    )
+
+    template = INTENT_TEMPLATES[intent]
+    clean_context = (student_context or "").strip()
+    format_kwargs = {
+        "rag_chunks": rag_chunks,
+        "year_level": year_level,
+        "subject": subject,
+        "ability_tier": ability_tier,
+        "refinements": refinements,
+    }
+    if "{student_context}" in template:
+        return template.format(**format_kwargs, student_context=clean_context)
+
+    prompt = template.format(**format_kwargs)
+    if clean_context:
+        prompt = f"{prompt}\n\n{STUDENT_CONTEXT_HEADER}\n{clean_context}"
+    return prompt
 
 
 async def generate_structured_response(prompt: str) -> ExoskeletonResponse:
@@ -253,8 +273,13 @@ async def generate_teach_response(
     year_level: int,
     ability_tier: str,
     refinements: str | None = None,
+    student_context: str | None = None,
 ) -> GenerationResult:
     """Full teach pipeline: embed -> retrieve -> prompt -> generate.
+
+    student_context: optional Tier 1 rolling profile (Tutor V1 socket).
+    Injected only when non-empty; the teacher-sprint router does not
+    populate it yet.
 
     Raises:
         UnsupportedIntentError: intent has no template (caller maps to 400).
@@ -284,6 +309,7 @@ async def generate_teach_response(
         subject=subject,
         ability_tier=ability_tier,
         refinements=clean_refinements,
+        student_context=student_context,
     )
 
     response = await generate_structured_response(prompt)

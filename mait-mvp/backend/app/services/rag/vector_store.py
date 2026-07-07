@@ -4,9 +4,17 @@ import os
 from typing import List, Dict, Optional
 
 import numpy as np
-import faiss
 
 from .config import FAISS_INDEX_DIR, FAISS_INDEX_FILE, FAISS_METADATA_FILE, EMBEDDING_DIMENSIONS
+
+
+def _load_faiss():
+    # LEGACY QUARANTINE (Canon §2): FAISS is dead for the tutor path. Import
+    # is deferred so only the legacy student surface pays for it at first
+    # use — app boot must never load faiss.
+    import faiss
+
+    return faiss
 from .embeddings import embedding_service
 from .document_processor import SyllabusChunk
 
@@ -28,6 +36,7 @@ class VectorStore:
             return
 
         print("Initializing FAISS vector store...")
+        faiss = _load_faiss()
 
         # Create persist directory if needed
         os.makedirs(FAISS_INDEX_DIR, exist_ok=True)
@@ -61,6 +70,7 @@ class VectorStore:
 
     def _save_to_disk(self):
         """Persist the FAISS index and metadata to disk."""
+        faiss = _load_faiss()
         index_path = os.path.join(FAISS_INDEX_DIR, FAISS_INDEX_FILE)
         metadata_path = os.path.join(FAISS_INDEX_DIR, FAISS_METADATA_FILE)
 
@@ -123,7 +133,7 @@ class VectorStore:
             all_embeddings = np.vstack([kept_embeddings, new_embeddings]) if kept_embeddings.shape[0] > 0 or new_embeddings.shape[0] > 0 else np.empty((0, EMBEDDING_DIMENSIONS), dtype=np.float32)
 
             # Rebuild index
-            self.index = faiss.IndexFlatIP(EMBEDDING_DIMENSIONS)
+            self.index = _load_faiss().IndexFlatIP(EMBEDDING_DIMENSIONS)
             if all_embeddings.shape[0] > 0:
                 self.index.add(all_embeddings)
             self._ids = all_ids
@@ -227,7 +237,7 @@ class VectorStore:
     def clear(self):
         """Clear all documents from the index."""
         self._initialize()
-        self.index = faiss.IndexFlatIP(EMBEDDING_DIMENSIONS)
+        self.index = _load_faiss().IndexFlatIP(EMBEDDING_DIMENSIONS)
         self._ids = []
         self._documents = []
         self._metadatas = []

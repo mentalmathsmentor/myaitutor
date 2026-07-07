@@ -445,3 +445,95 @@ class TestHelpers:
                 ability_tier="Core",
                 refinements="",
             )
+
+
+# ---------------------------------------------------------------------------
+# student_context socket (Tutor V1 integration seam)
+# ---------------------------------------------------------------------------
+
+class TestStudentContextSocket:
+    PROMPT_KWARGS = dict(
+        intent="practice_set",
+        rag_chunks="CHUNKS",
+        year_level=9,
+        subject="Stage 5 Mathematics",
+        ability_tier="Core+Path",
+        refinements="",
+    )
+
+    def test_non_empty_context_is_appended(self):
+        profile = "Aisha, Y9. Solid on linear equations; shaky on indices; sign errors under time pressure."
+        prompt = build_prompt(**self.PROMPT_KWARGS, student_context=profile)
+        assert generation_engine.STUDENT_CONTEXT_HEADER in prompt
+        assert prompt.endswith(profile)
+
+    def test_empty_context_adds_nothing(self):
+        base = build_prompt(**self.PROMPT_KWARGS)
+        for empty in (None, "", "   \n  "):
+            prompt = build_prompt(**self.PROMPT_KWARGS, student_context=empty)
+            assert prompt == base
+            assert generation_engine.STUDENT_CONTEXT_HEADER not in prompt
+
+    def test_template_declared_placeholder_is_filled_inline(self):
+        # Future Chairman-authored templates may declare {student_context};
+        # the socket must fill it inline instead of appending a block.
+        template = "Class: Year {year_level} | {subject} | {ability_tier}\n{rag_chunks}\nProfile: {student_context}"
+        with patch.dict(
+            generation_engine.INTENT_TEMPLATES, {"practice_set": template}
+        ):
+            prompt = build_prompt(**self.PROMPT_KWARGS, student_context="loves cricket stats")
+        assert "Profile: loves cricket stats" in prompt
+        assert generation_engine.STUDENT_CONTEXT_HEADER not in prompt
+
+    @pytest.mark.asyncio
+    async def test_pipeline_passes_student_context_through(self):
+        db = FakeRetrievalSession(make_rows())
+        profile = "Ben, Y8. Mastered fractions; introduced to indices last session."
+
+        with fresh_gemini(
+            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
+        ) as (_, client):
+            with patch.object(
+                generation_engine,
+                "embed_query",
+                new=AsyncMock(return_value=[0.0] * 768),
+            ):
+                await generate_teach_response(
+                    db,
+                    intent="practice_set",
+                    topic="Indices",
+                    subject="Stage 4 Mathematics",
+                    year_level=8,
+                    ability_tier="Core",
+                    refinements=None,
+                    student_context=profile,
+                )
+
+        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
+        assert generation_engine.STUDENT_CONTEXT_HEADER in contents
+        assert profile in contents
+
+    @pytest.mark.asyncio
+    async def test_pipeline_omits_context_block_when_absent(self):
+        db = FakeRetrievalSession(make_rows())
+
+        with fresh_gemini(
+            generate_return=gemini_response(parsed=SAMPLE_RESPONSE)
+        ) as (_, client):
+            with patch.object(
+                generation_engine,
+                "embed_query",
+                new=AsyncMock(return_value=[0.0] * 768),
+            ):
+                await generate_teach_response(
+                    db,
+                    intent="practice_set",
+                    topic="Indices",
+                    subject="Stage 4 Mathematics",
+                    year_level=8,
+                    ability_tier="Core",
+                    refinements=None,
+                )
+
+        contents = client.aio.models.generate_content.call_args.kwargs["contents"]
+        assert generation_engine.STUDENT_CONTEXT_HEADER not in contents
