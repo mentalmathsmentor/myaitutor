@@ -1,5 +1,4 @@
 from enum import Enum
-import asyncio
 import json
 from typing import Any
 from uuid import UUID
@@ -13,9 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.tutor_models import ChatThread, Message, Tutor, TutorClass
 from ..db.session import get_db
 from ..models import ExoskeletonResponse, FatigueStatus, StudentContext
-from ..services import wellness_engine, educational_agent, storage
-from ..services.gemini_client import get_client
-from ..services.prompts import INTENT_TEMPLATES, SYSTEM_INSTRUCTION_CORE
+from ..services import generation_engine, wellness_engine, educational_agent, storage
 from ..services.syllabus_service import syllabus_service
 from ..services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from ..deps import get_current_tutor, verify_student_auth, get_or_create_context, limiter
@@ -80,55 +77,6 @@ async def _ensure_local_dev_tutor(session: AsyncSession, tutor_id: UUID) -> None
     )
     stmt = stmt.on_conflict_do_nothing(index_elements=[Tutor.id])
     await session.execute(stmt)
-
-
-def _embedding_literal(values: list[float]) -> str:
-    return "[" + ",".join(str(float(value)) for value in values) + "]"
-
-
-def _embed_query_sync(query: str) -> list[float]:
-    from google.genai import types
-
-    client = get_client()
-    response = client.models.embed_content(
-        model="models/gemini-embedding-2",
-        contents=query,
-        config=types.EmbedContentConfig(output_dimensionality=768),
-    )
-    return response.embeddings[0].values
-
-
-async def _embed_query(query: str) -> list[float]:
-    return await asyncio.to_thread(_embed_query_sync, query)
-
-
-async def _generate_exoskeleton_response(prompt: str) -> ExoskeletonResponse:
-    from google.genai import types
-
-    client = get_client()
-    full_prompt = f"{SYSTEM_INSTRUCTION_CORE}\n\n{prompt}"
-    config = types.GenerateContentConfig(
-        temperature=0.4,
-        max_output_tokens=8000,
-        response_mime_type="application/json",
-        response_schema=ExoskeletonResponse,
-    )
-
-    response = await asyncio.wait_for(
-        client.aio.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=full_prompt,
-            config=config,
-        ),
-        timeout=60.0,
-    )
-
-    parsed = getattr(response, "parsed", None)
-    if isinstance(parsed, ExoskeletonResponse):
-        return parsed
-    if parsed is not None:
-        return ExoskeletonResponse.model_validate(parsed)
-    return ExoskeletonResponse.model_validate_json(response.text)
 
 
 @router.post("/api/classes/init")
@@ -341,75 +289,26 @@ async def generate_chat(
     if thread is None:
         raise HTTPException(status_code=404, detail="Thread not found for class")
 
-    query_text = (body.refinements or "").strip() or body.topic
-    query_embedding = await _embed_query(query_text)
-    query_embedding_literal = _embedding_literal(query_embedding)
-
-    retrieval_stmt = text("""
-        SELECT
-            id,
-            content,
-            content_code,
-            subject,
-            source_document,
-            metadata_json,
-            embedding <=> CAST(:query_embedding AS vector) AS distance
-        FROM vector_chunks
-        WHERE subject = :subject
-          AND metadata_json->>'topic' = :topic
-        ORDER BY embedding <=> CAST(:query_embedding AS vector)
-        LIMIT 3
-    """)
-    retrieval_result = await db.execute(
-        retrieval_stmt,
-        {
-            "query_embedding": query_embedding_literal,
-            "subject": class_obj.subject,
-            "topic": body.topic,
-        },
-    )
-    rows = retrieval_result.mappings().all()
-
-    citations = [
-        {
-            "id": str(row["id"]),
-            "content_code": row["content_code"],
-            "subject": row["subject"],
-            "topic": row["metadata_json"].get("topic") if row["metadata_json"] else None,
-            "source_document": row["source_document"],
-            "distance": float(row["distance"]) if row["distance"] is not None else None,
-        }
-        for row in rows
-    ]
-    retrieved_chunks = "\n\n".join(
-        (
-            f"[Chunk {index}] content_code={row['content_code'] or 'n/a'} "
-            f"topic={(row['metadata_json'] or {}).get('topic') or 'n/a'} "
-            f"source={row['source_document'] or 'n/a'}\n{row['content']}"
-        )
-        for index, row in enumerate(rows, start=1)
-    )
-    if not retrieved_chunks:
-        retrieved_chunks = "No exact topic chunks were retrieved for this subject/topic filter."
-
     intent = body.intent.value
-    if intent not in INTENT_TEMPLATES:
-        raise HTTPException(status_code=400, detail=f"Unsupported intent: {intent}")
-
-    prompt = INTENT_TEMPLATES[intent].format(
-        rag_chunks=retrieved_chunks,
-        year_level=class_obj.year_level,
-        subject=class_obj.subject,
-        ability_tier=class_obj.ability_tier,
-        refinements=(body.refinements or "").strip(),
-    )
-
     try:
-        response_model = await _generate_exoskeleton_response(prompt)
-    except Exception as exc:
+        result = await generation_engine.generate_teach_response(
+            db,
+            intent=intent,
+            topic=body.topic,
+            subject=class_obj.subject,
+            year_level=class_obj.year_level,
+            ability_tier=class_obj.ability_tier,
+            refinements=body.refinements,
+        )
+    except generation_engine.UnsupportedIntentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except generation_engine.GenerationEngineError as exc:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=502, detail=f"Gemini generation failed: {exc}") from exc
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    response_model = result.response
+    citations = result.citations
 
     user_content = json.dumps(
         {
