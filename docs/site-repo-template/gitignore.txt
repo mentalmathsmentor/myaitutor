@@ -1,0 +1,14 @@
+# Copy this file into the PUBLIC site repo as: .gitignore
+# (kept here as gitignore.txt so it doesn't affect the private repo)
+
+.DS_Store
+**/.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+**/node_modules/
+**/.vite/
+# Vite writes these transient config timestamps; never commit them
+vite.config.js.timestamp-*
