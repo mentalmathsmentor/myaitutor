@@ -25,6 +25,7 @@ from ..db.tutor_models import (
     TutorStudent,
 )
 from ..deps import get_current_tutor
+from ..services.deck_export import deck_to_canvas_elements
 from ..services.student_memory import get_or_create_active_session
 
 router = APIRouter(tags=["students"])
@@ -225,6 +226,70 @@ async def _apply_mastery_transition(db: AsyncSession, log_row: QuestionLog, outc
         mastery.streak = 0
         if mastery.status in ("unseen", "introduced"):
             mastery.status = "shaky"
+
+
+@router.get("/api/sessions/{session_id}")
+async def get_session(
+    session_id: UUID,
+    tutor_id: UUID = Depends(get_current_tutor),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(TutorSession).where(
+            TutorSession.id == session_id, TutorSession.tutor_id == tutor_id
+        )
+    )
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    payload = _serialize_session(session)
+    payload.update(
+        {
+            "context_relevance": session.context_relevance,
+            "cerberus_usefulness": session.cerberus_usefulness,
+            "friction_note": session.friction_note,
+            "deck": session.deck,
+        }
+    )
+    return {"session": payload}
+
+
+@router.post("/api/sessions/{session_id}/deck-export")
+async def deck_export(
+    session_id: UUID,
+    tutor_id: UUID = Depends(get_current_tutor),
+    db: AsyncSession = Depends(get_db),
+):
+    """C4 glue: one-way deck -> Canvas handoff. Returns the element list the
+    client seeds into the Canvas IDE; logs the export event on the session
+    row (inside deck JSONB — no schema change)."""
+    result = await db.execute(
+        select(TutorSession, TutorStudent)
+        .join(TutorStudent, TutorSession.student_id == TutorStudent.id)
+        .where(TutorSession.id == session_id, TutorSession.tutor_id == tutor_id)
+    )
+    row = result.first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session, student = row
+
+    title = f"{student.name} — {session.date.isoformat() if session.date else 'session'}"
+    try:
+        elements, question_count = deck_to_canvas_elements(session.deck, title)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    from datetime import datetime, timezone
+
+    deck = dict(session.deck or {})
+    deck["exported_to_canvas"] = {
+        "at": datetime.now(timezone.utc).isoformat(),
+        "question_count": question_count,
+    }
+    session.deck = deck
+    await db.commit()
+
+    return {"title": title, "question_count": question_count, "elements": elements}
 
 
 @router.post("/api/sessions/{session_id}/checkin")

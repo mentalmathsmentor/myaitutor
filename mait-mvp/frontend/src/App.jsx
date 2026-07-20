@@ -15,6 +15,7 @@ const PastPapers = lazy(() => import('./PastPapers'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 const TutorWorkspace = lazy(() => import('./features/exoskeleton/Workspace'))
+const CanvasWorkspace = lazy(() => import('./pages/CanvasWorkspace'))
 
 function AppRoutes() {
     const location = useLocation();
@@ -140,6 +141,11 @@ function AppRoutes() {
 
                     <Route path="/teach" element={
                         <ErrorBoundary><TutorWorkspace /></ErrorBoundary>
+                    } />
+
+                    {/* Canvas LaTeX IDE — deck→Canvas handoff target (C4) */}
+                    <Route path="/canvas" element={
+                        <ErrorBoundary><CanvasWorkspace setCurrentSection={legacyNavigate} /></ErrorBoundary>
                     } />
                     
                     {/* Fallback */}

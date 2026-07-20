@@ -493,6 +493,9 @@ async def generate_chat(
         print(f"--- system_instruction ---\n{SYSTEM_INSTRUCTION_CORE}")
         print(f"--- user turn ---\n{prompt}")
         print("=== END MAIT_PROMPT_ECHO ===")
+        # Multi-part, multi-item stub deck: questions_generated MUST count
+        # deck items (3 here), never generate calls — pinned by
+        # tests/test_instrumentation.py.
         response_model = ExoskeletonResponse(
             parts=[
                 {
@@ -505,8 +508,24 @@ async def generate_chat(
                     "tier": "core",
                     "questions": [
                         {
-                            "question_latex": f"Echo-mode sample question for {body.topic}.",
-                            "teacher_answer_latex": "Echo-mode sample answer.",
+                            "question_latex": f"Echo-mode core question 1 for {body.topic}.",
+                            "teacher_answer_latex": "Echo-mode worked answer 1.",
+                            "marks": 2,
+                        },
+                        {
+                            "question_latex": f"Echo-mode core question 2 for {body.topic}.",
+                            "teacher_answer_latex": "Echo-mode worked answer 2.",
+                        },
+                    ],
+                },
+                {
+                    "type": "question_set",
+                    "tier": "extension",
+                    "questions": [
+                        {
+                            "question_latex": f"Echo-mode extension question for {body.topic}.",
+                            "teacher_answer_latex": "Echo-mode worked answer 3.",
+                            "marks": 4,
                         }
                     ],
                 },

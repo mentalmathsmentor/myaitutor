@@ -1,9 +1,40 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, Dumbbell, Flame, Layers3, Lightbulb, Loader2, MessageSquare, Send, Sparkles, Target, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Activity, Dumbbell, FileOutput, Flame, Layers3, Lightbulb, Loader2, MessageSquare, Send, Sparkles, Target, Trash2 } from 'lucide-react'
 import { useExoskeletonStore } from '@/stores/useExoskeletonStore'
+import { useCanvasStore } from '@/stores/canvasStore'
 import CadenceRenderer from './CadenceRenderer'
 import StartupWizard from './StartupWizard'
 import mateAvatar from '@/assets/mate-avatar.webp'
+
+// One-way deck→Canvas handoff (C4): server builds the element list from the
+// session deck; we seed the Canvas store and open the IDE. Edits there do not
+// sync back to question_log in V1.
+function seedCanvasFromExport(exportPayload) {
+  const now = new Date().toISOString()
+  const elements = (exportPayload.elements || []).map((element) => ({
+    id: crypto.randomUUID(),
+    kind: element.kind,
+    sortKey: element.sort_key,
+    contentLatex: element.content_latex,
+    label: element.label || 'Element',
+    isLocked: Boolean(element.is_locked),
+    isCollapsed: Boolean(element.is_collapsed),
+    versionId: crypto.randomUUID(),
+    createdAt: now,
+    updatedAt: now,
+  }))
+  const canvas = useCanvasStore.getState()
+  canvas.setDocument({
+    id: `deck_${Date.now()}`,
+    title: exportPayload.title || 'Session deck',
+    kind: 'artifact',
+    source: 'chat',
+    createdAt: now,
+    updatedAt: now,
+  })
+  canvas.setElements(elements)
+}
 
 // Attach question_log ids (generation order) onto question items so
 // CerberusSuggestions / OutcomeButtons can key off item.qlog_id.
@@ -351,6 +382,36 @@ export default function Workspace() {
 
   const [showAddStudent, setShowAddStudent] = useState(false)
   const [showCheckin, setShowCheckin] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const navigate = useNavigate()
+
+  const hasDeck = useExoskeletonStore((state) => {
+    if (!activeStudent) return false
+    const threadKey = `student-${activeStudent.id}`
+    return (state.messagesByThread[threadKey] || []).some(
+      (message) => message.role === 'assistant'
+        && (message.parts || []).some((part) => part.type === 'question_set')
+    )
+  })
+
+  const handleDeckToCanvas = async () => {
+    if (!activeSession) return
+    setIsExporting(true)
+    setError('')
+    try {
+      const response = await fetch(`/api/sessions/${activeSession.id}/deck-export`, { method: 'POST' })
+      if (!response.ok) {
+        const detail = await response.text()
+        throw new Error(detail || 'Deck export failed')
+      }
+      seedCanvasFromExport(await response.json())
+      navigate('/canvas')
+    } catch (exportError) {
+      setError(exportError.message || 'Deck export failed')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const activeThreadId = activeStudent ? `student-${activeStudent.id}` : activeThread?.id
   const activeSubject = activeStudent?.subject || activeClass?.subject || ''
@@ -655,6 +716,17 @@ export default function Workspace() {
                 <p className="text-sm text-white/50">
                   {activeStudent ? (activeStudent.profile?.ability_tier || '') : (activeClass?.ability_tier || '')}
                 </p>
+                {activeStudent && activeSession && hasDeck && (
+                  <button
+                    type="button"
+                    disabled={isExporting}
+                    onClick={handleDeckToCanvas}
+                    className="inline-flex items-center gap-1.5 rounded-[8px] border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:opacity-50"
+                  >
+                    <FileOutput size={13} />
+                    {isExporting ? 'Exporting...' : 'Send deck to Canvas'}
+                  </button>
+                )}
                 {activeStudent && activeSession && (
                   <button
                     type="button"
