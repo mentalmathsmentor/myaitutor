@@ -3,6 +3,213 @@ import { Activity, Dumbbell, Flame, Layers3, Lightbulb, Loader2, MessageSquare, 
 import { useExoskeletonStore } from '@/stores/useExoskeletonStore'
 import CadenceRenderer from './CadenceRenderer'
 import StartupWizard from './StartupWizard'
+import mateAvatar from '@/assets/mate-avatar.webp'
+
+// Attach question_log ids (generation order) onto question items so
+// CerberusSuggestions / OutcomeButtons can key off item.qlog_id.
+function enrichPartsWithQuestionIds(parts, questionIds) {
+  if (!questionIds?.length) return parts
+  let cursor = 0
+  return (parts || []).map((part) => {
+    if (part.type !== 'question_set' || !part.questions) return part
+    return {
+      ...part,
+      questions: part.questions.map((q) => ({ ...q, qlog_id: questionIds[cursor++] })),
+    }
+  })
+}
+
+function buildCerberusItems(parts, intent, student) {
+  const levelTag = `Year ${student.year_level} ${student.profile?.ability_tier || 'Core'}`
+  const items = []
+  for (const part of parts || []) {
+    if (part.type !== 'question_set' || !part.questions) continue
+    for (const q of part.questions) {
+      if (!q.qlog_id) continue
+      items.push({
+        question_log_id: q.qlog_id,
+        question_text: q.question_latex,
+        worked_solution: q.teacher_answer_latex || '(no worked solution provided)',
+        outcome_or_bloom_tag: intent,
+        student_level_tag: levelTag,
+      })
+    }
+  }
+  return items
+}
+
+function CheckinModal({ session, onClose }) {
+  const sessionCheckin = useExoskeletonStore((state) => state.sessionCheckin)
+  const [contextRelevance, setContextRelevance] = useState(3)
+  const [cerberusUsefulness, setCerberusUsefulness] = useState(3)
+  const [frictionNote, setFrictionNote] = useState('')
+  const [dump, setDump] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const submit = async () => {
+    setSaving(true)
+    setError('')
+    try {
+      await sessionCheckin(session.id, {
+        context_relevance: contextRelevance,
+        cerberus_usefulness: cerberusUsefulness,
+        friction_note: frictionNote.trim() || null,
+        dump: dump.trim() || null,
+      })
+      onClose(true)
+    } catch (checkinError) {
+      setError(checkinError.message || 'Check-in failed')
+      setSaving(false)
+    }
+  }
+
+  const scaleRow = (label, value, setValue) => (
+    <label className="block">
+      <span className="mb-1 block text-xs text-white/55">{label}</span>
+      <div className="flex gap-1.5">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setValue(n)}
+            className={`h-9 w-9 rounded-[6px] border text-sm transition ${
+              value === n
+                ? 'border-cyan-300/70 bg-cyan-300/20 text-cyan-100'
+                : 'border-white/12 bg-slate-900/70 text-white/50 hover:border-cyan-300/35'
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </label>
+  )
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+      <div className="w-full max-w-md space-y-4 rounded-[10px] border border-white/12 bg-slate-950 p-5">
+        <h2 className="text-lg font-semibold text-white">End session — 10-second check-in</h2>
+        {scaleRow('Was the student context relevant?', contextRelevance, setContextRelevance)}
+        {scaleRow('Was Cerberus useful?', cerberusUsefulness, setCerberusUsefulness)}
+        <label className="block">
+          <span className="mb-1 block text-xs text-white/55">Friction note (what broke / annoyed you?)</span>
+          <input
+            value={frictionNote}
+            onChange={(event) => setFrictionNote(event.target.value)}
+            className="h-10 w-full rounded-[8px] border border-white/12 bg-slate-900 px-3 text-sm text-white outline-none focus:border-cyan-300/60"
+            placeholder="optional"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-white/55">Session brain-dump (feeds next session's memory)</span>
+          <textarea
+            value={dump}
+            onChange={(event) => setDump(event.target.value)}
+            rows={3}
+            className="w-full rounded-[8px] border border-white/12 bg-slate-900 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300/60"
+            placeholder="optional — what clicked, what fell apart, what to hit next time"
+          />
+        </label>
+        {error && <p className="text-xs text-red-300">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onClose(false)}
+            className="rounded-[8px] border border-white/15 px-4 py-2 text-sm text-white/70 hover:border-white/35"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={submit}
+            className="rounded-[8px] bg-cyan-300 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-200 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Complete session'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AddStudentForm({ onDone }) {
+  const initStudent = useExoskeletonStore((state) => state.initStudent)
+  const [slug, setSlug] = useState('')
+  const [year, setYear] = useState(9)
+  const [subject, setSubject] = useState('Stage 5 Mathematics')
+  const [tier, setTier] = useState('Core')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const submit = async () => {
+    if (!/^S[0-9]+$/.test(slug)) {
+      setError('Alias must be S1, S2, ... (no real names — PII rule)')
+      return
+    }
+    setSaving(true)
+    setError('')
+    try {
+      await initStudent({
+        name: slug,
+        subject,
+        year_level: Number(year),
+        profile: { ability_tier: tier },
+      })
+      onDone()
+    } catch (submitError) {
+      setError(submitError.message || 'Failed to add student')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-[8px] border border-cyan-300/25 bg-slate-900/80 p-3">
+      <input
+        value={slug}
+        onChange={(event) => setSlug(event.target.value.toUpperCase())}
+        placeholder="Alias slug (S1, S2, ...)"
+        className="h-9 w-full rounded-[6px] border border-white/12 bg-slate-950 px-2.5 text-sm text-white outline-none focus:border-cyan-300/60"
+      />
+      <div className="flex gap-2">
+        <select
+          value={year}
+          onChange={(event) => setYear(event.target.value)}
+          className="h-9 flex-1 rounded-[6px] border border-white/12 bg-slate-950 px-2 text-sm text-white"
+        >
+          {[7, 8, 9, 10, 11, 12].map((y) => (
+            <option key={y} value={y}>Year {y}</option>
+          ))}
+        </select>
+        <select
+          value={tier}
+          onChange={(event) => setTier(event.target.value)}
+          className="h-9 flex-1 rounded-[6px] border border-white/12 bg-slate-950 px-2 text-sm text-white"
+        >
+          {['Core', 'Core+Path', 'Band 3/4', 'Band 5/6'].map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+      </div>
+      <input
+        value={subject}
+        onChange={(event) => setSubject(event.target.value)}
+        placeholder="Subject (corpus string)"
+        className="h-9 w-full rounded-[6px] border border-white/12 bg-slate-950 px-2.5 text-sm text-white outline-none focus:border-cyan-300/60"
+      />
+      {error && <p className="text-xs text-red-300">{error}</p>}
+      <button
+        type="button"
+        disabled={saving}
+        onClick={submit}
+        className="w-full rounded-[6px] bg-cyan-300 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-200 disabled:opacity-50"
+      >
+        {saving ? 'Adding...' : 'Add student'}
+      </button>
+    </div>
+  )
+}
 
 const TOOLS = [
   { intent: 'warmup', label: 'Warmup', iconText: '🎯', Icon: Target },
@@ -134,8 +341,19 @@ export default function Workspace() {
   const fetchThreads = useExoskeletonStore((state) => state.fetchThreads)
   const deleteClass = useExoskeletonStore((state) => state.deleteClass)
 
-  const activeThreadId = activeThread?.id
-  const activeSubject = activeClass?.subject || ''
+  const students = useExoskeletonStore((state) => state.students)
+  const activeStudent = useExoskeletonStore((state) => state.activeStudent)
+  const activeSession = useExoskeletonStore((state) => state.activeSession)
+  const fetchStudents = useExoskeletonStore((state) => state.fetchStudents)
+  const setActiveStudent = useExoskeletonStore((state) => state.setActiveStudent)
+  const setActiveSession = useExoskeletonStore((state) => state.setActiveSession)
+  const cerberusVerify = useExoskeletonStore((state) => state.cerberusVerify)
+
+  const [showAddStudent, setShowAddStudent] = useState(false)
+  const [showCheckin, setShowCheckin] = useState(false)
+
+  const activeThreadId = activeStudent ? `student-${activeStudent.id}` : activeThread?.id
+  const activeSubject = activeStudent?.subject || activeClass?.subject || ''
   const messages = useExoskeletonStore((state) => (
     activeThreadId ? state.messagesByThread[activeThreadId] || EMPTY_MESSAGES : EMPTY_MESSAGES
   ))
@@ -192,8 +410,10 @@ export default function Workspace() {
   useEffect(() => {
     async function loadData() {
       setIsInitialLoading(true)
-      const classesList = await fetchClasses()
-      if (classesList.length > 0) {
+      const [studentsList, classesList] = await Promise.all([fetchStudents(), fetchClasses()])
+      if (studentsList.length > 0) {
+        await setActiveStudent(studentsList[0])
+      } else if (classesList.length > 0) {
         const firstClass = classesList[0]
         setActiveWorkspace(firstClass, firstClass.thread || null)
         try {
@@ -210,6 +430,7 @@ export default function Workspace() {
   }, [])
 
   const handleCohortClick = async (cohort) => {
+    if (activeStudent) await setActiveStudent(null)
     setActiveWorkspace(cohort, cohort.thread || null)
     if (!cohort.thread) {
       await fetchThreads(cohort.id)
@@ -217,32 +438,46 @@ export default function Workspace() {
   }
 
   const selectedCohortLabel = useMemo(() => {
+    if (activeStudent) return `${activeStudent.name} · Year ${activeStudent.year_level}`
     if (!activeClass) return 'No cohort'
     return `${activeClass.name} · Year ${activeClass.year_level}`
-  }, [activeClass])
+  }, [activeStudent, activeClass])
 
-  const handleGenerate = async (intent, label) => {
-    if (!activeClass || !activeThread || !selectedTopic) return
+  const runGenerate = async (intent, label, refinementText, teacherTitle) => {
+    if (!selectedTopic || !activeThreadId) return
+    if (!activeStudent && (!activeClass || !activeThread)) return
 
     setIsGenerating(true)
     setError('')
-    addMessage(activeThread.id, {
+    addMessage(activeThreadId, {
       role: 'teacher',
-      title: label,
-      content: refinements ? `${selectedTopic} · ${refinements}` : selectedTopic,
+      title: teacherTitle,
+      content: intent === 'chat'
+        ? refinementText
+        : (refinementText ? `${selectedTopic} · ${refinementText}` : selectedTopic),
     })
 
     try {
+      const requestBody = activeStudent
+        ? {
+            student_id: activeStudent.id,
+            session_id: activeSession?.id || null,
+            intent,
+            topic: selectedTopic,
+            refinements: refinementText || null,
+          }
+        : {
+            class_id: activeClass.id,
+            thread_id: activeThread.id,
+            intent,
+            topic: selectedTopic,
+            refinements: refinementText || null,
+          }
+
       const response = await fetch('/api/chat/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          class_id: activeClass.id,
-          thread_id: activeThread.id,
-          intent,
-          topic: selectedTopic,
-          refinements: refinements.trim() || null,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -251,17 +486,25 @@ export default function Workspace() {
       }
 
       const payload = await response.json()
-      addMessage(activeThread.id, {
-        role: 'assistant',
-        parts: payload.parts || [],
-      })
+      let parts = payload.parts || []
+
+      if (activeStudent) {
+        parts = enrichPartsWithQuestionIds(parts, payload.question_ids)
+        if (payload.session_id && payload.session_id !== activeSession?.id) {
+          setActiveSession({ id: payload.session_id, student_id: activeStudent.id })
+        }
+        const cerberusItems = buildCerberusItems(parts, intent, activeStudent)
+        if (cerberusItems.length) {
+          // Fire-and-render: suggestions stream in beside each question.
+          cerberusVerify(payload.session_id, cerberusItems)
+        }
+      }
+
+      addMessage(activeThreadId, { role: 'assistant', parts })
     } catch (generateError) {
-      if (import.meta.env.DEV) {
-        const payload = buildOfflineResponse(intent, label, selectedTopic, refinements)
-        addMessage(activeThread.id, {
-          role: 'assistant',
-          parts: payload.parts,
-        })
+      if (import.meta.env.DEV && !activeStudent) {
+        const payload = buildOfflineResponse(intent, label, selectedTopic, refinementText)
+        addMessage(activeThreadId, { role: 'assistant', parts: payload.parts })
         setError('Backend offline. Showing local UI preview output.')
       } else {
         setError(generateError.message || 'Generation failed')
@@ -271,56 +514,13 @@ export default function Workspace() {
     }
   }
 
-  const handleChatSend = async () => {
-    if (!activeClass || !activeThread || !selectedTopic || !chatInput.trim()) return
+  const handleGenerate = (intent, label) => runGenerate(intent, label, refinements.trim(), label)
 
+  const handleChatSend = async () => {
+    if (!chatInput.trim()) return
     const messageText = chatInput.trim()
     setChatInput('')
-    setIsGenerating(true)
-    setError('')
-    addMessage(activeThread.id, {
-      role: 'teacher',
-      title: 'Chat',
-      content: messageText,
-    })
-
-    try {
-      const response = await fetch('/api/chat/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          class_id: activeClass.id,
-          thread_id: activeThread.id,
-          intent: 'chat',
-          topic: selectedTopic,
-          refinements: messageText,
-        }),
-      })
-
-      if (!response.ok) {
-        const detail = await response.text()
-        throw new Error(detail || 'Generation failed')
-      }
-
-      const payload = await response.json()
-      addMessage(activeThread.id, {
-        role: 'assistant',
-        parts: payload.parts || [],
-      })
-    } catch (generateError) {
-      if (import.meta.env.DEV) {
-        const payload = buildOfflineResponse('chat', 'Chat', selectedTopic, messageText)
-        addMessage(activeThread.id, {
-          role: 'assistant',
-          parts: payload.parts,
-        })
-        setError('Backend offline. Showing local UI preview output.')
-      } else {
-        setError(generateError.message || 'Generation failed')
-      }
-    } finally {
-      setIsGenerating(false)
-    }
+    await runGenerate('chat', 'Chat', messageText, 'Chat')
   }
 
 
@@ -347,6 +547,40 @@ export default function Workspace() {
               <p className="text-xs text-cyan-100/70">Prep cockpit</p>
             </div>
           </div>
+
+          <section className="mb-6">
+            <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-white/40">Students</p>
+            <div className="space-y-2">
+              {students.map((student) => (
+                <button
+                  key={student.id}
+                  type="button"
+                  onClick={() => setActiveStudent(student)}
+                  className={`flex w-full items-start gap-2 rounded-[8px] border p-3 text-left transition ${
+                    activeStudent?.id === student.id
+                      ? 'border-cyan-300/60 bg-cyan-300/12'
+                      : 'border-white/10 bg-slate-900/70 hover:border-cyan-300/30'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-white">{student.name}</p>
+                    <p className="mt-1 text-xs text-white/50">Year {student.year_level} · {student.subject}</p>
+                  </div>
+                </button>
+              ))}
+              {showAddStudent ? (
+                <AddStudentForm onDone={() => setShowAddStudent(false)} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowAddStudent(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-[8px] border border-dashed border-cyan-300/30 bg-slate-950/40 p-3 text-sm font-semibold text-cyan-300 transition hover:border-cyan-300/60 hover:bg-cyan-300/5 hover:text-cyan-200"
+                >
+                  + Add Student
+                </button>
+              )}
+            </div>
+          </section>
 
           <section>
             <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-white/40">Cohorts</p>
@@ -414,10 +648,23 @@ export default function Workspace() {
           <header className="border-b border-white/10 bg-slate-950/70 px-4 py-4 backdrop-blur-xl sm:px-6">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/70">{activeClass?.subject || 'No Subject'}</p>
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-cyan-200/70">{activeSubject || 'No Subject'}</p>
                 <h1 className="mt-1 text-xl font-semibold text-white">{selectedCohortLabel}</h1>
               </div>
-              <p className="text-sm text-white/50">{activeClass?.ability_tier || ''}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-white/50">
+                  {activeStudent ? (activeStudent.profile?.ability_tier || '') : (activeClass?.ability_tier || '')}
+                </p>
+                {activeStudent && activeSession && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCheckin(true)}
+                    className="rounded-[8px] border border-teal-300/40 bg-teal-300/10 px-3 py-1.5 text-xs font-semibold text-teal-100 transition hover:bg-teal-300/20"
+                  >
+                    End session
+                  </button>
+                )}
+              </div>
             </div>
           </header>
 
@@ -543,6 +790,18 @@ export default function Workspace() {
           </div>
         </div>
       )}
+
+      {showCheckin && activeSession && (
+        <CheckinModal session={activeSession} onClose={() => setShowCheckin(false)} />
+      )}
+
+      {/* Mate — the avatar survives the dogfood as a corner icon (Darra's call) */}
+      <img
+        src={mateAvatar}
+        alt="Mate"
+        title="Mate"
+        className="pointer-events-none fixed bottom-4 right-4 z-40 h-10 w-10 rounded-full border border-cyan-300/30 opacity-70 shadow-lg shadow-cyan-950/40"
+      />
     </div>
   )
 }

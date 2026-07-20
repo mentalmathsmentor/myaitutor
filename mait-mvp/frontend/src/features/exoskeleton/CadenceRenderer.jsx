@@ -4,6 +4,100 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useExoskeletonStore } from '@/stores/useExoskeletonStore'
+
+const CERBERUS_SEVERITY_STYLES = {
+  fix: 'border-red-400/40 bg-red-400/10 text-red-200',
+  warn: 'border-amber-300/40 bg-amber-300/10 text-amber-100',
+  style: 'border-slate-300/25 bg-slate-300/10 text-slate-200',
+}
+
+const OUTCOME_BUTTONS = [
+  { outcome: 'nailed', label: '✓ Nailed', active: 'bg-emerald-400/25 border-emerald-300/60 text-emerald-100' },
+  { outcome: 'struggled', label: '~ Struggled', active: 'bg-amber-300/25 border-amber-300/60 text-amber-100' },
+  { outcome: 'bombed', label: '✗ Bombed', active: 'bg-red-400/25 border-red-400/60 text-red-100' },
+  { outcome: 'skipped', label: 'Skip', active: 'bg-slate-400/25 border-slate-300/50 text-slate-100' },
+]
+
+function CerberusSuggestions({ questionId }) {
+  const verdict = useExoskeletonStore((state) => (
+    questionId ? state.cerberusByQuestionId[questionId] : undefined
+  ))
+  if (!questionId || !verdict) return null
+
+  if (verdict.status === 'pending') {
+    return (
+      <p className="mt-3 inline-flex items-center gap-2 font-mono text-xs text-cyan-200/70">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+        Cerberus checking...
+      </p>
+    )
+  }
+  if (verdict.status === 'unavailable') {
+    return (
+      <p className="mt-3 font-mono text-xs text-white/40">
+        Cerberus unavailable for this question — not verified.
+      </p>
+    )
+  }
+  if (!verdict.suggestions.length) {
+    return (
+      <p className="mt-3 font-mono text-xs text-emerald-200/80">
+        Cerberus: verified, nothing to raise.
+      </p>
+    )
+  }
+  return (
+    <div className="mt-3 space-y-2">
+      {verdict.suggestions.map((suggestion, index) => (
+        <div
+          key={index}
+          className={`rounded-[8px] border px-3 py-2 text-xs ${CERBERUS_SEVERITY_STYLES[suggestion.severity] || CERBERUS_SEVERITY_STYLES.style}`}
+        >
+          <div className="mb-1 flex items-center gap-2">
+            <span className="font-mono uppercase tracking-[0.14em]">{suggestion.severity}</span>
+            <span className="opacity-60">·</span>
+            <span className="capitalize opacity-80">{suggestion.target}</span>
+          </div>
+          {suggestion.span && suggestion.span !== suggestion.replacement && (
+            <div className="mb-1 space-y-0.5">
+              <p className="line-through opacity-60">{suggestion.span}</p>
+              <p>{suggestion.replacement}</p>
+            </div>
+          )}
+          <p className="opacity-80">{suggestion.note}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function OutcomeButtons({ questionId }) {
+  const recorded = useExoskeletonStore((state) => (
+    questionId ? state.outcomesByQuestionId[questionId] : undefined
+  ))
+  const recordOutcome = useExoskeletonStore((state) => state.recordOutcome)
+  if (!questionId) return null
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
+      {OUTCOME_BUTTONS.map(({ outcome, label, active }) => (
+        <button
+          key={outcome}
+          type="button"
+          onClick={() => recordOutcome(questionId, outcome)}
+          className={`rounded-[6px] border px-2.5 py-1.5 text-xs transition ${
+            recorded === outcome
+              ? active
+              : 'border-white/12 bg-slate-900/70 text-white/55 hover:border-cyan-300/40 hover:text-cyan-100'
+          } ${recorded && recorded !== outcome ? 'opacity-40' : ''}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 const textLikeTypes = new Set(['text', 'glass_box'])
 const EMPTY_PARTS = []
@@ -86,6 +180,8 @@ function QuestionItem({ item, index }) {
           <MathMarkdown className="whitespace-pre-wrap break-words prose prose-invert">{item.teacher_answer_latex}</MathMarkdown>
         </div>
       )}
+      <CerberusSuggestions questionId={item.qlog_id} />
+      <OutcomeButtons questionId={item.qlog_id} />
     </div>
   )
 }
