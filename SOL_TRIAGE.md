@@ -74,6 +74,18 @@ Each generate **overwrites** `session_obj.deck`, and deck-export exports `sessio
 **C3 · [GAP] `intent` is never persisted per question.** `question_payload` lacks it, blocking the command-bar gate (spec §3.3). Fix (**W16**): add `"intent": intent` into `question_payload` at `chat.py:551-556` — additive JSONB key, no migration.
 **C4 · [DOC] Canon line 6 claims the May/Locked architecture docs "exist nowhere in this repo" — both exist at repo root (SUPERSEDED banners). One-line REALITY-layer patch next canon audit; no code impact.
 
+## Round 2 — Sol re-adjudication (2026-07-21, plan-check run; raw: `.cx_sol_plan_check.txt`)
+
+Sol was shown this triage and `DOGFOOD_FIX_PLAN.md` v1, asked to re-adjudicate its dismissed/demoted claims and verify Part C. Outcomes:
+
+- **Sol CONCEDED (3):** F11 subject-mixing (only writer stamps `student.subject`); F11 overdue-ranking (canon attaches it to the unbuilt brief); F1 "Critical" severity (stub auth + tailnet-only deployment).
+- **Sol REBUTTED, accepted by Chairman (3):**
+  - **F14 both-IDs precedence — verdict UPGRADED from FALSE POSITIVE to REAL (minor API-contract defect):** the docstring documents two modes but not mixed-ID precedence, and routing flips with the feature flag. Fix = **W17** XOR request validator (Lane 1).
+  - **F7 "fake verification" — partially conceded back:** echo Cerberus does return a non-verifying suggestion labelled `verified`; triage stands on the counter (only `fix` counts, so `cerberus_catch_count` unpolluted), but the label critique was fair. W10's env guard closes the exposure; no further action.
+  - **F8 planted IDs — accepted via redesign:** misattribution doesn't need malice (stale/mismatched requests suffice). W9 now persists a write-once `question_log.cerberus_fix_count` and recounts the session total — idempotent and attributable.
+- **Part C verified by Sol:** C1 (deck overwrite per generate) **CONFIRMED** with citations; C2 (no vault inlet) **CONFIRMED**.
+- Sol's 14 findings against plan v1 were themselves triaged: 13 accepted (see ⟲ markers in `DOGFOOD_FIX_PLAN.md` v2 — notably the check-in-races-generation hole, distinct-session mastered evidence, conditional-UPDATE first-tap detection, ordinal-based export ordering), 1 narrowed (verification-evidence table → counted column).
+
 ## Concurrence with Sol's clean bill
 
 Sol's "areas that held up" all match my independent read: migration↔model parity + single-head chain + child-first downgrade; Gemini-failure ordering (no orphaned logs / double counts — the 502 path precedes all counter writes); Cerberus four-field model boundary structurally airtight (`extra="forbid"`, pure prompt builder, no retrieval imports — the router's `question_log_id` never reaches the model); timezone normalisation + empty-store degradation in memory assembly; deck JSONB copy-and-reassign; `--no-shell-escape` present.
