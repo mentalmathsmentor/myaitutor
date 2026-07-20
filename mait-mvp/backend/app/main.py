@@ -16,7 +16,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from .deps import limiter
 from .db.session import engine
 from .services import storage
-from .routers import auth, chat, canvas, worksheet, analytics, misc, questions, students
+from .routers import auth, chat, canvas, worksheet, analytics, misc, questions, students, cerberus
 from .routers.analytics import (
     classify_consistency,
     classify_error_tendency,
@@ -83,3 +83,4 @@ app.include_router(worksheet.router)
 app.include_router(analytics.router)
 app.include_router(questions.router)
 app.include_router(students.router)
+app.include_router(cerberus.router)
