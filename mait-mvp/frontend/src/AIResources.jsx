@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GraduationCap, BookOpen, Sparkles, Copy, Check, ChevronDown, ChevronUp, Lightbulb, Code2, FileText, Wand2, Users } from 'lucide-react'
+import { GraduationCap, BookOpen, Sparkles, Copy, Check, ChevronDown, ChevronUp, Lightbulb, Code2, FileText, Wand2, Users, Download, ExternalLink, Presentation, AlertTriangle } from 'lucide-react'
 
 function CopyButton({ text }) {
     const [copied, setCopied] = useState(false)
@@ -45,6 +45,218 @@ function PromptCard({ title, description, prompt, icon }) {
                     </pre>
                 </div>
             )}
+        </div>
+    )
+}
+
+const HANDOUT_PDF = '/copilot-learning-support-cheatsheet.pdf'
+const HANDOUT_POSTER = '/copilot-learning-support-cheatsheet.webp'
+const PD_DECK = '/genius-baby-forklift-pd-deck.pptx'
+
+const ACTION_BUTTON = "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-display text-sm border bg-primary/15 border-primary/40 text-primary hover:bg-primary/25 hover:border-primary/60 transition-all duration-300"
+const FALLBACK_LINK = "inline-flex items-center gap-1.5 text-xs font-display text-muted-foreground hover:text-foreground transition-colors"
+
+function HandoutHero() {
+    return (
+        <div className="glass-card rounded-xl p-5 hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-start gap-3">
+                <div className="bg-surface-1 w-10 h-10 rounded-lg flex items-center justify-center border border-surface-3 shrink-0 mt-0.5">
+                    <FileText size={18} className="text-primary" />
+                </div>
+                <div>
+                    <h4 className="font-display text-sm font-bold text-foreground">Copilot Chat for Learning Support</h4>
+                    <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
+                        A one-page staff handout &mdash; the C.O.R.E. prompt scaffold, the de-identify swap list, the three-point check and the red lines. Print it, pin it above the desk.
+                    </p>
+                </div>
+            </div>
+
+            {/* Poster image on small screens (mobile browsers handle inline PDF badly), real PDF from md up */}
+            <div className="mt-4">
+                <div className="md:hidden bg-white rounded-lg overflow-hidden border border-surface-3">
+                    {/* width/height are required, not decorative: without them the img has no
+                        layout height, so lazy-loading measures it as far from the viewport and
+                        never fetches it — and it stays 0-high forever. Also kills the CLS jump. */}
+                    <img
+                        src={HANDOUT_POSTER}
+                        alt="Page one of the Copilot Chat for Learning Support handout, showing the C.O.R.E. scaffold, the de-identify swap list, the three-point check and the red lines."
+                        className="block w-full h-auto"
+                        width={1240}
+                        height={1754}
+                    />
+                </div>
+                <div className="hidden md:block bg-white rounded-lg overflow-hidden border border-surface-3 aspect-[1/1.414]">
+                    <object
+                        data={`${HANDOUT_PDF}#toolbar=0&navpanes=0&scrollbar=0`}
+                        type="application/pdf"
+                        className="w-full h-full border-none"
+                        aria-label="Copilot Chat for Learning Support — one-page staff handout, PDF preview"
+                    >
+                        <div className="flex h-full items-center justify-center bg-white p-6 text-center text-sm text-slate-600">
+                            Preview unavailable in this browser. Open
+                            <a href={HANDOUT_PDF} target="_blank" rel="noreferrer" className="ml-1 font-medium underline">
+                                the handout PDF
+                            </a>
+                            .
+                        </div>
+                    </object>
+                </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
+                <a href={HANDOUT_PDF} download className={ACTION_BUTTON}>
+                    <Download size={14} />
+                    Download the PDF
+                </a>
+                <a href={HANDOUT_PDF} target="_blank" rel="noreferrer" className={FALLBACK_LINK}>
+                    <ExternalLink size={12} />
+                    If the preview does not load, open it in a new tab
+                </a>
+            </div>
+        </div>
+    )
+}
+
+const CORE_FIELDS = [
+    {
+        key: 'context',
+        letter: 'C',
+        label: 'Context',
+        helper: 'Who you are, who the learner is, the setting.',
+        helperStrong: 'Never a name.',
+        tone: 'text-primary',
+        placeholder: "I'm a learning support teacher. Year 8 student, decoding at roughly Year 3 level, mainstream science, one TA.",
+    },
+    {
+        key: 'objective',
+        letter: 'O',
+        label: 'Objective & output',
+        helper: 'What you want, and the exact shape it comes back in.',
+        tone: 'text-accent',
+        placeholder: 'Rewrite the passage below so they can access it independently — a two-column table, original and simplified.',
+    },
+    {
+        key: 'role',
+        letter: 'R',
+        label: 'Role & rules',
+        helper: "Who it's being, and the limits it has to hold.",
+        tone: 'text-primary',
+        placeholder: "You're an experienced learning support teacher. Keep all six key terms bold, max 200 words, don't simplify the science.",
+    },
+    {
+        key: 'evaluation',
+        letter: 'E',
+        label: 'Evaluation & examples',
+        helper: "One example of good, and how you'll judge what comes back.",
+        tone: 'text-accent',
+        placeholder: 'Match the tone of: "Water moves from a weak solution to a strong one." Then flag any term still needing pre-teaching.',
+    },
+]
+
+const CORE_EXAMPLE = CORE_FIELDS.map(f => `${f.label}: ${f.placeholder}`).join('\n\n')
+
+function CorePromptBuilder() {
+    const [values, setValues] = useState({ context: '', objective: '', role: '', evaluation: '' })
+
+    const assembled = CORE_FIELDS
+        .filter(field => values[field.key].trim())
+        .map(field => `${field.label}: ${values[field.key].trim()}`)
+        .join('\n\n')
+
+    const isEmpty = assembled.length === 0
+
+    return (
+        <div className="glass-card rounded-xl p-5 hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-start gap-3 mb-5">
+                <div className="bg-surface-1 w-10 h-10 rounded-lg flex items-center justify-center border border-surface-3 shrink-0 mt-0.5">
+                    <Wand2 size={18} className="text-accent" />
+                </div>
+                <div>
+                    <h4 className="font-display text-sm font-bold text-foreground">Build a C.O.R.E. prompt</h4>
+                    <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
+                        Four lines, about forty seconds. Fill in what applies &mdash; it assembles below, ready to copy.
+                    </p>
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                {CORE_FIELDS.map(field => (
+                    <div key={field.key}>
+                        <div className="flex items-start gap-3 mb-2">
+                            <div className={`bg-surface-1 w-10 h-10 rounded-full flex items-center justify-center border border-surface-3 shrink-0 font-display font-bold text-base ${field.tone}`} aria-hidden="true">
+                                {field.letter}
+                            </div>
+                            <div className="min-w-0">
+                                <label htmlFor={`core-${field.key}`} className="font-display text-sm font-bold text-foreground">
+                                    {field.label}
+                                </label>
+                                <p className="text-muted-foreground text-xs mt-0.5 leading-relaxed">
+                                    {field.helper}
+                                    {field.helperStrong && <> <strong className="font-semibold text-foreground/80">{field.helperStrong}</strong></>}
+                                </p>
+                            </div>
+                        </div>
+                        <textarea
+                            id={`core-${field.key}`}
+                            value={values[field.key]}
+                            onChange={e => setValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                            placeholder={field.placeholder}
+                            rows={3}
+                            className="w-full bg-surface-1 border border-surface-3 rounded-lg p-3 text-xs text-foreground/90 font-mono leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 transition-colors resize-y"
+                        />
+                    </div>
+                ))}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-surface-2">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-display text-muted-foreground uppercase tracking-wider">
+                        {isEmpty ? 'Example' : 'Your prompt'}
+                    </span>
+                    {isEmpty
+                        ? <span className="text-[10px] font-display text-muted-foreground">Fill a field to build your own</span>
+                        : <CopyButton text={assembled} />}
+                </div>
+                <pre className={`bg-surface-1 border border-surface-3 rounded-lg p-4 text-xs whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto max-h-80 overflow-y-auto ${isEmpty ? 'text-muted-foreground/60' : 'text-foreground/90'}`}>
+                    {isEmpty ? CORE_EXAMPLE : assembled}
+                </pre>
+                <p className="text-muted-foreground text-xs mt-3 leading-relaxed">
+                    If you only remember two letters, make them R and E &mdash; assigning a role and giving one worked example are the two that move the answer most, and the two nearly everyone skips.
+                </p>
+            </div>
+        </div>
+    )
+}
+
+function PDDeckCard() {
+    return (
+        <div className="glass-card rounded-xl p-5 hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-start gap-3">
+                <div className="bg-surface-1 w-10 h-10 rounded-lg flex items-center justify-center border border-surface-3 shrink-0 mt-0.5">
+                    <Presentation size={18} className="text-secondary" />
+                </div>
+                <div className="min-w-0">
+                    <h4 className="font-display text-sm font-bold text-foreground">Genius Baby Forklift &mdash; the full staff PD deck</h4>
+                    <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
+                        18 slides, about 15 minutes to present. PowerPoint (.pptx), roughly 4.4 MB &mdash; worth waiting for wi-fi.
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-4">
+                <a href={PD_DECK} download className={ACTION_BUTTON}>
+                    <Download size={14} />
+                    Download the deck (.pptx, ~4.4 MB)
+                </a>
+            </div>
+
+            <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-surface-3 bg-surface-1 p-3">
+                <AlertTriangle size={14} className="text-accent shrink-0 mt-0.5" />
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                    <span className="font-display font-bold text-foreground/80">Check this against your own policy before you present it.</span>{' '}
+                    The policy slides are written for NSW public schools &mdash; they cite PPIPA and HRIPA, and reference NESA and the IB. If you are running the session in a non-government school, in another state, or outside Australia, check every policy slide against your own school&rsquo;s AI-use policy and approved-tool list first. Used unedited, the privacy guidance in this deck is wrong for non-government schools.
+                </p>
+            </div>
         </div>
     )
 }
@@ -406,6 +618,23 @@ export default function AIResources() {
                 <p className="animate-reveal animate-reveal-4 text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed">
                     Free prompts, system prompts, and guides. Copy, paste, and start using AI effectively.
                 </p>
+            </div>
+
+            {/* Learning Support PD: handout, C.O.R.E. builder, deck */}
+            <section className="relative z-10 max-w-3xl mx-auto px-6 pb-16">
+                <div className="divider-glow mb-8" />
+                <h3 className="font-display text-xl font-bold mb-6 text-center">Learning Support Staff PD</h3>
+                <div className="space-y-4">
+                    <div className="animate-reveal animate-reveal-1"><HandoutHero /></div>
+                    <div className="animate-reveal animate-reveal-2"><CorePromptBuilder /></div>
+                    <div className="animate-reveal animate-reveal-3"><PDDeckCard /></div>
+                </div>
+            </section>
+
+            {/* Prompt Library heading */}
+            <div className="relative z-10 max-w-3xl mx-auto px-6">
+                <div className="divider-glow mb-8" />
+                <h3 className="font-display text-xl font-bold mb-6 text-center">Prompt Library</h3>
             </div>
 
             {/* Tab Navigation */}
