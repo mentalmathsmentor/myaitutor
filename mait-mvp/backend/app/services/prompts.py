@@ -3,8 +3,10 @@ MAIT Tutor Exoskeleton — Generation Prompt Contracts (V1, teacher-facing)
 
 Usage:
   - SYSTEM_INSTRUCTION_CORE is passed as the Gemini `system_instruction` (verbatim).
-  - INTENT_TEMPLATES[intent] is `.format(rag_chunks=..., year_level=..., subject=..., ability_tier=...)`
-    and supplied as the user turn. ALL FOUR placeholders must be filled or .format() raises KeyError.
+  - INTENT_TEMPLATES[intent] is `.format(rag_chunks=..., year_level=..., subject=..., ability_tier=..., student_context=...)`
+    and supplied as the user turn. ALL placeholders must be filled or .format() raises KeyError.
+    Tutor V1 (canon §6): `student_context` carries the per-student memory block from
+    services/student_memory.py; class mode passes an explicit "no student context" line.
 """
 
 SYSTEM_INSTRUCTION_CORE = """
@@ -26,6 +28,12 @@ TEACHER-FACING OUTPUT & STRICT FORMATTING:
 - Use double line breaks (`\n\n`) generously to separate steps in your working out so it is highly readable.
 - 'marks' is optional. Include marks only where they genuinely help (e.g. senior exam-style items).
 
+PER-STUDENT CONTEXT (Tutor V1):
+- When a [STUDENT CONTEXT] block is present, treat it as tutor-curated memory: target the shaky and due-for-retrieval topics, pre-empt the listed misconceptions explicitly in questions and worked answers, and honour the rolling profile's style notes.
+- NEVER re-teach topics marked mastered as new content; they may appear only as spaced-retrieval or challenge items when listed as due.
+- Misconceptions shape question DESIGN ONLY: choose numbers, orientations, and structures that specifically probe the listed errors (e.g. a rotated triangle, a rearrangement with a sign trap). NEVER mention the misconception, the student, their history, or this context in question text, worked answers, or any other output — no meta-commentary like "this targets your rounding error". The printed worksheet must read as if no student profile exists.
+- Never repeat the [STUDENT CONTEXT] block or its alias slugs back in your output — it is context, not content.
+
 STAGE CALIBRATION (map year_level -> stage):
 - Years 7-8 (Stage 4): tactile, high-energy, low floor; concrete before abstract.
 - Years 9-10 (Stage 5): structured practice, explicit misconception work, partner / think-pair-share.
@@ -40,6 +48,7 @@ FORMAT:
 
 INTENT_TEMPLATES = {
     "warmup": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 
@@ -50,6 +59,7 @@ Generate 3-5 quick activation tasks to open the lesson, grounded in the anchors 
 Use a 'question_set' (or an 'activity' if it's a game). Include worked answers in 'teacher_answer_latex'. Keep it to a few minutes of class time.""",
 
     "lesson_plan": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 
@@ -63,6 +73,7 @@ Structure a ~60-minute lesson grounded explicitly in these dot-points. Use parts
 Include teacher answers throughout.""",
 
     "practice_set": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 
@@ -71,24 +82,28 @@ Differentiate with 'tier': emit one 'question_set' of ~3 items at tier 'core' AN
 Every item: 'question_latex' required, 'teacher_answer_latex' with full working.""",
 
     "challenge": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 
 Generate one high-difficulty extension problem for the top of the room, grounded in the anchors — Band 6 / Path-level reasoning, multi-step. Tier 'extension'. Provide a meticulous, fully-worked 'teacher_answer_latex'.""",
 
     "explain_alt": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 
 The standard explanation didn't land. Give a radically different way to explain this concept, grounded in the anchors. Prefer spatial/geometric intuition, real-world systems, or physics/mechatronics analogies over dry symbol-pushing. Use 'text' for the explanation and a 'glass_box' for the key insight or visual idea.""",
 
     "activity": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 
 Design one genuinely fun, pedagogically grounded activity on this topic — e.g. a board/whiteboard game, a table-group challenge, or students writing questions for another pair to solve. Stage-appropriate (more movement/game for Stage 4; more structured collaboration for Stage 5-6). Put the setup and mechanics in an 'activity' part's 'content', and include any answer key in 'teacher_answer_latex' if it involves set problems.""",
 
     "chat": """Class: Year {year_level} | {subject} | {ability_tier}
+{student_context}
 Syllabus anchors:
 {rag_chunks}
 

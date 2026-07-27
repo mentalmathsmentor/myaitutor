@@ -1,6 +1,7 @@
 from enum import Enum
 import asyncio
 import json
+import os
 from typing import Any
 from uuid import UUID
 
@@ -10,8 +11,17 @@ from sqlalchemy import text, select, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..db.tutor_models import ChatThread, Message, Tutor, TutorClass
+from ..db.tutor_models import (
+    ChatThread,
+    Message,
+    QuestionLog,
+    Tutor,
+    TutorClass,
+    TutorSession,
+    TutorStudent,
+)
 from ..db.session import get_db
+from ..services.student_memory import assemble_student_context, get_or_create_active_session
 from ..models import ExoskeletonResponse, FatigueStatus, StudentContext
 from ..services import wellness_engine, educational_agent, storage
 from ..services.gemini_client import get_client
@@ -42,11 +52,29 @@ class InitClassRequest(BaseModel):
 
 
 class GenerateChatRequest(BaseModel):
-    class_id: UUID
-    thread_id: UUID
+    """Two modes, one endpoint (routing invisible to the tutor):
+
+    - Class mode (teacher sprint, unchanged): class_id + thread_id.
+    - Student mode (Tutor V1): student_id (+ optional session_id) — logs to
+      the `sessions` spine, injects per-student memory. Feature-flag
+      kill-switch: FEATURE_STUDENT_MEMORY=0 disables the student path
+      without touching class mode (brownfield rule).
+    """
+
+    class_id: UUID | None = None
+    thread_id: UUID | None = None
+    student_id: UUID | None = None
+    session_id: UUID | None = None
     intent: TutorIntent
     topic: str = Field(..., min_length=1, max_length=300)
     refinements: str | None = Field(default=None, max_length=2000)
+
+
+def _student_memory_enabled() -> bool:
+    return os.getenv("FEATURE_STUDENT_MEMORY", "1") == "1"
+
+
+NO_STUDENT_CONTEXT = "(No per-student context — class mode.)"
 
 
 def _serialize_class(class_obj: TutorClass) -> dict[str, Any]:
@@ -314,61 +342,113 @@ async def list_threads(
     return {"threads": serialized_threads}
 
 
-@router.post("/api/chat/generate", response_model=ExoskeletonResponse)
+@router.post("/api/chat/generate")
 async def generate_chat(
     body: GenerateChatRequest,
     tutor_id: UUID = Depends(get_current_tutor),
     db: AsyncSession = Depends(get_db),
 ):
-    class_result = await db.execute(
-        select(TutorClass).where(
-            TutorClass.id == body.class_id,
-            TutorClass.tutor_id == tutor_id,
-        )
-    )
-    class_obj = class_result.scalar_one_or_none()
-    if class_obj is None:
-        raise HTTPException(status_code=404, detail="Class not found")
+    student: TutorStudent | None = None
+    session_obj: TutorSession | None = None
+    class_obj: TutorClass | None = None
+    thread: ChatThread | None = None
 
-    thread_result = await db.execute(
-        select(ChatThread).where(
-            ChatThread.id == body.thread_id,
-            ChatThread.tutor_id == tutor_id,
-            ChatThread.class_id == body.class_id,
+    if body.student_id is not None and _student_memory_enabled():
+        student_result = await db.execute(
+            select(TutorStudent).where(
+                TutorStudent.id == body.student_id,
+                TutorStudent.tutor_id == tutor_id,
+            )
         )
-    )
-    thread = thread_result.scalar_one_or_none()
-    if thread is None:
-        raise HTTPException(status_code=404, detail="Thread not found for class")
+        student = student_result.scalar_one_or_none()
+        if student is None:
+            raise HTTPException(status_code=404, detail="Student not found")
+
+        if body.session_id is not None:
+            session_result = await db.execute(
+                select(TutorSession).where(
+                    TutorSession.id == body.session_id,
+                    TutorSession.tutor_id == tutor_id,
+                    TutorSession.student_id == student.id,
+                )
+            )
+            session_obj = session_result.scalar_one_or_none()
+            if session_obj is None:
+                raise HTTPException(status_code=404, detail="Session not found for student")
+        else:
+            session_obj = await get_or_create_active_session(db, tutor_id, student)
+
+        subject = student.subject
+        year_level = student.year_level
+        ability_tier = (student.profile or {}).get("ability_tier", "Core")
+        student_context = await assemble_student_context(db, student)
+    elif body.class_id is not None and body.thread_id is not None:
+        class_result = await db.execute(
+            select(TutorClass).where(
+                TutorClass.id == body.class_id,
+                TutorClass.tutor_id == tutor_id,
+            )
+        )
+        class_obj = class_result.scalar_one_or_none()
+        if class_obj is None:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        thread_result = await db.execute(
+            select(ChatThread).where(
+                ChatThread.id == body.thread_id,
+                ChatThread.tutor_id == tutor_id,
+                ChatThread.class_id == body.class_id,
+            )
+        )
+        thread = thread_result.scalar_one_or_none()
+        if thread is None:
+            raise HTTPException(status_code=404, detail="Thread not found for class")
+
+        subject = class_obj.subject
+        year_level = class_obj.year_level
+        ability_tier = class_obj.ability_tier
+        student_context = NO_STUDENT_CONTEXT
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="Provide either student_id (tutor mode) or class_id + thread_id (class mode)",
+        )
 
     query_text = (body.refinements or "").strip() or body.topic
-    query_embedding = await _embed_query(query_text)
-    query_embedding_literal = _embedding_literal(query_embedding)
+    echo_mode = os.getenv("MAIT_PROMPT_ECHO") == "1"
 
-    retrieval_stmt = text("""
-        SELECT
-            id,
-            content,
-            content_code,
-            subject,
-            source_document,
-            metadata_json,
-            embedding <=> CAST(:query_embedding AS vector) AS distance
-        FROM vector_chunks
-        WHERE subject = :subject
-          AND metadata_json->>'topic' = :topic
-        ORDER BY embedding <=> CAST(:query_embedding AS vector)
-        LIMIT 3
-    """)
-    retrieval_result = await db.execute(
-        retrieval_stmt,
-        {
-            "query_embedding": query_embedding_literal,
-            "subject": class_obj.subject,
-            "topic": body.topic,
-        },
-    )
-    rows = retrieval_result.mappings().all()
+    if echo_mode:
+        # Echo/smoke mode makes zero external API calls: no query embedding,
+        # no retrieval scoring, no generation.
+        rows = []
+    else:
+        query_embedding = await _embed_query(query_text)
+        query_embedding_literal = _embedding_literal(query_embedding)
+
+        retrieval_stmt = text("""
+            SELECT
+                id,
+                content,
+                content_code,
+                subject,
+                source_document,
+                metadata_json,
+                embedding <=> CAST(:query_embedding AS vector) AS distance
+            FROM vector_chunks
+            WHERE subject = :subject
+              AND metadata_json->>'topic' = :topic
+            ORDER BY embedding <=> CAST(:query_embedding AS vector)
+            LIMIT 3
+        """)
+        retrieval_result = await db.execute(
+            retrieval_stmt,
+            {
+                "query_embedding": query_embedding_literal,
+                "subject": subject,
+                "topic": body.topic,
+            },
+        )
+        rows = retrieval_result.mappings().all()
 
     citations = [
         {
@@ -398,18 +478,100 @@ async def generate_chat(
 
     prompt = INTENT_TEMPLATES[intent].format(
         rag_chunks=retrieved_chunks,
-        year_level=class_obj.year_level,
-        subject=class_obj.subject,
-        ability_tier=class_obj.ability_tier,
+        year_level=year_level,
+        subject=subject,
+        ability_tier=ability_tier,
+        student_context=student_context,
         refinements=(body.refinements or "").strip(),
     )
 
-    try:
-        response_model = await _generate_exoskeleton_response(prompt)
-    except Exception as exc:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=502, detail=f"Gemini generation failed: {exc}") from exc
+    if echo_mode:
+        # Dev/smoke mode (default off): print the exact assembled prompt and
+        # skip the Gemini call so the full persistence path can be exercised
+        # without an API key. Never enable in a real tutoring session.
+        print("=== MAIT_PROMPT_ECHO: assembled generator prompt ===")
+        print(f"--- system_instruction ---\n{SYSTEM_INSTRUCTION_CORE}")
+        print(f"--- user turn ---\n{prompt}")
+        print("=== END MAIT_PROMPT_ECHO ===")
+        # Multi-part, multi-item stub deck: questions_generated MUST count
+        # deck items (3 here), never generate calls — pinned by
+        # tests/test_instrumentation.py.
+        response_model = ExoskeletonResponse(
+            parts=[
+                {
+                    "type": "text",
+                    "tier": "all",
+                    "content": "MAIT_PROMPT_ECHO smoke mode: generation skipped; prompt printed to server log.",
+                },
+                {
+                    "type": "question_set",
+                    "tier": "core",
+                    "questions": [
+                        {
+                            "question_latex": f"Echo-mode core question 1 for {body.topic}.",
+                            "teacher_answer_latex": "Echo-mode worked answer 1.",
+                            "marks": 2,
+                        },
+                        {
+                            "question_latex": f"Echo-mode core question 2 for {body.topic}.",
+                            "teacher_answer_latex": "Echo-mode worked answer 2.",
+                        },
+                    ],
+                },
+                {
+                    "type": "question_set",
+                    "tier": "extension",
+                    "questions": [
+                        {
+                            "question_latex": f"Echo-mode extension question for {body.topic}.",
+                            "teacher_answer_latex": "Echo-mode worked answer 3.",
+                            "marks": 4,
+                        }
+                    ],
+                },
+            ]
+        )
+    else:
+        try:
+            response_model = await _generate_exoskeleton_response(prompt)
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=502, detail=f"Gemini generation failed: {exc}") from exc
+
+    if student is not None and session_obj is not None:
+        # Tutor V1: the session spine is the record; chat_threads is not used
+        # (canon ruling). Log every generated question with outcome NULL —
+        # one-tap outcome buttons fill it mid-session.
+        question_ids: list[str] = []
+        question_count = 0
+        for part in response_model.parts:
+            if part.type.value == "question_set" and part.questions:
+                for item in part.questions:
+                    log_row = QuestionLog(
+                        session_id=session_obj.id,
+                        student_id=student.id,
+                        topic=body.topic,
+                        question_payload=item.model_dump(),
+                    )
+                    db.add(log_row)
+                    await db.flush()
+                    question_ids.append(str(log_row.id))
+                    question_count += 1
+
+        session_obj.questions_generated += question_count
+        session_obj.deck = response_model.model_dump()
+        topics = list(session_obj.topics or [])
+        if body.topic not in topics:
+            topics.append(body.topic)
+            session_obj.topics = topics
+        await db.commit()
+
+        payload = response_model.model_dump()
+        payload["session_id"] = str(session_obj.id)
+        payload["question_ids"] = question_ids
+        payload["retrieval_citations"] = citations
+        return payload
 
     user_content = json.dumps(
         {

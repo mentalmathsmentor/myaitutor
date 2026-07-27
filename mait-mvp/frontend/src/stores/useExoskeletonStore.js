@@ -19,7 +19,134 @@ export const useExoskeletonStore = create((set, get) => ({
   topicCache: {},
   isWizardOpen: false,
 
+  // Tutor V1 (canon §7): students + session spine + Cerberus state
+  students: [],
+  activeStudent: null,
+  activeSession: null,
+  cerberusByQuestionId: {},
+  outcomesByQuestionId: {},
+
   setWizardOpen: (open) => set({ isWizardOpen: open }),
+
+  fetchStudents: async () => {
+    try {
+      const response = await fetch('/api/students')
+      if (!response.ok) throw new Error('Failed to fetch students')
+      const data = await response.json()
+      const students = data.students || []
+      set({ students })
+      return students
+    } catch (error) {
+      console.error('fetchStudents failed:', error)
+      return []
+    }
+  },
+
+  initStudent: async (payload) => {
+    const response = await fetch('/api/students/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) {
+      const detail = await response.text()
+      throw new Error(detail || 'Failed to create student')
+    }
+    const data = await response.json()
+    set((state) => ({ students: [...state.students, data.student] }))
+    return data.student
+  },
+
+  setActiveStudent: async (student) => {
+    set({ activeStudent: student, activeClass: null, activeThread: null, activeSession: null })
+    if (!student) return
+    try {
+      const response = await fetch(`/api/students/${student.id}/session`, { method: 'POST' })
+      if (!response.ok) throw new Error('Failed to open session')
+      const data = await response.json()
+      set({ activeSession: data.session })
+    } catch (error) {
+      console.error('setActiveStudent session open failed:', error)
+    }
+  },
+
+  setActiveSession: (session) => set({ activeSession: session }),
+
+  setCerberusStatus: (questionIds, status) => set((state) => {
+    const next = { ...state.cerberusByQuestionId }
+    questionIds.forEach((id) => {
+      next[id] = { status, suggestions: [] }
+    })
+    return { cerberusByQuestionId: next }
+  }),
+
+  cerberusVerify: async (sessionId, items) => {
+    const questionIds = items.map((item) => item.question_log_id).filter(Boolean)
+    get().setCerberusStatus(questionIds, 'pending')
+    try {
+      const response = await fetch('/api/cerberus/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, items }),
+      })
+      if (!response.ok) throw new Error('Cerberus verify failed')
+      const data = await response.json()
+      set((state) => {
+        const next = { ...state.cerberusByQuestionId }
+        for (const result of data.results || []) {
+          if (result.question_log_id) {
+            next[result.question_log_id] = {
+              status: result.status,
+              suggestions: result.suggestions || [],
+            }
+          }
+        }
+        return { cerberusByQuestionId: next }
+      })
+      return data
+    } catch (error) {
+      console.error('cerberusVerify failed:', error)
+      get().setCerberusStatus(questionIds, 'unavailable')
+      return null
+    }
+  },
+
+  recordOutcome: async (questionId, outcome, misconceptionTag = null) => {
+    set((state) => ({
+      outcomesByQuestionId: { ...state.outcomesByQuestionId, [questionId]: outcome },
+    }))
+    try {
+      const response = await fetch(`/api/questions/${questionId}/outcome`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outcome, misconception_tag: misconceptionTag }),
+      })
+      if (!response.ok) throw new Error('Failed to record outcome')
+      return true
+    } catch (error) {
+      console.error('recordOutcome failed:', error)
+      set((state) => {
+        const next = { ...state.outcomesByQuestionId }
+        delete next[questionId]
+        return { outcomesByQuestionId: next }
+      })
+      return false
+    }
+  },
+
+  sessionCheckin: async (sessionId, payload) => {
+    const response = await fetch(`/api/sessions/${sessionId}/checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) {
+      const detail = await response.text()
+      throw new Error(detail || 'Check-in failed')
+    }
+    set({ activeSession: null })
+    return (await response.json()).session
+  },
 
   fetchClasses: async () => {
     try {
