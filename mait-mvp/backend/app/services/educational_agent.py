@@ -2,6 +2,7 @@
 Educational agent with RAG-based context retrieval and Bloom's Taxonomy progression.
 """
 import asyncio
+import logging
 
 from app.models import StudentContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,8 @@ from .gemini_client import get_gemini_response, format_response_as_text
 from .blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from .syllabus_service import syllabus_service
 from . import storage
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_response_async(query: str, context: StudentContext, session: AsyncSession) -> str:
@@ -36,8 +39,8 @@ async def generate_response_async(query: str, context: StudentContext, session: 
             fatigue_status=fatigue,
             year=None
         )
-    except Exception as e:
-        print(f"RAG retrieval failed (non-fatal): {e}")
+    except Exception:
+        logger.warning("RAG retrieval failed (non-fatal)", exc_info=True)
         syllabus_context = ""
 
     # 5. Fetch conversation history from storage

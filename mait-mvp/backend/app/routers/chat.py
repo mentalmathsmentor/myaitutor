@@ -1,6 +1,7 @@
 from enum import Enum
 import asyncio
 import json
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -19,6 +20,8 @@ from ..services.prompts import INTENT_TEMPLATES, SYSTEM_INSTRUCTION_CORE
 from ..services.syllabus_service import syllabus_service
 from ..services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
 from ..deps import get_current_tutor, verify_student_auth, get_or_create_context, limiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -282,7 +285,11 @@ async def list_threads(
                         "content": content_str,
                         "created_at": msg.created_at.isoformat() if msg.created_at else None,
                     })
-                except Exception:
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    # Legacy/plain-text user messages aren't JSON -- fall back to
+                    # the raw content, but record why so unexpected payload
+                    # corruption is visible instead of silently swallowed.
+                    logger.debug("Non-JSON user message %s; using raw content", msg.id)
                     serialized_messages.append({
                         "id": str(msg.id),
                         "role": "teacher",
@@ -294,7 +301,8 @@ async def list_threads(
                 try:
                     payload = json.loads(msg.content)
                     parts = payload.get("parts", [])
-                except Exception:
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    logger.debug("Non-JSON assistant message %s; using empty parts", msg.id)
                     parts = []
                 serialized_messages.append({
                     "id": str(msg.id),
@@ -407,8 +415,7 @@ async def generate_chat(
     try:
         response_model = await _generate_exoskeleton_response(prompt)
     except Exception as exc:
-        import traceback
-        traceback.print_exc()
+        logger.exception("Gemini exoskeleton generation failed")
         raise HTTPException(status_code=502, detail=f"Gemini generation failed: {exc}") from exc
 
     user_content = json.dumps(
@@ -523,8 +530,8 @@ async def query_api(
             fatigue_status=context.fatigue_metric.status,
             year=None
         )
-    except Exception as e:
-        print(f"RAG retrieval failed in /query (non-fatal): {e}")
+    except Exception:
+        logger.warning("RAG retrieval failed in /query (non-fatal)", exc_info=True)
         syllabus_context = ""
 
     conversation_history = await storage.get_history(db, body.student_id, limit=20)

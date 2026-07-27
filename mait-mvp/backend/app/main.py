@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import FastAPI
@@ -6,6 +7,13 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file immediately
 load_dotenv()
+
+# Configure application-wide logging so handled errors are surfaced with
+# stack traces (via logger.exception) instead of being silently swallowed.
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded

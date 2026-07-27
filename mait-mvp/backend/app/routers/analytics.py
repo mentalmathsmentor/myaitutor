@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,6 +8,8 @@ from ..db.session import get_db
 from ..models import KeystrokeSubmission, KeystrokeProfile
 from ..services import storage
 from ..deps import get_current_student_id, get_or_create_context
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["analytics"])
 
@@ -143,6 +146,10 @@ async def record_visit(db: AsyncSession = Depends(get_db)):
         count = await storage.increment_visit_count(db)
         return {"count": count}
     except Exception:
+        # Visit counter is non-critical: degrade gracefully but never swallow
+        # the failure silently -- log it (and report to Sentry) so DB issues
+        # surface instead of being masked as a legitimate count of 0.
+        logger.exception("Failed to increment visit count")
         return {"count": 0}
 
 
@@ -151,5 +158,6 @@ async def get_visits(db: AsyncSession = Depends(get_db)):
     try:
         count = await storage.get_visit_count(db)
     except Exception:
+        logger.exception("Failed to read visit count")
         return {"count": 0}
     return {"count": count}
