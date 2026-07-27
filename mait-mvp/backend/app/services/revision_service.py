@@ -7,7 +7,6 @@ Stores revision history in the document_revisions table.
 
 from __future__ import annotations
 
-import asyncio
 from typing import Optional
 
 from sqlalchemy import select
@@ -16,7 +15,7 @@ from sqlalchemy.orm import joinedload
 
 from ..db.models import Document, DocumentElement, DocumentRevision
 from ..db.serializers import generate_public_id, serialize_revision, utc_now
-from .gemini_client import MODEL_ID, get_client
+from .gemini_client import generate_content_async
 
 FRAGMENT_REVISION_SYSTEM_PROMPT = r"""You are a LaTeX worksheet editor for NSW HSC Mathematics.
 You will receive ONE fragment of a LaTeX worksheet and an editing instruction.
@@ -84,14 +83,10 @@ async def create_revision(session: AsyncSession, element_id: str, instruction: s
         temperature=0.3,
     )
 
-    client = get_client()
     try:
-        response = await asyncio.wait_for(
-            client.aio.models.generate_content(
-                model=MODEL_ID,
-                contents=user_prompt,
-                config=config,
-            ),
+        response = await generate_content_async(
+            contents=user_prompt,
+            config=config,
             timeout=30.0,
         )
         output_snapshot = response.text.strip()
@@ -154,14 +149,10 @@ async def create_revision_for_student(
         temperature=0.3,
     )
 
-    client = get_client()
     try:
-        response = await asyncio.wait_for(
-            client.aio.models.generate_content(
-                model=MODEL_ID,
-                contents=user_prompt,
-                config=config,
-            ),
+        response = await generate_content_async(
+            contents=user_prompt,
+            config=config,
             timeout=30.0,
         )
         output_snapshot = response.text.strip()

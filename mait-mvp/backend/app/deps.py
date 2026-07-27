@@ -21,6 +21,16 @@ async def verify_student_auth(request: Request, student_id: str):
         raise HTTPException(status_code=403, detail="Unauthorized: Student ID mismatch")
 
 
+def ensure_student_match(requested_id: str, current_id: str, detail: str = "Student not found") -> None:
+    """Raise 404 when a requested student_id does not match the authenticated one.
+
+    Consolidates the ownership check duplicated across the canvas, analytics,
+    and auth routers so resources are never exposed across students.
+    """
+    if requested_id != current_id:
+        raise HTTPException(status_code=404, detail=detail)
+
+
 async def get_current_student_id(request: Request) -> str:
     """Return the asserted student ID from the legacy header."""
     header_id = request.headers.get("X-Student-Id")

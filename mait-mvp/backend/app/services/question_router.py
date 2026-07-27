@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from .gemini_client import get_client
+from .gemini_client import generate_content_async
 
 
 # ---------------------------------------------------------------------------
@@ -277,19 +277,16 @@ async def _call_gemini(
 
     config = types.GenerateContentConfig(**generation_config_kwargs)
 
-    client = get_client()
     max_retries = 3
     base_delay = 2
     last_error: Optional[Exception] = None
 
     for attempt in range(max_retries):
         try:
-            response = await asyncio.wait_for(
-                client.aio.models.generate_content(
-                    model=config_data["model"],
-                    contents=user_prompt,
-                    config=config,
-                ),
+            response = await generate_content_async(
+                contents=user_prompt,
+                config=config,
+                model=config_data["model"],
                 timeout=60.0,
             )
             return response.text.strip()

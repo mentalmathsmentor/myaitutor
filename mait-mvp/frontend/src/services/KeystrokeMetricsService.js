@@ -1,4 +1,4 @@
-import { API_URL } from '@/config/api';
+import { apiFetch } from '@/lib/apiClient';
 
 /**
  * KeystrokeMetricsService - Keystroke Psychometric Analysis System
@@ -445,10 +445,9 @@ class KeystrokeMetricsService {
      */
     async submitMetrics(studentId, metrics) {
         try {
-            const response = await fetch(`${API_URL}/keystroke-metrics`, {
+            const response = await apiFetch('/keystroke-metrics', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+                json: {
                     student_id: studentId,
                     metrics: {
                         wpm: metrics.wpm || 0,
@@ -463,7 +462,7 @@ class KeystrokeMetricsService {
                         rhythm_variance: metrics.rhythmVariance || 0,
                         keystroke_count: metrics.keystrokeCount || 0
                     }
-                })
+                }
             });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -483,7 +482,7 @@ class KeystrokeMetricsService {
      */
     async getProfile(studentId) {
         try {
-            const response = await fetch(`${API_URL}/keystroke-profile/${studentId}`);
+            const response = await apiFetch(`/keystroke-profile/${studentId}`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }

@@ -16,7 +16,31 @@ def get_client():
     if client is None:
         from google import genai
         client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    return client 
+    return client
+
+
+async def generate_content_async(
+    contents: Any,
+    config: Any,
+    model: Optional[str] = None,
+    timeout: float = 30.0,
+):
+    """Run a single async Gemini generation with a timeout.
+
+    Centralises the repeated ``get_client()`` + ``asyncio.wait_for(...
+    aio.models.generate_content(...))`` boilerplate used across services.
+    """
+    import asyncio
+
+    client_instance = get_client()
+    return await asyncio.wait_for(
+        client_instance.aio.models.generate_content(
+            model=model or MODEL_ID,
+            contents=contents,
+            config=config,
+        ),
+        timeout=timeout,
+    )
 
 SYSTEM_PROMPT_BASE = """
 You are a RAW DATA PROVIDER for an educational AI system.
@@ -160,14 +184,10 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
     for attempt in range(max_retries):
         try:
             # Generate response using Gemini Async (New SDK)
-            client_instance = get_client()
-            response = await asyncio.wait_for(
-                client_instance.aio.models.generate_content(
-                    model=MODEL_ID,
-                    contents=contents,
-                    config=config
-                ),
-                timeout=30.0
+            response = await generate_content_async(
+                contents=contents,
+                config=config,
+                timeout=30.0,
             )
 
             # Get the response text

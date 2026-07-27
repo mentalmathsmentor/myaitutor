@@ -5,14 +5,13 @@ Accepts a base64-encoded image of a maths question / worksheet section,
 calls Gemini Flash multimodal to convert it into native editable LaTeX
 fragment objects, and persists them to the database.
 """
-import asyncio
 import base64
 import json
 from typing import List, Optional, Tuple
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .gemini_client import get_client, MODEL_ID
+from .gemini_client import generate_content_async
 from .element_service import create_element_for_student, get_elements_for_student
 
 VISION_PARSE_SYSTEM_PROMPT = r"""You are a maths worksheet digitizer for NSW HSC Mathematics.
@@ -107,13 +106,9 @@ async def vision_parse(
         temperature=0.1,
     )
 
-    client = get_client()
-    response = await asyncio.wait_for(
-        client.aio.models.generate_content(
-            model=MODEL_ID,
-            contents=contents,
-            config=config,
-        ),
+    response = await generate_content_async(
+        contents=contents,
+        config=config,
         timeout=45.0,
     )
 

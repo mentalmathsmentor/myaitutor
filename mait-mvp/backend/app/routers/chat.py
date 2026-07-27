@@ -14,7 +14,7 @@ from ..db.tutor_models import ChatThread, Message, Tutor, TutorClass
 from ..db.session import get_db
 from ..models import ExoskeletonResponse, FatigueStatus, StudentContext
 from ..services import wellness_engine, educational_agent, storage
-from ..services.gemini_client import get_client
+from ..services.gemini_client import get_client, generate_content_async
 from ..services.prompts import INTENT_TEMPLATES, SYSTEM_INSTRUCTION_CORE
 from ..services.syllabus_service import syllabus_service
 from ..services.blooms_engine import assess_response_level, advance_bloom_level, get_bloom_teaching_strategy
@@ -105,7 +105,6 @@ async def _embed_query(query: str) -> list[float]:
 async def _generate_exoskeleton_response(prompt: str) -> ExoskeletonResponse:
     from google.genai import types
 
-    client = get_client()
     full_prompt = f"{SYSTEM_INSTRUCTION_CORE}\n\n{prompt}"
     config = types.GenerateContentConfig(
         temperature=0.4,
@@ -114,12 +113,10 @@ async def _generate_exoskeleton_response(prompt: str) -> ExoskeletonResponse:
         response_schema=ExoskeletonResponse,
     )
 
-    response = await asyncio.wait_for(
-        client.aio.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=full_prompt,
-            config=config,
-        ),
+    response = await generate_content_async(
+        contents=full_prompt,
+        config=config,
+        model="gemini-3.5-flash",
         timeout=60.0,
     )
 
