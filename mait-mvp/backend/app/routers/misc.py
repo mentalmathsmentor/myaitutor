@@ -1,8 +1,9 @@
+import html
 import os
 
 import resend
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
@@ -36,13 +37,16 @@ async def submit_feedback(request: Request, body: FeedbackRequest):
     resend.api_key = resend_api_key
 
     try:
+        safe_context = html.escape(body.context or "unknown")
+        safe_email = html.escape(body.email or "anonymous")
+        safe_message = html.escape(body.message).replace(chr(10), "<br>")
         html_content = f"""
         <h2>New MAIT Feedback Received</h2>
-        <p><strong>Context:</strong> {body.context}</p>
-        <p><strong>User Email:</strong> {body.email}</p>
+        <p><strong>Context:</strong> {safe_context}</p>
+        <p><strong>User Email:</strong> {safe_email}</p>
         <hr>
         <h3>Message:</h3>
-        <p>{body.message.replace(chr(10), '<br>')}</p>
+        <p>{safe_message}</p>
         """
 
         r = resend.Emails.send({
@@ -59,7 +63,7 @@ async def submit_feedback(request: Request, body: FeedbackRequest):
 
 
 class SubscribeRequest(BaseModel):
-    email: str
+    email: EmailStr
 
 
 @router.post("/subscribe")
@@ -69,4 +73,5 @@ async def subscribe_waitlist(body: SubscribeRequest, db: AsyncSession = Depends(
         await storage.save_email(db, body.email)
         return {"status": "success", "message": "Joined waitlist"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        print(f"[Subscribe] Failed to save email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to join waitlist")
