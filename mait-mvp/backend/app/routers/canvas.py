@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -13,6 +14,8 @@ from ..services.revision_service import (
     create_revision_for_student, apply_revision_for_student, reject_revision_for_student, list_revisions_for_student,
 )
 from ..deps import get_current_student_id, verify_student_auth, limiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/canvas", tags=["canvas"])
 
@@ -97,7 +100,7 @@ async def canvas_generate(
 
         return {"document": doc, "elements": saved_elements}
     except Exception as e:
-        print(f"[Canvas Generate] Error: {e}")
+        logger.exception("Canvas worksheet generation failed")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -197,6 +200,7 @@ async def delete_canvas_document(
 
 @router.post("/compile")
 async def compile_canvas_pdf(request: Request, body: CompileRequest):
+    import shutil
     import tempfile
     import base64
 
@@ -208,7 +212,13 @@ async def compile_canvas_pdf(request: Request, body: CompileRequest):
         b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         return {"success": True, "pdfUrl": f"data:application/pdf;base64,{b64_pdf}"}
     except Exception as e:
+        # A failed compile is an expected, user-facing outcome (bad LaTeX), so
+        # we return a structured failure rather than a 5xx -- but still log it
+        # so infrastructure problems (e.g. pdflatex missing) are not hidden.
+        logger.exception("Canvas LaTeX compilation failed")
         return {"success": False, "error": str(e)}
+    finally:
+        shutil.rmtree(output_dir, ignore_errors=True)
 
 
 # ── Revision endpoints ──────────────────────────────────────────────
@@ -307,5 +317,5 @@ async def vision_parse_document(
             "total_elements": len(elements),
         }
     except Exception as e:
-        print(f"[Vision Parse] Error: {e}")
+        logger.exception("Canvas vision parse failed")
         raise HTTPException(status_code=500, detail=str(e))

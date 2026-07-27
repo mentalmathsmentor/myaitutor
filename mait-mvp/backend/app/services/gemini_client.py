@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from app.models import FatigueStatus
@@ -5,6 +6,8 @@ from app.models import FatigueStatus
 if TYPE_CHECKING:
     from google import genai
     from google.genai import types
+
+logger = logging.getLogger(__name__)
 
 # Initialize Gemini Client (New SDK) - Lazy Loading
 client = None
@@ -172,7 +175,7 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
 
             # Get the response text
             response_text = response.text.strip()
-            print(f"DEBUG: Gemini Raw Response: {response_text[:200]}...")
+            logger.debug("Gemini raw response: %s...", response_text[:200])
 
             # Split into sections by double newline for chunking
             sections = [s.strip() for s in response_text.split('\n\n') if s.strip()]
@@ -184,22 +187,24 @@ Respond naturally as Mate. Structure your response with CLEAR PARAGRAPH BREAKS (
             }
 
         except asyncio.TimeoutError:
-            print(f"Gemini API Timeout (Attempt {attempt + 1}/{max_retries})")
+            logger.warning("Gemini API timeout (attempt %s/%s)", attempt + 1, max_retries)
             if attempt == max_retries - 1:
-                return {"text": "Server timeout. Please try again.", "sections": ["Server timeout. Please try again."], "source": "api"}
+                logger.error("Gemini API timed out after %s attempts", max_retries)
+                return {"text": "Server timeout. Please try again.", "sections": ["Server timeout. Please try again."], "source": "error"}
 
         except Exception as e:
-            print(f"Gemini API Error (Attempt {attempt + 1}): {e}")
+            logger.warning("Gemini API error (attempt %s/%s): %s", attempt + 1, max_retries, e)
             if "429" in str(e) or "ResourceExhausted" in str(e):
                  await asyncio.sleep(base_delay * (2 ** attempt))
             else:
                  if attempt == max_retries - 1:
-                     import logging
-                     logging.error(f"Gemini API error: {str(e)}")
-                     return {"text": "Something went wrong processing your question. Please try again.", "sections": ["Something went wrong processing your question. Please try again."], "source": "api"}
+                     logger.exception("Gemini API error after %s attempts", max_retries)
+                     return {"text": "Something went wrong processing your question. Please try again.", "sections": ["Something went wrong processing your question. Please try again."], "source": "error"}
                  await asyncio.sleep(1)
 
-    return {"text": "Failed to get response.", "sections": ["Failed to get response."], "source": "api"}
+    # All retries exhausted (e.g. repeated rate-limiting).
+    logger.error("Gemini API failed to return a response after %s attempts", max_retries)
+    return {"text": "Failed to get response.", "sections": ["Failed to get response."], "source": "error"}
 
 def format_response_as_text(gemini_response: Dict[str, Any]) -> str:
     """
