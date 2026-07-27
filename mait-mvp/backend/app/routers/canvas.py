@@ -12,7 +12,7 @@ from ..services.latex_decomposer import parse_monolithic_latex
 from ..services.revision_service import (
     create_revision_for_student, apply_revision_for_student, reject_revision_for_student, list_revisions_for_student,
 )
-from ..deps import get_current_student_id, verify_student_auth, limiter
+from ..deps import get_current_student_id, verify_student_auth, ensure_student_match, limiter
 
 router = APIRouter(prefix="/canvas", tags=["canvas"])
 
@@ -62,8 +62,7 @@ async def canvas_generate(
     db: AsyncSession = Depends(get_db),
 ):
     await verify_student_auth(request, body.student_id)
-    if body.student_id != student_id:
-        raise HTTPException(status_code=404, detail="Student not found")
+    ensure_student_match(body.student_id, student_id)
 
     try:
         latex_source = await generate_worksheet_latex(body.worksheet_request)
@@ -109,8 +108,7 @@ async def list_canvas_documents(
     db: AsyncSession = Depends(get_db),
 ):
     await verify_student_auth(request, student_id)
-    if student_id != current_student_id:
-        raise HTTPException(status_code=404, detail="Student not found")
+    ensure_student_match(student_id, current_student_id)
     docs = await get_documents_by_student(db, student_id)
     return {"documents": docs}
 

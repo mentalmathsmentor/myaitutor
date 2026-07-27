@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from .gemini_client import get_client, MODEL_ID
+from .gemini_client import generate_content_async
 
 
 # ---------------------------------------------------------------------------
@@ -407,13 +407,9 @@ async def generate_worksheet_latex(request: WorksheetRequest) -> str:
 
     for attempt in range(max_retries):
         try:
-            client_instance = get_client()
-            response = await asyncio.wait_for(
-                client_instance.aio.models.generate_content(
-                    model=MODEL_ID,
-                    contents=user_prompt,
-                    config=config,
-                ),
+            response = await generate_content_async(
+                contents=user_prompt,
+                config=config,
                 timeout=60.0,  # Longer timeout for LaTeX generation
             )
 

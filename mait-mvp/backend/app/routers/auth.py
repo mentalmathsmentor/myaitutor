@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
-from ..deps import get_current_student_id
+from ..deps import get_current_student_id, ensure_student_match
 from ..services import storage
 from ..services.auth import verify_google_token
 
@@ -95,8 +95,7 @@ async def get_user_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the user profile associated with a student_id."""
-    if student_id != current_student_id:
-        raise HTTPException(status_code=404, detail="User not found")
+    ensure_student_match(student_id, current_student_id, detail="User not found")
     user = await storage.get_user_by_student_id(db, student_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")

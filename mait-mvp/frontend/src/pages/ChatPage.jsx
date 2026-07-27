@@ -13,7 +13,7 @@ import { useKeystrokeTracker } from '../hooks/useKeystrokeTracker'
 import AvatarDisplay from '../components/AvatarDisplay'
 import { MathEngineService } from '../features/math/MathEngineService'
 import { MathRouter } from '../features/math/MathRouter'
-import { API_URL } from '../config/api'
+import { apiFetch } from '../lib/apiClient'
 import { getSavedAuthUser } from '../lib/auth'
 import { navigateTo } from '../lib/navigation'
 
@@ -59,9 +59,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/context/${studentId}`, {
-                headers: { 'X-Student-Id': studentId }
-            });
+            const res = await apiFetch(`/context/${studentId}`, { studentId });
             if (!res.ok) throw new Error("Backend unreachable");
             const data = await res.json();
             setContext(data);
@@ -185,9 +183,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     const fetchHistory = async () => {
         if (isDemoMode) return;
         try {
-            const res = await fetch(`${API_URL}/history/${studentId}?limit=50`, {
-                headers: { 'X-Student-Id': studentId }
-            });
+            const res = await apiFetch(`/history/${studentId}?limit=50`, { studentId });
             if (!res.ok) return;
             const data = await res.json();
             if (data.messages && data.messages.length > 0) {
@@ -209,10 +205,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
 
     const handleClearHistory = async () => {
         try {
-            await fetch(`${API_URL}/reset/${studentId}`, {
-                method: 'POST',
-                headers: { 'X-Student-Id': studentId }
-            });
+            await apiFetch(`/reset/${studentId}`, { method: 'POST', studentId });
             setMessages([
                 { role: 'bot', text: "G'day, Mate! I'm ready to crunch some Mathematics Advanced. What's on your mind?", isGreeting: true }
             ]);
@@ -483,10 +476,10 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             try {
                 setMessages(prev => [...prev, { role: 'bot', text: 'typing', source: 'typing' }]);
 
-                const apiResponse = await fetch(`${API_URL}/query`, {
+                const apiResponse = await apiFetch('/query', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-Student-Id': studentId },
-                    body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
+                    studentId,
+                    json: { student_id: studentId, query: userText, complexity: 5 }
                 });
 
                 setMessages(prev => prev.filter(m => m.source !== 'typing'));
@@ -646,13 +639,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                 try {
                     setMessages(prev => [...prev, { role: 'bot', text: "Fetching detailed info from the cloud...", source: 'loading' }]);
 
-                    const apiResponse = await fetch(`${API_URL}/query`, {
+                    const apiResponse = await apiFetch('/query', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Student-Id': studentId
-                        },
-                        body: JSON.stringify({ student_id: studentId, query: userText, complexity: 5 })
+                        studentId,
+                        json: { student_id: studentId, query: userText, complexity: 5 }
                     });
 
                     if (apiResponse.ok) {

@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.session import get_db
 from ..models import KeystrokeSubmission, KeystrokeProfile
 from ..services import storage
-from ..deps import get_current_student_id, get_or_create_context
+from ..deps import get_current_student_id, get_or_create_context, ensure_student_match
 
 router = APIRouter(tags=["analytics"])
 
@@ -61,8 +61,7 @@ async def submit_keystroke_metrics(
     db: AsyncSession = Depends(get_db),
 ):
     """Submit keystroke metrics for a typing session."""
-    if submission.student_id != student_id:
-        raise HTTPException(status_code=404, detail="Student not found")
+    ensure_student_match(submission.student_id, student_id)
     context = await get_or_create_context(submission.student_id, db)
     profile = context.keystroke_profile
     metrics = submission.metrics
@@ -115,8 +114,7 @@ async def get_keystroke_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Get the keystroke psychometric profile for a student."""
-    if student_id != current_student_id:
-        raise HTTPException(status_code=404, detail="Student not found")
+    ensure_student_match(student_id, current_student_id)
     context = await get_or_create_context(student_id, db)
     return {"student_id": student_id, "profile": context.keystroke_profile}
 
@@ -128,8 +126,7 @@ async def reset_keystroke_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Reset keystroke profile for a student."""
-    if student_id != current_student_id:
-        raise HTTPException(status_code=404, detail="Student not found")
+    ensure_student_match(student_id, current_student_id)
     context = await get_or_create_context(student_id, db)
     context.keystroke_profile = KeystrokeProfile()
     await storage.save_context(db, student_id, context)
