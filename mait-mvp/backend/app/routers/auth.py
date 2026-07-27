@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -28,12 +29,16 @@ class AccessCodeRequest(BaseModel):
 @router.post("/verify-access")
 async def verify_access_code(body: AccessCodeRequest):
     """Verify the site-wide access code securely on the backend."""
+    expected_code = (os.getenv("MAIT_ACCESS_CODE") or "").strip().upper()
+    if not expected_code:
+        # Fail closed: never fall back to a hardcoded/default code.
+        raise HTTPException(
+            status_code=503,
+            detail="Access code verification is not configured",
+        )
+
     received_code = body.code.strip().upper()
-    expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026").strip().upper()
-
-    print(f"DEBUG AUTH: Received '{received_code}', Expected '{expected_code}'")
-
-    if received_code == expected_code:
+    if secrets.compare_digest(received_code, expected_code):
         return {"status": "success"}
 
     raise HTTPException(status_code=401, detail="Invalid access code")

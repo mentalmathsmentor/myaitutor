@@ -196,9 +196,13 @@ async def delete_canvas_document(
 
 
 @router.post("/compile")
+@limiter.limit("10/minute")
 async def compile_canvas_pdf(request: Request, body: CompileRequest):
     import tempfile
     import base64
+
+    if len(body.latex_source) > 200_000:
+        raise HTTPException(status_code=413, detail="LaTeX source too large")
 
     output_dir = tempfile.mkdtemp(prefix="mait_canvas_compile_")
     try:

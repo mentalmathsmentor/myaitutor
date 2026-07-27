@@ -3,6 +3,7 @@ uvicorn
 faiss-cpu
 numpy
 pydantic
+email-validator
 python-multipart
 requests
 google-genai
