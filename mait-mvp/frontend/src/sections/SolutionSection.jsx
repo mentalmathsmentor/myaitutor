@@ -27,7 +27,7 @@ export default function SolutionSection() {
         'Local SLM processes sensitive data',
         'Regex-based PII detection',
         'Zero data retention policy',
-        'GDPR & NESA compliant',
+        'No student data retained',
       ],
       color: 'from-green-500/20 to-emerald-500/20',
       iconColor: 'text-green-400',
