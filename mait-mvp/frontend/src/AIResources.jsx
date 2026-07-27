@@ -52,6 +52,7 @@ function PromptCard({ title, description, prompt, icon }) {
 const HANDOUT_PDF = '/copilot-learning-support-cheatsheet.pdf'
 const HANDOUT_POSTER = '/copilot-learning-support-cheatsheet.webp'
 const PD_DECK = '/genius-baby-forklift-pd-deck.pptx'
+const PD_DECK_5MIN = '/genius-baby-forklift-pd-deck-5min.pptx'
 
 const ACTION_BUTTON = "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-display text-sm border bg-primary/15 border-primary/40 text-primary hover:bg-primary/25 hover:border-primary/60 transition-all duration-300"
 const FALLBACK_LINK = "inline-flex items-center gap-1.5 text-xs font-display text-muted-foreground hover:text-foreground transition-colors"
@@ -236,17 +237,23 @@ function PDDeckCard() {
                     <Presentation size={18} className="text-secondary" />
                 </div>
                 <div className="min-w-0">
-                    <h4 className="font-display text-sm font-bold text-foreground">Genius Baby Forklift &mdash; the full staff PD deck</h4>
+                    <h4 className="font-display text-sm font-bold text-foreground">Genius Baby Forklift &mdash; the staff PD deck</h4>
                     <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
-                        18 slides, about 15 minutes to present. PowerPoint (.pptx), roughly 4.4 MB &mdash; worth waiting for wi-fi.
+                        Run it in five minutes or fifteen. Same spine either way: what it&rsquo;s genius at,
+                        what it&rsquo;s clueless about, the red lines, and the C.O.R.E. scaffold.
+                        PowerPoint (.pptx), roughly 4.4 MB each &mdash; worth waiting for wi-fi.
                     </p>
                 </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-3">
+                <a href={PD_DECK_5MIN} download className={ACTION_BUTTON}>
+                    <Download size={14} />
+                    Five-minute cut &mdash; 6 slides
+                </a>
                 <a href={PD_DECK} download className={ACTION_BUTTON}>
                     <Download size={14} />
-                    Download the deck (.pptx, ~4.4 MB)
+                    Full session &mdash; 18 slides
                 </a>
             </div>
 
@@ -254,7 +261,13 @@ function PDDeckCard() {
                 <AlertTriangle size={14} className="text-accent shrink-0 mt-0.5" />
                 <p className="text-muted-foreground text-xs leading-relaxed">
                     <span className="font-display font-bold text-foreground/80">Check this against your own policy before you present it.</span>{' '}
-                    The policy slides are written for NSW public schools &mdash; they cite PPIPA and HRIPA, and reference NESA and the IB. If you are running the session in a non-government school, in another state, or outside Australia, check every policy slide against your own school&rsquo;s AI-use policy and approved-tool list first. Used unedited, the privacy guidance in this deck is wrong for non-government schools.
+                    The privacy slides are written for a <strong className="font-semibold text-foreground/80">non-government
+                    Australian school</strong> &mdash; they cite the federal Privacy Act and the Australian Privacy
+                    Principles, and reference NESA and the IB. NSW public schools are the other way round: PPIPA,
+                    plus HRIPA for allied-health reports. Different state, different sector or outside Australia
+                    and the instrument changes again. Check every policy slide against your own school&rsquo;s
+                    AI-use policy and approved-tool list first, and put your real privacy contact on the
+                    recovery slide before you run the session.
                 </p>
             </div>
         </div>
