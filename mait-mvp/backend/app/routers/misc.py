@@ -1,4 +1,5 @@
 import os
+from html import escape
 
 import resend
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -22,6 +23,7 @@ class FeedbackRequest(BaseModel):
     message: str
     email: Optional[str] = "anonymous"
     context: Optional[str] = "unknown"
+    subject: Optional[str] = None
 
 
 @router.post("/api/feedback")
@@ -36,19 +38,25 @@ async def submit_feedback(request: Request, body: FeedbackRequest):
     resend.api_key = resend_api_key
 
     try:
+        recipient = os.getenv("MAIT_FEEDBACK_TO", "mentor@mentalmaths.au")
+        safe_context = escape(body.context or "unknown")
+        safe_email = escape(body.email or "anonymous")
+        safe_message = escape(body.message).replace(chr(10), "<br>")
+        subject = body.subject or f"MAIT Feedback: {body.context}"
+
         html_content = f"""
         <h2>New MAIT Feedback Received</h2>
-        <p><strong>Context:</strong> {body.context}</p>
-        <p><strong>User Email:</strong> {body.email}</p>
+        <p><strong>Context:</strong> {safe_context}</p>
+        <p><strong>User Email:</strong> {safe_email}</p>
         <hr>
         <h3>Message:</h3>
-        <p>{body.message.replace(chr(10), '<br>')}</p>
+        <p>{safe_message}</p>
         """
 
         r = resend.Emails.send({
             "from": "MAIT System <onboarding@resend.dev>",
-            "to": "work.daray@gmail.com",
-            "subject": f"MAIT Feedback: {body.context}",
+            "to": recipient,
+            "subject": subject,
             "html": html_content
         })
 

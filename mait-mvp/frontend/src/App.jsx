@@ -4,6 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import Navigation from './components/Navigation'
 import MarketingPageShell from './components/MarketingPageShell'
 import LoginModal from './components/LoginModal'
+import { Toaster } from './components/ui/sonner'
 import useAuth from './hooks/useAuth'
 import { API_URL } from './config/api'
 
@@ -13,6 +14,10 @@ const AIResources = lazy(() => import('./AIResources'))
 const WorksheetStudio = lazy(() => import('./sections/WorksheetStudio'))
 const PastPapers = lazy(() => import('./PastPapers'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const HelpPage = lazy(() => import('./pages/HelpPage'))
+const PilotPage = lazy(() => import('./pages/PilotPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
 const ChatPage = lazy(() => import('./pages/ChatPage'))
 const TutorWorkspace = lazy(() => import('./features/exoskeleton/Workspace'))
 
@@ -111,6 +116,30 @@ function AppRoutes() {
                         </MarketingPageShell>
                     } />
 
+                    <Route path="/about" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><AboutPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
+                    <Route path="/help" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><HelpPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
+                    <Route path="/pilot" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><PilotPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
+                    <Route path="/contact" element={
+                        <MarketingPageShell>
+                            <ErrorBoundary><ContactPage /></ErrorBoundary>
+                        </MarketingPageShell>
+                    } />
+
                     <Route path="/pastpapers" element={
                         <MarketingPageShell>
                             <div className="pt-20 lg:pt-24 min-h-screen">
@@ -147,6 +176,7 @@ function AppRoutes() {
                 </Routes>
             </Suspense>
             {loginModal}
+            <Toaster richColors position="bottom-right" />
         </>
     );
 }
