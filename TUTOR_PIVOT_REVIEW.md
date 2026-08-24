@@ -22,10 +22,12 @@ MAIT currently employs a **Hybrid Edge-Cloud Architecture**.
 
 ## 2. The Tutor-Mediated Pivot
 
-A major, immediate pivot is underway: **The Tutor-Only Command Center (Dogfooding Phase / Emergency 3-Week Sprint)**.
+A major pivot was attempted: **The Tutor-Only Command Center (Dogfooding Phase / Emergency 3-Week Sprint)**.
 
 ### Strategic Context
-The founder/lead tutor (Darra) needs to use MAIT *immediately* for an emergency 3-week teaching stint covering Year 7-12 classes, alongside his normal tutoring. He needs to replace his manual OpenAI Custom Gems workflow with a unified MAIT experience to save prep time.
+The founder/lead tutor (Darra) needed to use MAIT for an emergency 3-week teaching stint covering Year 7-12 classes, alongside his normal tutoring, replacing his manual OpenAI Custom Gems workflow with a unified MAIT experience to save prep time.
+
+**Post-Sprint Update:** The emergency 3-week stint has concluded. Darra *did* use the teacher-facing version in the classroom, but found the workflow/UI was "not easy enough" to support the speed required for live teaching preparation. This feedback will likely drive the next phase of UI/UX revisions.
 
 ### The Major Deferrals (Scope Cuts)
 To meet the 3-week deadline and a 10-15 hour/week build budget, the team violently agreed to defer all student-facing complexity:
