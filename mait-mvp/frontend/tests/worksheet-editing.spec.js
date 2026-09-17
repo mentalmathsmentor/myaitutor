@@ -37,17 +37,29 @@ for (const width of [1280, 390]) {
     const intersections = [math, clear].map(b => Math.max(0, Math.min(box.x + box.width, b.x + b.width) - Math.max(box.x, b.x)) * Math.max(0, Math.min(box.y + box.height, b.y + b.height) - Math.max(box.y, b.y)));
     // Keep both overlap and actual gesture evidence when checking the old code.
     expect.soft(intersections).toEqual([0, 0]);
+    const gestures = [];
     for (const fraction of [0, 0.5, 1]) {
-      await input.evaluate((el, f) => { el.scrollTop = (el.scrollHeight - el.clientHeight) * f; el.setSelectionRange(0, 0); }, fraction);
+      const metrics = await input.evaluate((el, f) => {
+        el.setSelectionRange(0, 0);
+        el.scrollTop = (el.scrollHeight - el.clientHeight) * f;
+        const style = getComputedStyle(el);
+        return { scrollTop: el.scrollTop, padding: parseFloat(style.paddingBottom),
+          border: parseFloat(style.borderBottomWidth), lineHeight: parseFloat(style.lineHeight) };
+      }, fraction);
       const x = box.x + 30;
-      const y = box.y + box.height - 18;
+      // Drag through the last visible text line, not its trailing padding.
+      // WebKit correctly collapses a drag below the final line to end-of-text.
+      const y = box.y + box.height - metrics.border - metrics.padding - metrics.lineHeight / 2;
       await page.mouse.move(x, y);
       await page.mouse.down();
       await page.mouse.move(Math.min(x + 130, box.x + box.width - 20), y, { steps: 12 });
       await page.mouse.up();
       await expect.soft(input).toBeFocused();
-      expect.soft(await input.evaluate(el => el.selectionEnd - el.selectionStart)).toBeGreaterThan(0);
+      const selected = await input.evaluate(el => ({ start: el.selectionStart, end: el.selectionEnd, text: el.value.slice(el.selectionStart, el.selectionEnd) }));
+      gestures.push({ fraction, ...metrics, x, y, ...selected });
+      expect.soft(selected.end - selected.start, `drag at scroll fraction ${fraction}`).toBeGreaterThan(0);
     }
+    await testInfo.attach('selection-gestures', { body: JSON.stringify(gestures, null, 2), contentType: 'application/json' });
     await page.screenshot({ path: testInfo.outputPath('brief-layout.png') });
   });
 }

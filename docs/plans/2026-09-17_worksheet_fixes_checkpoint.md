@@ -2,6 +2,8 @@
 
 Status: implemented and tested locally on `codex/worksheet-compiler-fixes`. Not pushed, merged or deployed.
 
+Follow-up verification: [configuration coverage](2026-09-17_worksheet_configuration_coverage.md) expands the first-patch checks to 1,694 passing frontend tests and 69 unique passing browser cases each in Chrome and WebKit. The separate broader audit still has 42 failing assertions out of 80; Firefox could not launch locally. The results below remain the historical first-patch checkpoint, not the latest coverage totals.
+
 ## Baseline and isolation
 
 The original checkout was on `docs/AugState`, at the same commit as local `main`, with unrelated dirty work. It was left intact. This branch uses a separate worktree based on freshly fetched `origin/main`, `2d924e883796fa521c9024d6387f0abd9c2f5d26`. Worksheet source matched the audited checkout. The latest successful Pages workflow inspected was [run 30262000913](https://github.com/mentalmathsmentor/myaitutor/actions/runs/30262000913), with that same source SHA; the Pages configuration identified `www.myaitutor.au`. No publication action occurred.

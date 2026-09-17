@@ -5,8 +5,14 @@ export default defineConfig({
   testMatch: '**/*.spec.js',
   fullyParallel: false,
   workers: 1,
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium', channel: process.env.PLAYWRIGHT_CHANNEL || undefined } },
+    ...(process.env.PLAYWRIGHT_CROSS_BROWSER ? [
+      { name: 'webkit', use: { browserName: 'webkit' } },
+      { name: 'firefox', use: { browserName: 'firefox' } },
+    ] : []),
+  ],
   use: {
-    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
     baseURL: 'http://127.0.0.1:4173',
     viewport: { width: 1280, height: 900 },
     trace: 'retain-on-failure',
