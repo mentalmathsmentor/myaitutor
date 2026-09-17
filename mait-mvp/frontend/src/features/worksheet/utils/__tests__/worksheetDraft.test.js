@@ -48,4 +48,26 @@ describe('defensive versioned drafts', () => {
     const draft = readWorksheetDraft(storage({ mait_ws_stage: 'retired', mait_ws_difficulty: 'unsupported', mait_ws_workingSpace: 'bad', mait_ws_numQuestions: '1.5' }));
     expect(draft).toMatchObject({ selectedStage: 'Year 12', difficulty: 'Mixed', workingSpace: 'Dynamic Space', numQuestions: 10 });
   });
+  it.each([
+    ['rawQuestions', { text: 'Unread synthetic teacher draft' }],
+    ['customSubject', ['Synthetic history']],
+    ['includeName', 'false'],
+    ['numQuestions', null],
+    ['selectedPoints', {}],
+    ['selectedPoints', [null, 5]],
+  ])('preserves a version-2 draft with malformed %s and recovers legacy text', (field, value) => {
+    const store = storage({ mait_ws_rawQuestions: 'Recoverable legacy synthetic brief' });
+    const draft = readWorksheetDraft(store);
+    saveWorksheetDraft(draft, store);
+    const envelope = JSON.parse(store.getItem(DRAFT_KEY));
+    envelope.values[field] = value;
+    const unread = JSON.stringify(envelope);
+    store.setItem(DRAFT_KEY, unread);
+    const restored = readWorksheetDraft(store);
+    expect(restored.preventSave).toBe(true);
+    expect(restored.notice).toContain('paused');
+    expect(restored.rawQuestions).toBe('Recoverable legacy synthetic brief');
+    expect(saveWorksheetDraft(restored, store)).toBe(false);
+    expect(store.getItem(DRAFT_KEY)).toBe(unread);
+  });
 });

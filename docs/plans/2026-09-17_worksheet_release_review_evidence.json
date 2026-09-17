@@ -1,0 +1,37 @@
+{
+  "red": {
+    "sha256": "2f36f072565b87fad83c7adce9e2a3ae5c89510319383ba54bcc7ec9dff20e5f",
+    "stats": {
+      "numTotalTests": 20,
+      "numPassedTests": 14,
+      "numFailedTests": 6,
+      "numPendingTests": 0
+    }
+  },
+  "unit": {
+    "sha256": "44ae9287237e15266b42b6853570e53fc6123b12ed69568259edbc58df99f718",
+    "stats": {
+      "numTotalTests": 2099,
+      "numPassedTests": 2099,
+      "numFailedTests": 0,
+      "numPendingTests": 0
+    }
+  },
+  "browser": {
+    "sha256": "2a8fc60e56a6f019ffe61a0fd53bb70ed3a8c75353508f091aafa6e136c36881",
+    "stats": {
+      "startTime": "2026-09-17T12:03:24.801Z",
+      "duration": 35845.557,
+      "expected": 22,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "source_sha256": {
+    "mait-mvp/frontend/src/features/worksheet/utils/worksheetDraft.js": "015651b83ca8fd1d27a69bdfb16573370b4c22317e340906648604755f7a2900",
+    "mait-mvp/frontend/src/sections/WorksheetStudio.tsx": "3536ff89627574aa2bd8be97c5adaf53a60da6b6981ccda03f48980f4e4cf2a1",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/worksheetDraft.test.js": "8cbc7ccb38831aee91d8997bab6e6441a302d917fdda3d9e6b01a3428fa8ffd6",
+    "mait-mvp/frontend/tests/worksheet-handoff.spec.js": "9bae755566b6343cc3f1634faab2989e6892aa80274f597dd94a522c3e68e7dd"
+  }
+}

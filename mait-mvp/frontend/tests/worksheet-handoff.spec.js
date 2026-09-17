@@ -92,3 +92,20 @@ test('narrow prompt preview remains readable and controls fit', async ({ page },
   await expect(page.getByRole('button', { name: 'Open Gemini', exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('prompt-preview-narrow.png') });
 });
+
+test('malformed new draft fields preserve the unread draft and allow copying recovered text', async ({ page }) => {
+  const unread = JSON.stringify({ version: 2, courseKey: '["Year 12","English"]', values: { selectedStage: 'Year 12', selectedSubject: 'English', rawQuestions: { text: 'Unread synthetic draft' } } });
+  await page.evaluate(unread => {
+    localStorage.setItem('mait_ws_draft_v2', unread);
+    localStorage.setItem('mait_ws_stage', 'Year 12');
+    localStorage.setItem('mait_ws_subject', 'English');
+    localStorage.setItem('mait_ws_rawQuestions', 'Recoverable synthetic brief');
+  }, unread);
+  await page.reload();
+  await expect(page.getByRole('status')).toContainText('saving is paused');
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(briefField(page)).toHaveValue('Recoverable synthetic brief');
+  await briefField(page).fill('Edited recovered synthetic brief');
+  expect(await copyPrompt(page)).toContain('Edited recovered synthetic brief');
+  expect(await page.evaluate(() => localStorage.getItem('mait_ws_draft_v2'))).toBe(unread);
+});

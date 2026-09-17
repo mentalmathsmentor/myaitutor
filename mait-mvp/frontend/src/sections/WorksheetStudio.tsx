@@ -1001,7 +1001,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       { label: 'Name space', checked: includeName, onChange: setIncludeName },
                       { label: 'Date space', checked: includeDate, onChange: setIncludeDate },
                       { label: 'Allocate marks', note: '(Experimental)', checked: includeMarks, onChange: setIncludeMarks },
-                      { label: 'Canvas setup guide', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
+                      { label: 'Canvas setup guide', description: 'Show setup steps in the prompt preview; keep them out of the copied prompt.', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
                       { label: 'Answer key', checked: generateAnswerKey, onChange: (enabled) => { setGenerateAnswerKey(enabled); if (!enabled) setIncludeWorkedSolutions(false); } },
                       {
                         label: 'Full Worked Solutions & Rubric',
@@ -1009,7 +1009,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         checked: includeWorkedSolutions,
                         onChange: (enabled) => { setIncludeWorkedSolutions(enabled); if (enabled) setGenerateAnswerKey(true); },
                       },
-                      { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
+                      { label: 'First time mode', description: 'Show help for reviewing and refining your worksheet in the prompt preview.', checked: firstTimeMode, onChange: setFirstTimeMode },
                       { label: 'Remove Watermark', note: 'Omit footer link to myaitutor.au/worksheets', checked: removeWatermark, onChange: setRemoveWatermark },
                     ].map((item) => (
                       <label key={item.label} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">

@@ -28,6 +28,14 @@ export function readWorksheetDraft(storage) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed?.version !== 2 || !parsed.values || typeof parsed.values !== 'object' || Array.isArray(parsed.values)) throw new Error('Unknown draft format');
+        const malformed = Object.entries(defaults).some(([field, fallback]) => {
+          if (!Object.hasOwn(parsed.values, field)) return false;
+          const value = parsed.values[field];
+          return field === 'selectedPoints'
+            ? !Array.isArray(value) || value.some(id => typeof id !== 'string')
+            : typeof value !== typeof fallback;
+        });
+        if (malformed) throw new Error('Malformed draft fields');
         values = parsed.values; savedKey = parsed.courseKey; legacy = false;
       } catch {
         preventSave = true;
