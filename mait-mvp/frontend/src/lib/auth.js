@@ -1,8 +1,11 @@
+let transientStudentId;
 export const getStudentId = () => {
-    let id = localStorage.getItem('mait_student_id');
+    let id;
+    try { id = localStorage.getItem('mait_student_id'); } catch { /* Storage may be denied in private browsing. */ }
     if (!id) {
-        id = `student_${crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)}`;
-        localStorage.setItem('mait_student_id', id);
+        id = transientStudentId || `student_${crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)}`;
+        transientStudentId = id;
+        try { localStorage.setItem('mait_student_id', id); } catch { /* Retain only for this page lifetime. */ }
     }
     return id;
 };

@@ -2,6 +2,8 @@
 
 Status: implemented and tested locally on `codex/worksheet-compiler-fixes`. Not pushed, merged or deployed.
 
+The subsequent [acceptance repair checkpoint](2026-09-17_worksheet_acceptance_repairs.md) fixes the frontend failures identified by the expanded audit. This file retains the first-patch history.
+
 Follow-up verification: [configuration coverage](2026-09-17_worksheet_configuration_coverage.md) expands the first-patch checks to 1,694 passing frontend tests and 69 unique passing browser cases each in Chrome and WebKit. The separate broader audit still has 42 failing assertions out of 80; Firefox could not launch locally. The results below remain the historical first-patch checkpoint, not the latest coverage totals.
 
 ## Baseline and isolation

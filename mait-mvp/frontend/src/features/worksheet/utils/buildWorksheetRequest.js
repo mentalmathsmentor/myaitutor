@@ -5,8 +5,8 @@ export function buildWorksheetRequest(params) {
     // UI selections
     selectedStage,
     selectedSubject,
-    customSubject,
-    rawQuestions,
+    customSubject = '',
+    rawQuestions = '',
     numQuestions,
     difficulty,
     workingSpace,
@@ -19,8 +19,6 @@ export function buildWorksheetRequest(params) {
     removeWatermark,
     syllabusContextMode,
     textbooksProvided,
-    firstTimeMode,
-    includeCanvasSetup,
     // Pedagogy
     pedagogicalSpotError,
     pedagogicalParameterShift,
@@ -43,18 +41,17 @@ export function buildWorksheetRequest(params) {
   if (pedagogicalWordProblems) pedagogicalDrills.push('word-problems');
   if (pedagogicalMultiStep) pedagogicalDrills.push('multi-step');
 
-  const answerKeyStatus = generateAnswerKey 
+  const answerKeyStatus = generateAnswerKey || includeWorkedSolutions
     ? (includeWorkedSolutions ? 'Generate Teacher Answer Key at the end with full worked solutions & marking rubric.' : 'Generate Teacher Answer Key at the end.')
     : 'No answer key.';
 
   let headerSpaces = [];
-  if (includeName) {
-    headerSpaces.push(schoolName.trim() ? `School/Class Name for Header: ${schoolName.trim()}.` : 'Include Name line.');
-  }
-  if (includeDate) headerSpaces.push('Include Date line.');
+  if (schoolName?.trim()) headerSpaces.push(`School/Class Name for Header: ${schoolName.trim()}.`);
+  headerSpaces.push(includeName ? 'Include Name line.' : 'No Name line.');
+  headerSpaces.push(includeDate ? 'Include Date line.' : 'No Date line.');
 
   const syllabusPacket = buildSyllabusPacket({ selectedStage, selectedSubject: displaySubject, selectedPoints, syllabusData });
-  const hasSelectedPoints = selectedPoints && selectedPoints.length > 0;
+  const hasSelectedPoints = syllabusPacket.dotPoints.length > 0;
   const topicSummary = hasSelectedPoints
     ? syllabusPacket.topicSummary
     : (rawQuestions.trim() ? rawQuestions.trim() : `${selectedStage} ${displaySubject}`);
@@ -68,8 +65,6 @@ export function buildWorksheetRequest(params) {
     customInstructions += 'Syllabus context: Off. Use the selected topics and teacher brief without requesting a web search. The local topic list is not proof of verified NESA alignment. ';
   }
   if (textbooksProvided) customInstructions += 'I will upload textbooks/resources. ';
-  if (firstTimeMode) customInstructions += 'FIRST TIME MODE: This is the user\'s first time. Greet them warmly and explain how to iterate on the worksheet. ';
-  if (includeCanvasSetup) customInstructions += 'INCLUDE CANVAS SETUP GUIDE: Add Canvas setup tips to your greeting. ';
   if (hasSelectedPoints && rawQuestions.trim()) customInstructions += 'ADDITIONAL TEACHER NOTES: ' + rawQuestions.trim() + ' ';
 
   return {

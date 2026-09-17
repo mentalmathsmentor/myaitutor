@@ -1,25 +1,9 @@
 import syllabusRegistry from '../../../syllabus_registry.json';
 import { ensureStringArray } from './promptHelpers';
-
-function buildIdToLabel(syllabusData) {
-  const idToLabel = {};
-  const traverse = (obj) => {
-    if (Array.isArray(obj)) {
-      obj.forEach(p => {
-        if (typeof p === 'object' && p !== null && p.id && p.label) {
-          idToLabel[p.id] = p.label;
-        }
-      });
-    } else if (typeof obj === 'object' && obj !== null) {
-      Object.values(obj).forEach(traverse);
-    }
-  };
-  if (syllabusData) traverse(syllabusData);
-  return idToLabel;
-}
+import { topicRecords } from './courseCatalogue';
 
 export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPoints, syllabusData }) {
-  if (!selectedPoints || selectedPoints.length === 0) {
+  if (!Array.isArray(selectedPoints) || selectedPoints.length === 0) {
     return {
       topicSummary: `${selectedStage} ${selectedSubject}`,
       outcomes: [],
@@ -31,11 +15,11 @@ export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPo
     };
   }
 
-  const idToLabel = buildIdToLabel(syllabusData);
+  const records = new Map(topicRecords(syllabusData).map(p => [p.id, p]));
 
   // Only process ids that resolve to a label in the current syllabus context.
   // This prevents stale ids from a prior subject from producing phantom metadata.
-  const resolvedIds = new Set(selectedPoints.filter((id) => idToLabel[id]));
+  const resolvedIds = new Set(selectedPoints.filter((id) => typeof id === 'string' && records.has(id)));
 
   const outcomes = new Set();
   const include = new Set();
@@ -44,18 +28,20 @@ export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPo
   const questionStyleNotes = new Set();
 
   resolvedIds.forEach(pointId => {
-    const meta = syllabusRegistry[pointId];
+    const point = records.get(pointId);
+    const meta = syllabusRegistry[point.sourceId || pointId];
     if (meta) {
       if (meta.outcomes) meta.outcomes.forEach(o => outcomes.add(o));
-      if (meta.include) meta.include.forEach(i => include.add(i));
-      if (meta.exclude) meta.exclude.forEach(e => exclude.add(e));
-      if (meta.assessmentEmphasis) meta.assessmentEmphasis.forEach(a => assessmentEmphasis.add(a));
-      if (meta.questionStyleNotes) meta.questionStyleNotes.forEach(q => questionStyleNotes.add(q));
+      const scoped = text => `For ${point.label} only: ${text}`;
+      if (meta.include) meta.include.forEach(i => include.add(scoped(i)));
+      if (meta.exclude) meta.exclude.forEach(e => exclude.add(scoped(e)));
+      if (meta.assessmentEmphasis) meta.assessmentEmphasis.forEach(a => assessmentEmphasis.add(scoped(a)));
+      if (meta.questionStyleNotes) meta.questionStyleNotes.forEach(q => questionStyleNotes.add(scoped(q)));
     }
   });
 
   // Only emit labels for ids that resolved — never fall back to raw id strings.
-  const displayLabels = selectedPoints.map(p => idToLabel[p]).filter(Boolean);
+  const displayLabels = [...resolvedIds].map(id => records.get(id).label);
 
   return {
     topicSummary: displayLabels.join(' | '),

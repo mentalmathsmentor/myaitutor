@@ -30,6 +30,10 @@ jobs:
         working-directory: mait-mvp/frontend
         run: npm install --no-audit --no-fund
 
+      - name: Test frontend and worksheet acceptance
+        working-directory: mait-mvp/frontend
+        run: npm test
+
       - name: Build
         working-directory: mait-mvp/frontend
         run: npm run build

@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 
+const readAutoSave = () => {
+  try { return localStorage.getItem('mait_autosave') === 'true'; } catch { return false; }
+};
+
 export const useUIStore = create((set) => ({
   showLocalChat: false,
   showMobileSyllabus: false,
@@ -7,7 +11,7 @@ export const useUIStore = create((set) => ({
   showOverlay: false,
   showAutoSavePrompt: false,
   showQueueConfirm: null,
-  autoSaveEnabled: localStorage.getItem('mait_autosave') === 'true',
+  autoSaveEnabled: readAutoSave(),
   isIdle: false,
 
   setShowLocalChat: (show) => set({ showLocalChat: show }),
@@ -20,7 +24,7 @@ export const useUIStore = create((set) => ({
   setAutoSaveEnabled: (enabled) => set({ autoSaveEnabled: enabled }),
   toggleAutoSave: () => set((state) => {
     const next = !state.autoSaveEnabled;
-    localStorage.setItem('mait_autosave', String(next));
+    try { localStorage.setItem('mait_autosave', String(next)); } catch { return { autoSaveEnabled: false }; }
     return { autoSaveEnabled: next };
   }),
 }));

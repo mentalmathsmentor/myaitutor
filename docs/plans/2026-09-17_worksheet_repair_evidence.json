@@ -1,0 +1,427 @@
+{
+  "date": "2026-09-17",
+  "branch": "codex/worksheet-compiler-fixes",
+  "base_commit": "288cf487e7dc4f207a2bfcb04a74f26046103822",
+  "status": "verified locally; not pushed or deployed",
+  "runs": {
+    "frontend": {
+      "receipt": "/private/tmp/mait-repair-unit-final-v2.json",
+      "sha256": "23fe9c590baf7ea994df95b633a28d1cafade9495fed6c1d7691bdf6a497dd59",
+      "stats": {
+        "numTotalTests": 2093,
+        "numPassedTests": 2093,
+        "numFailedTests": 0,
+        "numPendingTests": 0
+      },
+      "audit_cases": [
+        {
+          "name": "remaining compiler contract acceptance flat catalogue topics survive packet construction",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance Power Rule guidance cannot globally prohibit the selected Chain Rule",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance all-stale selections fall back to the valid manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance name=false / heading=false stay independent",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance name=false / heading=true stay independent",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance name=true / heading=false stay independent",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance name=true / heading=true stay independent",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance answers=false / worked=false",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance answers=false / worked=true",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance answers=true / worked=false",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance answers=true / worked=true",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance spot-error conveys the promised one-mark constraint",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance disabled marks and answers remain explicit in the copied prompt",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance first=true setup=false stays in application guidance",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance first=false setup=true stays in application guidance",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance first=true setup=true stays in application guidance",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance a guidance-only exclude packet survives alongside manual text",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance a guidance-only assessmentEmphasis packet survives alongside manual text",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance a guidance-only questionStyleNotes packet survives alongside manual text",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance normalisation never leaks non-string labels: null",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance normalisation never leaks non-string labels: \"invalid\"",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance normalisation never leaks non-string labels: {}",
+          "status": "passed"
+        },
+        {
+          "name": "remaining compiler contract acceptance normalisation never leaks non-string labels: null",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / Mathematics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / Science retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / HSIE retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / Mathematics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / Science retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / HSIE retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / Mathematics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / Science retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / HSIE retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / Mathematics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / Science retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / HSIE retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 4 (Yr 7-8) / Mathematics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 4 (Yr 7-8) / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 4 (Yr 7-8) / Science retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 4 (Yr 7-8) / HSIE retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 5 (Yr 9-10) / Mathematics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 5 (Yr 9-10) / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 5 (Yr 9-10) / Science retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Stage 5 (Yr 9-10) / HSIE retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / Mathematics Standard retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / Mathematics Advanced retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / Mathematics Extension 1 retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / Chemistry retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / Biology retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 11 / Physics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Mathematics Standard retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Mathematics Advanced retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Mathematics Extension 1 retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Mathematics Extension 2 retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Physics retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / English retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Chemistry retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Biology retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Engineering Studies retains a chosen topic or manual brief",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries Stage 4 Science does not expose the Mathematics topic tree",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries Year 11 Physics does not expose Standard maths topics",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries switching maths to manual-only English removes hidden maths points",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries reloading a flat-topic course retains valid selections",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries malformed stored selections do not crash the Studio",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries invalid stored stage recovers without a ReferenceError",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries Full Worked Solutions alone enables an answer key",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries optional header label survives when Name space is off",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries closing the page before the launch delay prevents opening Gemini",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries clipboard rejection displays an error and never launches",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries empty worksheet does not write the clipboard",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries custom subject survives a reload",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries sidebar handoff rejects an unnamed custom subject",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries only the explicit Open Gemini action launches once",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries module-name search retains matching child topics",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries context buttons expose selected state to assistive technology",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries copy modal has dialog semantics",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries a late clipboard result cannot mark a newer preview as copied",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries worked solutions and answer-key controls remain consistent in both directions",
+          "status": "passed"
+        },
+        {
+          "name": "state transitions and error boundaries a denied draft read cannot overwrite an unread saved draft",
+          "status": "passed"
+        }
+      ]
+    },
+    "browser_full": {
+      "receipt": "/private/tmp/mait-repair-browser-complete.json",
+      "sha256": "5094cd59937f305c53f3f8699631eea1268dc2060e41aa90ec5dc7bcce505a5e",
+      "stats": {
+        "startTime": "2026-09-17T09:23:33.902Z",
+        "duration": 245078.272,
+        "expected": 158,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "by_project": {
+        "chromium": {
+          "expected": 79
+        },
+        "webkit": {
+          "expected": 79
+        }
+      }
+    },
+    "browser_final_storage_guard": {
+      "receipt": "/private/tmp/mait-repair-storage-final.json",
+      "sha256": "0832e1c141d33e5e38c835821e0fe9750e32f49003166a950f1a41c106e70053",
+      "stats": {
+        "startTime": "2026-09-17T09:28:16.120Z",
+        "duration": 7440.686,
+        "expected": 2,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "by_project": {
+        "chromium": {
+          "expected": 1
+        },
+        "webkit": {
+          "expected": 1
+        }
+      }
+    }
+  },
+  "source_sha256": {
+    ".github/workflows/deploy.yml": "76b0bfe8bb711b86d6271ec23ce3d7d08cb34055aaffafa82a380b39192056de",
+    ".github/workflows/frontend-checks.yml": "c478a0c1fb381904efa46d14ff7a6a212dececb0f32d44fe155585a4d114b682",
+    "mait-mvp/frontend/audit/open-findings.test.jsx": "8f023a3ba8440f23813a4390b9f3f5fc2813a0a91326d57bb13cb8a15cee095e",
+    "mait-mvp/frontend/src/components/worksheet/PromptHandoff.jsx": "c1b4ed90b182f1a7765c953f914474c943c08c7115ecfb987f45f2742f81778b",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/buildSyllabusPacket.test.js": "1eef9ea34235719acd872813cf5fc9b1e5053cfd9e40da96ab1a01a1e9375144",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/buildWorksheetRequest.test.js": "6ebf77f954b1a825cefc5560632f0c8dc8c5c6dbae532c6ee5ff07f309b0c9a6",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/courseCatalogue.test.js": "57480be4553ccf8a1e57914819e3109fd4377b810c814045446a7b0b877fb77d",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/renderGemHandoffPrompt.test.js": "8d4546697ffe4195aa72d083213fb685edb4d3b84e14b9dd08eac39eb4a3d9e9",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/worksheetDraft.test.js": "b9b6620e8f8d64d774a280590b312cf21390269cc59161617e95f6e912f40ffc",
+    "mait-mvp/frontend/src/features/worksheet/utils/__tests__/worksheetOptions.test.js": "3d565fab644f0e18f0d09d83a654979279c08f34b6e45598eba27cf45995a0e6",
+    "mait-mvp/frontend/src/features/worksheet/utils/buildSyllabusPacket.js": "13c6d3edf58326475b538abd88f58bcf888be750f47e95d03073e8266ba83a0f",
+    "mait-mvp/frontend/src/features/worksheet/utils/buildWorksheetRequest.js": "a205eccf84ac2fcd14beec645f4e1cdfefa8f54a7acc697b09aa8e05cd425ea6",
+    "mait-mvp/frontend/src/features/worksheet/utils/courseCatalogue.js": "f253f892508630306e217d39ffc872102328f3209743646c20a1032ef89c6733",
+    "mait-mvp/frontend/src/features/worksheet/utils/promptHelpers.js": "f3c3abcf53fd12be32456e310c42f9d22efff4a639f648fc49f520149e4f332f",
+    "mait-mvp/frontend/src/features/worksheet/utils/renderGemHandoffPrompt.js": "8d283dbc5dff532801e5b30db90f4cf7e9c1f7e1d8c190789f2f938e32e9bbe8",
+    "mait-mvp/frontend/src/features/worksheet/utils/worksheetDirectives.js": "ccbd7f297e3bcfa447222d7ad9b88f78de5b101e1cbc9b5460c6e3412317fa5a",
+    "mait-mvp/frontend/src/features/worksheet/utils/worksheetDraft.js": "f4ba11c6cbe0e1a96af01fe32ba37be7fcdda60d0d250966c9df9c445214d016",
+    "mait-mvp/frontend/src/hooks/useAuth.js": "6b0a5edc63b73ee36964e6c9cb9940eccee1e4d7e283276402fc38543f531c05",
+    "mait-mvp/frontend/src/lib/__tests__/authStorage.test.js": "9601d840fe644565b164285b8a26a3a55b5aa7953af4b68ae479fa2286811bcb",
+    "mait-mvp/frontend/src/lib/auth.js": "c7b46d2ca8b9c4cefc1d68aa1c06af3a5232250b1dd282c84fd52e023c3853d4",
+    "mait-mvp/frontend/src/sections/WorksheetStudio.tsx": "39ae63b2ccc16f0716a2426e1473c82eabdbf962adf10b09830df40bfcc64821",
+    "mait-mvp/frontend/src/stores/uiStore.js": "07cfaf02b7787f779f27db233f458fc6201bd7c05ee4c19b4e97e5c78b7a0915",
+    "mait-mvp/frontend/tests/worksheet-editing.spec.js": "b4d399e3b7b64d27ce9401e14365be00204e82cdfc3fa7efd8e250553ad65abe",
+    "mait-mvp/frontend/tests/worksheet-handoff.spec.js": "60f02567364aa71b101b2cbcd59cd80d0aeb1a8240c7780875fa2627665a189d",
+    "mait-mvp/frontend/tests/worksheet-support.js": "0adb496992b34371ceaef44d113acbce8064f63fcfbd7a668b66ec0609e01fcf",
+    "mait-mvp/frontend/vitest.config.js": "32e617c6df0c98f2ecd2581b0b466097070d638638ab262407529f0d8126c523"
+  },
+  "notes": [
+    "Full browser run: 158 passing checks, no skips or retries. The final read-denial preservation guard was then checked by both engines against a rebuilt production bundle.",
+    "The original 80-case audit now passes and is included in the default test suite; three added cases bring it to 83.",
+    "No application-provider requests, real clipboard writes, real Gemini launches, database operations or deployment occurred.",
+    "Firefox, real Safari/touch/IME, NESA accuracy, authenticated flows and backend generation remain outside these results.",
+    "No dependency or lockfile changes. CI workflow edits have not been run remotely."
+  ]
+}

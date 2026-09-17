@@ -26,9 +26,9 @@ describe('renderGemHandoffPrompt', () => {
     }
   };
 
-  it('omits watermark instruction when ON (default)', () => {
+  it('renders the enabled watermark explicitly', () => {
     const prompt = renderGemHandoffPrompt(baseRequest);
-    expect(prompt).not.toContain('WATERMARK');
+    expect(prompt).toContain('**WATERMARK:** ON');
   });
 
   it('renders watermark OFF correctly', () => {

@@ -5,9 +5,7 @@ import {
   BookOpen,
   Brain,
   Check,
-  CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Copy,
   ExternalLink,
@@ -16,61 +14,22 @@ import {
   Search,
   Settings,
   Sparkles,
-  X,
-  Code2,
-  LayoutTemplate
+  Code2
 } from 'lucide-react';
 import MathInput from '../components/MathInput';
-import syllabusData from '../syllabus_data.json';
 import stageSubjects from '../stage_subjects.json';
 import modelSelectorHint from '../assets/gemini-model-selector.png';
-import canvasHint from '../assets/canvas-hint.png';
 import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
+import { resolveCourse, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
+import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
+import PromptHandoff from '../components/worksheet/PromptHandoff';
 // import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
 import { API_URL } from '@/config/api';
 
 const STAGES = Object.keys(stageSubjects);
-const SPACING_OPTIONS = ['Working Blank Space (Math)', 'Two-column Compact', 'Ruled lines (Writing)', 'Compact (No space)', 'Dynamic Space'];
-const DIFFICULTY_OPTIONS = ['Mixed', 'Easy -> Hard Progression', 'Mostly Easy', 'Mostly Hard', 'Exam-Style'];
-const MANUAL_ONLY_SUBJECTS = new Set(['English', 'Chemistry', 'Biology']);
-
-const HIERARCHY_MAP = {
-  'Year 11 Extension 1': ['Year 11 Advanced'],
-  'Year 12 Extension 1': ['Year 12 Advanced'],
-  'Year 12 Extension 2': ['Year 12 Advanced', 'Year 12 Extension 1'],
-};
-
-function buildMergedSyllabus(yearLevel) {
-  const base = syllabusData[yearLevel] || {};
-  const parents = HIERARCHY_MAP[yearLevel];
-  if (!parents) {
-    return base;
-  }
-
-  const merged = JSON.parse(JSON.stringify(base));
-
-  for (const parentLevel of parents) {
-    const parentData = syllabusData[parentLevel];
-    if (!parentData) {
-      continue;
-    }
-
-    const label = `${parentLevel} (Prerequisite)`;
-    const flatSubtopics = {};
-    for (const [moduleName, subtopics] of Object.entries(parentData)) {
-      for (const [subtopicName, points] of Object.entries(subtopics)) {
-        flatSubtopics[`${moduleName} -> ${subtopicName}`] = points;
-      }
-    }
-    merged[label] = flatSubtopics;
-  }
-
-  return merged;
-}
-
 const latexCache = new Map();
 
 function renderLatex(text) {
@@ -141,79 +100,46 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [canvasWorksheetRequest, setCanvasWorksheetRequest] = useState(null);
 
   const [showWarning, setShowWarning] = useState(false);
-  const [showCloseButton, setShowCloseButton] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
+  const [initialDraft] = useState(() => readWorksheetDraft());
+  const [draftNotice, setDraftNotice] = useState(initialDraft.notice);
   const [schoolName, setSchoolName] = useState('');
-  const [selectedStage, setSelectedStage] = useState(() => localStorage.getItem('mait_ws_stage') || 'Year 12');
-  const [selectedSubject, setSelectedSubject] = useState(() => {
-    const savedStage = localStorage.getItem('mait_ws_stage') || 'Year 12';
-    const savedSubject = localStorage.getItem('mait_ws_subject');
-    if (
-      savedSubject &&
-      (savedSubject === 'Other' || (stageSubjects[savedStage] && stageSubjects[savedStage][savedSubject]))
-    ) {
-      return savedSubject;
-    }
-    return stageSubjects[savedStage] ? Object.keys(stageSubjects[savedStage])[0] : 'Mathematics';
-  });
-  const [customSubject, setCustomSubject] = useState('');
   const [syllabusContextMode, setSyllabusContextMode] = useState('Off');
   const [textbooksProvided, setTextbooksProvided] = useState(false);
-  const [pedagogicalSpotError, setPedagogicalSpotError] = useState(() => localStorage.getItem('mait_ws_pedagogicalSpotError') === 'true');
-  const [pedagogicalParameterShift, setPedagogicalParameterShift] = useState(
-    () => localStorage.getItem('mait_ws_pedagogicalParameterShift') === 'true'
-  );
-  const [pedagogicalLimitCase, setPedagogicalLimitCase] = useState(() => localStorage.getItem('mait_ws_pedagogicalLimitCase') === 'true');
-  const [pedagogicalProofStyle, setPedagogicalProofStyle] = useState(() => localStorage.getItem('mait_ws_pedagogicalProofStyle') === 'true');
-  const [pedagogicalWordProblems, setPedagogicalWordProblems] = useState(() => localStorage.getItem('mait_ws_pedagogicalWordProblems') === 'true');
-  const [pedagogicalMultiStep, setPedagogicalMultiStep] = useState(() => localStorage.getItem('mait_ws_pedagogicalMultiStep') === 'true');
-  const [removeWatermark, setRemoveWatermark] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_removeWatermark');
-    if (saved !== null) return saved === 'true';
-    const legacy = localStorage.getItem('mait_ws_showWatermark');
-    return legacy === null ? false : legacy !== 'true';
-  });
-  const [includeWorkedSolutions, setIncludeWorkedSolutions] = useState(false);
-  const [numInput, setNumInput] = useState(() => {
-    const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
-    return String(Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved)));
-  });
-  const [firstTimeMode, setFirstTimeMode] = useState(false);
-  const [selectedPoints, setSelectedPoints] = useState(() => {
-    try {
-      const saved = localStorage.getItem('mait_ws_selectedPoints');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-  const [includeName, setIncludeName] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_name');
-    return saved !== null ? saved === 'true' : true;
-  });
-  const [includeDate, setIncludeDate] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_date');
-    return saved !== null ? saved === 'true' : true;
-  });
-  const [numQuestions, setNumQuestions] = useState(() => {
-    const saved = parseInt(localStorage.getItem('mait_ws_numQuestions') || '10', 10);
-    return Math.min(100, Math.max(1, Number.isNaN(saved) ? 10 : saved));
-  });
-  const [rawQuestions, setRawQuestions] = useState(() => localStorage.getItem('mait_ws_rawQuestions') || '');
-  const [workingSpace, setWorkingSpace] = useState(() => localStorage.getItem('mait_ws_workingSpace') || 'Dynamic Space');
-  const [includeMarks, setIncludeMarks] = useState(() => localStorage.getItem('mait_ws_marks') === 'true');
-  const [generateAnswerKey, setGenerateAnswerKey] = useState(() => localStorage.getItem('mait_ws_answerKey') === 'true');
-  const [difficulty, setDifficulty] = useState(() => localStorage.getItem('mait_ws_difficulty') || DIFFICULTY_OPTIONS[0]);
-  const [includeCanvasSetup, setIncludeCanvasSetup] = useState(() => {
-    const saved = localStorage.getItem('mait_ws_canvasSetup');
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [previewPrompt, setPreviewPrompt] = useState('');
+  const [selectedStage, setSelectedStage] = useState(initialDraft.selectedStage);
+  const [selectedSubject, setSelectedSubject] = useState(initialDraft.selectedSubject);
+  const [customSubject, setCustomSubject] = useState(initialDraft.customSubject);
+  const [pedagogicalSpotError, setPedagogicalSpotError] = useState(initialDraft.pedagogicalSpotError);
+  const [pedagogicalParameterShift, setPedagogicalParameterShift] = useState(initialDraft.pedagogicalParameterShift);
+  const [pedagogicalLimitCase, setPedagogicalLimitCase] = useState(initialDraft.pedagogicalLimitCase);
+  const [pedagogicalProofStyle, setPedagogicalProofStyle] = useState(initialDraft.pedagogicalProofStyle);
+  const [pedagogicalWordProblems, setPedagogicalWordProblems] = useState(initialDraft.pedagogicalWordProblems);
+  const [pedagogicalMultiStep, setPedagogicalMultiStep] = useState(initialDraft.pedagogicalMultiStep);
+  const [removeWatermark, setRemoveWatermark] = useState(initialDraft.removeWatermark);
+  const [includeWorkedSolutions, setIncludeWorkedSolutions] = useState(initialDraft.includeWorkedSolutions);
+  const [firstTimeMode, setFirstTimeMode] = useState(initialDraft.firstTimeMode);
+  const [selectedPoints, setSelectedPoints] = useState(initialDraft.selectedPoints);
+  const [includeName, setIncludeName] = useState(initialDraft.includeName);
+  const [includeDate, setIncludeDate] = useState(initialDraft.includeDate);
+  const [numQuestions, setNumQuestions] = useState(initialDraft.numQuestions);
+  const [rawQuestions, setRawQuestions] = useState(initialDraft.rawQuestions);
+  const [workingSpace, setWorkingSpace] = useState(initialDraft.workingSpace);
+  const [includeMarks, setIncludeMarks] = useState(initialDraft.includeMarks);
+  const [generateAnswerKey, setGenerateAnswerKey] = useState(initialDraft.generateAnswerKey);
+  const [difficulty, setDifficulty] = useState(initialDraft.difficulty);
+  const [includeCanvasSetup, setIncludeCanvasSetup] = useState(initialDraft.includeCanvasSetup);
+  const [numInput, setNumInput] = useState(String(initialDraft.numQuestions));
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedModules, setExpandedModules] = useState({});
   const [expandedSubtopics, setExpandedSubtopics] = useState({});
 
-  const launchTimeoutRef = useRef(null);
+  const handoffOrigin = useRef(null);
+  const handoffRevision = useRef(0);
+  useEffect(() => () => { handoffRevision.current += 1; }, []);
 
   const steps = [
     { id: 'curriculum', title: 'Curriculum', icon: GraduationCap },
@@ -222,152 +148,37 @@ export default function WorksheetStudio({ setCurrentSection }) {
     { id: 'output', title: 'Output', icon: Settings },
   ];
 
-  useEffect(() => {
-    localStorage.setItem('mait_ws_stage', selectedStage);
-    localStorage.setItem('mait_ws_subject', selectedSubject);
-    localStorage.setItem('mait_ws_numQuestions', numQuestions.toString());
-    localStorage.setItem('mait_ws_workingSpace', workingSpace);
-    localStorage.setItem('mait_ws_difficulty', difficulty);
-    localStorage.setItem('mait_ws_marks', includeMarks.toString());
-    localStorage.setItem('mait_ws_answerKey', generateAnswerKey.toString());
-    localStorage.setItem('mait_ws_name', includeName.toString());
-    localStorage.setItem('mait_ws_date', includeDate.toString());
-    localStorage.setItem('mait_ws_canvasSetup', includeCanvasSetup.toString());
-    localStorage.setItem('mait_ws_pedagogicalSpotError', pedagogicalSpotError.toString());
-    localStorage.setItem('mait_ws_pedagogicalParameterShift', pedagogicalParameterShift.toString());
-    localStorage.setItem('mait_ws_pedagogicalLimitCase', pedagogicalLimitCase.toString());
-    localStorage.setItem('mait_ws_pedagogicalProofStyle', pedagogicalProofStyle.toString());
-    localStorage.setItem('mait_ws_pedagogicalWordProblems', pedagogicalWordProblems.toString());
-    localStorage.setItem('mait_ws_pedagogicalMultiStep', pedagogicalMultiStep.toString());
-    localStorage.setItem('mait_ws_removeWatermark', removeWatermark.toString());
-  }, [
-    selectedStage,
-    selectedSubject,
-    numQuestions,
-    workingSpace,
-    difficulty,
-    includeMarks,
-    generateAnswerKey,
-    includeName,
-    includeDate,
-    includeCanvasSetup,
-    pedagogicalSpotError,
-    pedagogicalParameterShift,
-    pedagogicalLimitCase,
-    pedagogicalProofStyle,
-    pedagogicalWordProblems,
-    pedagogicalMultiStep,
-    removeWatermark,
-  ]);
+  const course = useMemo(() => resolveCourse(selectedStage, selectedSubject), [selectedStage, selectedSubject]);
+  const currentSyllabus = course.kind === 'hierarchical' ? course.data : {};
+  const currentTopicsList = course.kind === 'flat' ? course.data : [];
+  const legacySyllabusYear = course.kind === 'hierarchical';
+  const isManualCourse = course.kind === 'manual';
+  const getId = (point) => typeof point === 'string' ? point : point.id;
+  const getLabel = (point) => typeof point === 'string' ? point : point.label;
 
-  useEffect(() => {
-    const subjectsForStage = stageSubjects[selectedStage];
-    if (subjectsForStage) {
-      if (!subjectsForStage[selectedSubject]) {
-        const nextSubject = Object.keys(subjectsForStage)[0];
-        setSelectedSubject(nextSubject);
-        setCustomSubject('');
-      } else {
-      }
-    } else {
-      if (selectedSubject !== 'Other') {
-        setSelectedSubject('Other');
-        setMode('B');
-      }
-    }
-  }, [selectedStage]);
-
-
-
-  useEffect(() => {
-    localStorage.setItem('mait_ws_rawQuestions', rawQuestions);
-    localStorage.setItem('mait_ws_selectedPoints', JSON.stringify(selectedPoints));
-  }, [rawQuestions, selectedPoints]);
-
-
-  const legacySyllabusYear = useMemo(() => {
-    if (selectedStage === 'Stage 4 (Yr 7-8)') {
-      return 'Year 7';
-    }
-    if (selectedStage === 'Stage 5 (Yr 9-10)') {
-      return 'Year 9';
-    }
-    if (selectedStage === 'Year 11') {
-      if (selectedSubject === 'Mathematics Advanced') {
-        return 'Year 11 Advanced';
-      }
-      if (selectedSubject === 'Mathematics Extension 1') {
-        return 'Year 11 Extension 1';
-      }
-      return 'Year 11 Standard';
-    }
-    if (selectedStage === 'Year 12') {
-      if (selectedSubject === 'Mathematics Advanced') {
-        return 'Year 12 Advanced';
-      }
-      if (selectedSubject === 'Mathematics Extension 1') {
-        return 'Year 12 Extension 1';
-      }
-      if (selectedSubject === 'Mathematics Extension 2') {
-        return 'Year 12 Extension 2';
-      }
-      if (selectedSubject === 'Physics') {
-        return 'Year 12 Physics';
-      }
-      if (selectedSubject === 'Engineering Studies') {
-        return 'Year 12 Engineering Studies';
-      }
-    }
-    return null;
-  }, [selectedStage, selectedSubject]);
-
-  const currentSyllabus = useMemo(() => {
-    if (!legacySyllabusYear) {
-      return {};
-    }
-    return buildMergedSyllabus(legacySyllabusYear);
-  }, [legacySyllabusYear]);
-
-  const currentTopicsList = useMemo(() => {
-    if (legacySyllabusYear) {
-      return null;
-    }
-    if (selectedSubject === 'Other') {
-      return [];
-    }
-    return stageSubjects[selectedStage]?.[selectedSubject] || [];
-  }, [legacySyllabusYear, selectedStage, selectedSubject]);
-
-  const getId = (p) => (typeof p === 'object' && p !== null ? p.id : p);
-  const getLabel = (p) => {
-    if (typeof p === 'object' && p !== null) return p.label || p.id || '';
-    return typeof p === 'string' ? p : String(p || '');
+  const changeCourse = (stage, subject) => {
+    if (stage === selectedStage && subject === selectedSubject) return;
+    setSelectedStage(stage);
+    setSelectedSubject(subject);
+    setSelectedPoints([]);
+    setSearchQuery('');
+    setExpandedModules({});
+    setExpandedSubtopics({});
+    setGenerationError('');
+    setGenerationSuccess('');
   };
 
-  // Prune stale selectedPoints whenever the syllabus context changes (stage/subject switch).
-  // Without this, ids from a previous subject persist in localStorage and leak into the prompt.
   useEffect(() => {
-    if (!currentSyllabus || Object.keys(currentSyllabus).length === 0) {
-      if (selectedPoints.length > 0) setSelectedPoints([]);
-      return;
-    }
-    const validIds = new Set();
-    const collect = (node) => {
-      if (Array.isArray(node)) {
-        node.forEach((p) => { const id = getId(p); if (id) validIds.add(id); });
-      } else if (node && typeof node === 'object') {
-        Object.values(node).forEach(collect);
-      }
-    };
-    collect(currentSyllabus);
-    if (currentTopicsList) {
-      currentTopicsList.forEach((p) => { const id = getId(p); if (id) validIds.add(id); });
-    }
-    setSelectedPoints((prev) => {
-      const filtered = prev.filter((id) => validIds.has(id));
-      return filtered.length === prev.length ? prev : filtered;
-    });
-  }, [currentSyllabus, currentTopicsList]);
+    if (initialDraft.preventSave) return;
+    const saved = saveWorksheetDraft({ selectedStage, selectedSubject, customSubject, selectedPoints, rawQuestions,
+      numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeWorkedSolutions, includeName,
+      includeDate, includeCanvasSetup, firstTimeMode, removeWatermark, pedagogicalSpotError, pedagogicalParameterShift,
+      pedagogicalLimitCase, pedagogicalProofStyle, pedagogicalWordProblems, pedagogicalMultiStep });
+    if (!saved) setDraftNotice('This browser could not save your draft. Your current text is still available to copy.');
+  }, [selectedStage, selectedSubject, customSubject, selectedPoints, rawQuestions, numQuestions, workingSpace,
+    difficulty, includeMarks, generateAnswerKey, includeWorkedSolutions, includeName, includeDate, includeCanvasSetup,
+    firstTimeMode, removeWatermark, pedagogicalSpotError, pedagogicalParameterShift, pedagogicalLimitCase,
+    pedagogicalProofStyle, pedagogicalWordProblems, pedagogicalMultiStep]);
 
   const filteredModules = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
@@ -439,17 +250,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   const validateSelection = () => {
-    const hasSyllabusPoints = selectedPoints.length > 0;
-    const hasManualText = rawQuestions.trim().length > 0;
-
-    if (!hasSyllabusPoints && !hasManualText) {
-      setIsShaking(true);
-      setShowErrorToast(true);
-      setTimeout(() => setIsShaking(false), 500);
-      setTimeout(() => setShowErrorToast(false), 3000);
-      return false;
-    }
-    return true;
+    const message = validateWorksheetSelection(getWorksheetRequestParams());
+    setGenerationError(message);
+    return !message;
   };
 
   const mapDifficulty = () => {
@@ -489,7 +292,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
     pedagogicalWordProblems,
     pedagogicalMultiStep,
     selectedPoints,
-    syllabusData: currentSyllabus, // pass the merged syllabus or raw data
+    syllabusData: course.data,
     firstTimeMode,
     includeCanvasSetup
   });
@@ -500,80 +303,39 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   const closeModal = () => {
-    if (launchTimeoutRef.current) {
-      clearTimeout(launchTimeoutRef.current);
-      launchTimeoutRef.current = null;
-    }
+    handoffRevision.current += 1;
     setShowWarning(false);
-    setShowCloseButton(false);
-    setIsCopied(false);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (!showWarning) {
-        return;
-      }
-      if (event.key === 'Escape') {
-        closeModal();
-      } else if (event.key === 'Enter') {
-        if (launchTimeoutRef.current) {
-          clearTimeout(launchTimeoutRef.current);
-          launchTimeoutRef.current = null;
-        }
-        setShowCloseButton(true);
-        window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showWarning]);
+  const previewInstructions = (event) => {
+    if (!validateSelection()) return;
+    handoffRevision.current += 1;
+    handoffOrigin.current = event.currentTarget;
+    setPreviewPrompt(generatePrompt());
+    setIsCopied(false);
+    setGenerationSuccess('');
+    setShowWarning(true);
+  };
 
   const copyToClipboard = async () => {
-    if (!validateSelection()) {
-      return;
-    }
-
+    const revision = ++handoffRevision.current;
+    setIsCopied(false);
+    setGenerationError('');
     try {
-      const promptText = generatePrompt();
-      
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(promptText);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(previewPrompt);
       } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = promptText;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        textArea.style.top = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        if (!successful) {
-          throw new Error('Fallback execCommand failed');
-        }
+        const textArea = document.getElementById('worksheet-prompt-preview');
+        const previousFocus = document.activeElement;
+        textArea?.focus(); textArea?.select();
+        if (!textArea || !document.execCommand?.('copy')) throw new Error('Clipboard unavailable; select and copy the preview text.');
+        previousFocus?.focus();
       }
-
+      if (revision !== handoffRevision.current) return;
       setIsCopied(true);
-      setGenerationError('');
-      setGenerationSuccess('Instructions generated, copied, and ready for Gemini Canvas.');
-      setShowWarning(true);
-      setShowCloseButton(false);
-      if (launchTimeoutRef.current) {
-        clearTimeout(launchTimeoutRef.current);
-      }
-      launchTimeoutRef.current = setTimeout(() => {
-        setShowCloseButton(true);
-        window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank');
-        launchTimeoutRef.current = null;
-      }, 3000);
-      setTimeout(() => setIsCopied(false), 2000);
+      setGenerationSuccess('Instructions copied. Open Gemini when you are ready.');
     } catch (error) {
-      console.error('Failed to copy worksheet prompt:', error);
+      if (revision !== handoffRevision.current) return;
       setGenerationError('Could not copy the worksheet prompt: ' + (error.message || 'Clipboard unavailable'));
     }
   };
@@ -691,60 +453,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
         </div>
       )}
 
-      {showWarning && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl" onClick={closeModal}>
-          <div
-            className="glass-card-strong relative w-full max-w-md rounded-3xl border border-green-400/30 p-6 text-center shadow-[0_0_80px_rgba(34,197,94,0.2)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={closeModal}
-              className={`absolute right-4 top-4 rounded-full border border-white/10 p-2 text-white/60 transition ${showCloseButton ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-            >
-              <X size={16} />
-            </button>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/15 text-green-400">
-              <CheckCircle2 size={30} />
-            </div>
-            <h3 className="text-3xl font-bold text-white">Instructions ready</h3>
-            <p className="mt-2 text-sm text-white/60">Press Ctrl+V (or Cmd+V) to paste the instructions into Gemini.</p>
-            <div className="mx-auto mt-6 flex justify-center">
-              <img 
-                src={modelSelectorHint} 
-                alt="Gemini Thinking mode selector" 
-                className="h-56 w-56 rounded-2xl border border-white/10 object-cover object-[15%_10%] shadow-2xl" 
-              />
-            </div>
-            <div className="mx-auto mt-4 flex justify-center gap-3">
-              <button
-                type="button"
-                onClick={copyToClipboard}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-              >
-                <Copy size={14} />
-                {isCopied ? 'Copied!' : 'Copy prompt again'}
-              </button>
-              <button
-                type="button"
-                onClick={() => window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank')}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/60 transition hover:bg-white/10 hover:text-white"
-              >
-                <ExternalLink size={14} />
-                Launch Gemini
-              </button>
-            </div>
-            {!showCloseButton && (
-              <div className="mt-5">
-                <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full origin-left animate-progress bg-green-400" />
-                </div>
-                <p className="mt-3 text-xs uppercase tracking-[0.25em] text-green-300">Launching Gemini</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {showWarning && <PromptHandoff prompt={previewPrompt} onClose={closeModal} onReturnFocus={() => handoffOrigin.current?.focus()} onCopy={copyToClipboard}
+        copied={isCopied} error={generationError} firstTimeMode={firstTimeMode} includeCanvasSetup={includeCanvasSetup} />}
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div initial={{ opacity: 0, y: -18 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center justify-between">
@@ -801,6 +511,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
           </div>
         </motion.div>
 
+        {draftNotice && <p role="status" className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100">{draftNotice}</p>}
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,2fr)_360px]">
           <div className="glass-card-strong self-start rounded-3xl p-6 lg:p-8">
             <AnimatePresence mode="wait">
@@ -819,7 +530,11 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       <button
                         key={stage}
                         type="button"
-                        onClick={() => setSelectedStage(stage)}
+                        onClick={() => {
+                          const subject = selectedSubject === 'Other' || Object.hasOwn(stageSubjects[stage], selectedSubject) ? selectedSubject : Object.keys(stageSubjects[stage])[0];
+                          changeCourse(stage, subject);
+                        }}
+                        aria-pressed={selectedStage === stage}
                         className={`rounded-2xl border px-4 py-3 text-left transition ${
                           selectedStage === stage
                             ? 'border-mait-cyan/50 bg-mait-cosmic/20 text-white shadow-neon-purple'
@@ -838,8 +553,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         <button
                           key={subject}
                           type="button"
+                          aria-pressed={selectedSubject === subject}
                           onClick={() => {
-                            setSelectedSubject(subject);
+                            changeCourse(selectedStage, subject);
                           }}
                           className={`flex items-center rounded-2xl border px-4 py-3 text-left transition ${
                             selectedSubject === subject
@@ -852,8 +568,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       ))}
                       <button
                         type="button"
+                        aria-pressed={selectedSubject === 'Other'}
                         onClick={() => {
-                          setSelectedSubject('Other');
+                          changeCourse(selectedStage, 'Other');
                         }}
                         className={`flex items-center px-4 py-3 rounded-lg text-left transition-all ${
                           selectedSubject === 'Other'
@@ -878,6 +595,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         >
                           <input
                             type="text"
+                            aria-label="Custom subject name"
                             placeholder="Enter custom subject name..."
                             value={customSubject}
                             onChange={(e) => setCustomSubject(e.target.value)}
@@ -889,9 +607,10 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   </div>
 
                   <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <label className="text-xs uppercase tracking-[0.25em] text-white/45">Optional header label</label>
+                    <label htmlFor="worksheet-heading" className="text-xs uppercase tracking-[0.25em] text-white/45">Optional header label</label>
                     <input
                       type="text"
+                      id="worksheet-heading"
                       value={schoolName}
                       onChange={(event) => setSchoolName(event.target.value)}
                       placeholder="School name or class label"
@@ -916,7 +635,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
 
                   
                   <div className="space-y-6">
-                    {(selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject)) ? (
+                    {isManualCourse ? (
                       <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/65">
                         {selectedSubject === 'Other'
                           ? 'This subject uses manual entry only. Add your own topic brief or question instructions below.'
@@ -931,6 +650,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                               type="text"
                               value={searchQuery}
                               onChange={(event) => setSearchQuery(event.target.value)}
+                              aria-label="Find a topic or syllabus point"
                               placeholder="Find a topic or syllabus point..."
                               className="w-full rounded-2xl border border-white/10 bg-black/20 py-2 pl-10 pr-4 text-sm text-white outline-none transition focus:border-mait-cyan/40"
                             />
@@ -949,7 +669,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                               {filteredModules.map((moduleName) => (
                                 <div key={moduleName} className="space-y-2">
                                   <div className="flex items-center gap-2">
-                                    <button type="button" onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
+                                    <button type="button" aria-label={`Expand ${moduleName}`} aria-expanded={Boolean(expandedModules[moduleName] || searchQuery)} onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
                                       {expandedModules[moduleName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                     </button>
                                     <label className="flex flex-1 cursor-pointer items-center gap-3">
@@ -970,6 +690,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                                         const query = searchQuery.toLowerCase().trim();
                                         if (
                                           query &&
+                                          !moduleName.toLowerCase().includes(query) &&
                                           !subtopic.toLowerCase().includes(query) &&
                                           !points.some((point) => getLabel(point).toLowerCase().includes(query))
                                         ) {
@@ -979,7 +700,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                                         return (
                                           <div key={subtopic} className="space-y-2">
                                             <div className="flex min-w-0 items-center gap-2">
-                                              <button type="button" onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
+                                              <button type="button" aria-label={`Expand ${subtopic}`} aria-expanded={Boolean(expandedSubtopics[subtopic] || searchQuery)} onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
                                                 {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                               </button>
                                               <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
@@ -1064,10 +785,10 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         id="worksheet-brief"
                         value={rawQuestions}
                         onChange={setRawQuestions}
-                        placeholder={selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject) ? `Paste the exact ${selectedSubject} brief, topic list, or teacher instructions here...` : "Add specific textbook questions or teacher notes to include alongside the syllabus points (optional)..."}
-                        rows={MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 14 : 6}
+                        placeholder={isManualCourse ? `Paste the exact ${selectedSubject} brief, topic list, or teacher instructions here...` : "Add specific textbook questions or teacher notes to include alongside the syllabus points (optional)..."}
+                        rows={isManualCourse ? 14 : 6}
                         className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
-                        inputClassName={`w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40 ${MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 'min-h-[360px]' : 'min-h-[120px]'}`}
+                        inputClassName={`w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40 ${isManualCourse ? 'min-h-[360px]' : 'min-h-[120px]'}`}
                       />
                     </div>
                   </div>
@@ -1107,7 +828,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                     </div>
 
                     <p className="text-xs leading-relaxed text-white/55">
-                      This choice is included in your copied prompt. Search asks Gemini to consult official NESA sources; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in Gemini.
+                      This choice is included in your copied prompt. Search asks Gemini to consult official NESA sources; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in Gemini. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
                     </p>
 
                     <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
@@ -1209,6 +930,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                     <div className="flex items-center gap-4">
                       <input
                         type="range"
+                        aria-label="Question count slider"
                         min={1}
                         max={50}
                         value={Math.min(numQuestions, 50)}
@@ -1217,6 +939,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       />
                       <input
                         type="number"
+                        aria-label="Number of questions"
                         value={numInput}
                         min={1}
                         max={100}
@@ -1238,6 +961,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       <label className="text-xs uppercase tracking-[0.25em] text-white/45">Working space / page layout</label>
                       <div className="relative">
                         <select
+                          aria-label="Working space / page layout"
                           value={workingSpace}
                           onChange={(event) => setWorkingSpace(event.target.value)}
                           className="w-full appearance-none rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-mait-cyan/40"
@@ -1256,6 +980,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       <label className="text-xs uppercase tracking-[0.25em] text-white/45">Question difficulty</label>
                       <div className="relative">
                         <select
+                          aria-label="Question difficulty"
                           value={difficulty}
                           onChange={(event) => setDifficulty(event.target.value)}
                           className="w-full appearance-none rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-mait-cyan/40"
@@ -1277,12 +1002,12 @@ export default function WorksheetStudio({ setCurrentSection }) {
                       { label: 'Date space', checked: includeDate, onChange: setIncludeDate },
                       { label: 'Allocate marks', note: '(Experimental)', checked: includeMarks, onChange: setIncludeMarks },
                       { label: 'Canvas setup guide', checked: includeCanvasSetup, onChange: setIncludeCanvasSetup },
-                      { label: 'Answer key', checked: generateAnswerKey, onChange: setGenerateAnswerKey },
+                      { label: 'Answer key', checked: generateAnswerKey, onChange: (enabled) => { setGenerateAnswerKey(enabled); if (!enabled) setIncludeWorkedSolutions(false); } },
                       {
                         label: 'Full Worked Solutions & Rubric',
                         description: 'Generates step-by-step working.',
                         checked: includeWorkedSolutions,
-                        onChange: setIncludeWorkedSolutions,
+                        onChange: (enabled) => { setIncludeWorkedSolutions(enabled); if (enabled) setGenerateAnswerKey(true); },
                       },
                       { label: 'First time mode', checked: firstTimeMode, onChange: setFirstTimeMode },
                       { label: 'Remove Watermark', note: 'Omit footer link to myaitutor.au/worksheets', checked: removeWatermark, onChange: setRemoveWatermark },
@@ -1349,11 +1074,11 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   </a>
                   <button
                     type="button"
-                    onClick={copyToClipboard}
+                    onClick={previewInstructions}
                     className={`flex items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-mait-cosmic'} px-6 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01]`}
                   >
                     <Copy className="h-4 w-4" />
-                    <span>Launch Gemini</span>
+                    <span>Preview instructions</span>
                   </button>
                 </div>
               )}
@@ -1396,13 +1121,13 @@ export default function WorksheetStudio({ setCurrentSection }) {
               <div className="mt-6 space-y-3">
                 <button
                   type="button"
-                  onClick={copyToClipboard}
+                  onClick={previewInstructions}
                   className={`flex w-full items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-mait-cosmic'} px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]`}
                 >
                   <Copy className="h-4 w-4" />
                   <span className="flex flex-col leading-tight">
                     <span>Generate Instructions</span>
-                    <span>&amp; Launch Gemini</span>
+                    <span>&amp; Preview Prompt</span>
                   </span>
                 </button>
               </div>

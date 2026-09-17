@@ -1,5 +1,7 @@
 # Worksheet configuration verification
 
+Superseded for current status by [the acceptance repairs](2026-09-17_worksheet_acceptance_repairs.md). The failures below are the historical pre-repair baseline, retained as evidence.
+
 Application under test: `e19ca12` on `codex/worksheet-compiler-fixes`. This follow-up adds tests and browser configuration only; no further application changes, dependency upgrades, push or deployment.
 
 The repaired subject/context and text-input behaviour passes the expanded checks. The whole worksheet workflow does **not** pass its broader acceptance audit. “All possible meaningful configurations” is bounded below by finite UI choices and targeted interactions; this is not an exhaustive Cartesian product of arbitrary text, browser versions, stored data and topic combinations.

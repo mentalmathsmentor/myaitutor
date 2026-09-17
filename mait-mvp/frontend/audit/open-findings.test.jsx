@@ -1,5 +1,5 @@
-// Diagnostic acceptance suite: currently failing findings stay visible.
-// Not part of the green regression suite until each planned repair lands.
+// Acceptance regressions for the reviewed worksheet fixes.
+// Handoff assertions follow the explicit preview → copy → open flow.
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
@@ -41,23 +41,23 @@ function mount(stage='Year 11',subject='Mathematics Advanced',brief='') {
 function next() { fireEvent.click(screen.getByRole('button',{name:'Continue',exact:true})); }
 async function copy() {
   fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+  fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
   await waitFor(() => expect(clipboard).toHaveBeenCalled());
   const prompt=clipboard.mock.calls.at(-1)[0];
-  await waitFor(() => expect(screen.getByText('Instructions generated, copied, and ready for Gemini Canvas.')).toBeInTheDocument());
-  fireEvent.keyDown(window,{key:'Escape'});
+  await waitFor(() => expect(screen.getByText('Prompt copied.')).toBeInTheDocument());
+  fireEvent.keyDown(document,{key:'Escape'});
   return {prompt,request:buildWorksheetRequest.mock.results.at(-1).value};
 }
 const cases=Object.entries(stages).flatMap(([stage,subjects]) => Object.keys(subjects).map(subject=>[stage,subject]));
 describe('all visible stage/subject combinations: topic-to-prompt contract',()=>{
   it.each(cases)('%s / %s retains a chosen topic or manual brief',async(stage,subject)=>{
     mount(stage,subject); next();
-    const manual=['English','Chemistry','Biology'].includes(subject);
-    let selectedLabel;
+    const manual=['English','Chemistry','Biology'].includes(subject) || (stage === 'Year 11' && subject === 'Physics');
     if(manual){fireEvent.change(screen.getByPlaceholderText(`Paste the exact ${subject} brief, topic list, or teacher instructions here...`),{target:{value:'Synthetic curriculum-neutral brief'}});}
     else {
       const choices=screen.queryAllByRole('checkbox');
       expect(choices.length,'predefined choices should be available').toBeGreaterThan(0);
-      selectedLabel=choices[0].closest('label')?.textContent.trim(); fireEvent.click(choices[0]);
+      fireEvent.click(choices[0]);
     }
     const result=await copy();
     if(manual) expect(result.prompt).toContain('Synthetic curriculum-neutral brief');
@@ -71,8 +71,9 @@ describe('state transitions and error boundaries',()=>{
   });
   it('Year 11 Physics does not expose Standard maths topics',()=>{
     mount('Year 11','Physics'); next();
-    const labels=screen.getAllByRole('checkbox').map(c=>c.closest('label')?.textContent.trim().replace(/\s/g,' '));
-    expect(labels).not.toContain('Financial Mathematics');
+    const labels=screen.queryAllByRole('checkbox').map(c=>c.closest('label')?.textContent.trim().replace(/\s/g,' '));
+    expect(labels).toEqual([]);
+    expect(screen.getByPlaceholderText('Paste the exact Physics brief, topic list, or teacher instructions here...')).toBeInTheDocument();
   });
   it('switching maths to manual-only English removes hidden maths points',async()=>{
     mount('Year 11','Mathematics Standard'); next();
@@ -85,9 +86,10 @@ describe('state transitions and error boundaries',()=>{
   });
   it('reloading a flat-topic course retains valid selections',()=>{
     mount('Stage 2 (Yr 3-4)','Mathematics'); next(); fireEvent.click(screen.getAllByRole('checkbox')[0]);
-    const selected=localStorage.getItem('mait_ws_selectedPoints');
+    const selected=localStorage.getItem('mait_ws_draft_v2');
     cleanup(); mount('Stage 2 (Yr 3-4)','Mathematics');
-    expect(localStorage.getItem('mait_ws_selectedPoints')).toBe(selected);
+    expect(localStorage.getItem('mait_ws_draft_v2')).toBe(selected);
+    next(); expect(screen.getAllByRole('checkbox')[0]).toBeChecked();
   });
   it('malformed stored selections do not crash the Studio',()=>{
     localStorage.setItem('mait_ws_selectedPoints','{}');
@@ -116,7 +118,9 @@ describe('state transitions and error boundaries',()=>{
   it('clipboard rejection displays an error and never launches',async()=>{
     clipboard.mockRejectedValue(new Error('Permission denied'));mount('Year 11','Mathematics Advanced','Synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
-    expect(await screen.findByText(/Could not copy the worksheet prompt: Permission denied/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not copy the worksheet prompt: Permission denied');
+    expect(screen.getByLabelText('Exact prompt').value).toContain('Synthetic brief');
     expect(window.open).not.toHaveBeenCalled();
   });
   it('empty worksheet does not write the clipboard',()=>{
@@ -133,13 +137,13 @@ describe('state transitions and error boundaries',()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:'Other (Custom)',exact:true}));
     await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
-    fireEvent.keyDown(window,{key:'Escape'});
+    fireEvent.keyDown(document,{key:'Escape'});
     expect(clipboard).not.toHaveBeenCalled();
   });
-  it('manual launch cancels the automatic launch timer',async()=>{
+  it('only the explicit Open Gemini action launches once',async()=>{
     vi.useFakeTimers();mount('Year 11','Mathematics Advanced','Synthetic brief');
     await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
-    fireEvent.click(screen.getByRole('button',{name:'Launch Gemini',exact:true}));
+    fireEvent.click(screen.getByRole('button',{name:'Open Gemini',exact:true}));
     await act(async()=>{vi.advanceTimersByTime(3100);});
     expect(window.open).toHaveBeenCalledTimes(1);
   });
@@ -156,7 +160,34 @@ describe('state transitions and error boundaries',()=>{
   it('copy modal has dialog semantics',async()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief');
     await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
-    const dialog=screen.queryByRole('dialog');fireEvent.keyDown(window,{key:'Escape'});
+    const dialog=screen.queryByRole('dialog');fireEvent.keyDown(document,{key:'Escape'});
     expect(dialog).not.toBeNull();
+  });
+  it('a late clipboard result cannot mark a newer preview as copied',async()=>{
+    let finish;
+    clipboard.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    mount('Year 11','Mathematics Advanced','First synthetic brief');
+    fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+    fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
+    fireEvent.keyDown(document,{key:'Escape'});
+    next(); fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
+    fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+    await act(async()=>{finish();});
+    expect(screen.queryByText('Prompt copied.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Exact prompt').value).toContain('Second synthetic brief');
+  });
+  it('worked solutions and answer-key controls remain consistent in both directions',()=>{
+    mount('Year 11','Mathematics Advanced','Synthetic brief'); next(); next(); next();
+    const worked=screen.getByRole('checkbox',{name:/Full Worked Solutions/});
+    const answers=screen.getByRole('checkbox',{name:'Answer key',exact:true});
+    fireEvent.click(worked); expect(answers).toBeChecked();
+    fireEvent.click(answers); expect(worked).not.toBeChecked();
+  });
+  it('a denied draft read cannot overwrite an unread saved draft',()=>{
+    vi.spyOn(localStorage,'getItem').mockImplementation(()=>{throw new Error('Read denied');});
+    const write=vi.spyOn(localStorage,'setItem'); write.mockClear();
+    render(<WorksheetStudio setCurrentSection={()=>{}} />);
+    expect(write).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent('saving is paused');
   });
 });
