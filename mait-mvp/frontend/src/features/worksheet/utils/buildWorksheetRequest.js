@@ -60,7 +60,13 @@ export function buildWorksheetRequest(params) {
     : (rawQuestions.trim() ? rawQuestions.trim() : `${selectedStage} ${displaySubject}`);
 
   let customInstructions = '';
-  if (syllabusContextMode === 'Provide') customInstructions += 'I will upload the syllabus. ';
+  if (syllabusContextMode === 'Search') {
+    customInstructions += `Syllabus context: Search. Consult official NESA sources for ${selectedStage} ${displaySubject} and the selected topics. Use any teacher-supplied teaching cohort or syllabus edition; if applicability is unclear, ask for clarification or a syllabus upload before generating. Identify the source URL and edition used before claiming alignment; do not assume the latest syllabus applies. MyAITutor has not retrieved or verified these sources. `;
+  } else if (syllabusContextMode === 'Provide') {
+    customInstructions += `Syllabus context: Provide. I will upload the syllabus in Gemini for ${selectedStage} ${displaySubject}. If it is missing or its applicability is unclear, ask for the upload or clarification before generating; do not claim to have read an unavailable attachment. `;
+  } else {
+    customInstructions += 'Syllabus context: Off. Use the selected topics and teacher brief without requesting a web search. The local topic list is not proof of verified NESA alignment. ';
+  }
   if (textbooksProvided) customInstructions += 'I will upload textbooks/resources. ';
   if (firstTimeMode) customInstructions += 'FIRST TIME MODE: This is the user\'s first time. Greet them warmly and explain how to iterate on the worksheet. ';
   if (includeCanvasSetup) customInstructions += 'INCLUDE CANVAS SETUP GUIDE: Add Canvas setup tips to your greeting. ';

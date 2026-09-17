@@ -126,12 +126,13 @@ export default function Step2Topics({
 
                 <div className="flex-1 min-h-[400px]">
                     <MathInput
+                        aria-label="Manual topic specification"
                         value={rawQuestions}
                         onChange={setRawQuestions}
                         placeholder="e.g. Generate 5 limits questions, 3 differentiation chain rule questions, and 2 word problems involving rates of change..."
                         rows={12}
                         className="h-full"
-                        inputClassName="w-full h-full min-h-[400px] bg-white/5 border border-white/10 rounded-2xl p-4 pr-24 text-sm text-white focus:border-mait-cyan/50 outline-none resize-none transition-all placeholder:text-white/30"
+                        inputClassName="w-full h-full min-h-[400px] bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white focus:border-mait-cyan/50 outline-none resize-none transition-all placeholder:text-white/30"
                     />
                 </div>
             </motion.div>

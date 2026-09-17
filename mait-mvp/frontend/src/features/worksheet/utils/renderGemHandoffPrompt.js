@@ -17,6 +17,7 @@ export function renderGemHandoffPrompt(request) {
 
   handoff += `**WORKSHEET SETTINGS:**\n`;
   handoff += `- **Course:** ${settings.course}\n`;
+  handoff += `- **Subject:** ${ensureString(settings.subject)}\n`;
   handoff += `- **Topic Summary:** ${topicSummary}\n`;
   handoff += `- **Number of Questions:** ${settings.numberOfQuestions}\n`;
   handoff += `- **Difficulty:** ${settings.difficulty}\n`;
@@ -36,7 +37,7 @@ export function renderGemHandoffPrompt(request) {
   const hasPacketData = packet.dotPoints.length > 0 || packet.outcomes.length > 0 || packet.include.length > 0;
   
   if (hasPacketData || !request.legacyFields.manual_prompt) {
-    handoff += `**SYLLABUS PACKET (NESA ALIGNED):**\n`;
+    handoff += `**SELECTED TOPICS AND GUIDANCE (alignment not verified):**\n`;
     const dotPointsStr = formatArray("Relevant Dot-Points", packet.dotPoints);
     if (dotPointsStr) handoff += `${dotPointsStr}\n`;
     
@@ -66,7 +67,7 @@ export function renderGemHandoffPrompt(request) {
       handoff += `**PEDAGOGICAL DRILLS REQUESTED:**\n- ${cleanDrills.join(', ')}\n\n`;
   }
 
-  handoff += `**Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact.**`;
+  handoff += `**Resolve missing sources or unclear syllabus applicability before generating when the requested context requires them. Once ready, generate the worksheet from the supplied settings, teacher brief and applicable source material, returning the final worksheet as LaTeX.**`;
 
   return handoff;
 }

@@ -1059,14 +1059,15 @@ export default function WorksheetStudio({ setCurrentSection }) {
                     )}
 
                     <div className="space-y-3">
-                      <label className="text-xs uppercase tracking-[0.25em] text-white/45">Additional Brief / Custom Questions</label>
+                      <label htmlFor="worksheet-brief" className="text-xs uppercase tracking-[0.25em] text-white/45">Additional Brief / Custom Questions</label>
                       <MathInput
+                        id="worksheet-brief"
                         value={rawQuestions}
                         onChange={setRawQuestions}
                         placeholder={selectedSubject === 'Other' || MANUAL_ONLY_SUBJECTS.has(selectedSubject) ? `Paste the exact ${selectedSubject} brief, topic list, or teacher instructions here...` : "Add specific textbook questions or teacher notes to include alongside the syllabus points (optional)..."}
                         rows={MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 14 : 6}
                         className={`${isShaking ? 'animate-[shake_0.5s_cubic-bezier(.36,.07,.19,.97)_both]' : ''}`}
-                        inputClassName={`w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40 ${MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 'min-h-[360px] pb-10 pr-24' : 'min-h-[120px] pb-10 pr-24'}`}
+                        inputClassName={`w-full rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white outline-none transition focus:border-mait-cyan/40 ${MANUAL_ONLY_SUBJECTS.has(selectedSubject) || selectedSubject === 'Other' ? 'min-h-[360px]' : 'min-h-[120px]'}`}
                       />
                     </div>
                   </div>
@@ -1090,6 +1091,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         <button
                           key={contextMode}
                           type="button"
+                          aria-pressed={syllabusContextMode === contextMode}
                           onClick={() => setSyllabusContextMode(contextMode)}
                           className={`flex-1 rounded-2xl px-4 py-3 text-sm transition ${
                             syllabusContextMode === contextMode
@@ -1099,10 +1101,14 @@ export default function WorksheetStudio({ setCurrentSection }) {
                               : 'text-white/55 hover:bg-white/5 hover:text-white'
                           }`}
                         >
-                          {contextMode === 'Off' ? 'AI general knowledge' : contextMode === 'Provide' ? "I'll upload the syllabus" : 'Search NESA website'}
+                          {contextMode === 'Off' ? 'AI general knowledge' : contextMode === 'Provide' ? "I'll upload the syllabus" : 'Ask Gemini to search NESA'}
                         </button>
                       ))}
                     </div>
+
+                    <p className="text-xs leading-relaxed text-white/55">
+                      This choice is included in your copied prompt. Search asks Gemini to consult official NESA sources; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in Gemini.
+                    </p>
 
                     <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
                       <input
@@ -1463,7 +1469,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
             <div className="space-y-4">
               <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
-                  <span>How does "Search NESA Website" work?</span>
+                  <span>How does "Ask Gemini to search NESA" work?</span>
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
