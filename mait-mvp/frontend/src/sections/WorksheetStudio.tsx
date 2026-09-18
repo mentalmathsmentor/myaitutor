@@ -210,8 +210,9 @@ export default function WorksheetStudio({ setCurrentSection }) {
     setExpandedModules((prev) => ({ ...prev, [moduleName]: !prev[moduleName] }));
   };
 
-  const toggleSubtopic = (subtopic) => {
-    setExpandedSubtopics((prev) => ({ ...prev, [subtopic]: !prev[subtopic] }));
+  const toggleSubtopic = (moduleName, subtopic) => {
+    const key = JSON.stringify([moduleName, subtopic]);
+    setExpandedSubtopics((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handlePointToggle = (point) => {
@@ -390,7 +391,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   const handleNumSliderChange = (event) => {
-    const nextValue = Math.min(50, Math.max(1, parseInt(event.target.value, 10)));
+    const nextValue = Math.min(100, Math.max(1, parseInt(event.target.value, 10)));
     setNumQuestions(nextValue);
     setNumInput(String(nextValue));
   };
@@ -670,7 +671,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                                 <div key={moduleName} className="space-y-2">
                                   <div className="flex items-center gap-2">
                                     <button type="button" aria-label={`Expand ${moduleName}`} aria-expanded={Boolean(expandedModules[moduleName] || searchQuery)} onClick={() => toggleModule(moduleName)} className="rounded-lg p-1 text-white/70 transition hover:bg-white/10 hover:text-white">
-                                      {expandedModules[moduleName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                      {expandedModules[moduleName] || searchQuery ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                     </button>
                                     <label className="flex flex-1 cursor-pointer items-center gap-3">
                                       <input
@@ -700,8 +701,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
                                         return (
                                           <div key={subtopic} className="space-y-2">
                                             <div className="flex min-w-0 items-center gap-2">
-                                              <button type="button" aria-label={`Expand ${subtopic}`} aria-expanded={Boolean(expandedSubtopics[subtopic] || searchQuery)} onClick={() => toggleSubtopic(subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
-                                                {expandedSubtopics[subtopic] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                              <button type="button" aria-label={`Expand ${subtopic}`} aria-expanded={Boolean(expandedSubtopics[JSON.stringify([moduleName, subtopic])] || searchQuery)} onClick={() => toggleSubtopic(moduleName, subtopic)} className="flex-shrink-0 rounded-lg p-1 text-white/60 transition hover:bg-white/10 hover:text-white">
+                                                {expandedSubtopics[JSON.stringify([moduleName, subtopic])] || searchQuery ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                               </button>
                                               <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                                                 <input
@@ -714,7 +715,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                                               </label>
                                             </div>
 
-                                            {(expandedSubtopics[subtopic] || searchQuery) && (
+                                            {(expandedSubtopics[JSON.stringify([moduleName, subtopic])] || searchQuery) && (
                                               <div className="ml-6 grid gap-2">
                                                     {points.map((point) => (
                                                   <label
@@ -932,8 +933,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
                         type="range"
                         aria-label="Question count slider"
                         min={1}
-                        max={50}
-                        value={Math.min(numQuestions, 50)}
+                        max={100}
+                        value={numQuestions}
                         onChange={handleNumSliderChange}
                         className="w-full accent-mait-cyan"
                       />

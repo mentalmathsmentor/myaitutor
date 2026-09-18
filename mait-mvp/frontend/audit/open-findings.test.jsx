@@ -65,6 +65,27 @@ describe('all visible stage/subject combinations: topic-to-prompt contract',()=>
   });
 });
 describe('state transitions and error boundaries',()=>{
+  it('keeps the slider and typed question count consistent above 50',()=>{
+    mount('Year 12','English','Synthetic question brief'); next(); next(); next();
+    const number = screen.getByRole('spinbutton',{name:'Number of questions'});
+    const slider = screen.getByRole('slider',{name:'Question count slider'});
+    fireEvent.change(number,{target:{value:'80'}}); fireEvent.blur(number);
+    expect(slider).toHaveValue('80');
+    fireEvent.change(slider,{target:{value:'81'}});
+    expect(number).toHaveValue(81);
+    fireEvent.change(number,{target:{value:'100'}}); fireEvent.blur(number);
+    expect(slider).toHaveValue('100');
+  });
+  it('expands identically named subtopics independently across modules',()=>{
+    mount('Year 12','Engineering Studies'); next();
+    fireEvent.click(screen.getByRole('button',{name:'Expand Core',exact:true}));
+    fireEvent.click(screen.getByRole('button',{name:'Expand (Cad)',exact:true}));
+    const branches=screen.getAllByRole('button',{name:'Expand Misc',exact:true});
+    expect(branches).toHaveLength(2);
+    fireEvent.click(branches[0]);
+    expect(branches[0]).toHaveAttribute('aria-expanded','true');
+    expect(branches[1]).toHaveAttribute('aria-expanded','false');
+  });
   it('Stage 4 Science does not expose the Mathematics topic tree',()=>{
     mount('Stage 4 (Yr 7-8)','Science'); next();
     expect(screen.queryByRole('checkbox',{name:'Number and Algebra',exact:true})).not.toBeInTheDocument();

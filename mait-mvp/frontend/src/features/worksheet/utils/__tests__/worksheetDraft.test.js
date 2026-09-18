@@ -40,6 +40,22 @@ describe('defensive versioned drafts', () => {
     const denied = { getItem() { throw new Error('Denied'); }, setItem() { throw new Error('Quota'); } };
     const draft = readWorksheetDraft(denied); expect(draft.notice).not.toBe(''); expect(draft.preventSave).toBe(true); expect(saveWorksheetDraft(draft, denied)).toBe(false);
   });
+  it.each([undefined, null, false, 0, 17, [], {}, '', '   '])('preserves the original draft when course metadata is malformed: %j', courseKey => {
+    const store = storage();
+    const draft = readWorksheetDraft(store);
+    draft.rawQuestions = 'Synthetic brief retained in the original record';
+    draft.selectedPoints = [resolveCourse(draft.selectedStage, draft.selectedSubject).records[0].id];
+    saveWorksheetDraft(draft, store);
+    const envelope = JSON.parse(store.getItem(DRAFT_KEY));
+    envelope.courseKey = courseKey;
+    const unread = JSON.stringify(envelope);
+    store.setItem(DRAFT_KEY, unread);
+    const restored = readWorksheetDraft(store);
+    expect(restored.preventSave).toBe(true);
+    expect(restored.notice).toContain('paused');
+    expect(saveWorksheetDraft(restored, store)).toBe(false);
+    expect(store.getItem(DRAFT_KEY)).toBe(unread);
+  });
   it.each(['{broken', '{"version":99,"values":{}}'])('preserves an unreadable new draft and recovers legacy text: %s', saved => {
     const store = storage({ [DRAFT_KEY]: saved, mait_ws_rawQuestions: 'Older synthetic brief' }); const draft = readWorksheetDraft(store);
     expect(draft.preventSave).toBe(true); expect(draft.rawQuestions).toBe('Older synthetic brief'); expect(store.getItem(DRAFT_KEY)).toBe(saved);

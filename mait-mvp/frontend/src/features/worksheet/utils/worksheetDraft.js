@@ -28,6 +28,7 @@ export function readWorksheetDraft(storage) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed?.version !== 2 || !parsed.values || typeof parsed.values !== 'object' || Array.isArray(parsed.values)) throw new Error('Unknown draft format');
+        if (typeof parsed.courseKey !== 'string' || !parsed.courseKey.trim()) throw new Error('Malformed draft course metadata');
         const malformed = Object.entries(defaults).some(([field, fallback]) => {
           if (!Object.hasOwn(parsed.values, field)) return false;
           const value = parsed.values[field];

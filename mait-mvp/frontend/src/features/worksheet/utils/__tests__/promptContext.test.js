@@ -30,7 +30,7 @@ describe('selected course and syllabus context reach the copied prompt', () => {
     expect(prompt).toContain('Year 12 Mathematics Advanced');
     expect(prompt).toContain('teaching cohort or syllabus edition');
     expect(prompt).toContain('ask for clarification');
-    expect(prompt).toContain('has not retrieved or verified');
+    expect(prompt).toContain('MyAITutor has not retrieved or verified these sources.');
     expect(prompt).not.toContain('SYLLABUS PACKET (NESA ALIGNED)');
   });
 
@@ -40,11 +40,16 @@ describe('selected course and syllabus context reach the copied prompt', () => {
     const search = compile({ syllabusContextMode: 'Search' });
     expect(new Set([off, provide, search]).size).toBe(3);
     expect(off).toContain('Syllabus context: Off');
+    expect(off).toContain('The local topic list is not proof of verified NESA alignment.');
     expect(off).not.toContain('Syllabus context: Search');
     expect(provide).toContain('Syllabus context: Provide');
     expect(provide).toContain('upload the syllabus in Gemini');
     expect(provide).not.toContain('Syllabus context: Search');
     expect(search).not.toContain('Syllabus context: Provide');
+    expect(off).not.toContain('Consult official NESA sources');
+    expect(off).not.toContain('I will upload the syllabus in Gemini');
+    expect(provide).not.toContain('Consult official NESA sources');
+    expect(search).not.toContain('I will upload the syllabus in Gemini');
   });
 
   it.each(['Off', 'Provide', 'Search'])('keeps textbook attachments independent of %s', mode => {

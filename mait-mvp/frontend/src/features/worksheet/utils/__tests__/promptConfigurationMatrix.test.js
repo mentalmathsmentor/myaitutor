@@ -3,6 +3,7 @@ import stages from '../../../../stage_subjects.json';
 import syllabus from '../../../../syllabus_data.json';
 import { buildWorksheetRequest } from '../buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../renderGemHandoffPrompt';
+import { resolveCourse } from '../courseCatalogue';
 
 const base = {
   customSubject: '', rawQuestions: 'Synthetic teacher brief: preserve α, fractions and line breaks.\nSecond instruction.',
@@ -46,6 +47,23 @@ const firstPoint = tree => {
   if (Array.isArray(tree)) return tree.find(p => p && typeof p.id === 'string' && typeof p.label === 'string');
   for (const value of Object.values(tree || {})) { const p = firstPoint(value); if (p) return p; }
 };
+const selectedCourseCases = courses.flatMap(course => {
+  const resolved = resolveCourse(course.selectedStage, course.selectedSubject);
+  const firstPerSource = [...new Map(resolved.records.map(point => [point.source || 'catalogue', point])).values()];
+  return firstPerSource.flatMap(point => modes.map(mode => ({ ...course, resolved, point, mode })));
+});
+describe('real course-scoped selections reach the final prompt in every context mode', () => {
+  it.each(selectedCourseCases)('$selectedStage / $selectedSubject / $point.source / $mode', ({ selectedStage, selectedSubject, resolved, point, mode }) => {
+    const prompt = renderGemHandoffPrompt(buildWorksheetRequest({ ...base, selectedStage, selectedSubject,
+      syllabusContextMode: mode, selectedPoints: [point.id], syllabusData: resolved.data }));
+    expect(prompt).toContain(`- **Course:** ${selectedStage}\n`);
+    expect(prompt).toContain(`- **Subject:** ${selectedSubject}\n`);
+    expect(prompt).toContain(point.label);
+    expect(prompt).toContain(base.rawQuestions);
+    expect(prompt.match(/Syllabus context: (Off|Provide|Search)\./g)).toEqual([`Syllabus context: ${mode}.`]);
+    expect(prompt).not.toContain(point.id);
+  });
+});
 const sourceCases = Object.entries(syllabus).map(([source, tree]) => ({ source, tree, point: firstPoint(tree) })).filter(c => c.point);
 describe('real structured topic records retain subject/context with and without manual text', () => {
   it.each(sourceCases.flatMap(c => modes.flatMap(mode => ['', base.rawQuestions].map(rawQuestions => ({ ...c, mode, rawQuestions })))))('$source / $mode / notes=$rawQuestions', ({ source, tree, point, mode, rawQuestions }) => {

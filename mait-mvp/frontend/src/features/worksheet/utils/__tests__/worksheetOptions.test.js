@@ -13,6 +13,7 @@ it.each(Array.from({ length: 128 }, (_, mask) => mask))('preserves every output 
   expect(prompt).toContain(choices.includeMarks ? 'Assign and right-align marks.' : 'No marks.');
   expect(prompt).toContain(choices.generateAnswerKey || choices.includeWorkedSolutions ? 'Generate Teacher Answer Key' : 'No answer key.');
   expect(prompt.includes('full worked solutions')).toBe(choices.includeWorkedSolutions);
+  expect(prompt.includes('marking rubric')).toBe(choices.includeWorkedSolutions);
   expect(prompt).toContain(choices.includeName ? 'Include Name line.' : 'No Name line.');
   expect(prompt).toContain(choices.includeDate ? 'Include Date line.' : 'No Date line.');
   expect(prompt.includes('Synthetic class')).toBe(choices.heading);

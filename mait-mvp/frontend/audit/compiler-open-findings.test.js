@@ -1,5 +1,5 @@
-// Desired semantics from the reviewed fix plan. Failures are reported openly
-// by test:audit and are not inverted, skipped, or folded into green test totals.
+// Acceptance regressions from the reviewed fix plan. These run in the default
+// test suite and block CI; test:audit also runs this subset for focused diagnosis.
 import { describe, it, expect } from 'vitest';
 import { buildWorksheetRequest } from '../src/features/worksheet/utils/buildWorksheetRequest';
 import { buildSyllabusPacket } from '../src/features/worksheet/utils/buildSyllabusPacket';
@@ -7,6 +7,7 @@ import { renderGemHandoffPrompt } from '../src/features/worksheet/utils/renderGe
 import { ensureStringArray } from '../src/features/worksheet/utils/promptHelpers';
 import syllabus from '../src/syllabus_data.json';
 import stages from '../src/stage_subjects.json';
+import { resolveCourse } from '../src/features/worksheet/utils/courseCatalogue';
 
 const base = { selectedStage: 'Year 11', selectedSubject: 'Mathematics Advanced', customSubject: '', rawQuestions: 'Synthetic manual brief',
   numQuestions: 10, difficulty: 'Mixed', workingSpace: 'Dynamic Space', includeMarks: false, generateAnswerKey: false,
@@ -31,6 +32,15 @@ describe('remaining compiler contract acceptance', () => {
     const result = buildWorksheetRequest({ ...base, selectedPoints: ['retired-synthetic-id'] });
     expect(result.topicSummary).toBe(base.rawQuestions);
     expect(result.legacyFields.manual_prompt).toBe(base.rawQuestions);
+  });
+  it('course-scoped IDs retain registry guidance in the final copied prompt', () => {
+    const course = resolveCourse('Year 11', 'Mathematics Advanced');
+    const point = course.records.find(p => p.sourceId === 'y_11_advanced_calculus_power_rule');
+    expect(point).toBeDefined();
+    const prompt = compile({ selectedPoints: [point.id], syllabusData: course.data });
+    expect(prompt).toContain(point.label);
+    expect(prompt).toContain(`For ${point.label} only: Chain rule applications`);
+    expect(prompt).not.toContain(point.id);
   });
   it.each([false, true].flatMap(includeName => [false, true].map(heading => ({ includeName, heading }))))('name=$includeName / heading=$heading stay independent', ({ includeName, heading }) => {
     const result = buildWorksheetRequest({ ...base, includeName, schoolName: heading ? 'Synthetic class' : '' });

@@ -6,6 +6,8 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import MathInput from '../MathInput';
 
+// Legacy component: the active WorksheetStudio owns its topic picker and uses
+// courseCatalogue.js. Migrate this component's routing and IDs before reusing it.
 export default function Step2Topics({
     mode,
     setMode,

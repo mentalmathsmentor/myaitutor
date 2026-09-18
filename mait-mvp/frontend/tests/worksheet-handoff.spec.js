@@ -1,7 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { isolateWorksheet, chooseCourse, briefField, copyPrompt } from './worksheet-support';
 
 const preview = page => page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true });
+const syllabus = JSON.parse(readFileSync(new URL('../src/syllabus_data.json', import.meta.url), 'utf8'));
+const firstTopic = tree => Array.isArray(tree) ? tree[0] : firstTopic(Object.values(tree)[0]);
 test.beforeEach(async ({ page }) => { await isolateWorksheet(page); });
 
 test('preview is selectable, equals copied text, traps focus and never launches on a timer or Enter', async ({ page }) => {
@@ -73,6 +76,24 @@ test('course switch clears hidden maths selections while custom subject and brie
   await page.getByRole('button', { name: 'Topics', exact: true }).click(); await expect(briefField(page)).toHaveValue('Synthetic physics brief');
 });
 
+for (const [stage, subject, source] of [
+  ['Stage 4 (Yr 7-8)', 'Mathematics', 'Year 7'],
+  ['Year 11', 'Mathematics Advanced', 'Year 11 Advanced'],
+  ['Year 12', 'Mathematics Extension 2', 'Year 12 Extension 2'],
+]) {
+  test(`${stage} / ${subject} hierarchical topics survive reload and reach the copied prompt`, async ({ page }) => {
+    await chooseCourse(page, stage, subject);
+    await page.getByRole('checkbox').first().check();
+    await page.reload();
+    await page.getByRole('button', { name: 'Topics', exact: true }).click();
+    await expect(page.getByRole('checkbox').first()).toBeChecked();
+    const prompt = await copyPrompt(page);
+    expect(prompt).toContain(`- **Subject:** ${subject}`);
+    expect(prompt).toContain(firstTopic(syllabus[source]).label);
+    expect(prompt).toContain('Relevant Dot-Points');
+  });
+}
+
 test('denied browser storage leaves editing and handoff usable', async ({ page }) => {
   await page.addInitScript(() => {
     Storage.prototype.getItem = () => { throw new Error('Read denied'); };
@@ -93,9 +114,10 @@ test('narrow prompt preview remains readable and controls fit', async ({ page },
   await page.screenshot({ path: testInfo.outputPath('prompt-preview-narrow.png') });
 });
 
-test('malformed new draft fields preserve the unread draft and allow copying recovered text', async ({ page }) => {
-  const unread = JSON.stringify({ version: 2, courseKey: '["Year 12","English"]', values: { selectedStage: 'Year 12', selectedSubject: 'English', rawQuestions: { text: 'Unread synthetic draft' } } });
-  await page.evaluate(unread => {
+for (const malformed of ['field', 'course metadata']) {
+test(`malformed new draft ${malformed} preserves the unread draft and allows copying recovered text`, async ({ page }) => {
+  const unread = JSON.stringify({ version: 2, courseKey: malformed === 'course metadata' ? null : '["Year 12","English"]', values: { selectedStage: 'Year 12', selectedSubject: 'English', rawQuestions: malformed === 'field' ? { text: 'Unread synthetic draft' } : 'Unread synthetic brief' } });
+  await page.addInitScript(unread => {
     localStorage.setItem('mait_ws_draft_v2', unread);
     localStorage.setItem('mait_ws_stage', 'Year 12');
     localStorage.setItem('mait_ws_subject', 'English');
@@ -109,3 +131,4 @@ test('malformed new draft fields preserve the unread draft and allow copying rec
   expect(await copyPrompt(page)).toContain('Edited recovered synthetic brief');
   expect(await page.evaluate(() => localStorage.getItem('mait_ws_draft_v2'))).toBe(unread);
 });
+}
