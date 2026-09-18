@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import MathInput from '../components/MathInput';
 import stageSubjects from '../stage_subjects.json';
-import modelSelectorHint from '../assets/gemini-model-selector.png';
+import modelSelectorHint from '../assets/gemini-model-selector-2026-09.jpg';
 import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
@@ -334,7 +334,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
       }
       if (revision !== handoffRevision.current) return;
       setIsCopied(true);
-      setGenerationSuccess('Instructions copied. Open Gemini when you are ready.');
+      setGenerationSuccess('Instructions copied. Open Gemini, paste into its message box, then send.');
     } catch (error) {
       if (revision !== handoffRevision.current) return;
       setGenerationError('Could not copy the worksheet prompt: ' + (error.message || 'Clipboard unavailable'));
@@ -1150,11 +1150,18 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   <ExternalLink className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white">Prompt handoff tips</h3>
+                  <h3 className="text-base font-semibold text-white">Copy → Open Gemini → Paste → Send</h3>
                 </div>
               </div>
-              <div className="grid gap-3">
-                <img src={modelSelectorHint} alt="Gemini model selector hint" className="rounded-2xl border border-white/10" />
+              <div className="grid gap-3 text-sm leading-relaxed text-white/75">
+                <p>Preview and copy your instructions, open Gemini, then <strong className="text-white">paste them into the message box and send</strong>. Opening Gemini does not transfer the prompt automatically.</p>
+                <h4 className="font-semibold text-white">Choose a model in Gemini</h4>
+                <p>Click the model name inside the message box. Choose <strong className="text-white">Pro</strong> for complex maths and reasoning. <strong className="text-white">Extended thinking</strong>, where available, is a separate option for more thinking time.</p>
+                <figure>
+                  <img src={modelSelectorHint} alt="Gemini’s message-box model menu, with Pro selected and Extended thinking listed separately below the models." width={140} height={155} className="mx-auto w-64 max-w-full rounded-2xl border border-white/10" />
+                  <figcaption className="mt-2 text-xs text-white/55">Desktop example checked 18/09/2026. Labels, layout and access can vary by account. Follow the controls shown in your Gemini account.</figcaption>
+                </figure>
+                <a href="https://support.google.com/gemini/answer/14517446?hl=en" target="_blank" rel="noopener noreferrer" className="text-mait-cyan underline">Google’s current model-selection guide</a>
               </div>
             </div>
           </div>
