@@ -12,6 +12,20 @@ Status: local plan and verified code checkpoint, not a live release. Owner prior
 
 This is a manual pilot. The current free worksheet product creates a prompt and preserves its browser draft; it is not a native generator, a resource library, a markbook or a secure teacher account. The public deployment and external AI output have not been verified in this checkpoint. The pilot can begin in a verified local preview; publishing this branch requires a separate release review and approval.
 
+## External Year 4 selective examples received on 30/09/2026
+
+The owner reported six model runs using a similar initial `/worksheet-engine` request. The examples of follow-up answers specify different themes and output requirements, so the complete per-model briefs have not been shown to be identical. The local visual index contains five named PDF groups and does not map files to models or preserve the complete prompts, route receipts or revision counts. It is useful output evidence, not a controlled model ranking or proof that this web wizard produced the PDFs. The owner reports that each took a few minutes and roughly half needed a visual follow-up; independent timing and per-output revision receipts are not present.
+
+The samples expose concrete product gates:
+
+- `selective_launchpad_y4` and `Selective_Mystery` include answers/marking in the same PDF as student questions. Student and teacher exports must be distinct files with a checked answer policy.
+- `Selective_Mystery` repeats a mathematics checking footer on a reading/writing paper. Export templates need subject-aware wording and visual QA of every page.
+- The short `worksheet` is visibly labelled as a practice challenge; longer samples make stronger exam-simulation claims. Require an explicit `short original practice` versus `current-format simulation` choice, with claims validated against an editioned official blueprint.
+- The current NSW selective test is computer-based. Its Reading section has 17 questions yielding 38 answers in 45 minutes; Writing is one 30-minute task. A follow-up question in this sample set stated an older 30-question/40-minute reading format. Freeze and verify the format before prompting, and write original texts and questions rather than copying official items. Source: https://education.nsw.gov.au/schooling/parents-and-carers/choosing-a-school-setting/selective-high-schools/placement-test/selective-high-school-practice-tests
+- A visually strong PDF is not enough: inspect answer correctness, age fit, passage-question correspondence, accessibility, print efficiency, answer leakage and actual student usability. A bounded visual revision loop should preserve the exact source, changed pages and before/after checks.
+
+The reported speed suggests that native generation cannot justify itself merely by producing a PDF quickly. Its value must be dependable curriculum/test metadata, review and export gates, saved revisions, and the classroom feedback loop. A fair model comparison needs the same complete request for each model, model-to-file mapping, route attestation, output hashes, a common rubric and recorded follow-up effort.
+
 ## Build order
 
 ### 1. Make the existing loop reliable
