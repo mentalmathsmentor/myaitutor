@@ -2,6 +2,17 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
 export default function PromptHandoff({ prompt, onClose, onReturnFocus, onCopy, copied, error, firstTimeMode, includeCanvasSetup }) {
+  const downloadPrompt = () => {
+    const url = URL.createObjectURL(new Blob([prompt], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'mait-worksheet-prompt.txt';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   return (
     <Dialog.Root open onOpenChange={open => { if (!open) onClose(); }}>
       <Dialog.Portal>
@@ -27,6 +38,7 @@ export default function PromptHandoff({ prompt, onClose, onReturnFocus, onCopy, 
           {copied && <p role="status" className="mt-3 text-sm text-green-300">Prompt copied. Next: open Gemini, paste into its message box, then send.</p>}
           <div className="mt-5 flex flex-wrap gap-3">
             <button type="button" onClick={onCopy} className="rounded-xl bg-mait-cosmic px-5 py-3 font-semibold">Copy prompt</button>
+            <button type="button" onClick={downloadPrompt} className="rounded-xl border border-white/20 px-5 py-3 font-semibold">Download prompt</button>
             <button type="button" onClick={() => window.open('https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', '_blank', 'noopener,noreferrer')}
               className="rounded-xl border border-white/20 px-5 py-3 font-semibold">Open Gemini</button>
           </div>
