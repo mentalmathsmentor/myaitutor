@@ -1,0 +1,100 @@
+name: Isolated Kimi coding and browser experiment
+
+on:
+  push:
+    branches: [codex/kimi-cloud-design-20261021]
+    paths:
+      - .github/workflows/kimi-cloud-design.yml
+      - tools/kimi-cloud/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kimi-design-20261021
+  cancel-in-progress: false
+
+jobs:
+  design:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: kimi-design-20261022
+    steps:
+      - name: Read only the reviewed controller files
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: |
+            tools/kimi-cloud
+          sparse-checkout-cone-mode: true
+      - name: Prepare the disposable runtime without model credentials
+        env:
+          RUN_APPROVAL_EXPIRES_UTC: '2026-10-21T15:00:00Z'
+        run: |
+          python3 - <<'PY'
+          from datetime import datetime, timezone, timedelta
+          import os, subprocess
+          now = datetime.now(timezone.utc)
+          approval_expiry = datetime.fromisoformat(os.environ['RUN_APPROVAL_EXPIRES_UTC'].replace('Z', '+00:00'))
+          assert now < approval_expiry
+          run_expiry = min(approval_expiry, now + timedelta(minutes=22))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('RUN_EXPIRES_UTC=' + run_expiry.isoformat() + '\n')
+          assert os.environ['GITHUB_REPOSITORY'] == 'mentalmathsmentor/myaitutor'
+          assert os.environ['GITHUB_REF'] == 'refs/heads/codex/kimi-cloud-design-20261021'
+          assert os.environ['GITHUB_EVENT_NAME'] == 'push'
+          assert os.environ['GITHUB_RUN_ATTEMPT'] == '1'
+          assert int(subprocess.check_output(['node', '-p', 'process.versions.node.split(".")[0]'], text=True).strip()) >= 20
+          PY
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bubblewrap iptables
+          sudo mkdir -p /opt/kimi-control /opt/kimi-node/bin /opt/kimi-node/lib/node_modules /opt/kimi-browser-tools /work
+          NODE_SOURCE=$(command -v node)
+          NPM_SOURCE=$(command -v npm)
+          sudo python3 - "$NODE_SOURCE" "$NPM_SOURCE" <<'PY'
+          import pathlib, shutil, subprocess, urllib.request, hashlib, base64, tarfile, json, sys
+          control = pathlib.Path('/opt/kimi-control')
+          for source, target in [('agent_proxy.py','agent_proxy.py'),('launch_agent.sh','launch_agent.sh'),('full-agent-brief.md','brief.md')]:
+              shutil.copyfile(pathlib.Path('tools/kimi-cloud') / source, control / target)
+          node = pathlib.Path(sys.argv[1]).resolve()
+          npm = pathlib.Path(sys.argv[2]).resolve()
+          npm_root = npm.parent.parent
+          assert (npm_root / 'package.json').is_file() and (npm_root / 'bin/npm-cli.js').is_file()
+          shutil.copyfile(node, '/opt/kimi-node/bin/node')
+          pathlib.Path('/opt/kimi-node/bin/node').chmod(0o755)
+          shutil.copytree(npm_root, '/opt/kimi-node/lib/node_modules/npm', dirs_exist_ok=True)
+          for name, script in [('npm','npm-cli.js'),('npx','npx-cli.js')]:
+              pathlib.Path('/opt/kimi-node/bin', name).symlink_to('../lib/node_modules/npm/bin/' + script)
+          url = 'https://registry.npmjs.org/opencode-linux-x64/-/opencode-linux-x64-1.19.3.tgz'
+          expected = 'wz+kXi7ZkvLW04hEIocW3RoEznALJ3YGnvNlZdXFarYF0v1jyDyAwpPGZkxb4JZDrw4oy48/LDZ8wCFIQDTxhw=='
+          archive = pathlib.Path('/tmp/opencode-verified.tgz')
+          digest = hashlib.sha512()
+          with urllib.request.urlopen(url, timeout=90) as response, archive.open('wb') as output:
+              while chunk := response.read(1024 * 1024):
+                  digest.update(chunk)
+                  output.write(chunk)
+          assert base64.b64encode(digest.digest()).decode() == expected, 'Package integrity mismatch'
+          with tarfile.open(archive) as package:
+              binaries = [member for member in package.getmembers() if member.isfile() and member.name.endswith('/bin/opencode')]
+              assert len(binaries) == 1, 'Unexpected binary layout'
+              with package.extractfile(binaries[0]) as source, (control / 'opencode').open('wb') as output:
+                  shutil.copyfileobj(source, output)
+          (control / 'opencode').chmod(0o755)
+          print(json.dumps({'client_version':'1.19.3','verified_archive_sha512':expected,'binary_sha256':hashlib.sha256((control/'opencode').read_bytes()).hexdigest()}))
+          PY
+          sudo env PATH="/opt/kimi-node/bin:$PATH" /opt/kimi-node/bin/npm install --prefix /opt/kimi-browser-tools --ignore-scripts --no-audit --no-fund playwright@1.64.1
+          sudo env PATH="/opt/kimi-node/bin:$PATH" PLAYWRIGHT_BROWSERS_PATH=/opt/kimi-browsers /opt/kimi-browser-tools/node_modules/.bin/playwright install --with-deps chromium
+          sudo chmod -R a+rX,go-w /opt/kimi-control /opt/kimi-node /opt/kimi-browser-tools /opt/kimi-browsers
+      - name: Run the isolated, budgeted coding agent
+        env:
+          OPENROUTER_KIMI_DESIGN: ${{ secrets.OPENROUTER_KIMI_DESIGN_20261022 }}
+          APPROVED_PAYLOAD_SHA256: 'cc979812f379f231045897b163cb0602afb5b5c51c0b664156c2b9afb301fd7c'
+          APPROVED_PROXY_SHA256: '49a7b211900520f3deef7effdbfba42362870e24cb3aee9b8aaaa199da1a51fc'
+          APPROVED_LAUNCHER_SHA256: '9c70bd0fb16a89f777da8e8b3ab6b0c371dd4c903f6c1edb275a6b242bf415ea'
+          PYTHONUNBUFFERED: '1'
+        run: |
+          OPENCODE_BINARY_SHA256=$(sha256sum /opt/kimi-control/opencode | cut -d' ' -f1)
+          export OPENCODE_BINARY_SHA256
+          sudo --preserve-env=OPENROUTER_KIMI_DESIGN,RUN_EXPIRES_UTC,APPROVED_PAYLOAD_SHA256,APPROVED_PROXY_SHA256,APPROVED_LAUNCHER_SHA256,OPENCODE_BINARY_SHA256,PYTHONUNBUFFERED bash /opt/kimi-control/launch_agent.sh --workspace /work/candidate --brief /opt/kimi-control/brief.md --control /opt/kimi-control --opencode /opt/kimi-control/opencode --browser-tools /opt/kimi-browser-tools --browsers /opt/kimi-browsers --node-runtime /opt/kimi-node
