@@ -26,7 +26,7 @@ The cloud job lasts at most 25 minutes including dependency setup. The controlle
 
 `tools/kimi-cloud/full-agent-brief.md` is the coding packet; `tools/kimi-cloud/design-direction-brief.md` is the separate direction packet. Both contain synthetic product-design context only. The coding route uses browser DOM checks and captures screenshots; image pixels are not passed to that model. The controller performs visual review of returned images.
 
-Local checks passed: 17 mock HTTP/archive tests, Python parsing, Bash syntax, workflow YAML parsing, deterministic packet hashes and PII screening. An independent native source review accepted the prepared runner and the bounded final browser-preflight change. Initial review found and corrected an exporter that skipped the requested candidate folder and a failure path that could suppress the public usage receipt.
+Local checks passed: 18 mock HTTP/archive tests, Python parsing, Bash syntax, workflow YAML parsing, deterministic packet hashes and PII screening. An independent native source review accepted the prepared runner and the bounded final browser-preflight change. Initial review found and corrected an exporter that skipped the requested candidate folder and a failure path that could suppress the public usage receipt.
 
 Linux execution, namespace containment, actual package/runtime compatibility and browser rendering remain unverified until the approved cloud run. Any missing capability or failed preflight stops rather than silently changing route, permissions or model.
 

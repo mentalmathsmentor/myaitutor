@@ -211,6 +211,9 @@ class BudgetProxy:
             reserve = Decimal(0)
             dispatched = False
             try:
+                if any(previous is not entry and previous.get("received_sha256") == entry["received_sha256"]
+                       for previous in self.attempts):
+                    raise Stop("DUPLICATE_REQUEST_RETRY_DENIED")
                 if len(raw) > MAX_BODY:
                     raise Stop("REQUEST_TOO_LARGE")
                 incoming = json.loads(raw)
@@ -852,6 +855,13 @@ class SyntheticTests(unittest.TestCase):
         self.request()
         self.assertLess(self.calls[0]["max_tokens"], MAX_OUTPUT)
         self.assertLessEqual(Decimal(self.controller.attempts[0]["reserved_usd"]) + Decimal(".05"), BUDGET)
+
+    def test_duplicate_request_cannot_evade_guard_when_budget_shrinks(self):
+        self.controller.charged = Decimal(".05")
+        self.request()
+        with self.assertRaisesRegex(Stop, "DUPLICATE_REQUEST_RETRY_DENIED"):
+            self.request()
+        self.assertEqual(len(self.calls), 1)
 
     def test_timeout_keeps_reservation_and_zero_retries(self):
         type(self).mode = "timeout"
