@@ -50,6 +50,9 @@ jobs:
           PY
           sudo apt-get update -qq
           sudo apt-get install -y -qq bubblewrap iptables
+          # Runner images deliberately make /opt writable; protect the controller ancestor.
+          sudo chown root:root /opt
+          sudo chmod go-w /opt
           sudo mkdir -p /opt/kimi-control /opt/kimi-node/bin /opt/kimi-node/lib/node_modules /opt/kimi-browser-tools /work
           NODE_SOURCE=$(command -v node)
           NPM_SOURCE=$(command -v npm)

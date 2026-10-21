@@ -33,3 +33,14 @@ Linux execution, namespace containment, actual package/runtime compatibility and
 ## Recovery
 
 Keep unrelated dirty work and the existing frontend candidate unchanged. Push only the reviewed feature-branch commit after exact approval; it does not trigger the main-branch website deployment. Permit cancellation of only the resulting job. Remove the newly created temporary environment secret after the job, retain its execution record, and import only screened returned candidate files for local review. Reverting the preparation commit removes the new experiment files; model spend and already transmitted public material are irreversible.
+
+
+## First cloud attempt and staged correction
+
+The approved feature commit b447b1ba0b757e19b33da9a7cc454fc4236a1fab ran as GitHub Actions run 39613525657. Public runtime setup succeeded, then the root-protected-path preflight stopped with CONTROLLER_PATH_NOT_ROOT_PROTECTED before credential consumption, endpoint attestation or model dispatch. No coding candidate was produced. The temporary environment secret was removed and its absence verified. No workflow rerun or second push has been made.
+
+The official runner image build script makes /opt recursively mode 777. The existing workflow protected its new child folders but omitted this ancestor. The staged correction explicitly restores root ownership and removes group/other write permission on /opt in the disposable VM before creating any controller runtime. The controller's protection check remains unchanged. Source: https://raw.githubusercontent.com/actions/runner-images/main/images/ubuntu/scripts/build/configure-system.sh (inspected directly on 22/10/2026 Australia/Sydney).
+
+The separate Fable direction call returned a visible proposal called The Rail for US$0.20993, with 993 input and 4000 total completion tokens, including 385 reasoning tokens excluded from the saved visible output. The response reached its token ceiling and ends during its memorable-details section; the requested final acceptance plan is incomplete. This is a partial specification, not a generated or tested website. No additional Fable request is proposed in the correction.
+
+Publishing the corrected feature commit and starting one new Kimi-only cloud attempt requires approval of a replacement exact run card. The first card explicitly prohibited retries and second pushes; its approval is not transferred.
