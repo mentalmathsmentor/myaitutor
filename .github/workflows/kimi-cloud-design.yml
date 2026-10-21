@@ -31,7 +31,7 @@ jobs:
           sparse-checkout-cone-mode: true
       - name: Prepare the disposable runtime without model credentials
         env:
-          RUN_APPROVAL_EXPIRES_UTC: '2026-10-21T15:00:00Z'
+          RUN_APPROVAL_EXPIRES_UTC: '2026-10-22T21:00:00Z'
         run: |
           python3 - <<'PY'
           from datetime import datetime, timezone, timedelta
