@@ -499,8 +499,18 @@ def trusted(path, executable=False):
 
 def command(args, failure="ISOLATION_PREFLIGHT_FAILED", **kwargs):
     result = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL, check=False, **kwargs)
+                            stderr=subprocess.PIPE, check=False, **kwargs)
     if result.returncode:
+        # This is trusted setup/probe stderr, never raw model/agent output.
+        # Commands contain no provider key; reject unsafe text before returning.
+        raw = result.stderr[:4096]
+        try:
+            screen(raw)
+            detail = raw.decode("utf-8")
+        except (Stop, UnicodeError):
+            detail = "withheld_by_classification"
+        print(json.dumps({"kind": "preflight_command_failure", "phase": failure,
+                          "exit_code": result.returncode, "detail": detail}), flush=True)
         raise Stop(failure)
 
 
@@ -582,6 +592,7 @@ def launch(args):
     browsers = trusted(args.browsers)
     node_runtime = trusted(args.node_runtime)
     trusted(node_runtime / "bin" / "node", executable=True)
+    trusted(Path("/usr/bin/setpriv"), executable=True)
     trusted(Path(__file__).resolve())
     if digest(binary.read_bytes()) != env.get("OPENCODE_BINARY_SHA256"):
         raise Stop("OPENCODE_BINARY_HASH_MISMATCH")
@@ -621,9 +632,9 @@ def launch(args):
     os.chown(home, uid, uid)
     # UID is not a sufficient file boundary. A mount/PID namespace hides the
     # host checkout, runner home, process environment and every controller file.
-    namespace = ["/usr/bin/bwrap", "--unshare-user", "--unshare-pid", "--unshare-ipc", "--unshare-uts",
+    namespace = ["/usr/bin/bwrap", "--unshare-pid", "--unshare-ipc", "--unshare-uts",
                  "--die-with-parent", "--new-session", "--clearenv", "--cap-drop", "ALL",
-                 "--uid", str(uid), "--gid", str(uid),
+                 "--cap-add", "CAP_SETUID", "--cap-add", "CAP_SETGID", "--cap-add", "CAP_SETPCAP",
                  "--ro-bind", "/usr", "/usr", "--ro-bind", "/bin", "/bin",
                  "--ro-bind", "/lib", "/lib", "--proc", "/proc", "--dev", "/dev",
                  "--tmpfs", "/tmp", "--dir", "/etc", "--dir", "/opt",
@@ -638,10 +649,6 @@ def launch(args):
                  "--ro-bind", str(browsers), "/opt/browsers"]
     if Path("/lib64").exists():
         namespace += ["--ro-bind", "/lib64", "/lib64"]
-    # Drop the host identity before bwrap creates its user namespace. Otherwise
-    # mapping root to the sandbox UID leaves sockets owned by host root and
-    # defeats the host-UID peer check. subprocess applies these in its C child.
-    worker_identity = {"user": uid, "group": uid, "extra_groups": []}
     passwd = control / "passwd"
     passwd.write_text(f"agent:x:{uid}:{uid}:Synthetic coding worker:/home/agent:/bin/bash\n")
     passwd.chmod(0o444)
@@ -657,7 +664,13 @@ def launch(args):
                   "GIT_TERMINAL_PROMPT": "0", "CI": "1"}
     for name, value in worker_env.items():
         namespace += ["--setenv", name, value]
-    namespace += ["--chdir", "/workspace"]
+    # The trusted root bwrap creates only mount/PID/IPC/UTS namespaces. Its
+    # payload is always setpriv, which drops IDs, groups and every capability
+    # before any Python/Node/client code runs. No unprivileged user namespace.
+    namespace += ["--chdir", "/workspace", "--", "/usr/bin/setpriv",
+                  "--reuid=" + str(uid), "--regid=" + str(uid), "--clear-groups",
+                  "--inh-caps=-all", "--ambient-caps=-all", "--bounding-set=-all",
+                  "--no-new-privs", "--"]
     # Native shell/editor access in the synthetic VM; other tool types denied.
     permission = {"*": "deny", "read": {"*": "allow", "*.env*": "deny"},
                   "edit": "allow", "glob": "allow", "grep": "allow",
@@ -692,7 +705,8 @@ def launch(args):
     config_path = control / "opencode.json"
     config_path.write_bytes(canonical(config))
     config_path.chmod(0o444)
-    namespace += ["--ro-bind", str(config_path), "/etc/opencode.json"]
+    separator = namespace.index("--")
+    namespace[separator:separator] = ["--ro-bind", str(config_path), "/etc/opencode.json"]
     # Reject access to the proxy from every UID except the isolated worker.
     firewall = ["/usr/sbin/iptables", "-w", "-A", "OUTPUT", "-p", "tcp", "-d", "127.0.0.1",
                 "--dport", str(port), "-m", "owner", "!", "--uid-owner", str(uid), "-j", "REJECT"]
@@ -702,9 +716,9 @@ def launch(args):
     try:
         # Verify UID, no capabilities and absence of the controller environment
         # from inside the exact same namespace before invoking the coding agent.
-        probe = "import os; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=dict(line.split(':',1) for line in open('/proc/self/status').read().splitlines()); assert int(status['CapEff'].strip(),16)==0; assert status['NoNewPrivs'].strip()=='1'; print('ISOLATION_OK')"
+        probe = "import os; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=dict(line.split(':',1) for line in open('/proc/self/status').read().splitlines()); assert int(status['CapEff'].strip(),16)==0; assert int(status['CapBnd'].strip(),16)==0; assert status['NoNewPrivs'].strip()=='1'; print('ISOLATION_OK')"
         command(namespace + ["/usr/bin/python3", "-c", probe],
-                failure="ISOLATION_IDENTITY_PREFLIGHT_FAILED", **worker_identity)
+                failure="ISOLATION_IDENTITY_PREFLIGHT_FAILED")
         # GET is always denied without calling the model. Its exact 404 proves
         # the worker also passes the host socket-owner check and firewall.
         peer_probe = ("import urllib.request,urllib.error,json; "
@@ -714,10 +728,10 @@ def launch(args):
                       "assert e.code==404 and json.load(e)['error']['code']=='ENDPOINT_DENIED'"
                       "\nelse: raise AssertionError('unexpected probe success')")
         command(namespace + ["/usr/bin/python3", "-c", peer_probe], timeout=8,
-                failure="HOST_SOCKET_OWNER_PREFLIGHT_FAILED", **worker_identity)
+                failure="HOST_SOCKET_OWNER_PREFLIGHT_FAILED")
         browser_probe = "const {chromium}=require('playwright'); (async()=>{const b=await chromium.launch({headless:true});const p=await b.newPage();await p.setContent('<h1>Browser ready</h1>');if(await p.locator('h1').innerText()!=='Browser ready')throw Error('probe');await b.close();})().catch(()=>process.exit(1));"
         command(namespace + ["/opt/node/bin/node", "-e", browser_probe], timeout=45,
-                failure="BROWSER_STARTUP_PREFLIGHT_FAILED", **worker_identity)
+                failure="BROWSER_STARTUP_PREFLIGHT_FAILED")
         if args.preflight_only:
             variants = [["--help"], ["-h"], ["--h"], ["help"], ["--version"]]
             outputs, successes = [], []
@@ -726,7 +740,7 @@ def launch(args):
                         else ["/opt/opencode", *variant])
                 try:
                     result = subprocess.run(namespace + argv, capture_output=True,
-                                            timeout=6, **worker_identity)
+                                            timeout=6)
                     raw = (result.stdout + result.stderr)[:65536]
                     screen(raw, key)
                     outputs.append("Variant " + repr(variant) + " exit " + str(result.returncode)
@@ -739,7 +753,7 @@ def launch(args):
             probe_path.parent.mkdir(parents=True, exist_ok=True)
             probe_path.write_text("Successful variants: " + repr(successes) + "\n\n" + "\n\n".join(outputs))
         version = subprocess.run(namespace + ["/opt/opencode", "--version"],
-                                 capture_output=True, timeout=20, **worker_identity)
+                                 capture_output=True, timeout=20)
         if version.returncode or version.stdout.decode().strip() != OPENCODE_VERSION:
             raise Stop("OPENCODE_VERSION_MISMATCH")
         if time.monotonic() >= launch_deadline:
@@ -754,8 +768,7 @@ def launch(args):
         worker = subprocess.Popen(namespace + ["/opt/opencode", "run", "--format", "json",
                                   "--model", "bounded/candidate", "--agent", "build", brief.decode()],
                                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                  stderr=subprocess.DEVNULL, env={}, start_new_session=True,
-                                  **worker_identity)
+                                  stderr=subprocess.DEVNULL, env={}, start_new_session=True)
         while worker.poll() is None:
             if time.monotonic() >= controller.deadline or controller.stopped:
                 os.killpg(worker.pid, signal.SIGTERM)
@@ -937,8 +950,8 @@ class SyntheticTests(unittest.TestCase):
         assignment = next(node for node in ast.walk(function) if isinstance(node, ast.Assign)
                           and any(isinstance(target, ast.Name) and target.id == "probe" for target in node.targets))
         child_code = ast.literal_eval(assignment.value)
-        def run_probe(caps, no_new_privs):
-            status = f"Name:\tpython3\nCapEff:\t{caps}\nNoNewPrivs:\t{no_new_privs}\n"
+        def run_probe(caps, no_new_privs, bound="0000000000000000"):
+            status = f"Name:\tpython3\nCapEff:\t{caps}\nCapBnd:\t{bound}\nNoNewPrivs:\t{no_new_privs}\n"
             with patch("os.geteuid", return_value=29071), patch("os.getgroups", return_value=[]), \
                  patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True), \
                  patch("builtins.open", return_value=io.StringIO(status)), contextlib.redirect_stdout(io.StringIO()):
@@ -948,6 +961,8 @@ class SyntheticTests(unittest.TestCase):
             run_probe("0000000000000001", "1")
         with self.assertRaises(AssertionError):
             run_probe("0000000000000000", "0")
+        with self.assertRaises(AssertionError):
+            run_probe("0000000000000000", "1", "0000000000000001")
 
     def test_preflight_mode_rejects_even_a_valid_model_request(self):
         server = SafeHTTPServer(("127.0.0.1", 0), ProxyHandler)
@@ -966,6 +981,18 @@ class SyntheticTests(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
+
+    def test_failed_setup_command_returns_only_screened_diagnostics(self):
+        for text, expected in [("Synthetic namespace error", "Synthetic namespace error"),
+                               ("sk-or-v1-" + "X" * 30, "withheld_by_classification")]:
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), self.assertRaises(Stop):
+                command([sys.executable, "-c", "import sys;sys.stderr.write(sys.argv[1]);sys.exit(3)", text],
+                        failure="SYNTHETIC_SETUP_FAILURE")
+            event = json.loads(output.getvalue())
+            self.assertEqual(event["detail"], expected)
+            self.assertEqual(event["exit_code"], 3)
+            self.assertEqual(self.calls, [])
 
     def test_duplicate_request_cannot_evade_guard_when_budget_shrinks(self):
         self.controller.charged = Decimal(".05")

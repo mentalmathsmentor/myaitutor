@@ -31,7 +31,7 @@ jobs:
           sparse-checkout-cone-mode: true
       - name: Prepare the disposable runtime without model credentials
         env:
-          RUN_APPROVAL_EXPIRES_UTC: '2026-10-22T21:00:00Z'
+          RUN_APPROVAL_EXPIRES_UTC: '2026-10-23T21:00:00Z'
         run: |
           python3 - <<'PY'
           from datetime import datetime, timezone, timedelta
@@ -94,7 +94,7 @@ jobs:
         env:
           OPENROUTER_KIMI_DESIGN: 'preflight-dummy-not-a-provider-key'
           APPROVED_PAYLOAD_SHA256: 'cc979812f379f231045897b163cb0602afb5b5c51c0b664156c2b9afb301fd7c'
-          APPROVED_PROXY_SHA256: '0aa6466e20eb7f6f67d6a610ca126e2979ae7a918ec59f2ddd37aa3a6935069c'
+          APPROVED_PROXY_SHA256: '6d83f39f3bb50b0e8f26ffc4dec43c71be4efa6b81fba707ee0016eb4e5c09aa'
           APPROVED_LAUNCHER_SHA256: '9c70bd0fb16a89f777da8e8b3ab6b0c371dd4c903f6c1edb275a6b242bf415ea'
           PYTHONUNBUFFERED: '1'
         run: |
@@ -106,7 +106,7 @@ jobs:
         env:
           OPENROUTER_KIMI_DESIGN: ${{ secrets.OPENROUTER_KIMI_DESIGN_20261022 }}
           APPROVED_PAYLOAD_SHA256: 'cc979812f379f231045897b163cb0602afb5b5c51c0b664156c2b9afb301fd7c'
-          APPROVED_PROXY_SHA256: '0aa6466e20eb7f6f67d6a610ca126e2979ae7a918ec59f2ddd37aa3a6935069c'
+          APPROVED_PROXY_SHA256: '6d83f39f3bb50b0e8f26ffc4dec43c71be4efa6b81fba707ee0016eb4e5c09aa'
           APPROVED_LAUNCHER_SHA256: '9c70bd0fb16a89f777da8e8b3ab6b0c371dd4c903f6c1edb275a6b242bf415ea'
           PYTHONUNBUFFERED: '1'
         run: |
