@@ -495,11 +495,11 @@ def trusted(path, executable=False):
     return path
 
 
-def command(args, **kwargs):
+def command(args, failure="ISOLATION_PREFLIGHT_FAILED", **kwargs):
     result = subprocess.run(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, check=False, **kwargs)
     if result.returncode:
-        raise Stop("ISOLATION_PREFLIGHT_FAILED")
+        raise Stop(failure)
 
 
 def emit_bundle(workspace, key):
@@ -619,7 +619,7 @@ def launch(args):
     os.chown(home, uid, uid)
     # UID is not a sufficient file boundary. A mount/PID namespace hides the
     # host checkout, runner home, process environment and every controller file.
-    namespace = ["/usr/bin/bwrap", "--unshare-pid", "--unshare-ipc", "--unshare-uts",
+    namespace = ["/usr/bin/bwrap", "--unshare-user", "--unshare-pid", "--unshare-ipc", "--unshare-uts",
                  "--die-with-parent", "--new-session", "--clearenv", "--cap-drop", "ALL",
                  "--uid", str(uid), "--gid", str(uid),
                  "--ro-bind", "/usr", "/usr", "--ro-bind", "/bin", "/bin",
@@ -636,6 +636,10 @@ def launch(args):
                  "--ro-bind", str(browsers), "/opt/browsers"]
     if Path("/lib64").exists():
         namespace += ["--ro-bind", "/lib64", "/lib64"]
+    # Drop the host identity before bwrap creates its user namespace. Otherwise
+    # mapping root to the sandbox UID leaves sockets owned by host root and
+    # defeats the host-UID peer check. subprocess applies these in its C child.
+    worker_identity = {"user": uid, "group": uid, "extra_groups": []}
     passwd = control / "passwd"
     passwd.write_text(f"agent:x:{uid}:{uid}:Synthetic coding worker:/home/agent:/bin/bash\n")
     passwd.chmod(0o444)
@@ -689,26 +693,46 @@ def launch(args):
     # Reject access to the proxy from every UID except the isolated worker.
     firewall = ["/usr/sbin/iptables", "-w", "-A", "OUTPUT", "-p", "tcp", "-d", "127.0.0.1",
                 "--dport", str(port), "-m", "owner", "!", "--uid-owner", str(uid), "-j", "REJECT"]
-    command(firewall)
+    command(firewall, failure="PROXY_OWNER_FIREWALL_PREFLIGHT_FAILED")
     threading.Thread(target=server.serve_forever, daemon=True).start()
     worker = None
     try:
         # Verify UID, no capabilities and absence of the controller environment
         # from inside the exact same namespace before invoking the coding agent.
-        probe = "import os; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=open('/proc/self/status').read(); assert 'CapEff:\\t0000000000000000' in status; assert 'NoNewPrivs:\\t1' in status; print('ISOLATION_OK')"
-        command(namespace + ["/usr/bin/python3", "-c", probe])
+        probe = "import os; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=dict(line.split(':',1) for line in open('/proc/self/status').read().splitlines()); assert int(status['CapEff'].strip(),16)==0; assert status['NoNewPrivs'].strip()=='1'; print('ISOLATION_OK')"
+        command(namespace + ["/usr/bin/python3", "-c", probe],
+                failure="ISOLATION_IDENTITY_PREFLIGHT_FAILED", **worker_identity)
+        # GET is always denied without calling the model. Its exact 404 proves
+        # the worker also passes the host socket-owner check and firewall.
+        peer_probe = ("import urllib.request,urllib.error,json; "
+                      "opener=urllib.request.build_opener(urllib.request.ProxyHandler({})); "
+                      "\ntry: opener.open('http://127.0.0.1:" + str(port) + "/identity-probe',timeout=5)"
+                      "\nexcept urllib.error.HTTPError as e: "
+                      "assert e.code==404 and json.load(e)['error']['code']=='ENDPOINT_DENIED'"
+                      "\nelse: raise AssertionError('unexpected probe success')")
+        command(namespace + ["/usr/bin/python3", "-c", peer_probe], timeout=8,
+                failure="HOST_SOCKET_OWNER_PREFLIGHT_FAILED", **worker_identity)
         browser_probe = "const {chromium}=require('playwright'); (async()=>{const b=await chromium.launch({headless:true});const p=await b.newPage();await p.setContent('<h1>Browser ready</h1>');if(await p.locator('h1').innerText()!=='Browser ready')throw Error('probe');await b.close();})().catch(()=>process.exit(1));"
-        command(namespace + ["/opt/node/bin/node", "-e", browser_probe], timeout=45)
-        version = subprocess.run(namespace + ["/opt/opencode", "--version"], capture_output=True, timeout=20)
+        command(namespace + ["/opt/node/bin/node", "-e", browser_probe], timeout=45,
+                failure="BROWSER_STARTUP_PREFLIGHT_FAILED", **worker_identity)
+        version = subprocess.run(namespace + ["/opt/opencode", "--version"],
+                                 capture_output=True, timeout=20, **worker_identity)
         if version.returncode or version.stdout.decode().strip() != OPENCODE_VERSION:
             raise Stop("OPENCODE_VERSION_MISMATCH")
         if time.monotonic() >= launch_deadline:
             raise Stop("APPROVAL_EXPIRED")
+        if args.preflight_only:
+            print(json.dumps({"kind": "isolation_preflight_ok", "host_uid": uid,
+                              "sandbox_uid": uid, "browser_dom": "pass",
+                              "client_version": OPENCODE_VERSION,
+                              "model_requests": 0}), flush=True)
+            return
         # Root-only raw output is drained and discarded, never logged or archived.
         worker = subprocess.Popen(namespace + ["/opt/opencode", "run", "--format", "json",
                                   "--model", "bounded/candidate", "--agent", "build", brief.decode()],
                                   stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                  stderr=subprocess.DEVNULL, env={}, start_new_session=True)
+                                  stderr=subprocess.DEVNULL, env={}, start_new_session=True,
+                                  **worker_identity)
         while worker.poll() is None:
             if time.monotonic() >= controller.deadline or controller.stopped:
                 os.killpg(worker.pid, signal.SIGTERM)
@@ -728,17 +752,26 @@ def launch(args):
         server.server_close()
         delete_firewall = firewall[:]
         delete_firewall[2] = "-D"
-        command(delete_firewall)
+        cleanup_failure = None
+        try:
+            command(delete_firewall, failure="PROXY_OWNER_FIREWALL_CLEANUP_FAILED")
+        except Stop as exc:
+            cleanup_failure = str(exc)
+            controller.stopped = controller.stopped or cleanup_failure
         controller.persist()
         # Preserve compliant partial source even when budget/deadline stops work.
         try:
-            emit_bundle(workspace, key)
+            if not args.preflight_only:
+                emit_bundle(workspace, key)
         except Stop as exc:
             print(json.dumps({"kind": "export_blocked", "code": str(exc)}), flush=True)
         except Exception:
             print(json.dumps({"kind": "export_blocked", "code": "EXPORT_SCREEN_OR_IO_FAILURE"}), flush=True)
         finally:
-            print(json.dumps({"kind": "usage_receipt", "receipt": controller.snapshot()}), flush=True)
+            if not args.preflight_only:
+                print(json.dumps({"kind": "usage_receipt", "receipt": controller.snapshot()}), flush=True)
+        if cleanup_failure:
+            raise Stop(cleanup_failure)
 
 
 class SyntheticTests(unittest.TestCase):
@@ -855,6 +888,43 @@ class SyntheticTests(unittest.TestCase):
         self.request()
         self.assertLess(self.calls[0]["max_tokens"], MAX_OUTPUT)
         self.assertLessEqual(Decimal(self.controller.attempts[0]["reserved_usd"]) + Decimal(".05"), BUDGET)
+
+    def test_identity_probe_get_never_dispatches_model(self):
+        server = SafeHTTPServer(("127.0.0.1", 0), ProxyHandler)
+        server.controller = self.controller
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            client = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=3)
+            client.request("GET", "/identity-probe")
+            response = client.getresponse()
+            self.assertEqual(response.status, 404)
+            self.assertEqual(json.loads(response.read())["error"]["code"], "ENDPOINT_DENIED")
+            self.assertEqual(self.calls, [])
+            self.assertEqual(self.controller.attempts, [])
+            client.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_actual_child_identity_probe_parses_kernel_tabs(self):
+        import ast
+        from unittest.mock import patch
+        tree = ast.parse(Path(__file__).read_text())
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "launch")
+        assignment = next(node for node in ast.walk(function) if isinstance(node, ast.Assign)
+                          and any(isinstance(target, ast.Name) and target.id == "probe" for target in node.targets))
+        child_code = ast.literal_eval(assignment.value)
+        def run_probe(caps, no_new_privs):
+            status = f"Name:\tpython3\nCapEff:\t{caps}\nNoNewPrivs:\t{no_new_privs}\n"
+            with patch("os.geteuid", return_value=29071), patch("os.getgroups", return_value=[]), \
+                 patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True), \
+                 patch("builtins.open", return_value=io.StringIO(status)), contextlib.redirect_stdout(io.StringIO()):
+                exec(child_code, {})
+        run_probe("0000000000000000", "1")
+        with self.assertRaises(AssertionError):
+            run_probe("0000000000000001", "1")
+        with self.assertRaises(AssertionError):
+            run_probe("0000000000000000", "0")
 
     def test_duplicate_request_cannot_evade_guard_when_budget_shrinks(self):
         self.controller.charged = Decimal(".05")
@@ -980,6 +1050,8 @@ def main():
     parser.add_argument("--self-test", action="store_true")
     sub = parser.add_subparsers(dest="action")
     run = sub.add_parser("launch", help="Linux cloud launch; exact hashes/expiry and live metadata required")
+    run.add_argument("--preflight-only", action="store_true",
+                     help="Test isolation, browser DOM and client version without starting a model worker")
     for name in ("workspace", "brief", "control", "opencode", "browser-tools", "browsers", "node-runtime"):
         run.add_argument("--" + name, required=True)
     args = parser.parse_args()
