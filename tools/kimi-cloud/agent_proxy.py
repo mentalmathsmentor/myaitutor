@@ -42,7 +42,7 @@ ALIAS = "candidate"
 ENDPOINT = "inference-net/us"
 INPUT_RATE = Decimal("0.000000239")
 OUTPUT_RATE = Decimal("0.000011936")
-BUDGET = Decimal("0.10")
+BUDGET = Decimal("0.25")
 MAX_REQUESTS = 50
 MAX_OUTPUT = 6000
 MAX_SECONDS = 25 * 60
@@ -529,6 +529,41 @@ def classified_metadata(raw, key=""):
     return {"sha256": original_hash, "bytes": original_size, "truncated": len(raw) > 8192, "text": text}
 
 
+HOME_DIRECTORIES = (".agent-home", ".agent-home/.local", ".agent-home/.local/share",
+                    ".agent-home/.local/share/opencode", ".agent-home/.local/state",
+                    ".agent-home/.cache", ".agent-home/.config")
+
+
+def prepare_worker_home(workspace, uid, gid):
+    """Fresh private directories inside the already isolated writable workspace."""
+    for relative in HOME_DIRECTORIES:
+        path = Path(workspace) / relative
+        path.mkdir(mode=0o700)
+        os.chown(path, uid, gid)
+        path.chmod(0o700)
+    return Path(workspace) / ".agent-home"
+
+
+HOME_WRITE_PROBE = """import os, pathlib, stat
+assert os.geteuid() == 29071 and os.getcwd() == '/workspace'
+paths = ['/workspace', '/workspace/.agent-home', '/workspace/.agent-home/.local',
+         '/workspace/.agent-home/.local/share', '/workspace/.agent-home/.local/share/opencode',
+         '/workspace/.agent-home/.local/state', '/workspace/.agent-home/.cache',
+         '/workspace/.agent-home/.config']
+for name in paths:
+    path = pathlib.Path(name)
+    info = path.stat()
+    assert info.st_uid == 29071 and info.st_gid == 29071
+    assert stat.S_IMODE(info.st_mode) == 0o700
+    marker = path / '.controller-write-probe'
+    with marker.open('xb') as output:
+        output.write(b'private-write-check')
+    assert marker.read_bytes() == b'private-write-check'
+    marker.unlink()
+print('PRIVATE_HOME_WRITE_OK')
+"""
+
+
 def emit_bundle(workspace, key):
     """Only screened synthetic source and PNG screenshots, never agent/session logs."""
     workspace = Path(workspace).resolve()
@@ -643,9 +678,7 @@ def launch(args):
         pass
     workspace.mkdir(mode=0o700, parents=False)
     os.chown(workspace, uid, uid)
-    home = control / "worker-home"
-    home.mkdir(mode=0o700)
-    os.chown(home, uid, uid)
+    home = prepare_worker_home(workspace, uid, uid)
     # UID is not a sufficient file boundary. A mount/PID namespace hides the
     # host checkout, runner home, process environment and every controller file.
     namespace = ["/usr/bin/bwrap", "--unshare-pid", "--unshare-ipc", "--unshare-uts",
@@ -658,7 +691,6 @@ def launch(args):
                  "--ro-bind", "/etc/hosts", "/etc/hosts",
                  "--ro-bind", "/etc/ssl", "/etc/ssl",
                  "--bind", str(workspace), "/workspace",
-                 "--bind", str(home), "/home/agent",
                  "--ro-bind", str(binary), "/opt/opencode",
                  "--ro-bind", str(node_runtime), "/opt/node",
                  "--ro-bind", str(browser_tools), "/opt/kimi-browser-tools",
@@ -666,10 +698,14 @@ def launch(args):
     if Path("/lib64").exists():
         namespace += ["--ro-bind", "/lib64", "/lib64"]
     passwd = control / "passwd"
-    passwd.write_text(f"agent:x:{uid}:{uid}:Synthetic coding worker:/home/agent:/bin/bash\n")
+    passwd.write_text(f"agent:x:{uid}:{uid}:Synthetic coding worker:/workspace/.agent-home:/bin/bash\n")
     passwd.chmod(0o444)
     namespace += ["--ro-bind", str(passwd), "/etc/passwd"]
-    worker_env = {"PATH": "/opt/node/bin:/usr/local/bin:/usr/bin:/bin", "HOME": "/home/agent",
+    worker_env = {"PATH": "/opt/node/bin:/usr/local/bin:/usr/bin:/bin", "HOME": "/workspace/.agent-home",
+                  "XDG_DATA_HOME": "/workspace/.agent-home/.local/share",
+                  "XDG_STATE_HOME": "/workspace/.agent-home/.local/state",
+                  "XDG_CACHE_HOME": "/workspace/.agent-home/.cache",
+                  "XDG_CONFIG_HOME": "/workspace/.agent-home/.config",
                   "LANG": "C.UTF-8", "TERM": "dumb", "SHELL": "/bin/bash",
                   "NODE_PATH": "/opt/kimi-browser-tools/node_modules",
                   "PLAYWRIGHT_BROWSERS_PATH": "/opt/browsers",
@@ -738,6 +774,10 @@ def launch(args):
         probe = "import os; assert os.getcwd()=='/workspace'; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=dict(line.split(':',1) for line in open('/proc/self/status').read().splitlines()); assert int(status['CapEff'].strip(),16)==0; assert int(status['CapBnd'].strip(),16)==0; assert status['NoNewPrivs'].strip()=='1'; print('ISOLATION_OK')"
         command(namespace + ["/usr/bin/python3", "-c", probe],
                 failure="ISOLATION_IDENTITY_PREFLIGHT_FAILED")
+        command(namespace + ["/usr/bin/python3", "-c", HOME_WRITE_PROBE], timeout=8,
+                failure="PRIVATE_HOME_WRITE_PREFLIGHT_FAILED")
+        print(json.dumps({"kind": "private_home_write_ok", "host_uid": uid,
+                          "mode": "0700", "checked_directories": 8}), flush=True)
         # GET is always denied without calling the model. Its exact 404 proves
         # the worker also passes the host socket-owner check and firewall.
         peer_probe = ("import urllib.request,urllib.error,json; "
@@ -943,16 +983,38 @@ class SyntheticTests(unittest.TestCase):
         self.assertEqual(self.calls, [])
 
     def test_budget_exhaustion(self):
-        self.controller.charged = Decimal(".099")
+        self.controller.charged = BUDGET - Decimal(".001")
         with self.assertRaisesRegex(Stop, "BUDGET_EXHAUSTED"):
             self.request()
         self.assertEqual(self.calls, [])
 
     def test_output_shrinks_to_remaining(self):
-        self.controller.charged = Decimal(".05")
+        self.controller.charged = BUDGET - Decimal(".05")
+        before = self.controller.charged
         self.request()
         self.assertLess(self.calls[0]["max_tokens"], MAX_OUTPUT)
-        self.assertLessEqual(Decimal(self.controller.attempts[0]["reserved_usd"]) + Decimal(".05"), BUDGET)
+        self.assertLessEqual(Decimal(self.controller.attempts[0]["reserved_usd"]) + before, BUDGET)
+
+    def test_fresh_private_home_real_filesystem_and_export_exclusion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            home = prepare_worker_home(root, os.geteuid(), os.getegid())
+            for relative in HOME_DIRECTORIES:
+                path = root / relative
+                info = path.stat()
+                self.assertEqual(info.st_uid, os.geteuid())
+                self.assertEqual(stat.S_IMODE(info.st_mode), 0o700)
+                marker = path / 'check'
+                marker.write_bytes(b'private')
+                self.assertEqual(marker.read_bytes(), b'private')
+            (home / 'session.json').write_text('private CLI state must not export')
+            (root / 'index.html').write_text('<h1>Synthetic candidate</h1>')
+            with contextlib.redirect_stdout(io.StringIO()) as output:
+                emit_bundle(root, '')
+            encoded = output.getvalue().split('CANDIDATE_ARCHIVE_BEGIN\n')[1].split('CANDIDATE_ARCHIVE_END')[0]
+            with tarfile.open(fileobj=io.BytesIO(base64.b64decode(encoded)), mode='r:gz') as archive:
+                self.assertEqual(archive.getnames(), ['index.html'])
+        self.assertEqual(self.calls, [])
 
     def test_identity_probe_get_never_dispatches_model(self):
         server = SafeHTTPServer(("127.0.0.1", 0), ProxyHandler)

@@ -1,4 +1,4 @@
-name: Coding client diagnostic only - no model or credential
+name: Isolated Kimi design - private home repair
 
 on:
   push:
@@ -18,7 +18,8 @@ jobs:
   design:
     if: github.run_attempt == 1
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 25
+    environment: kimi-design-20261022
     steps:
       - name: Read only the reviewed controller files
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -38,7 +39,7 @@ jobs:
           now = datetime.now(timezone.utc)
           approval_expiry = datetime.fromisoformat(os.environ['RUN_APPROVAL_EXPIRES_UTC'].replace('Z', '+00:00'))
           assert now < approval_expiry
-          run_expiry = min(approval_expiry, now + timedelta(minutes=7))
+          run_expiry = min(approval_expiry, now + timedelta(minutes=22))
           with open(os.environ['GITHUB_ENV'], 'a') as output:
               output.write('RUN_EXPIRES_UTC=' + run_expiry.isoformat() + '\n')
           assert os.environ['GITHUB_REPOSITORY'] == 'mentalmathsmentor/myaitutor'
@@ -93,7 +94,7 @@ jobs:
         env:
           OPENROUTER_KIMI_DESIGN: 'preflight-dummy-not-a-provider-key'
           APPROVED_PAYLOAD_SHA256: 'cc979812f379f231045897b163cb0602afb5b5c51c0b664156c2b9afb301fd7c'
-          APPROVED_PROXY_SHA256: '78a8105b08c3531b66724a2017483b01b6e9921556db95d324e8c5bcdc62b4b4'
+          APPROVED_PROXY_SHA256: '4e1c4f6a1afa562e2395946c7736d815af53d3e0889504cda89a4fc2d45cb154'
           APPROVED_LAUNCHER_SHA256: '9c70bd0fb16a89f777da8e8b3ab6b0c371dd4c903f6c1edb275a6b242bf415ea'
           PYTHONUNBUFFERED: '1'
         run: |
@@ -101,3 +102,14 @@ jobs:
           OPENCODE_BINARY_SHA256=$(sha256sum /opt/kimi-preflight-control/opencode | cut -d' ' -f1)
           export OPENCODE_BINARY_SHA256
           sudo --preserve-env=OPENROUTER_KIMI_DESIGN,RUN_EXPIRES_UTC,APPROVED_PAYLOAD_SHA256,APPROVED_PROXY_SHA256,APPROVED_LAUNCHER_SHA256,OPENCODE_BINARY_SHA256,PYTHONUNBUFFERED bash /opt/kimi-preflight-control/launch_agent.sh --workspace /work/isolation-preflight --brief /opt/kimi-preflight-control/brief.md --control /opt/kimi-preflight-control --opencode /opt/kimi-preflight-control/opencode --browser-tools /opt/kimi-browser-tools --browsers /opt/kimi-browsers --node-runtime /opt/kimi-node --preflight-only
+      - name: Run the isolated, budgeted coding agent
+        env:
+          OPENROUTER_KIMI_DESIGN: ${{ secrets.OPENROUTER_KIMI_DESIGN_20261022 }}
+          APPROVED_PAYLOAD_SHA256: 'cc979812f379f231045897b163cb0602afb5b5c51c0b664156c2b9afb301fd7c'
+          APPROVED_PROXY_SHA256: '4e1c4f6a1afa562e2395946c7736d815af53d3e0889504cda89a4fc2d45cb154'
+          APPROVED_LAUNCHER_SHA256: '9c70bd0fb16a89f777da8e8b3ab6b0c371dd4c903f6c1edb275a6b242bf415ea'
+          PYTHONUNBUFFERED: '1'
+        run: |
+          OPENCODE_BINARY_SHA256=$(sha256sum /opt/kimi-control/opencode | cut -d' ' -f1)
+          export OPENCODE_BINARY_SHA256
+          sudo --preserve-env=OPENROUTER_KIMI_DESIGN,RUN_EXPIRES_UTC,APPROVED_PAYLOAD_SHA256,APPROVED_PROXY_SHA256,APPROVED_LAUNCHER_SHA256,OPENCODE_BINARY_SHA256,PYTHONUNBUFFERED bash /opt/kimi-control/launch_agent.sh --workspace /work/candidate --brief /opt/kimi-control/brief.md --control /opt/kimi-control --opencode /opt/kimi-control/opencode --browser-tools /opt/kimi-browser-tools --browsers /opt/kimi-browsers --node-runtime /opt/kimi-node
