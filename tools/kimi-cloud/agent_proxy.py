@@ -593,6 +593,7 @@ def launch(args):
     node_runtime = trusted(args.node_runtime)
     trusted(node_runtime / "bin" / "node", executable=True)
     trusted(Path("/usr/bin/setpriv"), executable=True)
+    trusted(Path("/usr/bin/env"), executable=True)
     trusted(Path(__file__).resolve())
     if digest(binary.read_bytes()) != env.get("OPENCODE_BINARY_SHA256"):
         raise Stop("OPENCODE_BINARY_HASH_MISMATCH")
@@ -637,7 +638,7 @@ def launch(args):
                  "--cap-add", "CAP_SETUID", "--cap-add", "CAP_SETGID", "--cap-add", "CAP_SETPCAP",
                  "--ro-bind", "/usr", "/usr", "--ro-bind", "/bin", "/bin",
                  "--ro-bind", "/lib", "/lib", "--proc", "/proc", "--dev", "/dev",
-                 "--tmpfs", "/tmp", "--dir", "/etc", "--dir", "/opt",
+                 "--tmpfs", "/tmp", "--chmod", "1777", "/tmp", "--dir", "/etc", "--dir", "/opt",
                  "--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
                  "--ro-bind", "/etc/hosts", "/etc/hosts",
                  "--ro-bind", "/etc/ssl", "/etc/ssl",
@@ -667,10 +668,11 @@ def launch(args):
     # The trusted root bwrap creates only mount/PID/IPC/UTS namespaces. Its
     # payload is always setpriv, which drops IDs, groups and every capability
     # before any Python/Node/client code runs. No unprivileged user namespace.
-    namespace += ["--chdir", "/workspace", "--", "/usr/bin/setpriv",
+    namespace += ["--chdir", "/", "--", "/usr/bin/setpriv",
                   "--reuid=" + str(uid), "--regid=" + str(uid), "--clear-groups",
                   "--inh-caps=-all", "--ambient-caps=-all", "--bounding-set=-all",
-                  "--no-new-privs", "--"]
+                  "--no-new-privs", "--", "/usr/bin/env", "--chdir=/workspace",
+                  "--", "PWD=/workspace"]
     # Native shell/editor access in the synthetic VM; other tool types denied.
     permission = {"*": "deny", "read": {"*": "allow", "*.env*": "deny"},
                   "edit": "allow", "glob": "allow", "grep": "allow",
@@ -716,7 +718,7 @@ def launch(args):
     try:
         # Verify UID, no capabilities and absence of the controller environment
         # from inside the exact same namespace before invoking the coding agent.
-        probe = "import os; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=dict(line.split(':',1) for line in open('/proc/self/status').read().splitlines()); assert int(status['CapEff'].strip(),16)==0; assert int(status['CapBnd'].strip(),16)==0; assert status['NoNewPrivs'].strip()=='1'; print('ISOLATION_OK')"
+        probe = "import os; assert os.getcwd()=='/workspace'; assert os.geteuid()==29071; assert not os.getgroups(); assert not os.path.exists('/root'); assert not os.path.exists('/opt/control'); assert 'OPENROUTER_KIMI_DESIGN' not in os.environ; status=dict(line.split(':',1) for line in open('/proc/self/status').read().splitlines()); assert int(status['CapEff'].strip(),16)==0; assert int(status['CapBnd'].strip(),16)==0; assert status['NoNewPrivs'].strip()=='1'; print('ISOLATION_OK')"
         command(namespace + ["/usr/bin/python3", "-c", probe],
                 failure="ISOLATION_IDENTITY_PREFLIGHT_FAILED")
         # GET is always denied without calling the model. Its exact 404 proves
@@ -950,10 +952,10 @@ class SyntheticTests(unittest.TestCase):
         assignment = next(node for node in ast.walk(function) if isinstance(node, ast.Assign)
                           and any(isinstance(target, ast.Name) and target.id == "probe" for target in node.targets))
         child_code = ast.literal_eval(assignment.value)
-        def run_probe(caps, no_new_privs, bound="0000000000000000"):
+        def run_probe(caps, no_new_privs, bound="0000000000000000", cwd="/workspace"):
             status = f"Name:\tpython3\nCapEff:\t{caps}\nCapBnd:\t{bound}\nNoNewPrivs:\t{no_new_privs}\n"
             with patch("os.geteuid", return_value=29071), patch("os.getgroups", return_value=[]), \
-                 patch("os.path.exists", return_value=False), patch.dict(os.environ, {}, clear=True), \
+                 patch("os.path.exists", return_value=False), patch("os.getcwd", return_value=cwd), patch.dict(os.environ, {}, clear=True), \
                  patch("builtins.open", return_value=io.StringIO(status)), contextlib.redirect_stdout(io.StringIO()):
                 exec(child_code, {})
         run_probe("0000000000000000", "1")
@@ -963,6 +965,8 @@ class SyntheticTests(unittest.TestCase):
             run_probe("0000000000000000", "0")
         with self.assertRaises(AssertionError):
             run_probe("0000000000000000", "1", "0000000000000001")
+        with self.assertRaises(AssertionError):
+            run_probe("0000000000000000", "1", cwd="/")
 
     def test_preflight_mode_rejects_even_a_valid_model_request(self):
         server = SafeHTTPServer(("127.0.0.1", 0), ProxyHandler)
