@@ -514,6 +514,21 @@ def command(args, failure="ISOLATION_PREFLIGHT_FAILED", **kwargs):
         raise Stop(failure)
 
 
+def classified_metadata(raw, key=""):
+    """Bounded CLI metadata only; never model-worker output or real secrets."""
+    original_hash = digest(raw)
+    original_size = len(raw)
+    # These are fixed synthetic labels, not account credentials.
+    for placeholder in (b"local-proxy-no-secret", b"preflight-dummy-not-a-provider-key"):
+        raw = raw.replace(placeholder, b"[synthetic-local-key]")
+    try:
+        screen(raw, key)
+        text = raw[:8192].decode("utf-8", errors="strict")
+    except (Stop, UnicodeError):
+        text = "withheld_by_classification"
+    return {"sha256": original_hash, "bytes": original_size, "truncated": len(raw) > 8192, "text": text}
+
+
 def emit_bundle(workspace, key):
     """Only screened synthetic source and PNG screenshots, never agent/session logs."""
     workspace = Path(workspace).resolve()
@@ -683,7 +698,9 @@ def launch(args):
                   "external_directory": "deny", "doom_loop": "deny"}
     controller = BudgetProxy(Transport(key), launch_deadline,
                              control / "usage-receipt.json")
-    controller.last_attestation = controller.transport.attest(min(15, remaining))
+    # Pure startup diagnostics do not need or contact a provider catalogue.
+    if not args.preflight_only:
+        controller.last_attestation = controller.transport.attest(min(15, remaining))
     server = SafeHTTPServer(("127.0.0.1", 0), ProxyHandler)
     server.daemon_threads = True
     server.controller = controller
@@ -756,7 +773,17 @@ def launch(args):
             probe_path.write_text("Successful variants: " + repr(successes) + "\n\n" + "\n\n".join(outputs))
         version = subprocess.run(namespace + ["/opt/opencode", "--version"],
                                  capture_output=True, timeout=20)
+        print(json.dumps({"kind": "client_version_observation", "expected": OPENCODE_VERSION,
+                          "exit_code": version.returncode,
+                          "stdout": classified_metadata(version.stdout, key),
+                          "stderr": classified_metadata(version.stderr, key)}), flush=True)
         if version.returncode or version.stdout.decode().strip() != OPENCODE_VERSION:
+            if args.preflight_only:
+                # Only CLI metadata commands ran; no model worker was started.
+                for path in sorted(home.rglob("*.log"))[-2:]:
+                    if path.is_file() and not path.is_symlink() and path.stat().st_size <= 262144:
+                        print(json.dumps({"kind": "metadata_cli_error_log", "name": path.name,
+                                          "tail": classified_metadata(path.read_bytes()[-8192:], key)}), flush=True)
             raise Stop("OPENCODE_VERSION_MISMATCH")
         if time.monotonic() >= launch_deadline:
             raise Stop("APPROVAL_EXPIRED")
@@ -997,6 +1024,18 @@ class SyntheticTests(unittest.TestCase):
             self.assertEqual(event["detail"], expected)
             self.assertEqual(event["exit_code"], 3)
             self.assertEqual(self.calls, [])
+
+    def test_cli_metadata_is_bounded_and_withholds_real_key_shapes(self):
+        value = classified_metadata(b"1.19.3\n")
+        self.assertEqual(value["text"], "1.19.3\n")
+        self.assertEqual(value["sha256"], digest(b"1.19.3\n"))
+        self.assertEqual(classified_metadata(("sk-or-v1-" + "X" * 30).encode())["text"],
+                         "withheld_by_classification")
+        self.assertNotIn("local-proxy-no-secret", classified_metadata(b"local-proxy-no-secret")["text"])
+        self.assertEqual(classified_metadata(b"local-proxy-no-secret")["bytes"], len(b"local-proxy-no-secret"))
+        self.assertTrue(classified_metadata(b"x" * 9000)["truncated"])
+        self.assertLessEqual(len(classified_metadata(b"x" * 9000)["text"]), 8192)
+        self.assertEqual(self.calls, [])
 
     def test_duplicate_request_cannot_evade_guard_when_budget_shrinks(self):
         self.controller.charged = Decimal(".05")
