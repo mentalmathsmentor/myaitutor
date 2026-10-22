@@ -445,6 +445,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            if getattr(self.server, "preflight_only", False):
+                return self.error("MODEL_DISABLED_DURING_PREFLIGHT", 403)
             if self.path != "/v1/chat/completions":
                 return self.error("ENDPOINT_DENIED", 404)
             if self.headers.get("Transfer-Encoding") or not self.headers.get("Content-Length", "").isdigit():
@@ -671,6 +673,7 @@ def launch(args):
     server.daemon_threads = True
     server.controller = controller
     server.allowed_uid = uid
+    server.preflight_only = args.preflight_only
     port = server.server_address[1]
     config = {"$schema": "https://opencode.ai/config.json", "model": "bounded/candidate",
               "small_model": "bounded/candidate", "default_agent": "build",
@@ -715,6 +718,26 @@ def launch(args):
         browser_probe = "const {chromium}=require('playwright'); (async()=>{const b=await chromium.launch({headless:true});const p=await b.newPage();await p.setContent('<h1>Browser ready</h1>');if(await p.locator('h1').innerText()!=='Browser ready')throw Error('probe');await b.close();})().catch(()=>process.exit(1));"
         command(namespace + ["/opt/node/bin/node", "-e", browser_probe], timeout=45,
                 failure="BROWSER_STARTUP_PREFLIGHT_FAILED", **worker_identity)
+        if args.preflight_only:
+            variants = [["--help"], ["-h"], ["--h"], ["help"], ["--version"]]
+            outputs, successes = [], []
+            for variant in variants + [["MAN", "opencode"]]:
+                argv = (["/usr/bin/man", "opencode"] if variant[0] == "MAN"
+                        else ["/opt/opencode", *variant])
+                try:
+                    result = subprocess.run(namespace + argv, capture_output=True,
+                                            timeout=6, **worker_identity)
+                    raw = (result.stdout + result.stderr)[:65536]
+                    screen(raw, key)
+                    outputs.append("Variant " + repr(variant) + " exit " + str(result.returncode)
+                                   + "\n" + raw.decode("utf-8", errors="replace"))
+                    if result.returncode == 0:
+                        successes.append(variant)
+                except subprocess.TimeoutExpired:
+                    outputs.append("Variant " + repr(variant) + " timed out; no retry")
+            probe_path = workspace / "artifacts/capability-probes/2026-10-22/opencode.txt"
+            probe_path.parent.mkdir(parents=True, exist_ok=True)
+            probe_path.write_text("Successful variants: " + repr(successes) + "\n\n" + "\n\n".join(outputs))
         version = subprocess.run(namespace + ["/opt/opencode", "--version"],
                                  capture_output=True, timeout=20, **worker_identity)
         if version.returncode or version.stdout.decode().strip() != OPENCODE_VERSION:
@@ -925,6 +948,24 @@ class SyntheticTests(unittest.TestCase):
             run_probe("0000000000000001", "1")
         with self.assertRaises(AssertionError):
             run_probe("0000000000000000", "0")
+
+    def test_preflight_mode_rejects_even_a_valid_model_request(self):
+        server = SafeHTTPServer(("127.0.0.1", 0), ProxyHandler)
+        server.controller = self.controller
+        server.preflight_only = True
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            client = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=3)
+            client.request("POST", "/v1/chat/completions", canonical(self.body), {"Content-Type": "application/json"})
+            response = client.getresponse()
+            self.assertEqual(response.status, 403)
+            self.assertEqual(json.loads(response.read())["error"]["code"], "MODEL_DISABLED_DURING_PREFLIGHT")
+            self.assertEqual(self.calls, [])
+            self.assertEqual(self.controller.attempts, [])
+            client.close()
+        finally:
+            server.shutdown()
+            server.server_close()
 
     def test_duplicate_request_cannot_evade_guard_when_budget_shrinks(self):
         self.controller.charged = Decimal(".05")
