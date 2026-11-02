@@ -29,6 +29,13 @@ export function buildSyllabusPacket({ selectedStage, selectedSubject, selectedPo
 
   resolvedIds.forEach(pointId => {
     const point = records.get(pointId);
+    if (point.textType === 'original-topic-summary') {
+      ensureStringArray(point.outcomeCodes).forEach(code => outcomes.add(code));
+      questionStyleNotes.add('MyAITutor supplies original topic summaries, not official syllabus wording or a complete content-point list. References identify the relevant focus area; choose an appropriate subset for the teacher brief and question count.');
+      questionStyleNotes.add(`${point.label}: ${point.syllabusVersion}; ${point.sourceUrl}`);
+      if (point.part) questionStyleNotes.add('Primary Parts A/B are not fixed year allocations. Select task depth using prior learning and the teacher brief.');
+      if (point.pathway === 'Path') questionStyleNotes.add('The selected Path topics are extension choices; do not treat them as required Core content.');
+    }
     const meta = syllabusRegistry[point.sourceId || pointId];
     if (meta) {
       if (meta.outcomes) meta.outcomes.forEach(o => outcomes.add(o));

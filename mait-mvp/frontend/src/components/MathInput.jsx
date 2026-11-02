@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { Calculator, ChevronDown } from 'lucide-react';
+import * as AlertDialog from '@radix-ui/react-alert-dialog';
 
 
 const KEY_ROWS = [
@@ -59,6 +60,38 @@ export default function MathInput({
     const inputRef = useRef(null);
     const keyboardId = useId();
     const [showKeyboard, setShowKeyboard] = useState(false);
+    const [clearRequest, setClearRequest] = useState(null);
+    const restoreSelection = useRef(null);
+
+    const requestClear = () => {
+        if (disabled || !value) return;
+        const node = inputRef.current;
+        restoreSelection.current = {
+            start: node?.selectionStart ?? 0,
+            end: node?.selectionEnd ?? 0,
+            direction: node?.selectionDirection ?? 'none',
+        };
+        setClearRequest({ value });
+    };
+
+    const confirmClear = () => {
+        // A confirmation must only apply to the text it originally displayed for.
+        if (disabled || !clearRequest || value !== clearRequest.value) return;
+        restoreSelection.current = { start: 0, end: 0, direction: 'none' };
+        onChange('');
+    };
+
+    const restoreInputFocus = (event) => {
+        event.preventDefault();
+        const node = inputRef.current;
+        const selection = restoreSelection.current;
+        requestAnimationFrame(() => {
+            if (node?.isConnected && !node.disabled) {
+                node.focus();
+                if (selection) node.setSelectionRange(selection.start, selection.end, selection.direction);
+            }
+        });
+    };
     const handleChange = (event) => {
         onChange(event.target.value);
     };
@@ -126,22 +159,40 @@ export default function MathInput({
                 </button>
                 <button
                     type="button"
-                    disabled={disabled}
-                    onClick={() => { 
-                        if (disabled) return;
-                        onChange(''); 
-                        requestAnimationFrame(() => {
-                            if (inputRef.current?.isConnected && !inputRef.current.disabled) {
-                                inputRef.current.focus();
-                                inputRef.current.setSelectionRange(0, 0);
-                            }
-                        });
-                    }}
+                    disabled={disabled || !value}
+                    onClick={requestClear}
                     className="rounded-lg bg-red-500/10 border border-red-500/20 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-red-400 transition hover:bg-red-500/20 hover:text-red-300 disabled:opacity-50"
                 >
                     Clear
                 </button>
             </div>
+
+            <AlertDialog.Root open={clearRequest !== null} onOpenChange={(open) => { if (!open) setClearRequest(null); }}>
+                <AlertDialog.Portal>
+                    <AlertDialog.Overlay className="fixed inset-0 z-[130] bg-black/70 backdrop-blur-sm" />
+                    <AlertDialog.Content
+                        onCloseAutoFocus={restoreInputFocus}
+                        className="fixed left-1/2 top-1/2 z-[131] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/15 bg-slate-950 p-6 text-white shadow-2xl"
+                    >
+                        <AlertDialog.Title className="text-lg font-semibold">Clear this text?</AlertDialog.Title>
+                        <AlertDialog.Description className="mt-2 text-sm text-white/70">
+                            Your text will be removed. Choose Cancel to keep it.
+                        </AlertDialog.Description>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <AlertDialog.Cancel className="rounded-lg border border-white/20 px-4 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-mait-cyan">
+                                Cancel
+                            </AlertDialog.Cancel>
+                            <AlertDialog.Action
+                                disabled={disabled || !clearRequest || value !== clearRequest.value}
+                                onClick={confirmClear}
+                                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-white disabled:opacity-50"
+                            >
+                                Clear text
+                            </AlertDialog.Action>
+                        </div>
+                    </AlertDialog.Content>
+                </AlertDialog.Portal>
+            </AlertDialog.Root>
 
             {showKeyboard && (
                 <div id={keyboardId} className="rounded-2xl border border-white/10 bg-black/25 p-3 backdrop-blur-xl">

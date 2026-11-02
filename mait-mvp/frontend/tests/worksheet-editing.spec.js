@@ -85,6 +85,39 @@ test('typing, selecting, maths insertion and step return preserve the brief', as
   expect(await input.evaluate(el => el.selectionEnd - el.selectionStart)).toBe('Notes: alpha \\frac{}{} gamma'.length);
 });
 
+for (const width of [1280, 390]) {
+  test(`Clear requires confirmation and preserves a saved brief on cancel or reload at width ${width}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const input = brief(page);
+    const original = 'Synthetic teacher brief — α.\nPreserve these questions and teaching notes.';
+    await input.fill(original);
+    const savedBrief = () => page.evaluate(() => JSON.parse(localStorage.getItem('mait_ws_draft_v2')).values.rawQuestions);
+    await expect.poll(savedBrief).toBe(original);
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await expect(page.getByRole('alertdialog', { name: 'Clear this text?' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(original);
+    await expect.poll(savedBrief).toBe(original);
+
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Topics', exact: true }).click();
+    await expect(input).toHaveValue(original);
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await page.getByRole('button', { name: 'Clear text', exact: true }).click();
+    await expect(input).toHaveValue('');
+    await expect(input).toBeFocused();
+    await expect.poll(savedBrief).toBe('');
+    await page.reload();
+    await page.getByRole('button', { name: 'Topics', exact: true }).click();
+    await expect(input).toHaveValue('');
+  });
+}
+
 for (const [mode, button] of [['Off', 'AI general knowledge'], ['Provide', "I'll upload the syllabus"], ['Search', 'Ask Gemini to search NESA']]) {
   test(`copied prompt includes the selected subject and ${mode} context`, async ({ page }) => {
     // Capture actual application clipboard output; never open or submit to Gemini.

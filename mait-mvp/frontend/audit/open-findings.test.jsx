@@ -44,7 +44,7 @@ async function copy() {
   fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
   await waitFor(() => expect(clipboard).toHaveBeenCalled());
   const prompt=clipboard.mock.calls.at(-1)[0];
-  await waitFor(() => expect(screen.getByText('Prompt copied.')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText('Prompt copied. Next: open Gemini, paste into its message box, then send.')).toBeInTheDocument());
   fireEvent.keyDown(document,{key:'Escape'});
   return {prompt,request:buildWorksheetRequest.mock.results.at(-1).value};
 }
@@ -170,7 +170,7 @@ describe('state transitions and error boundaries',()=>{
   });
   it('module-name search retains matching child topics',()=>{
     mount('Stage 4 (Yr 7-8)','Mathematics');next();
-    fireEvent.change(screen.getByPlaceholderText('Find a topic or syllabus point...'),{target:{value:'Number and Algebra'}});
+    fireEvent.change(screen.getByPlaceholderText('Find a topic or syllabus point...'),{target:{value:'Core'}});
     expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(1);
   });
   it('context buttons expose selected state to assistive technology',()=>{
@@ -194,7 +194,7 @@ describe('state transitions and error boundaries',()=>{
     next(); fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
     fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
     await act(async()=>{finish();});
-    expect(screen.queryByText('Prompt copied.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prompt copied. Next: open Gemini, paste into its message box, then send.')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Exact prompt').value).toContain('Second synthetic brief');
   });
   it('worked solutions and answer-key controls remain consistent in both directions',()=>{

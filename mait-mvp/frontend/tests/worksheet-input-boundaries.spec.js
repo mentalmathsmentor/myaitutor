@@ -28,22 +28,33 @@ for (const subject of ['Mathematics Advanced', 'English']) for (const width of [
     await input.click(); await input.press('ControlOrMeta+a');
     expect(await input.evaluate(el => el.selectionEnd - el.selectionStart)).toBe(await input.evaluate(el => el.value.length));
     await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await expect(input).not.toHaveValue('');
+    await expect(page.getByRole('alertdialog', { name: 'Clear this text?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Clear text', exact: true }).click();
     await expect(input).toHaveValue(''); await expect(input).toBeFocused();
     await input.pressSequentially('new brief');
     await expect(input).toHaveValue('new brief'); await expect(input).toBeFocused();
   });
 }
 
-test('real keyboard navigation enters the field and maths controls in order', async ({ page }) => {
-  await chooseCourse(page, 'Year 12', 'Mathematics Advanced');
-  const input = briefField(page);
-  await input.click();
-  await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Math', exact: true })).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: 'Math', exact: true })).toHaveAttribute('aria-expanded', 'true');
-  await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Clear', exact: true })).toBeFocused();
-  await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Shift+Tab');
-  await expect(input).toBeFocused();
-});
+for (const initial of ['', 'Keyboard navigation brief']) {
+  test(`real keyboard navigation enters the field and maths controls in order with ${initial ? 'a populated' : 'an empty'} brief`, async ({ page }) => {
+    await chooseCourse(page, 'Year 12', 'Mathematics Advanced');
+    const input = briefField(page);
+    await input.fill(initial);
+    await input.click();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Math', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('button', { name: 'Math', exact: true })).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Tab');
+    if (initial) {
+      await expect(page.getByRole('button', { name: 'Clear', exact: true })).toBeFocused();
+    } else {
+      await expect(page.getByRole('button', { name: 'Clear', exact: true })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'frac', exact: true })).toBeFocused();
+    }
+    await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Shift+Tab');
+    await expect(input).toBeFocused();
+  });
+}

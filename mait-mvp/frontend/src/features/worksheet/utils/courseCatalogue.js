@@ -1,9 +1,8 @@
 import stages from '../../../stage_subjects.json';
 import syllabus from '../../../syllabus_data.json';
+import { juniorMathsRecords, juniorMathsNotice } from './juniorMathsCatalogue';
 
 const sources = {
-  'Stage 4 (Yr 7-8)': { Mathematics: ['Year 7', 'Year 8'] },
-  'Stage 5 (Yr 9-10)': { Mathematics: ['Year 9', 'Year 10'] },
   'Year 11': {
     'Mathematics Standard': ['Year 11 Standard'],
     'Mathematics Advanced': ['Year 11 Advanced'],
@@ -36,6 +35,16 @@ export function resolveCourse(stage, subject) {
   const valid = Object.hasOwn(stages, stage) && (subject === 'Other' || Object.hasOwn(stages[stage], subject));
   const empty = { key, valid, kind: 'manual', data: {}, records: [] };
   if (!valid || subject === 'Other' || manualSubjects.has(subject) || (stage === 'Year 11' && subject === 'Physics')) return empty;
+  const juniorRecords = subject === 'Mathematics' ? juniorMathsRecords(stage) : [];
+  if (juniorRecords.length) {
+    const data = {};
+    for (const record of juniorRecords) {
+      const group = record.part ? `Part ${record.part}` : record.pathway;
+      data[group] ??= {};
+      data[group][record.label] = [{ ...record, id: scopedId(stage, subject, record.source, record.sourceId) }];
+    }
+    return { key, valid, kind: 'hierarchical', data, records: topicRecords(data), notice: juniorMathsNotice };
+  }
   const names = sources[stage]?.[subject];
   if (names) {
     const data = {};

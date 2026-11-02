@@ -54,10 +54,51 @@ describe('MathInput editing', () => {
   it('clears only on an enabled Clear action and returns focus', async () => {
     const user = userEvent.setup();
     render(<Field />);
-    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
     const input = screen.getByRole('textbox');
+    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
+    expect(input).toHaveValue('alpha beta gamma');
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel', exact: true })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Clear text', exact: true }));
     await waitFor(() => expect(input).toHaveFocus());
     expect(input).toHaveValue('');
     expect(input.selectionStart).toBe(0);
+  });
+
+  it.each(['Cancel', 'Escape'])('preserves text and selection when Clear is dismissed with %s', async action => {
+    const user = userEvent.setup();
+    render(<Field />);
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    input.setSelectionRange(6, 10, 'backward');
+    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
+    if (action === 'Cancel') await user.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
+    else await user.keyboard('{Escape}');
+    await waitFor(() => expect(input).toHaveFocus());
+    expect(input).toHaveValue('alpha beta gamma');
+    expect([input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual([6, 10, 'backward']);
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it.each(['changed', 'disabled'])('an open Clear confirmation cannot remove a %s field', async boundary => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const view = render(<MathInput value="original text" onChange={onChange} />);
+    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
+    view.rerender(<MathInput value={boundary === 'changed' ? 'new text' : 'original text'} onChange={onChange} disabled={boundary === 'disabled'} />);
+    const action = screen.getByRole('button', { name: 'Clear text', exact: true });
+    expect(action).toBeDisabled();
+    fireEvent.click(action);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  });
+
+  it('does not open Clear confirmation for an empty field', async () => {
+    const user = userEvent.setup();
+    render(<MathInput value="" onChange={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Clear', exact: true })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Clear', exact: true }));
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 });

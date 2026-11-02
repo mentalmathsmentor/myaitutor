@@ -627,8 +627,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-mait-cyan/15 text-sm font-bold text-mait-cyan">2</div>
                       <div>
-                        <h2 className="text-xl font-bold text-white">Topics and dot-points</h2>
-                        <p className="text-sm text-white/50">The original syllabus hierarchy and prerequisite merge are restored here.</p>
+                        <h2 className="text-xl font-bold text-white">Topics and teaching focus</h2>
+                        <p className="text-sm text-white/50">{course.notice || 'Choose from the available topic suggestions or add your own brief. This list does not establish complete syllabus coverage.'}</p>
                       </div>
                     </div>
                     

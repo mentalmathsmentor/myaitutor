@@ -28,11 +28,19 @@ jobs:
 
       - name: Install dependencies
         working-directory: mait-mvp/frontend
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Test frontend and worksheet acceptance
         working-directory: mait-mvp/frontend
         run: npm test
+
+      - name: Install test browser
+        working-directory: mait-mvp/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Test production-build worksheet flow
+        working-directory: mait-mvp/frontend
+        run: npm run test:e2e
 
       - name: Build
         working-directory: mait-mvp/frontend

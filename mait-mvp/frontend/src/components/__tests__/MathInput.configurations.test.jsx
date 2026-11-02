@@ -66,20 +66,24 @@ describe('editing, keyboard and lifecycle boundaries', () => {
     expect(input).toHaveFocus();
   });
 
-  it.each(['Clear', 'pi'])('pending %s focus restoration is safe after unmount', action => {
+  it.each(['Clear', 'pi'])('pending %s focus restoration is safe after unmount', async action => {
     let callback; vi.stubGlobal('requestAnimationFrame', vi.fn(cb => { callback = cb; return 1; }));
     const view = render(<Input initial="alpha" />);
     if (action !== 'Clear') fireEvent.click(screen.getByRole('button', { name: 'Math', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: action, exact: true }));
+    if (action === 'Clear') fireEvent.click(screen.getByRole('button', { name: 'Clear text', exact: true }));
+    await waitFor(() => expect(callback).toBeTypeOf('function'));
     view.unmount(); expect(() => act(() => callback())).not.toThrow();
     expect(document.activeElement).toBe(document.body);
   });
 
-  it.each(['Clear', 'pi'])('pending %s focus restoration does not focus a newly disabled field', action => {
+  it.each(['Clear', 'pi'])('pending %s focus restoration does not focus a newly disabled field', async action => {
     let callback; vi.stubGlobal('requestAnimationFrame', vi.fn(cb => { callback = cb; return 1; }));
     const view = render(<MathInput value="alpha" onChange={() => {}} />);
     if (action !== 'Clear') fireEvent.click(screen.getByRole('button', { name: 'Math', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: action, exact: true }));
+    if (action === 'Clear') fireEvent.click(screen.getByRole('button', { name: 'Clear text', exact: true }));
+    await waitFor(() => expect(callback).toBeTypeOf('function'));
     view.rerender(<MathInput value="alpha" onChange={() => {}} disabled />);
     act(() => callback()); expect(screen.getByRole('textbox')).not.toHaveFocus();
   });

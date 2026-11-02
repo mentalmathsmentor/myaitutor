@@ -58,7 +58,7 @@ for (const mode of ['denied', 'missing-success', 'missing-failure']) {
   });
 }
 
-for (const [stage, subject] of [['Stage 2 (Yr 3-4)', 'Mathematics'], ['Stage 4 (Yr 7-8)', 'Science'], ['Year 12', 'Mathematics Standard']]) {
+for (const [stage, subject] of [['Stage 2 (Yr 3-4)', 'Science'], ['Stage 4 (Yr 7-8)', 'Science'], ['Year 12', 'Mathematics Standard']]) {
   test(`${stage} / ${subject} flat topic survives reload and reaches the prompt`, async ({ page }) => {
     await chooseCourse(page, stage, subject);
     const first = page.getByRole('checkbox').first(); const label = await first.evaluate(el => el.closest('label').textContent.trim());
@@ -72,14 +72,13 @@ test('course switch clears hidden maths selections while custom subject and brie
   await chooseCourse(page, 'Year 11', 'Mathematics Advanced'); await page.getByRole('checkbox').first().check();
   await chooseCourse(page, 'Year 11', 'Physics'); await expect(page.getByRole('checkbox')).toHaveCount(0);
   await briefField(page).fill('Synthetic physics brief'); const prompt = await copyPrompt(page);
-  expect(prompt).not.toContain('Relevant Dot-Points'); expect(prompt).toContain('**Subject:** Physics');
+  expect(prompt).not.toContain('**Selected topics:**'); expect(prompt).toContain('**Subject:** Physics');
   await chooseCourse(page, 'Year 11', 'Other'); await page.reload();
   await expect(page.getByLabel('Custom subject name')).toHaveValue('  Custom test subject α  ');
   await page.getByRole('button', { name: 'Topics', exact: true }).click(); await expect(briefField(page)).toHaveValue('Synthetic physics brief');
 });
 
 for (const [stage, subject, source] of [
-  ['Stage 4 (Yr 7-8)', 'Mathematics', 'Year 7'],
   ['Year 11', 'Mathematics Advanced', 'Year 11 Advanced'],
   ['Year 12', 'Mathematics Extension 2', 'Year 12 Extension 2'],
 ]) {
@@ -92,7 +91,7 @@ for (const [stage, subject, source] of [
     const prompt = await copyPrompt(page);
     expect(prompt).toContain(`- **Subject:** ${subject}`);
     expect(prompt).toContain(firstTopic(syllabus[source]).label);
-    expect(prompt).toContain('Relevant Dot-Points');
+    expect(prompt).toContain('**Selected topics:**');
   });
 }
 

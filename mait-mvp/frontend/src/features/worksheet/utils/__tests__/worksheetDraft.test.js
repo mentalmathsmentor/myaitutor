@@ -8,12 +8,22 @@ function storage(initial = {}) {
 }
 describe('defensive versioned drafts', () => {
   it('imports a valid legacy flat selection without modifying any old key', () => {
-    const old = { mait_ws_stage: 'Stage 2 (Yr 3-4)', mait_ws_subject: 'Mathematics', mait_ws_rawQuestions: 'Original\nsynthetic brief', mait_ws_selectedPoints: '["Base-10 and Place Value"]' };
+    const course = resolveCourse('Stage 2 (Yr 3-4)', 'Science');
+    const old = { mait_ws_stage: 'Stage 2 (Yr 3-4)', mait_ws_subject: 'Science', mait_ws_rawQuestions: 'Original\nsynthetic brief', mait_ws_selectedPoints: JSON.stringify([course.records[0].label]) };
     const store = storage(old); const draft = readWorksheetDraft(store);
     expect(draft.selectedPoints).toEqual([resolveCourse(draft.selectedStage, draft.selectedSubject).records[0].id]);
     expect(saveWorksheetDraft(draft, store)).toBe(true);
     for (const [key, value] of Object.entries(old)) expect(store.getItem(key)).toBe(value);
     expect(readWorksheetDraft(store).rawQuestions).toBe(old.mait_ws_rawQuestions);
+  });
+  it('does not guess an A/B part for a retired broad primary maths selection', () => {
+    const old = { mait_ws_stage: 'Stage 2 (Yr 3-4)', mait_ws_subject: 'Mathematics', mait_ws_rawQuestions: 'Keep my lesson brief', mait_ws_selectedPoints: '["Base-10 and Place Value"]' };
+    const store = storage(old);
+    const draft = readWorksheetDraft(store);
+    expect(draft.selectedPoints).toEqual([]);
+    expect(draft.notice).toContain('left unselected');
+    expect(draft.rawQuestions).toBe(old.mait_ws_rawQuestions);
+    expect(store.getItem('mait_ws_selectedPoints')).toBe(old.mait_ws_selectedPoints);
   });
   it.each(['{}', 'null', '5', '"text"', '[null, {}]', '{broken'])('recovers from malformed legacy selections %s', selected => {
     const draft = readWorksheetDraft(storage({ mait_ws_selectedPoints: selected, mait_ws_rawQuestions: 'Keep my synthetic brief' }));

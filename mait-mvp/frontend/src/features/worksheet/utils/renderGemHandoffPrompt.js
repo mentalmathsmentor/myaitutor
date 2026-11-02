@@ -41,7 +41,7 @@ export function renderGemHandoffPrompt(request) {
   
   if (hasPacketData || !request.legacyFields.manual_prompt) {
     handoff += `**SELECTED TOPICS AND GUIDANCE (alignment not verified):**\n`;
-    const dotPointsStr = formatArray("Relevant Dot-Points", packet.dotPoints);
+    const dotPointsStr = formatArray("Selected topics", packet.dotPoints);
     if (dotPointsStr) handoff += `${dotPointsStr}\n`;
     
     const outcomesStr = formatArray("Outcomes", packet.outcomes);

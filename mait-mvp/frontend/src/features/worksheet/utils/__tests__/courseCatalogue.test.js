@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import stages from '../../../../stage_subjects.json';
-import syllabus from '../../../../syllabus_data.json';
-import { resolveCourse, restorePoints, validateWorksheetSelection, topicRecords } from '../courseCatalogue';
+import { resolveCourse, restorePoints, validateWorksheetSelection } from '../courseCatalogue';
 import { buildSyllabusPacket } from '../buildSyllabusPacket';
 
 const pairs = Object.entries(stages).flatMap(([stage, subjects]) => [...Object.keys(subjects), 'Other'].map(subject => [stage, subject]));
@@ -27,8 +26,7 @@ describe('explicit course catalogue', () => {
       expect(course.records.map(p => p.label)).toEqual(stages[stage][subject]);
     } else {
       const sourceNames = new Set(course.records.map(p => p.source));
-      if (stage === 'Stage 4 (Yr 7-8)') expect([...sourceNames]).toEqual(['Year 7', 'Year 8']);
-      else if (stage === 'Stage 5 (Yr 9-10)') expect([...sourceNames]).toEqual(['Year 9', 'Year 10']);
+      if (stage.startsWith('Stage')) expect([...sourceNames]).toEqual(['Mathematics K–10 (2022)']);
       else {
         const own = `${stage} ${subject.replace('Mathematics ', '')}`;
         expect(sourceNames.has(own)).toBe(true);
@@ -40,10 +38,12 @@ describe('explicit course catalogue', () => {
     const course = resolveCourse(stage, subject);
     expect(course.kind).toBe('flat'); expect(course.records.map(p => p.label)).toEqual(stages[stage][subject]);
   });
-  it('junior maths includes both complete local year groups', () => {
-    for (const [stage, years] of [['Stage 4 (Yr 7-8)', ['Year 7', 'Year 8']], ['Stage 5 (Yr 9-10)', ['Year 9', 'Year 10']]]) {
-      expect(resolveCourse(stage, 'Mathematics').records.map(p => p.label)).toEqual(years.flatMap(year => topicRecords(syllabus[year]).map(p => p.label)));
-    }
+  it('junior maths distinguishes stage content without invented annual allocations', () => {
+    const stage4 = resolveCourse('Stage 4 (Yr 7-8)', 'Mathematics');
+    const stage5 = resolveCourse('Stage 5 (Yr 9-10)', 'Mathematics');
+    expect(stage4.records.map(p => p.label)).not.toEqual(stage5.records.map(p => p.label));
+    expect(Object.keys(stage4.data)).toEqual(['Core']);
+    expect(Object.keys(stage5.data)).toEqual(['Core', 'Path']);
   });
   it('rejects unknown combinations and cross-course topic IDs', () => {
     expect(resolveCourse('retired', 'Mathematics').valid).toBe(false);
