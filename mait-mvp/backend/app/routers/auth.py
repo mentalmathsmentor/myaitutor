@@ -1,3 +1,4 @@
+import hmac
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -31,9 +32,9 @@ async def verify_access_code(body: AccessCodeRequest):
     received_code = body.code.strip().upper()
     expected_code = os.getenv("MAIT_ACCESS_CODE", "HSCMATE2026").strip().upper()
 
-    print(f"DEBUG AUTH: Received '{received_code}', Expected '{expected_code}'")
-
-    if received_code == expected_code:
+    # Never log either code. Compare as bytes so non-ASCII input is rejected
+    # rather than raising, and in constant time so timing reveals nothing.
+    if hmac.compare_digest(received_code.encode("utf-8"), expected_code.encode("utf-8")):
         return {"status": "success"}
 
     raise HTTPException(status_code=401, detail="Invalid access code")
