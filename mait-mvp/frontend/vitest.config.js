@@ -3,12 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: { alias: { '@': new URL('./src', import.meta.url).pathname } },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
     css: false,
-    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    include: ['src/**/*.{test,spec}.{js,jsx}', 'audit/**/*.test.{js,jsx}'],
     exclude: [
       'src/__tests__/keystrokeMetrics.test.js', // Legacy standalone runner, not Vitest
     ],

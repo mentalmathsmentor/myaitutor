@@ -49,8 +49,8 @@ describe('buildSyllabusPacket', () => {
     expect(result.topicSummary).toBe('Valid Label 1');
     expect(result.dotPoints).toEqual(['Valid Label 1']);
     expect(result.outcomes).toEqual(['Outcome 1']); // 'Phantom Outcome' should not be present
-    expect(result.include).toEqual(['Include 1']);
-    expect(result.exclude).toEqual(['Exclude 1']);
+    expect(result.include).toEqual(['For Valid Label 1 only: Include 1']);
+    expect(result.exclude).toEqual(['For Valid Label 1 only: Exclude 1']);
     
     // Check that 'stale-id-2' produced no metadata
     expect(result.outcomes).not.toContain('Phantom Outcome');
