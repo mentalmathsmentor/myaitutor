@@ -20,7 +20,7 @@ const legacyKeys = {
 };
 
 export function readWorksheetDraft(storage) {
-  let values = {}, notice = '', legacy = true, savedKey, preventSave = false;
+  let values = {}, notice = '', legacy = true, savedKey, preventSave = false, revision = 0;
   try {
     storage ??= window.localStorage;
     const saved = storage.getItem(DRAFT_KEY);
@@ -37,7 +37,7 @@ export function readWorksheetDraft(storage) {
             : typeof value !== typeof fallback;
         });
         if (malformed) throw new Error('Malformed draft fields');
-        values = parsed.values; savedKey = parsed.courseKey; legacy = false;
+        values = parsed.values; savedKey = parsed.courseKey; revision = revisionOf(parsed); legacy = false;
       } catch {
         preventSave = true;
         notice = 'The newer draft could not be read. An older draft is shown if available. Automatic saving is paused; copy your current text before leaving.';
@@ -73,16 +73,38 @@ export function readWorksheetDraft(storage) {
   if (!DIFFICULTY_OPTIONS.includes(draft.difficulty)) draft.difficulty = defaults.difficulty;
   if (draft.includeWorkedSolutions) draft.generateAnswerKey = true;
   if (preventSave && !notice.includes('paused')) notice += ' Automatic saving is paused; copy your current text before leaving.';
-  return { ...draft, notice, preventSave };
+  return { ...draft, notice, preventSave, revision };
 }
 
+// Returns 'saved' with the revision to pass next, 'paused' when another tab holds a newer record, or 'failed'.
 export function saveWorksheetDraft(params, storage) {
-  if (params.preventSave) return false;
+  const revision = params.revision ?? 0;
+  if (params.preventSave) return { status: 'failed', revision };
   try {
     storage ??= window.localStorage;
     // Preserve legacy keys for downgrade recovery. Never persist resource claims or a school/class heading.
     const values = Object.fromEntries(Object.keys(defaults).map(key => [key, params[key]]));
-    storage.setItem(DRAFT_KEY, JSON.stringify({ version: 2, courseKey: courseKey(params.selectedStage, params.selectedSubject), values }));
-    return true;
-  } catch { return false; }
+    const record = { version: 2, courseKey: courseKey(params.selectedStage, params.selectedSubject), values };
+    const saved = storage.getItem(DRAFT_KEY);
+    if (saved !== null) {
+      const parsed = parseSavedRecord(saved);
+      if (!parsed) return { status: 'paused', revision };
+      const savedRevision = revisionOf(parsed);
+      // Saving unchanged values must not bump the revision, or merely opening a tab would make every other tab stale.
+      if (sameContent(parsed, record)) return { status: 'saved', revision: savedRevision };
+      if (savedRevision !== revision) return { status: 'paused', revision };
+    }
+    storage.setItem(DRAFT_KEY, JSON.stringify({ ...record, revision: revision + 1 }));
+    return { status: 'saved', revision: revision + 1 };
+  } catch { return { status: 'failed', revision }; }
 }
+
+function parseSavedRecord(saved) {
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed?.version === 2 ? parsed : null;
+  } catch { return null; }
+}
+
+const revisionOf = record => Number.isInteger(record.revision) ? record.revision : 0;
+const sameContent = (a, b) => a.courseKey === b.courseKey && JSON.stringify(a.values) === JSON.stringify(b.values);

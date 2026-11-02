@@ -12,7 +12,7 @@ describe('defensive versioned drafts', () => {
     const old = { mait_ws_stage: 'Stage 2 (Yr 3-4)', mait_ws_subject: 'Science', mait_ws_rawQuestions: 'Original\nsynthetic brief', mait_ws_selectedPoints: JSON.stringify([course.records[0].label]) };
     const store = storage(old); const draft = readWorksheetDraft(store);
     expect(draft.selectedPoints).toEqual([resolveCourse(draft.selectedStage, draft.selectedSubject).records[0].id]);
-    expect(saveWorksheetDraft(draft, store)).toBe(true);
+    expect(saveWorksheetDraft(draft, store).status).toBe('saved');
     for (const [key, value] of Object.entries(old)) expect(store.getItem(key)).toBe(value);
     expect(readWorksheetDraft(store).rawQuestions).toBe(old.mait_ws_rawQuestions);
   });
@@ -48,7 +48,7 @@ describe('defensive versioned drafts', () => {
   });
   it('survives denied reads and quota failures without throwing', () => {
     const denied = { getItem() { throw new Error('Denied'); }, setItem() { throw new Error('Quota'); } };
-    const draft = readWorksheetDraft(denied); expect(draft.notice).not.toBe(''); expect(draft.preventSave).toBe(true); expect(saveWorksheetDraft(draft, denied)).toBe(false);
+    const draft = readWorksheetDraft(denied); expect(draft.notice).not.toBe(''); expect(draft.preventSave).toBe(true); expect(saveWorksheetDraft(draft, denied).status).toBe('failed');
   });
   it.each([undefined, null, false, 0, 17, [], {}, '', '   '])('preserves the original draft when course metadata is malformed: %j', courseKey => {
     const store = storage();
@@ -63,7 +63,7 @@ describe('defensive versioned drafts', () => {
     const restored = readWorksheetDraft(store);
     expect(restored.preventSave).toBe(true);
     expect(restored.notice).toContain('paused');
-    expect(saveWorksheetDraft(restored, store)).toBe(false);
+    expect(saveWorksheetDraft(restored, store).status).toBe('failed');
     expect(store.getItem(DRAFT_KEY)).toBe(unread);
   });
   it.each(['{broken', '{"version":99,"values":{}}'])('preserves an unreadable new draft and recovers legacy text: %s', saved => {
@@ -93,7 +93,82 @@ describe('defensive versioned drafts', () => {
     expect(restored.preventSave).toBe(true);
     expect(restored.notice).toContain('paused');
     expect(restored.rawQuestions).toBe('Recoverable legacy synthetic brief');
-    expect(saveWorksheetDraft(restored, store)).toBe(false);
+    expect(saveWorksheetDraft(restored, store).status).toBe('failed');
     expect(store.getItem(DRAFT_KEY)).toBe(unread);
+  });
+});
+
+describe('stale tab protection', () => {
+  const edit = (draft, changes) => ({ ...draft, ...changes });
+  function twoTabs() {
+    const store = storage();
+    const first = saveWorksheetDraft(edit(readWorksheetDraft(store), { rawQuestions: 'Original brief' }), store);
+    expect(first).toEqual({ status: 'saved', revision: 1 });
+    return { store, stale: readWorksheetDraft(store), newer: readWorksheetDraft(store) };
+  }
+
+  it('pauses a stale tab instead of overwriting a newer brief', () => {
+    const { store, stale, newer } = twoTabs();
+    expect(saveWorksheetDraft(edit(newer, { rawQuestions: 'Newer brief' }), store).status).toBe('saved');
+    const newerRecord = store.getItem(DRAFT_KEY);
+    expect(saveWorksheetDraft(edit(stale, { difficulty: 'Exam-Style' }), store)).toEqual({ status: 'paused', revision: stale.revision });
+    expect(store.getItem(DRAFT_KEY)).toBe(newerRecord);
+    expect(readWorksheetDraft(store).rawQuestions).toBe('Newer brief');
+  });
+  it('lets one tab keep saving by carrying its returned revision', () => {
+    const store = storage();
+    let draft = readWorksheetDraft(store);
+    for (const rawQuestions of ['First', 'Second', 'Third']) {
+      const result = saveWorksheetDraft(edit(draft, { rawQuestions }), store);
+      expect(result.status).toBe('saved');
+      draft = edit(draft, { rawQuestions, revision: result.revision });
+    }
+    expect(JSON.parse(store.getItem(DRAFT_KEY)).revision).toBe(3);
+  });
+  it('does not make other tabs stale by saving unchanged values', () => {
+    const { store, stale, newer } = twoTabs();
+    const unchanged = store.getItem(DRAFT_KEY);
+    expect(saveWorksheetDraft(newer, store)).toEqual({ status: 'saved', revision: newer.revision });
+    expect(store.getItem(DRAFT_KEY)).toBe(unchanged);
+    expect(saveWorksheetDraft(edit(stale, { rawQuestions: 'First real edit' }), store).status).toBe('saved');
+  });
+  it('catches up without pausing when both tabs reach the same values', () => {
+    const { store, stale, newer } = twoTabs();
+    const { revision } = saveWorksheetDraft(edit(newer, { rawQuestions: 'Same text' }), store);
+    expect(saveWorksheetDraft(edit(stale, { rawQuestions: 'Same text' }), store)).toEqual({ status: 'saved', revision });
+  });
+  it('saves again when the draft was removed elsewhere, because nothing can be overwritten', () => {
+    const { store, stale } = twoTabs();
+    store.entries.delete(DRAFT_KEY);
+    expect(saveWorksheetDraft(edit(stale, { rawQuestions: 'Kept text' }), store).status).toBe('saved');
+    expect(readWorksheetDraft(store).rawQuestions).toBe('Kept text');
+  });
+  it('treats a version-2 record without a revision as revision zero', () => {
+    const { store } = twoTabs();
+    const record = JSON.parse(store.getItem(DRAFT_KEY));
+    delete record.revision;
+    store.setItem(DRAFT_KEY, JSON.stringify(record));
+    const draft = readWorksheetDraft(store);
+    expect(draft.revision).toBe(0);
+    expect(saveWorksheetDraft(edit(draft, { rawQuestions: 'Upgraded' }), store)).toEqual({ status: 'saved', revision: 1 });
+  });
+  it('pauses a tab with a revision when an older build rewrites the record without one', () => {
+    const { store, stale } = twoTabs();
+    const record = JSON.parse(store.getItem(DRAFT_KEY));
+    delete record.revision;
+    record.values.rawQuestions = 'Written by an older build';
+    store.setItem(DRAFT_KEY, JSON.stringify(record));
+    expect(saveWorksheetDraft(edit(stale, { difficulty: 'Exam-Style' }), store).status).toBe('paused');
+    expect(readWorksheetDraft(store).rawQuestions).toBe('Written by an older build');
+  });
+  it.each(['{broken', '{"version":99,"values":{}}'])('never replaces a record that became unreadable: %s', unread => {
+    const { store, stale } = twoTabs();
+    store.setItem(DRAFT_KEY, unread);
+    expect(saveWorksheetDraft(edit(stale, { difficulty: 'Exam-Style' }), store).status).toBe('paused');
+    expect(store.getItem(DRAFT_KEY)).toBe(unread);
+  });
+  it('keeps the revision outside the saved field values', () => {
+    const { store } = twoTabs();
+    expect(Object.keys(JSON.parse(store.getItem(DRAFT_KEY)).values)).not.toContain('revision');
   });
 });

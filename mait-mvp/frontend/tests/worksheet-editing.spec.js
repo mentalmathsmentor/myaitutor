@@ -3,16 +3,27 @@ import { test, expect } from '@playwright/test';
 const briefName = 'Additional Brief / Custom Questions';
 const brief = page => page.getByPlaceholder('Add specific textbook questions or teacher notes to include alongside the syllabus points (optional)...');
 
+// No account, feedback, provider or other external calls during acceptance.
+const isolate = page => page.route('**/*', route => {
+  const url = new URL(route.request().url());
+  if (url.origin !== 'http://127.0.0.1:4173') return route.abort();
+  if (/^\/(api|auth|visit|subscribe|query|context|history|reset|keystroke)/.test(url.pathname)) {
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  }
+  return route.continue();
+});
+
+async function openSecondTab(context) {
+  const tab = await context.newPage();
+  await isolate(tab);
+  await tab.goto('/worksheets');
+  await tab.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(tab)).toBeVisible();
+  return tab;
+}
+
 test.beforeEach(async ({ page }) => {
-  // No account, feedback, provider or other external calls during acceptance.
-  await page.route('**/*', route => {
-    const url = new URL(route.request().url());
-    if (url.origin !== 'http://127.0.0.1:4173') return route.abort();
-    if (/^\/(api|auth|visit|subscribe|query|context|history|reset|keystroke)/.test(url.pathname)) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    }
-    return route.continue();
-  });
+  await isolate(page);
   await page.goto('/worksheets');
   await page.getByRole('button', { name: 'Mathematics Advanced', exact: true }).click();
   await page.getByRole('button', { name: 'Topics', exact: true }).click();
@@ -83,6 +94,41 @@ test('typing, selecting, maths insertion and step return preserve the brief', as
   await expect(input).toHaveValue('Notes: alpha \\frac{}{} gamma');
   await input.press('ControlOrMeta+a');
   expect(await input.evaluate(el => el.selectionEnd - el.selectionStart)).toBe('Notes: alpha \\frac{}{} gamma'.length);
+});
+
+test('a stale tab pauses saving instead of overwriting a newer brief', async ({ page, context }) => {
+  const savedBrief = () => page.evaluate(() => JSON.parse(localStorage.getItem('mait_ws_draft_v2')).values.rawQuestions);
+  await brief(page).fill('Older brief in the first tab');
+  await expect.poll(savedBrief).toBe('Older brief in the first tab');
+  const newerTab = await openSecondTab(context);
+  await brief(newerTab).fill('Newer brief from the second tab');
+  await expect.poll(savedBrief).toBe('Newer brief from the second tab');
+
+  await page.bringToFront();
+  await page.getByRole('button', { name: 'Pedagogy', exact: true }).click();
+  await page.getByRole('button', { name: 'Output', exact: true }).click();
+  await page.getByLabel('Question difficulty').selectOption('Exam-Style');
+  await expect(page.getByRole('status').filter({ hasText: 'changed in another tab' })).toBeVisible();
+  await expect.poll(savedBrief).toBe('Newer brief from the second tab');
+
+  // The paused tab stays editable, so its unsaved text can still be copied.
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(page)).toHaveValue('Older brief in the first tab');
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(page)).toHaveValue('Newer brief from the second tab');
+  await expect(page.getByRole('status').filter({ hasText: 'changed in another tab' })).toHaveCount(0);
+});
+
+test('opening a second tab without editing does not pause the first', async ({ page, context }) => {
+  const savedBrief = () => page.evaluate(() => JSON.parse(localStorage.getItem('mait_ws_draft_v2')).values.rawQuestions);
+  await brief(page).fill('Brief before the second tab');
+  await expect.poll(savedBrief).toBe('Brief before the second tab');
+  await openSecondTab(context);
+  await brief(page).fill('Brief after the second tab');
+  await expect.poll(savedBrief).toBe('Brief after the second tab');
+  await expect(page.getByRole('status').filter({ hasText: 'changed in another tab' })).toHaveCount(0);
 });
 
 for (const width of [1280, 390]) {

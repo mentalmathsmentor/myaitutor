@@ -137,6 +137,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [expandedModules, setExpandedModules] = useState({});
   const [expandedSubtopics, setExpandedSubtopics] = useState({});
 
+  const draftSaveState = useRef({ revision: initialDraft.revision, paused: initialDraft.preventSave });
   const handoffOrigin = useRef(null);
   const handoffRevision = useRef(0);
   useEffect(() => () => { handoffRevision.current += 1; }, []);
@@ -169,12 +170,17 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   useEffect(() => {
-    if (initialDraft.preventSave) return;
-    const saved = saveWorksheetDraft({ selectedStage, selectedSubject, customSubject, selectedPoints, rawQuestions,
+    if (draftSaveState.current.paused) return;
+    const { status, revision } = saveWorksheetDraft({ selectedStage, selectedSubject, customSubject, selectedPoints, rawQuestions,
       numQuestions, workingSpace, difficulty, includeMarks, generateAnswerKey, includeWorkedSolutions, includeName,
       includeDate, includeCanvasSetup, firstTimeMode, removeWatermark, pedagogicalSpotError, pedagogicalParameterShift,
-      pedagogicalLimitCase, pedagogicalProofStyle, pedagogicalWordProblems, pedagogicalMultiStep });
-    if (!saved) setDraftNotice('This browser could not save your draft. Your current text is still available to copy.');
+      pedagogicalLimitCase, pedagogicalProofStyle, pedagogicalWordProblems, pedagogicalMultiStep,
+      revision: draftSaveState.current.revision });
+    draftSaveState.current.revision = revision;
+    if (status === 'paused') {
+      draftSaveState.current.paused = true;
+      setDraftNotice('This draft changed in another tab. Automatic saving is paused here so the newer draft is kept; copy your current text before leaving or reloading.');
+    } else if (status === 'failed') setDraftNotice('This browser could not save your draft. Your current text is still available to copy.');
   }, [selectedStage, selectedSubject, customSubject, selectedPoints, rawQuestions, numQuestions, workingSpace,
     difficulty, includeMarks, generateAnswerKey, includeWorkedSolutions, includeName, includeDate, includeCanvasSetup,
     firstTimeMode, removeWatermark, pedagogicalSpotError, pedagogicalParameterShift, pedagogicalLimitCase,
