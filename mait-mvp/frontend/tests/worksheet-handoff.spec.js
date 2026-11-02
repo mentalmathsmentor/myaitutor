@@ -12,8 +12,8 @@ test('preview is selectable, equals copied text, traps focus and never launches 
   await briefField(page).fill('Synthetic α brief\nPreserve both lines.');
   await preview(page).click();
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('list', { name: 'Use your worksheet instructions' })).toContainText('Paste into Gemini’s message box');
-  await expect(dialog).toContainText('Opening Gemini does not paste or send the instructions for you.');
+  await expect(dialog.getByRole('list', { name: 'Use your worksheet instructions' })).toContainText('Paste into its message box');
+  await expect(dialog).toContainText('Opening it does not paste or send the instructions for you.');
   expect(await page.evaluate(() => window.__worksheetCopies)).toEqual([]);
   const field = page.getByLabel('Exact prompt'); const prompt = await field.inputValue();
   await field.click(); await field.press('ControlOrMeta+a');
@@ -27,7 +27,7 @@ test('preview is selectable, equals copied text, traps focus and never launches 
     await page.keyboard.press('Tab');
     expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
   }
-  await page.getByRole('button', { name: 'Open Gemini', exact: true }).click();
+  await page.getByRole('button', { name: 'Open worksheet Gem', exact: true }).click();
   expect(await page.evaluate(() => window.__worksheetOpens.length)).toBe(1);
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden();
   await expect(preview(page)).toBeFocused();
@@ -49,7 +49,7 @@ for (const mode of ['denied', 'missing-success', 'missing-failure']) {
     await preview(page).click(); const text = await page.getByLabel('Exact prompt').inputValue();
     await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
     if (mode === 'missing-success') {
-      await expect(page.getByRole('dialog').getByRole('status')).toHaveText('Prompt copied. Next: open Gemini, paste into its message box, then send.');
+      await expect(page.getByRole('dialog').getByRole('status')).toHaveText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.');
       expect(await page.evaluate(() => window.__fallbackText)).toBe(text);
     } else await expect(page.getByRole('alert')).toContainText('Could not copy');
     await expect(page.getByLabel('Exact prompt')).toHaveValue(text);
@@ -111,7 +111,7 @@ test('narrow prompt preview remains readable and controls fit', async ({ page },
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
   expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).scrollIntoViewIfNeeded();
-  await expect(page.getByRole('button', { name: 'Open Gemini', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open worksheet Gem', exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('prompt-preview-narrow.png') });
 });
 

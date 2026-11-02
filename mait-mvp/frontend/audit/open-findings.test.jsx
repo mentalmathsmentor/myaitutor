@@ -44,7 +44,7 @@ async function copy() {
   fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
   await waitFor(() => expect(clipboard).toHaveBeenCalled());
   const prompt=clipboard.mock.calls.at(-1)[0];
-  await waitFor(() => expect(screen.getByText('Prompt copied. Next: open Gemini, paste into its message box, then send.')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.')).toBeInTheDocument());
   fireEvent.keyDown(document,{key:'Escape'});
   return {prompt,request:buildWorksheetRequest.mock.results.at(-1).value};
 }
@@ -140,7 +140,7 @@ describe('state transitions and error boundaries',()=>{
     clipboard.mockRejectedValue(new Error('Permission denied'));mount('Year 11','Mathematics Advanced','Synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
     fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not copy the worksheet prompt: Permission denied');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not copy the worksheet prompt.');
     expect(screen.getByLabelText('Exact prompt').value).toContain('Synthetic brief');
     expect(window.open).not.toHaveBeenCalled();
   });
@@ -161,10 +161,10 @@ describe('state transitions and error boundaries',()=>{
     fireEvent.keyDown(document,{key:'Escape'});
     expect(clipboard).not.toHaveBeenCalled();
   });
-  it('only the explicit Open Gemini action launches once',async()=>{
+  it('only the explicit Open worksheet Gem action launches once',async()=>{
     vi.useFakeTimers();mount('Year 11','Mathematics Advanced','Synthetic brief');
     await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
-    fireEvent.click(screen.getByRole('button',{name:'Open Gemini',exact:true}));
+    fireEvent.click(screen.getByRole('button',{name:'Open worksheet Gem',exact:true}));
     await act(async()=>{vi.advanceTimersByTime(3100);});
     expect(window.open).toHaveBeenCalledTimes(1);
   });
@@ -194,7 +194,7 @@ describe('state transitions and error boundaries',()=>{
     next(); fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
     fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
     await act(async()=>{finish();});
-    expect(screen.queryByText('Prompt copied. Next: open Gemini, paste into its message box, then send.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Exact prompt').value).toContain('Second synthetic brief');
   });
   it('worked solutions and answer-key controls remain consistent in both directions',()=>{

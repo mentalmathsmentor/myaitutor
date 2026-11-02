@@ -43,13 +43,13 @@ describe('selected course and syllabus context reach the copied prompt', () => {
     expect(off).toContain('The local topic list is not proof of verified NESA alignment.');
     expect(off).not.toContain('Syllabus context: Search');
     expect(provide).toContain('Syllabus context: Provide');
-    expect(provide).toContain('upload the syllabus in Gemini');
+    expect(provide).toContain('upload the syllabus');
     expect(provide).not.toContain('Syllabus context: Search');
     expect(search).not.toContain('Syllabus context: Provide');
     expect(off).not.toContain('Consult official NESA sources');
-    expect(off).not.toContain('I will upload the syllabus in Gemini');
+    expect(off).not.toContain('I will upload the syllabus');
     expect(provide).not.toContain('Consult official NESA sources');
-    expect(search).not.toContain('I will upload the syllabus in Gemini');
+    expect(search).not.toContain('I will upload the syllabus');
   });
 
   it.each(['Off', 'Provide', 'Search'])('keeps textbook attachments independent of %s', mode => {

@@ -36,7 +36,7 @@ describe('subject/context preservation across the offered course and context con
       expect(prompt).toContain('ask for clarification');
       expect(prompt).toContain('has not retrieved or verified');
     }
-    if (changes.syllabusContextMode === 'Provide') expect(prompt).toContain(`upload the syllabus in Gemini for ${changes.selectedStage} ${subject}`);
+    if (changes.syllabusContextMode === 'Provide') expect(prompt).toContain(`upload the syllabus for ${changes.selectedStage} ${subject}`);
     expect(request.requestVersion).toBe('2');
     expect(Object.keys(request).sort()).toEqual(['customInstructions', 'legacyFields', 'pedagogicalDrills', 'requestVersion', 'syllabusPacket', 'topicSummary', 'worksheetSettings']);
     expect(request.legacyFields.context_source).toBe(changes.syllabusContextMode === 'Search' ? 'web' : changes.syllabusContextMode === 'Provide' || changes.textbooksProvided ? 'syllabus' : 'builtin');

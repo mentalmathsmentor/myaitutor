@@ -22,6 +22,7 @@ import modelSelectorHint from '../assets/gemini-model-selector-2026-09.jpg';
 import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
+import { renderPortablePrompt } from '../features/worksheet/utils/renderPortablePrompt';
 import { resolveCourse, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
 import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
 import PromptHandoff from '../components/worksheet/PromptHandoff';
@@ -110,6 +111,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [syllabusContextMode, setSyllabusContextMode] = useState('Off');
   const [textbooksProvided, setTextbooksProvided] = useState(false);
   const [previewPrompt, setPreviewPrompt] = useState('');
+  const [handoffTarget, setHandoffTarget] = useState('custom');
   const [selectedStage, setSelectedStage] = useState(initialDraft.selectedStage);
   const [selectedSubject, setSelectedSubject] = useState(initialDraft.selectedSubject);
   const [customSubject, setCustomSubject] = useState(initialDraft.customSubject);
@@ -324,13 +326,23 @@ export default function WorksheetStudio({ setCurrentSection }) {
     setShowWarning(true);
   };
 
+  const handoffPrompt = handoffTarget === 'any' ? renderPortablePrompt(previewPrompt) : previewPrompt;
+
+  const changeHandoffTarget = (target) => {
+    handoffRevision.current += 1;
+    setHandoffTarget(target);
+    setIsCopied(false);
+    setGenerationError('');
+    setGenerationSuccess('');
+  };
+
   const copyToClipboard = async () => {
     const revision = ++handoffRevision.current;
     setIsCopied(false);
     setGenerationError('');
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(previewPrompt);
+        await navigator.clipboard.writeText(handoffPrompt);
       } else {
         const textArea = document.getElementById('worksheet-prompt-preview');
         const previousFocus = document.activeElement;
@@ -340,10 +352,10 @@ export default function WorksheetStudio({ setCurrentSection }) {
       }
       if (revision !== handoffRevision.current) return;
       setIsCopied(true);
-      setGenerationSuccess('Instructions copied. Open Gemini, paste into its message box, then send.');
-    } catch (error) {
+      setGenerationSuccess(handoffTarget === 'any' ? 'Instructions copied. Paste them into your AI, then send.' : 'Instructions copied. Open your Gem or GPT, paste into its message box, then send.');
+    } catch {
       if (revision !== handoffRevision.current) return;
-      setGenerationError('Could not copy the worksheet prompt: ' + (error.message || 'Clipboard unavailable'));
+      setGenerationError('Could not copy the worksheet prompt.');
     }
   };
 
@@ -460,7 +472,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
         </div>
       )}
 
-      {showWarning && <PromptHandoff prompt={previewPrompt} onClose={closeModal} onReturnFocus={() => handoffOrigin.current?.focus()} onCopy={copyToClipboard}
+      {showWarning && <PromptHandoff prompt={handoffPrompt} target={handoffTarget} onTargetChange={changeHandoffTarget} onClose={closeModal} onReturnFocus={() => handoffOrigin.current?.focus()} onCopy={copyToClipboard}
         copied={isCopied} error={generationError} firstTimeMode={firstTimeMode} includeCanvasSetup={includeCanvasSetup} />}
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
