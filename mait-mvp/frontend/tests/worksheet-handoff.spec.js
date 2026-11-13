@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { isolateWorksheet, chooseCourse, briefField, copyPrompt } from './worksheet-support';
 
-const preview = page => page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true });
+const preview = page => page.getByRole('button', { name: 'Preview the prompt', exact: true });
 const syllabus = JSON.parse(readFileSync(new URL('../src/syllabus_data.json', import.meta.url), 'utf8'));
 const firstTopic = tree => Array.isArray(tree) ? tree[0] : firstTopic(Object.values(tree)[0]);
 test.beforeEach(async ({ page }) => { await isolateWorksheet(page); });
@@ -134,3 +134,36 @@ test(`malformed new draft ${malformed} preserves the unread draft and allows cop
   expect(await page.evaluate(() => localStorage.getItem('mait_ws_draft_v2'))).toBe(unread);
 });
 }
+
+for (const [button, url, full] of [
+  ['Copy & open Worksheet Gem', 'https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', false],
+  ['Copy & open ChatGPT', 'https://chatgpt.com/', true],
+  ['Copy & open Claude', 'https://claude.ai/new', true],
+]) {
+  test(`${button} copies the right prompt in one click and opens it`, async ({ page }) => {
+    await chooseCourse(page, 'Year 12', 'English'); await briefField(page).fill('Synthetic one-click brief');
+    await page.getByRole('button', { name: button, exact: true }).click();
+    const label = button.replace('Copy & open ', '');
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: `Copied! Now paste it into ${label}` })).toBeVisible();
+    const copied = await page.evaluate(() => window.__worksheetCopies.at(-1));
+    expect(copied).toContain('Synthetic one-click brief');
+    expect(copied.includes('## LaTeX rules')).toBe(full);
+    expect(await page.evaluate(() => window.__worksheetOpens.map(args => args[0]))).toEqual([url]);
+    // The test double reports every new tab as blocked, so the manual fallback must be offered.
+    await expect(dialog.getByRole('alert')).toContainText('blocked the new tab');
+    await dialog.getByRole('button', { name: `Open ${label}`, exact: true }).click();
+    expect(await page.evaluate(() => window.__worksheetOpens.length)).toBe(2);
+    await dialog.getByRole('button', { name: 'See the prompt', exact: true }).click();
+    await expect(page.getByLabel('Exact prompt')).toHaveValue(copied);
+  });
+}
+
+test('a failed one-click copy shows the prompt instead of opening anything', async ({ page }) => {
+  await chooseCourse(page, 'Year 12', 'English'); await briefField(page).fill('Synthetic denied brief');
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Permission denied'); } } }));
+  await page.getByRole('button', { name: 'Copy & open ChatGPT', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Could not copy');
+  await expect(page.getByLabel('Exact prompt')).toHaveValue(/## LaTeX rules[\s\S]*Synthetic denied brief/);
+  expect(await page.evaluate(() => window.__worksheetOpens)).toEqual([]);
+});

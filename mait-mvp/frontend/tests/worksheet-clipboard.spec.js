@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { chooseCourse, briefField } from './worksheet-support';
 
-const preview = page => page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true });
+const preview = page => page.getByRole('button', { name: 'Preview the prompt', exact: true });
 
 // Uses the browser's real clipboard, so this spec must not load the fake one in isolateWorksheet.
 test.beforeEach(async ({ page }) => {

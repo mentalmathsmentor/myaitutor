@@ -177,7 +177,7 @@ for (const [mode, button] of [['Off', 'AI general knowledge'], ['Provide', "I'll
     const contextButton = page.getByRole('button', { name: button, exact: true });
     await contextButton.click();
     await expect(contextButton).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true }).click();
+    await page.getByRole('button', { name: 'Preview the prompt', exact: true }).click();
     await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
     await expect.poll(() => page.evaluate(() => window.__copiedPrompt)).toContain(`Syllabus context: ${mode}`);
     const copied = await page.evaluate(() => window.__copiedPrompt);

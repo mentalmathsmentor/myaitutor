@@ -1,10 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { skillFile } from '../../features/worksheet/utils/renderPortablePrompt';
+import { WORKSHEET_GEM_URL, WORKSHEET_GPT_URL } from '../../features/worksheet/utils/destinations';
 
-const WORKSHEET_GEM_URL = 'https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing';
-// Set this once a shareable custom GPT exists; its button stays hidden until then.
-const WORKSHEET_GPT_URL = '';
 const openLink = url => window.open(url, '_blank', 'noopener,noreferrer');
 
 export default function PromptHandoff({ prompt, target, onTargetChange, onClose, onReturnFocus, onCopy, copied, error, firstTimeMode, includeCanvasSetup }) {
