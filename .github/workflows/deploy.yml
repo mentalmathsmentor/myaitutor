@@ -16,7 +16,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned: the installed Playwright cannot install Chromium on ubuntu-26.04, which ubuntu-latest now selects.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
