@@ -26,9 +26,9 @@ describe('renderGemHandoffPrompt', () => {
     }
   };
 
-  it('omits watermark instruction when ON (default)', () => {
+  it('renders the enabled watermark explicitly', () => {
     const prompt = renderGemHandoffPrompt(baseRequest);
-    expect(prompt).not.toContain('WATERMARK');
+    expect(prompt).toContain('**WATERMARK:** ON');
   });
 
   it('renders watermark OFF correctly', () => {
@@ -50,7 +50,7 @@ describe('renderGemHandoffPrompt', () => {
 
   it('formats syllabus directives correctly', () => {
     const prompt = renderGemHandoffPrompt(baseRequest);
-    expect(prompt).toContain('- **Relevant Dot-Points:** Graphing polynomials, Derivatives');
+    expect(prompt).toContain('- **Selected topics:** Graphing polynomials, Derivatives');
     expect(prompt).toContain('- **Include:** Use limits');
     expect(prompt).toContain('- **Exclude:** Do not use first principles');
   });

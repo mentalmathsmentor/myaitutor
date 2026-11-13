@@ -1,0 +1,188 @@
+import { test, expect } from '@playwright/test';
+
+const briefName = 'Additional Brief / Custom Questions';
+const brief = page => page.getByPlaceholder('Add specific textbook questions or teacher notes to include alongside the syllabus points (optional)...');
+
+// No account, feedback, provider or other external calls during acceptance.
+const isolate = page => page.route('**/*', route => {
+  const url = new URL(route.request().url());
+  if (url.origin !== 'http://127.0.0.1:4173') return route.abort();
+  if (/^\/(api|auth|visit|subscribe|query|context|history|reset|keystroke)/.test(url.pathname)) {
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  }
+  return route.continue();
+});
+
+async function openSecondTab(context) {
+  const tab = await context.newPage();
+  await isolate(tab);
+  await tab.goto('/worksheets');
+  await tab.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(tab)).toBeVisible();
+  return tab;
+}
+
+test.beforeEach(async ({ page }) => {
+  await isolate(page);
+  await page.goto('/worksheets');
+  await page.getByRole('button', { name: 'Mathematics Advanced', exact: true }).click();
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(page)).toBeVisible();
+});
+
+test('visible brief label focuses the editable field', async ({ page }) => {
+  await page.getByText(briefName, { exact: true }).click();
+  await expect(brief(page)).toBeFocused();
+  await expect(brief(page)).toHaveAccessibleName(briefName);
+});
+
+for (const width of [1280, 390]) {
+  test(`long brief remains selectable beside its lower-left edge at width ${width}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    const input = brief(page);
+    await input.fill(Array.from({ length: 30 }, (_, i) => `Line ${i + 1}: alpha beta gamma delta epsilon.`).join('\n'));
+    await input.scrollIntoViewIfNeeded();
+    const box = await input.boundingBox();
+    const math = await page.getByRole('button', { name: 'Math', exact: true }).boundingBox();
+    const clear = await page.getByRole('button', { name: 'Clear', exact: true }).boundingBox();
+    const intersections = [math, clear].map(b => Math.max(0, Math.min(box.x + box.width, b.x + b.width) - Math.max(box.x, b.x)) * Math.max(0, Math.min(box.y + box.height, b.y + b.height) - Math.max(box.y, b.y)));
+    // Keep both overlap and actual gesture evidence when checking the old code.
+    expect.soft(intersections).toEqual([0, 0]);
+    const gestures = [];
+    for (const fraction of [0, 0.5, 1]) {
+      const metrics = await input.evaluate((el, f) => {
+        el.setSelectionRange(0, 0);
+        el.scrollTop = (el.scrollHeight - el.clientHeight) * f;
+        const style = getComputedStyle(el);
+        return { scrollTop: el.scrollTop, padding: parseFloat(style.paddingBottom),
+          border: parseFloat(style.borderBottomWidth), lineHeight: parseFloat(style.lineHeight) };
+      }, fraction);
+      const x = box.x + 30;
+      // Drag through the last visible text line, not its trailing padding.
+      // WebKit correctly collapses a drag below the final line to end-of-text.
+      const y = box.y + box.height - metrics.border - metrics.padding - metrics.lineHeight / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(Math.min(x + 130, box.x + box.width - 20), y, { steps: 12 });
+      await page.mouse.up();
+      await expect.soft(input).toBeFocused();
+      const selected = await input.evaluate(el => ({ start: el.selectionStart, end: el.selectionEnd, text: el.value.slice(el.selectionStart, el.selectionEnd) }));
+      gestures.push({ fraction, ...metrics, x, y, ...selected });
+      expect.soft(selected.end - selected.start, `drag at scroll fraction ${fraction}`).toBeGreaterThan(0);
+    }
+    await testInfo.attach('selection-gestures', { body: JSON.stringify(gestures, null, 2), contentType: 'application/json' });
+    await page.screenshot({ path: testInfo.outputPath('brief-layout.png') });
+  });
+}
+
+test('typing, selecting, maths insertion and step return preserve the brief', async ({ page }) => {
+  const input = brief(page);
+  await input.fill('alpha beta gamma');
+  // Set a deterministic insertion point; the Home key differs across platforms.
+  await input.evaluate(el => el.setSelectionRange(0, 0));
+  await input.pressSequentially('Notes: ');
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue('Notes: alpha beta gamma');
+  await input.evaluate(el => el.setSelectionRange(13, 17));
+  await page.getByRole('button', { name: 'Math', exact: true }).click();
+  await page.getByRole('button', { name: 'frac', exact: true }).click();
+  await expect(input).toHaveValue('Notes: alpha \\frac{}{} gamma');
+  await expect(input).toBeFocused();
+  expect(await input.evaluate(el => [el.selectionStart, el.selectionEnd])).toEqual([19, 19]);
+  await page.getByRole('button', { name: 'Pedagogy', exact: true }).click();
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(input).toHaveValue('Notes: alpha \\frac{}{} gamma');
+  await input.press('ControlOrMeta+a');
+  expect(await input.evaluate(el => el.selectionEnd - el.selectionStart)).toBe('Notes: alpha \\frac{}{} gamma'.length);
+});
+
+test('a stale tab pauses saving instead of overwriting a newer brief', async ({ page, context }) => {
+  const savedBrief = () => page.evaluate(() => JSON.parse(localStorage.getItem('mait_ws_draft_v2')).values.rawQuestions);
+  await brief(page).fill('Older brief in the first tab');
+  await expect.poll(savedBrief).toBe('Older brief in the first tab');
+  const newerTab = await openSecondTab(context);
+  await brief(newerTab).fill('Newer brief from the second tab');
+  await expect.poll(savedBrief).toBe('Newer brief from the second tab');
+
+  await page.bringToFront();
+  await page.getByRole('button', { name: 'Pedagogy', exact: true }).click();
+  await page.getByRole('button', { name: 'Output', exact: true }).click();
+  await page.getByLabel('Question difficulty').selectOption('Exam-Style');
+  await expect(page.getByRole('status').filter({ hasText: 'changed in another tab' })).toBeVisible();
+  await expect.poll(savedBrief).toBe('Newer brief from the second tab');
+
+  // The paused tab stays editable, so its unsaved text can still be copied.
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(page)).toHaveValue('Older brief in the first tab');
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Topics', exact: true }).click();
+  await expect(brief(page)).toHaveValue('Newer brief from the second tab');
+  await expect(page.getByRole('status').filter({ hasText: 'changed in another tab' })).toHaveCount(0);
+});
+
+test('opening a second tab without editing does not pause the first', async ({ page, context }) => {
+  const savedBrief = () => page.evaluate(() => JSON.parse(localStorage.getItem('mait_ws_draft_v2')).values.rawQuestions);
+  await brief(page).fill('Brief before the second tab');
+  await expect.poll(savedBrief).toBe('Brief before the second tab');
+  await openSecondTab(context);
+  await brief(page).fill('Brief after the second tab');
+  await expect.poll(savedBrief).toBe('Brief after the second tab');
+  await expect(page.getByRole('status').filter({ hasText: 'changed in another tab' })).toHaveCount(0);
+});
+
+for (const width of [1280, 390]) {
+  test(`Clear requires confirmation and preserves a saved brief on cancel or reload at width ${width}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const input = brief(page);
+    const original = 'Synthetic teacher brief — α.\nPreserve these questions and teaching notes.';
+    await input.fill(original);
+    const savedBrief = () => page.evaluate(() => JSON.parse(localStorage.getItem('mait_ws_draft_v2')).values.rawQuestions);
+    await expect.poll(savedBrief).toBe(original);
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await expect(page.getByRole('alertdialog', { name: 'Clear this text?' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(original);
+    await expect.poll(savedBrief).toBe(original);
+
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: 'Topics', exact: true }).click();
+    await expect(input).toHaveValue(original);
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Clear', exact: true }).click();
+    await page.getByRole('button', { name: 'Clear text', exact: true }).click();
+    await expect(input).toHaveValue('');
+    await expect(input).toBeFocused();
+    await expect.poll(savedBrief).toBe('');
+    await page.reload();
+    await page.getByRole('button', { name: 'Topics', exact: true }).click();
+    await expect(input).toHaveValue('');
+  });
+}
+
+for (const [mode, button] of [['Off', 'AI general knowledge'], ['Provide', "I'll upload the syllabus"], ['Search', 'Ask Gemini to search NESA']]) {
+  test(`copied prompt includes the selected subject and ${mode} context`, async ({ page }) => {
+    // Capture actual application clipboard output; never open or submit to Gemini.
+    await page.evaluate(() => {
+      window.__copiedPrompt = '';
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__copiedPrompt = text; } } });
+      window.open = () => null;
+    });
+    await brief(page).fill('Create original questions about rates of change.');
+    await page.getByRole('button', { name: 'Pedagogy', exact: true }).click();
+    const contextButton = page.getByRole('button', { name: button, exact: true });
+    await contextButton.click();
+    await expect(contextButton).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true }).click();
+    await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.__copiedPrompt)).toContain(`Syllabus context: ${mode}`);
+    const copied = await page.evaluate(() => window.__copiedPrompt);
+    expect(copied).toContain('- **Subject:** Mathematics Advanced');
+    expect(copied).toContain('- **Course:** Year 12');
+    if (mode === 'Search') expect(copied).toContain('Consult official NESA sources for Year 12 Mathematics Advanced');
+  });
+}

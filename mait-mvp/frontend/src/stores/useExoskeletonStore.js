@@ -22,17 +22,12 @@ export const useExoskeletonStore = create((set, get) => ({
   setWizardOpen: (open) => set({ isWizardOpen: open }),
 
   fetchClasses: async () => {
-    try {
-      const response = await fetch('/api/classes')
-      if (!response.ok) throw new Error('Failed to fetch classes')
-      const data = await response.json()
-      const classes = data.classes || []
-      set({ cohorts: classes })
-      return classes
-    } catch (error) {
-      console.error('fetchClasses failed:', error)
-      return []
-    }
+    const response = await fetch('/api/classes')
+    if (!response.ok) throw new Error('Failed to fetch classes')
+    const data = await response.json()
+    if (!Array.isArray(data?.classes)) throw new Error('Invalid classes response')
+    set({ cohorts: data.classes })
+    return data.classes
   },
 
   fetchThreads: async (classId) => {
@@ -65,6 +60,7 @@ export const useExoskeletonStore = create((set, get) => ({
       }
     } catch (error) {
       console.error('fetchThreads failed:', error)
+      throw error
     }
   },
 

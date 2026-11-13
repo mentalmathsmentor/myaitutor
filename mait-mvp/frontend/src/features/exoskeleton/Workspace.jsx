@@ -153,6 +153,8 @@ export default function Workspace() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState('')
   const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [loadAttempt, setLoadAttempt] = useState(0)
 
   useEffect(() => {
     if (!activeSubject) return
@@ -192,27 +194,30 @@ export default function Workspace() {
   useEffect(() => {
     async function loadData() {
       setIsInitialLoading(true)
-      const classesList = await fetchClasses()
-      if (classesList.length > 0) {
-        const firstClass = classesList[0]
-        setActiveWorkspace(firstClass, firstClass.thread || null)
-        try {
+      setLoadError(false)
+      try {
+        const classesList = await fetchClasses()
+        if (classesList.length > 0) {
+          const firstClass = classesList[0]
+          setActiveWorkspace(firstClass, firstClass.thread || null)
           await Promise.all(classesList.map((c) => fetchThreads(c.id)))
-        } catch (err) {
-          console.error('Failed to load threads in parallel:', err)
+        } else {
+          setWizardOpen(true)
         }
-      } else {
-        setWizardOpen(true)
+      } catch {
+        setLoadError(true)
+      } finally {
+        setIsInitialLoading(false)
       }
-      setIsInitialLoading(false)
     }
     loadData()
-  }, [])
+  }, [fetchClasses, fetchThreads, loadAttempt, setActiveWorkspace, setWizardOpen])
 
   const handleCohortClick = async (cohort) => {
     setActiveWorkspace(cohort, cohort.thread || null)
     if (!cohort.thread) {
-      await fetchThreads(cohort.id)
+      // Already logged by the store; the cohort stays selectable for another try.
+      await fetchThreads(cohort.id).catch(() => {})
     }
   }
 
@@ -330,6 +335,20 @@ export default function Workspace() {
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-cyan-300" />
           <p className="text-sm font-medium text-white/60">Loading tutor workspace...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0A0E17] p-6 text-white">
+        <div role="alert" className="max-w-md rounded-lg border border-amber-300/30 bg-slate-900 p-6 text-center">
+          <h1 className="text-xl font-semibold">Could not load your teaching workspace</h1>
+          <p className="mt-2 text-sm text-white/70">Your saved classes could not be checked. Try again before creating a new cohort.</p>
+          <button type="button" onClick={() => setLoadAttempt((attempt) => attempt + 1)} className="mt-5 rounded-lg bg-cyan-300 px-5 py-3 font-semibold text-slate-950">
+            Try again
+          </button>
         </div>
       </div>
     )

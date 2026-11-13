@@ -1,0 +1,869 @@
+{
+  "syllabusVersion": "Mathematics K\u201310 (2022)",
+  "checkedAt": "2026-09-18",
+  "sourceSnapshotSha256": "4b6bb2de292540323d620484e4728255dbd04323a81332e86126e2ef6ff39bd3",
+  "textPolicy": "Identifiers and links only; no syllabus outcome or content-point prose. This metadata is not a licence or endorsement.",
+  "focusAreas": {
+    "fa783c951a": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa783c951a",
+      "outcomeCodes": [
+        "MA4-INT-C-01"
+      ]
+    },
+    "fad6ecbfc4": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fad6ecbfc4",
+      "outcomeCodes": [
+        "MA4-FRC-C-01"
+      ]
+    },
+    "faf41ae0d9": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/faf41ae0d9",
+      "outcomeCodes": [
+        "MA4-RAT-C-01"
+      ]
+    },
+    "fafcecf0db": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fafcecf0db",
+      "outcomeCodes": [
+        "MA4-ALG-C-01"
+      ]
+    },
+    "fa5d58f980": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa5d58f980",
+      "outcomeCodes": [
+        "MA4-IND-C-01"
+      ]
+    },
+    "fa2b36d99b": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa2b36d99b",
+      "outcomeCodes": [
+        "MA4-EQU-C-01"
+      ]
+    },
+    "fa6ebf0c74": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa6ebf0c74",
+      "outcomeCodes": [
+        "MA4-LIN-C-01"
+      ]
+    },
+    "fa498c8819": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa498c8819",
+      "outcomeCodes": [
+        "MA4-LEN-C-01"
+      ]
+    },
+    "facc79fb0a": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/facc79fb0a",
+      "outcomeCodes": [
+        "MA4-PYT-C-01"
+      ]
+    },
+    "fa3b012530": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa3b012530",
+      "outcomeCodes": [
+        "MA4-ARE-C-01"
+      ]
+    },
+    "fa81d78b9c": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa81d78b9c",
+      "outcomeCodes": [
+        "MA4-VOL-C-01"
+      ]
+    },
+    "fa7949a8dc": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa7949a8dc",
+      "outcomeCodes": [
+        "MA4-ANG-C-01"
+      ]
+    },
+    "fa77304c54": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa77304c54",
+      "outcomeCodes": [
+        "MA4-GEO-C-01"
+      ]
+    },
+    "fa1961f47c": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/fa1961f47c",
+      "outcomeCodes": [
+        "MA4-DAT-C-01"
+      ]
+    },
+    "faf3cc6dd1": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/faf3cc6dd1",
+      "outcomeCodes": [
+        "MA4-DAT-C-02"
+      ]
+    },
+    "faeb7df99f": {
+      "stage": "Stage 4",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-4/faeb7df99f",
+      "outcomeCodes": [
+        "MA4-PRO-C-01"
+      ]
+    },
+    "fa26b2cd40": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa26b2cd40",
+      "outcomeCodes": [
+        "MA1-RWN-01",
+        "MA1-RWN-02"
+      ]
+    },
+    "faabd017f2": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/faabd017f2",
+      "outcomeCodes": [
+        "MA1-RWN-01",
+        "MA1-RWN-02"
+      ]
+    },
+    "fa83041eb2": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa83041eb2",
+      "outcomeCodes": [
+        "MA1-CSQ-01"
+      ]
+    },
+    "fa7e3d8973": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa7e3d8973",
+      "outcomeCodes": [
+        "MA1-CSQ-01"
+      ]
+    },
+    "faa8aa1c99": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/faa8aa1c99",
+      "outcomeCodes": [
+        "MA1-FG-01"
+      ]
+    },
+    "fa2c27951b": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa2c27951b",
+      "outcomeCodes": [
+        "MA1-FG-01"
+      ]
+    },
+    "fa5e736769": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa5e736769",
+      "outcomeCodes": [
+        "MA1-GM-01",
+        "MA1-GM-02",
+        "MA1-GM-03"
+      ]
+    },
+    "fa962d924b": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa962d924b",
+      "outcomeCodes": [
+        "MA1-GM-01",
+        "MA1-GM-02",
+        "MA1-GM-03"
+      ]
+    },
+    "fa9a45594a": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa9a45594a",
+      "outcomeCodes": [
+        "MA1-2DS-01",
+        "MA1-2DS-02"
+      ]
+    },
+    "fa922969e6": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa922969e6",
+      "outcomeCodes": [
+        "MA1-2DS-01",
+        "MA1-2DS-02"
+      ]
+    },
+    "fa78d710fb": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa78d710fb",
+      "outcomeCodes": [
+        "MA1-3DS-01",
+        "MA1-3DS-02"
+      ]
+    },
+    "fa75d47d70": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa75d47d70",
+      "outcomeCodes": [
+        "MA1-3DS-01",
+        "MA1-3DS-02"
+      ]
+    },
+    "fa0ed3a23d": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa0ed3a23d",
+      "outcomeCodes": [
+        "MA1-NSM-01",
+        "MA1-NSM-02"
+      ]
+    },
+    "fa46c94636": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa46c94636",
+      "outcomeCodes": [
+        "MA1-NSM-01",
+        "MA1-NSM-02"
+      ]
+    },
+    "fab6161915": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fab6161915",
+      "outcomeCodes": [
+        "MA1-DATA-01",
+        "MA1-DATA-02"
+      ]
+    },
+    "fae90cf162": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fae90cf162",
+      "outcomeCodes": [
+        "MA1-DATA-01",
+        "MA1-DATA-02"
+      ]
+    },
+    "fa2008eee7": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa2008eee7",
+      "outcomeCodes": [
+        "MA1-CHAN-01"
+      ]
+    },
+    "fa8fa9fb8a": {
+      "stage": "Stage 1",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-1/fa8fa9fb8a",
+      "outcomeCodes": [
+        "MA1-CHAN-01"
+      ]
+    },
+    "fa3867d7b8": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa3867d7b8",
+      "outcomeCodes": [
+        "MA2-RN-01",
+        "MA2-RN-02"
+      ]
+    },
+    "fa1dbb9271": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa1dbb9271",
+      "outcomeCodes": [
+        "MA2-RN-01",
+        "MA2-RN-02"
+      ]
+    },
+    "fa361e2379": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa361e2379",
+      "outcomeCodes": [
+        "MA2-AR-01",
+        "MA2-AR-02"
+      ]
+    },
+    "fa62ff3cf3": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa62ff3cf3",
+      "outcomeCodes": [
+        "MA2-AR-01",
+        "MA2-AR-02"
+      ]
+    },
+    "fa3feef933": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa3feef933",
+      "outcomeCodes": [
+        "MA2-MR-01",
+        "MA2-MR-02"
+      ]
+    },
+    "fad59f2055": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fad59f2055",
+      "outcomeCodes": [
+        "MA2-MR-01",
+        "MA2-MR-02"
+      ]
+    },
+    "fab1a01bf6": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fab1a01bf6",
+      "outcomeCodes": [
+        "MA2-PF-01"
+      ]
+    },
+    "fabf1cf43b": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fabf1cf43b",
+      "outcomeCodes": [
+        "MA2-PF-01"
+      ]
+    },
+    "fae78c0853": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fae78c0853",
+      "outcomeCodes": [
+        "MA2-GM-01",
+        "MA2-GM-02",
+        "MA2-GM-03"
+      ]
+    },
+    "fa620a8f93": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa620a8f93",
+      "outcomeCodes": [
+        "MA2-GM-01",
+        "MA2-GM-02",
+        "MA2-GM-03"
+      ]
+    },
+    "fae82874e2": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fae82874e2",
+      "outcomeCodes": [
+        "MA2-2DS-01",
+        "MA2-2DS-02",
+        "MA2-2DS-03"
+      ]
+    },
+    "fa880c6188": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa880c6188",
+      "outcomeCodes": [
+        "MA2-2DS-01",
+        "MA2-2DS-02",
+        "MA2-2DS-03"
+      ]
+    },
+    "fa8065c643": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa8065c643",
+      "outcomeCodes": [
+        "MA2-3DS-01",
+        "MA2-3DS-02"
+      ]
+    },
+    "faa2ba21e4": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/faa2ba21e4",
+      "outcomeCodes": [
+        "MA2-3DS-01",
+        "MA2-3DS-02"
+      ]
+    },
+    "fa1318ad38": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa1318ad38",
+      "outcomeCodes": [
+        "MA2-NSM-01",
+        "MA2-NSM-02"
+      ]
+    },
+    "fa6271aa71": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa6271aa71",
+      "outcomeCodes": [
+        "MA2-NSM-01",
+        "MA2-NSM-02"
+      ]
+    },
+    "fae1144fe0": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fae1144fe0",
+      "outcomeCodes": [
+        "MA2-DATA-01",
+        "MA2-DATA-02"
+      ]
+    },
+    "fa4a0f3cbc": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa4a0f3cbc",
+      "outcomeCodes": [
+        "MA2-DATA-01",
+        "MA2-DATA-02"
+      ]
+    },
+    "fa3b99508c": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/fa3b99508c",
+      "outcomeCodes": [
+        "MA2-CHAN-01"
+      ]
+    },
+    "face5c0f2c": {
+      "stage": "Stage 2",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-2/face5c0f2c",
+      "outcomeCodes": [
+        "MA2-CHAN-01"
+      ]
+    },
+    "fa87632ef7": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa87632ef7",
+      "outcomeCodes": [
+        "MA3-RN-01",
+        "MA3-RN-02",
+        "MA3-RN-03"
+      ]
+    },
+    "fa0a18f458": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa0a18f458",
+      "outcomeCodes": [
+        "MA3-RN-01",
+        "MA3-RN-02",
+        "MA3-RN-03"
+      ]
+    },
+    "faf843e1ab": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/faf843e1ab",
+      "outcomeCodes": [
+        "MA3-AR-01"
+      ]
+    },
+    "fa2ebf6217": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa2ebf6217",
+      "outcomeCodes": [
+        "MA3-AR-01"
+      ]
+    },
+    "fafab309e2": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fafab309e2",
+      "outcomeCodes": [
+        "MA3-MR-01",
+        "MA3-MR-02"
+      ]
+    },
+    "fa1ff4d43b": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa1ff4d43b",
+      "outcomeCodes": [
+        "MA3-MR-01",
+        "MA3-MR-02"
+      ]
+    },
+    "fac8227f10": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fac8227f10",
+      "outcomeCodes": [
+        "MA3-RQF-01",
+        "MA3-RQF-02"
+      ]
+    },
+    "fa1618803c": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa1618803c",
+      "outcomeCodes": [
+        "MA3-RQF-01",
+        "MA3-RQF-02"
+      ]
+    },
+    "fa35c41b81": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa35c41b81",
+      "outcomeCodes": [
+        "MA3-GM-01",
+        "MA3-GM-02",
+        "MA3-GM-03"
+      ]
+    },
+    "fae314fde1": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fae314fde1",
+      "outcomeCodes": [
+        "MA3-GM-01",
+        "MA3-GM-02",
+        "MA3-GM-03"
+      ]
+    },
+    "fad7c142c4": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fad7c142c4",
+      "outcomeCodes": [
+        "MA3-2DS-01",
+        "MA3-2DS-02",
+        "MA3-2DS-03"
+      ]
+    },
+    "fa0dfe5fec": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa0dfe5fec",
+      "outcomeCodes": [
+        "MA3-2DS-01",
+        "MA3-2DS-02",
+        "MA3-2DS-03"
+      ]
+    },
+    "fa51e61164": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa51e61164",
+      "outcomeCodes": [
+        "MA3-3DS-01",
+        "MA3-3DS-02"
+      ]
+    },
+    "fa89ed4224": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa89ed4224",
+      "outcomeCodes": [
+        "MA3-3DS-01",
+        "MA3-3DS-02"
+      ]
+    },
+    "fa7e80b308": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa7e80b308",
+      "outcomeCodes": [
+        "MA3-NSM-01",
+        "MA3-NSM-02"
+      ]
+    },
+    "faebab48ca": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/faebab48ca",
+      "outcomeCodes": [
+        "MA3-NSM-01",
+        "MA3-NSM-02"
+      ]
+    },
+    "fa934b5e3a": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa934b5e3a",
+      "outcomeCodes": [
+        "MA3-DATA-01",
+        "MA3-DATA-02"
+      ]
+    },
+    "fa0c228e92": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa0c228e92",
+      "outcomeCodes": [
+        "MA3-DATA-01",
+        "MA3-DATA-02"
+      ]
+    },
+    "faf834e5b5": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/faf834e5b5",
+      "outcomeCodes": [
+        "MA3-CHAN-01"
+      ]
+    },
+    "fa6dbbaafc": {
+      "stage": "Stage 3",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-3/fa6dbbaafc",
+      "outcomeCodes": [
+        "MA3-CHAN-01"
+      ]
+    },
+    "facb3aa952": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/facb3aa952",
+      "outcomeCodes": [
+        "MA5-FIN-C-01"
+      ]
+    },
+    "fab73ea3dd": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fab73ea3dd",
+      "outcomeCodes": [
+        "MA5-FIN-C-02"
+      ]
+    },
+    "fa0f9951b1": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa0f9951b1",
+      "outcomeCodes": [
+        "MA5-ALG-C-01"
+      ]
+    },
+    "fad97db224": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fad97db224",
+      "outcomeCodes": [
+        "MA5-IND-C-01"
+      ]
+    },
+    "fa0e151fb2": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa0e151fb2",
+      "outcomeCodes": [
+        "MA5-EQU-C-01"
+      ]
+    },
+    "fa7f703ea7": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa7f703ea7",
+      "outcomeCodes": [
+        "MA5-LIN-C-01"
+      ]
+    },
+    "fa528f5a54": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa528f5a54",
+      "outcomeCodes": [
+        "MA5-LIN-C-02"
+      ]
+    },
+    "fafee6f5b1": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fafee6f5b1",
+      "outcomeCodes": [
+        "MA5-NLI-C-01"
+      ]
+    },
+    "fa9dbfae94": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa9dbfae94",
+      "outcomeCodes": [
+        "MA5-NLI-C-02"
+      ]
+    },
+    "fa54356e3c": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa54356e3c",
+      "outcomeCodes": [
+        "MA5-MAG-C-01"
+      ]
+    },
+    "fac59b13b0": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fac59b13b0",
+      "outcomeCodes": [
+        "MA5-TRG-C-01"
+      ]
+    },
+    "fad171c0a4": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fad171c0a4",
+      "outcomeCodes": [
+        "MA5-TRG-C-02"
+      ]
+    },
+    "fad37504e5": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fad37504e5",
+      "outcomeCodes": [
+        "MA5-ARE-C-01"
+      ]
+    },
+    "fab476201c": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fab476201c",
+      "outcomeCodes": [
+        "MA5-VOL-C-01"
+      ]
+    },
+    "fa6d9fa8bc": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa6d9fa8bc",
+      "outcomeCodes": [
+        "MA5-GEO-C-01"
+      ]
+    },
+    "fa0b12861f": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa0b12861f",
+      "outcomeCodes": [
+        "MA5-DAT-C-01"
+      ]
+    },
+    "fac65551f8": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fac65551f8",
+      "outcomeCodes": [
+        "MA5-DAT-C-02"
+      ]
+    },
+    "fadd685070": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fadd685070",
+      "outcomeCodes": [
+        "MA5-PRO-C-01"
+      ]
+    },
+    "fa9b67bc3e": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa9b67bc3e",
+      "outcomeCodes": [
+        "MA5-RAT-P-01"
+      ]
+    },
+    "fa90736232": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa90736232",
+      "outcomeCodes": [
+        "MA5-RAT-P-02"
+      ]
+    },
+    "fa0ac6000c": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa0ac6000c",
+      "outcomeCodes": [
+        "MA5-ALG-P-01"
+      ]
+    },
+    "fa7879a3d5": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa7879a3d5",
+      "outcomeCodes": [
+        "MA5-ALG-P-02"
+      ]
+    },
+    "fa24d5bd5b": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa24d5bd5b",
+      "outcomeCodes": [
+        "MA5-IND-P-01"
+      ]
+    },
+    "fa8d9baa84": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa8d9baa84",
+      "outcomeCodes": [
+        "MA5-IND-P-02"
+      ]
+    },
+    "fab83522c4": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fab83522c4",
+      "outcomeCodes": [
+        "MA5-EQU-P-01"
+      ]
+    },
+    "fa587a4c87": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa587a4c87",
+      "outcomeCodes": [
+        "MA5-EQU-P-02"
+      ]
+    },
+    "fab720e184": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fab720e184",
+      "outcomeCodes": [
+        "MA5-LIN-P-01"
+      ]
+    },
+    "fa633cd425": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa633cd425",
+      "outcomeCodes": [
+        "MA5-NLI-P-01"
+      ]
+    },
+    "fac28d3aef": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fac28d3aef",
+      "outcomeCodes": [
+        "MA5-POL-P-01"
+      ]
+    },
+    "fa0379c0d0": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa0379c0d0",
+      "outcomeCodes": [
+        "MA5-LOG-P-01"
+      ]
+    },
+    "fa4ba33ef2": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa4ba33ef2",
+      "outcomeCodes": [
+        "MA5-FNC-P-01"
+      ]
+    },
+    "fa381c0ce0": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa381c0ce0",
+      "outcomeCodes": [
+        "MA5-TRG-P-01"
+      ]
+    },
+    "fa632cab9d": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa632cab9d",
+      "outcomeCodes": [
+        "MA5-TRG-P-02"
+      ]
+    },
+    "faa621ba82": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/faa621ba82",
+      "outcomeCodes": [
+        "MA5-ARE-P-01"
+      ]
+    },
+    "fa7092943a": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa7092943a",
+      "outcomeCodes": [
+        "MA5-VOL-P-01"
+      ]
+    },
+    "fa222c8206": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa222c8206",
+      "outcomeCodes": [
+        "MA5-GEO-P-01"
+      ]
+    },
+    "fad76393f0": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fad76393f0",
+      "outcomeCodes": [
+        "MA5-GEO-P-02"
+      ]
+    },
+    "fa6eb2f57b": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa6eb2f57b",
+      "outcomeCodes": [
+        "MA5-CIR-P-01"
+      ]
+    },
+    "fae172f5e1": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fae172f5e1",
+      "outcomeCodes": [
+        "MA5-NET-P-01"
+      ]
+    },
+    "fa134ba697": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa134ba697",
+      "outcomeCodes": [
+        "MA5-DAT-P-01"
+      ]
+    },
+    "fa45bd1262": {
+      "stage": "Stage 5",
+      "sourceUrl": "https://curriculum.nsw.edu.au/learning-areas/mathematics/mathematics-k-10-2022/content/stage-5/fa45bd1262",
+      "outcomeCodes": [
+        "MA5-PRO-P-01"
+      ]
+    }
+  }
+}

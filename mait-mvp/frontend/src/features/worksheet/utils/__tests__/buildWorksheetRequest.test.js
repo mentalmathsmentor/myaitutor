@@ -126,14 +126,14 @@ describe('buildWorksheetRequest', () => {
     expect(result.worksheetSettings.watermark).toBe(false);
   });
 
-  it('includes FIRST TIME MODE in customInstructions when firstTimeMode is true', () => {
+  it('keeps first-time help out of model instructions', () => {
     const result = buildWorksheetRequest({ ...baseParams, firstTimeMode: true });
-    expect(result.customInstructions).toContain('FIRST TIME MODE');
+    expect(result.customInstructions).not.toContain('FIRST TIME MODE');
   });
 
-  it('includes CANVAS SETUP GUIDE when includeCanvasSetup is true', () => {
+  it('keeps Canvas setup guidance out of model instructions', () => {
     const result = buildWorksheetRequest({ ...baseParams, includeCanvasSetup: true });
-    expect(result.customInstructions).toContain('CANVAS SETUP GUIDE');
+    expect(result.customInstructions).not.toContain('CANVAS SETUP GUIDE');
   });
 
   it('includes school name in headerSpaces when provided', () => {

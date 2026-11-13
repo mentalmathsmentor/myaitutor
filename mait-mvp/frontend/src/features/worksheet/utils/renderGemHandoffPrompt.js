@@ -1,4 +1,5 @@
 import { ensureString, ensureStringArray } from './promptHelpers';
+import { pedagogyDirectives } from './worksheetDirectives';
 
 export function renderGemHandoffPrompt(request) {
   const settings = request.worksheetSettings;
@@ -17,15 +18,18 @@ export function renderGemHandoffPrompt(request) {
 
   handoff += `**WORKSHEET SETTINGS:**\n`;
   handoff += `- **Course:** ${settings.course}\n`;
+  handoff += `- **Subject:** ${ensureString(settings.subject)}\n`;
   handoff += `- **Topic Summary:** ${topicSummary}\n`;
   handoff += `- **Number of Questions:** ${settings.numberOfQuestions}\n`;
   handoff += `- **Difficulty:** ${settings.difficulty}\n`;
   if (settings.headerSpaces) handoff += `- **Header Spaces:** ${settings.headerSpaces}\n`;
   handoff += `- **Working Space:** ${settings.workingSpace}\n`;
-  if (settings.marks !== 'No marks.') handoff += `- **Marks:** ${settings.marks}\n`;
-  if (settings.answerKey !== 'No answer key.') handoff += `- **Answer Key:** ${settings.answerKey}\n`;
+  handoff += `- **Marks:** ${settings.marks}\n`;
+  handoff += `- **Answer Key:** ${settings.answerKey}\n`;
   if (!settings.watermark) {
     handoff += `- **WATERMARK:** OFF (Leave rfoot empty)\n`;
+  } else {
+    handoff += `- **WATERMARK:** ON (Include the MyAITutor footer link)\n`;
   }
   handoff += `- **MODE:** ${settings.mode}\n\n`;
 
@@ -33,11 +37,11 @@ export function renderGemHandoffPrompt(request) {
     handoff += `**MANUAL INSTRUCTIONS & CUSTOM TOPICS:**\n${request.legacyFields.manual_prompt}\n\n`;
   }
 
-  const hasPacketData = packet.dotPoints.length > 0 || packet.outcomes.length > 0 || packet.include.length > 0;
+  const hasPacketData = ['dotPoints', 'outcomes', 'include', 'exclude', 'assessmentEmphasis', 'questionStyleNotes'].some(key => ensureStringArray(packet[key]).length > 0);
   
   if (hasPacketData || !request.legacyFields.manual_prompt) {
-    handoff += `**SYLLABUS PACKET (NESA ALIGNED):**\n`;
-    const dotPointsStr = formatArray("Relevant Dot-Points", packet.dotPoints);
+    handoff += `**SELECTED TOPICS AND GUIDANCE (alignment not verified):**\n`;
+    const dotPointsStr = formatArray("Selected topics", packet.dotPoints);
     if (dotPointsStr) handoff += `${dotPointsStr}\n`;
     
     const outcomesStr = formatArray("Outcomes", packet.outcomes);
@@ -63,10 +67,10 @@ export function renderGemHandoffPrompt(request) {
 
   if (request.pedagogicalDrills && request.pedagogicalDrills.length > 0) {
       const cleanDrills = ensureStringArray(request.pedagogicalDrills);
-      handoff += `**PEDAGOGICAL DRILLS REQUESTED:**\n- ${cleanDrills.join(', ')}\n\n`;
+      handoff += `**PEDAGOGICAL DRILLS REQUESTED:**\n${cleanDrills.map(id => `- ${id}: ${pedagogyDirectives[id] || id}`).join('\n')}\n\n`;
   }
 
-  handoff += `**Generate the worksheet strictly from the supplied settings and syllabus packet. Output only the final LaTeX artifact.**`;
+  handoff += `**Resolve missing sources or unclear syllabus applicability before generating when the requested context requires them. Once ready, generate the worksheet from the supplied settings, teacher brief and applicable source material, returning the final worksheet as LaTeX.**`;
 
   return handoff;
 }

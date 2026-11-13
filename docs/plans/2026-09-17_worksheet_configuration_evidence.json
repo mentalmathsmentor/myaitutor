@@ -1,0 +1,564 @@
+{
+  "date": "2026-09-17",
+  "application_commit": "e19ca12",
+  "branch": "codex/worksheet-compiler-fixes",
+  "runs": {
+    "unit": {
+      "sha256": "6825f197018790f6ea5c25d91c40857bf6c9a3822b9c68d0cb67aa188cd4fd9b",
+      "source_receipt": "/private/tmp/mait-expanded-unit-final.json",
+      "stats": {
+        "numTotalTests": 1694,
+        "numPassedTests": 1694,
+        "numFailedTests": 0,
+        "numPendingTests": 0
+      },
+      "failures": []
+    },
+    "chrome_matrix": {
+      "sha256": "10c36234fd66574e2d1169fa5a94de835a7232b3aac1d0ceb18a98b4603e9802",
+      "source_receipt": "/private/tmp/mait-expanded-browser.json",
+      "stats": {
+        "startTime": "2026-09-17T08:37:26.288Z",
+        "duration": 175673.166,
+        "expected": 62,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "nonpassing": [],
+      "project_mapping": "Original unnamed default project used installed Chrome via PLAYWRIGHT_CHANNEL=chrome; normalised to chromium for unique-case counts."
+    },
+    "cross_browser_initial": {
+      "sha256": "f5945421c6166eaffe0642389645a98429d290bee8ecdfae95edbce72a04d5d7",
+      "source_receipt": "/private/tmp/mait-cross-browser.json",
+      "stats": {
+        "startTime": "2026-09-17T08:40:52.872Z",
+        "duration": 402017.305,
+        "expected": 67,
+        "skipped": 67,
+        "unexpected": 4,
+        "flaky": 0
+      },
+      "nonpassing": [
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Early Stage 1 (Kindy) / Mathematics, all context modes and resources",
+          "project": "firefox",
+          "status": "unexpected"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Early Stage 1 (Kindy) / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Early Stage 1 (Kindy) / Science, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Early Stage 1 (Kindy) / HSIE, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Early Stage 1 (Kindy) / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 1 (Yr 1-2) / Mathematics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 1 (Yr 1-2) / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 1 (Yr 1-2) / Science, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 1 (Yr 1-2) / HSIE, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 1 (Yr 1-2) / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 2 (Yr 3-4) / Mathematics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 2 (Yr 3-4) / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 2 (Yr 3-4) / Science, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 2 (Yr 3-4) / HSIE, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 2 (Yr 3-4) / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 3 (Yr 5-6) / Mathematics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 3 (Yr 5-6) / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 3 (Yr 5-6) / Science, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 3 (Yr 5-6) / HSIE, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 3 (Yr 5-6) / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 4 (Yr 7-8) / Mathematics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 4 (Yr 7-8) / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 4 (Yr 7-8) / Science, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 4 (Yr 7-8) / HSIE, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 4 (Yr 7-8) / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 5 (Yr 9-10) / Mathematics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 5 (Yr 9-10) / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 5 (Yr 9-10) / Science, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 5 (Yr 9-10) / HSIE, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Stage 5 (Yr 9-10) / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Mathematics Standard, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Mathematics Advanced, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Mathematics Extension 1, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Chemistry, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Biology, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Physics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 11 / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Mathematics Standard, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Mathematics Advanced, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Mathematics Extension 1, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Mathematics Extension 2, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Physics, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / English, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Chemistry, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Biology, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Engineering Studies, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "manual brief: Year 12 / Other, all context modes and resources",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "context switching Off \u2192 Provide replaces the copied instruction",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "context switching Off \u2192 Search replaces the copied instruction",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "context switching Provide \u2192 Off replaces the copied instruction",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "context switching Provide \u2192 Search replaces the copied instruction",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "context switching Search \u2192 Off replaces the copied instruction",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "context switching Search \u2192 Provide replaces the copied instruction",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-configurations.spec.js",
+          "title": "reload preserves the edited brief and resets non-persisted source declarations",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "long brief remains selectable beside its lower-left edge at width 1280",
+          "project": "webkit",
+          "status": "unexpected"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "long brief remains selectable beside its lower-left edge at width 390",
+          "project": "webkit",
+          "status": "unexpected"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "visible brief label focuses the editable field",
+          "project": "firefox",
+          "status": "unexpected"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "long brief remains selectable beside its lower-left edge at width 1280",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "long brief remains selectable beside its lower-left edge at width 390",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "typing, selecting, maths insertion and step return preserve the brief",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "copied prompt includes the selected subject and Off context",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "copied prompt includes the selected subject and Provide context",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-editing.spec.js",
+          "title": "copied prompt includes the selected subject and Search context",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "Mathematics Advanced textarea at 320px supports selection with keyboard open and after resizing",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "Mathematics Advanced textarea at 768px supports selection with keyboard open and after resizing",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "Mathematics Advanced textarea at 1440px supports selection with keyboard open and after resizing",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "English textarea at 320px supports selection with keyboard open and after resizing",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "English textarea at 768px supports selection with keyboard open and after resizing",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "English textarea at 1440px supports selection with keyboard open and after resizing",
+          "project": "firefox",
+          "status": "skipped"
+        },
+        {
+          "file": "worksheet-input-boundaries.spec.js",
+          "title": "real keyboard navigation enters the field and maths controls in order",
+          "project": "firefox",
+          "status": "skipped"
+        }
+      ]
+    },
+    "input_final": {
+      "sha256": "75103d48cda63ee31d59610ae5301643c1b5c95ef78aeeb03824feb618b3c5d7",
+      "source_receipt": "/private/tmp/mait-input-final.json",
+      "stats": {
+        "startTime": "2026-09-17T08:48:19.954Z",
+        "duration": 35586.752,
+        "expected": 28,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "nonpassing": []
+    },
+    "open_audit": {
+      "sha256": "c6bda6bd78299121a48ceca3070e690b892799ed23b8491eea1ffc43bb8b693c",
+      "source_receipt": "/private/tmp/mait-expanded-audit.json",
+      "stats": {
+        "numTotalTests": 80,
+        "numPassedTests": 38,
+        "numFailedTests": 42,
+        "numPendingTests": 0
+      },
+      "failures": [
+        "remaining compiler contract acceptance flat catalogue topics survive packet construction",
+        "remaining compiler contract acceptance Power Rule guidance cannot globally prohibit the selected Chain Rule",
+        "remaining compiler contract acceptance all-stale selections fall back to the valid manual brief",
+        "remaining compiler contract acceptance name=false / heading=true stay independent",
+        "remaining compiler contract acceptance name=true / heading=true stay independent",
+        "remaining compiler contract acceptance answers=false / worked=true",
+        "remaining compiler contract acceptance spot-error conveys the promised one-mark constraint",
+        "remaining compiler contract acceptance disabled marks and answers remain explicit in the copied prompt",
+        "remaining compiler contract acceptance first=true setup=false stays in application guidance",
+        "remaining compiler contract acceptance first=false setup=true stays in application guidance",
+        "remaining compiler contract acceptance first=true setup=true stays in application guidance",
+        "remaining compiler contract acceptance a guidance-only exclude packet survives alongside manual text",
+        "remaining compiler contract acceptance a guidance-only assessmentEmphasis packet survives alongside manual text",
+        "remaining compiler contract acceptance a guidance-only questionStyleNotes packet survives alongside manual text",
+        "remaining compiler contract acceptance normalisation never leaks non-string labels: null",
+        "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / Mathematics retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / Science retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Early Stage 1 (Kindy) / HSIE retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / Mathematics retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / Science retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 1 (Yr 1-2) / HSIE retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / Mathematics retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / Science retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 2 (Yr 3-4) / HSIE retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / Mathematics retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / Science retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Stage 3 (Yr 5-6) / HSIE retains a chosen topic or manual brief",
+        "all visible stage/subject combinations: topic-to-prompt contract Year 12 / Mathematics Standard retains a chosen topic or manual brief",
+        "state transitions and error boundaries Stage 4 Science does not expose the Mathematics topic tree",
+        "state transitions and error boundaries Year 11 Physics does not expose Standard maths topics",
+        "state transitions and error boundaries switching maths to manual-only English removes hidden maths points",
+        "state transitions and error boundaries reloading a flat-topic course retains valid selections",
+        "state transitions and error boundaries malformed stored selections do not crash the Studio",
+        "state transitions and error boundaries invalid stored stage recovers without a ReferenceError",
+        "state transitions and error boundaries Full Worked Solutions alone enables an answer key",
+        "state transitions and error boundaries optional header label survives when Name space is off",
+        "state transitions and error boundaries closing the page before the launch delay prevents opening Gemini",
+        "state transitions and error boundaries custom subject survives a reload",
+        "state transitions and error boundaries sidebar handoff rejects an unnamed custom subject",
+        "state transitions and error boundaries manual launch cancels the automatic launch timer",
+        "state transitions and error boundaries module-name search retains matching child topics",
+        "state transitions and error boundaries copy modal has dialog semantics"
+      ]
+    }
+  },
+  "browser_final_unique": {
+    "chromium": {
+      "expected": 69
+    },
+    "webkit": {
+      "expected": 69
+    },
+    "firefox": {
+      "unexpected": 2,
+      "skipped": 67
+    }
+  },
+  "limitations": [
+    "Firefox browser launch timed out before app testing; initial cross-browser run interrupted to prevent repeated launch failures.",
+    "WebKit is the Playwright engine, not certification of installed Safari or physical touch devices.",
+    "Synthetic data; clipboard and external window opening intercepted; external application requests blocked.",
+    "No provider output, NESA accuracy, backend, production deployment or fresh dependency install certified."
+  ],
+  "configuration_counts": {
+    "stages": 8,
+    "builtin_course_pairs": 40,
+    "including_custom_per_stage": 48,
+    "manual_browser_configurations_per_engine": 288
+  },
+  "input_final_versions": "1.60.0"
+}

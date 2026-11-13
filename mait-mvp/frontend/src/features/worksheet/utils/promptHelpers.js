@@ -5,7 +5,7 @@
 export function ensureString(val) {
   if (typeof val === 'string') return val;
   if (typeof val === 'number') return val.toString();
-  if (val && typeof val === 'object' && val.label) return val.label;
+  if (val && typeof val === 'object' && typeof val.label === 'string') return val.label;
   return '';
 }
 

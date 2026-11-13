@@ -1,20 +1,5 @@
 import { useState, useCallback } from 'react'
-
-const getSavedAuthUser = () => {
-    try {
-        const saved = localStorage.getItem('mait_auth_user');
-        return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-};
-
-const getStudentId = () => {
-    let id = localStorage.getItem('mait_student_id');
-    if (!id) {
-        id = `student_${crypto?.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)}`;
-        localStorage.setItem('mait_student_id', id);
-    }
-    return id;
-};
+import { getSavedAuthUser, getStudentId, newStudentId, readStorage, removeStorage, writeStorage } from '../lib/auth';
 
 /**
  * useAuth — manages auth state (user, studentId), Google login, access code fallback, logout.
@@ -68,7 +53,7 @@ export default function useAuth(apiUrl, callbacks = {}) {
             };
 
             // If this is a new Google user and we had anonymous data, migrate it
-            const oldId = localStorage.getItem('mait_student_id');
+            const oldId = readStorage('mait_student_id') || studentId;
             if (data.status === 'new' && oldId && oldId !== data.student_id) {
                 try {
                     await fetch(`${apiUrl}/auth/migrate`, {
@@ -82,8 +67,8 @@ export default function useAuth(apiUrl, callbacks = {}) {
             }
 
             // Persist auth state
-            localStorage.setItem('mait_auth_user', JSON.stringify(user));
-            localStorage.setItem('mait_student_id', data.student_id);
+            writeStorage('mait_auth_user', JSON.stringify(user));
+            writeStorage('mait_student_id', data.student_id);
             setAuthUser(user);
             setStudentId(data.student_id);
             callbacks.onLoginSuccess?.();
@@ -92,12 +77,12 @@ export default function useAuth(apiUrl, callbacks = {}) {
         } finally {
             setAuthLoading(false);
         }
-    }, [apiUrl, callbacks]);
+    }, [apiUrl, callbacks, studentId]);
 
     const handleLogout = useCallback(() => {
-        localStorage.removeItem('mait_auth_user');
-        const newId = `student_${crypto.randomUUID()}`;
-        localStorage.setItem('mait_student_id', newId);
+        removeStorage('mait_auth_user');
+        const newId = newStudentId();
+        writeStorage('mait_student_id', newId);
         setAuthUser(null);
         setStudentId(newId);
         callbacks.onLogout?.();
