@@ -60,6 +60,7 @@ export const useExoskeletonStore = create((set, get) => ({
       }
     } catch (error) {
       console.error('fetchThreads failed:', error)
+      throw error
     }
   },
 

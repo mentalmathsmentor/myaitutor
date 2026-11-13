@@ -216,7 +216,8 @@ export default function Workspace() {
   const handleCohortClick = async (cohort) => {
     setActiveWorkspace(cohort, cohort.thread || null)
     if (!cohort.thread) {
-      await fetchThreads(cohort.id)
+      // Already logged by the store; the cohort stays selectable for another try.
+      await fetchThreads(cohort.id).catch(() => {})
     }
   }
 

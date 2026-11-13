@@ -10,6 +10,7 @@ test.beforeEach(async ({ page }) => { await isolateWorksheet(page); });
 test('preview is selectable, equals copied text, traps focus and never launches on a timer or Enter', async ({ page }) => {
   await chooseCourse(page, 'Year 12', 'Mathematics Advanced');
   await briefField(page).fill('Synthetic α brief\nPreserve both lines.');
+  await page.clock.install();
   await preview(page).click();
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('list', { name: 'Use your worksheet instructions' })).toContainText('Paste into its message box');
@@ -19,7 +20,7 @@ test('preview is selectable, equals copied text, traps focus and never launches 
   await field.click(); await field.press('ControlOrMeta+a');
   expect(await field.evaluate(el => el.selectionEnd - el.selectionStart)).toBe(prompt.length);
   await field.press('Enter');
-  await page.waitForTimeout(3200);
+  await page.clock.fastForward(3200);
   expect(await page.evaluate(() => window.__worksheetOpens)).toEqual([]);
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__worksheetCopies)).toEqual([prompt]);

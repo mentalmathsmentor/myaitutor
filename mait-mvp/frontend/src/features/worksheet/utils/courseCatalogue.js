@@ -18,6 +18,8 @@ const sources = {
 };
 const manualSubjects = new Set(['English', 'Chemistry', 'Biology']);
 export const courseKey = (stage, subject) => JSON.stringify([stage, subject]);
+// Selected points are scoped IDs; manual topics have no record and stay as typed.
+export const topicLabel = (course, id) => course.records.find(record => record.id === id)?.label ?? id;
 const scopedId = (stage, subject, source, id) => JSON.stringify([stage, subject, source, id]);
 
 export function topicRecords(data) {

@@ -23,7 +23,7 @@ import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
 import { renderPortablePrompt } from '../features/worksheet/utils/renderPortablePrompt';
-import { resolveCourse, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
+import { resolveCourse, topicLabel, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
 import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
 import PromptHandoff from '../components/worksheet/PromptHandoff';
 // import { InlineCanvas } from '../components/canvas/InlineCanvas';
@@ -207,10 +207,10 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const canvasConfig = useMemo(() => ({
     yearLevel: formatStageLabel(selectedStage),
     subject: displaySubject,
-    topics: selectedPoints.map(id => getLabel(id)),
+    topics: selectedPoints.map(id => topicLabel(course, id)),
     questionCount: numQuestions,
     difficulty: difficulty === 'Mostly Easy' ? 1 : difficulty === 'Exam-Style' ? 5 : 3
-  }), [selectedStage, displaySubject, selectedPoints, numQuestions, difficulty]);
+  }), [selectedStage, displaySubject, selectedPoints, numQuestions, difficulty, course]);
   const yearLevel = getStageYearLevel(selectedStage);
   const canGeneratePdf = Boolean(yearLevel) && isMathsSubject(displaySubject);
 

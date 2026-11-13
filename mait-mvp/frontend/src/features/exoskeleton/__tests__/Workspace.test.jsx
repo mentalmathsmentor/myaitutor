@@ -32,6 +32,18 @@ describe('teacher workspace initial class load', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('shows the load error when classes load but their threads fail', async () => {
+    const cohort = { id: 'c1', name: 'Synthetic Maths', year_level: 9, subject: 'Stage 5 Mathematics' }
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ classes: [cohort] }) })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(<Workspace />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Could not load your teaching workspace')
+  })
+
   it('preserves an existing cohort on a failed refresh', async () => {
     const existing = { id: 'existing', name: 'Synthetic Maths', year_level: 9, subject: 'Stage 5 Mathematics' }
     useExoskeletonStore.setState({ cohorts: [existing], activeClass: existing })

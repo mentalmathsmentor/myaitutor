@@ -20,7 +20,7 @@ const legacyKeys = {
 };
 
 export function readWorksheetDraft(storage) {
-  let values = {}, notice = '', legacy = true, savedKey, preventSave = false, revision = 0;
+  let values = {}, notice = '', legacy = true, savedKey, preventSave = false, revision = 0, unreadFields = [];
   try {
     storage ??= window.localStorage;
     const saved = storage.getItem(DRAFT_KEY);
@@ -29,29 +29,36 @@ export function readWorksheetDraft(storage) {
         const parsed = JSON.parse(saved);
         if (parsed?.version !== 2 || !parsed.values || typeof parsed.values !== 'object' || Array.isArray(parsed.values)) throw new Error('Unknown draft format');
         if (typeof parsed.courseKey !== 'string' || !parsed.courseKey.trim()) throw new Error('Malformed draft course metadata');
-        const malformed = Object.entries(defaults).some(([field, fallback]) => {
+        unreadFields = Object.entries(defaults).filter(([field, fallback]) => {
           if (!Object.hasOwn(parsed.values, field)) return false;
           const value = parsed.values[field];
           return field === 'selectedPoints'
             ? !Array.isArray(value) || value.some(id => typeof id !== 'string')
             : typeof value !== typeof fallback;
-        });
-        if (malformed) throw new Error('Malformed draft fields');
-        values = parsed.values; savedKey = parsed.courseKey; revision = revisionOf(parsed); legacy = false;
+        }).map(([field]) => field);
+        values = Object.fromEntries(Object.keys(defaults).filter(field => Object.hasOwn(parsed.values, field) && !unreadFields.includes(field)).map(field => [field, parsed.values[field]]));
+        savedKey = parsed.courseKey; revision = revisionOf(parsed); legacy = false;
+        if (unreadFields.length) {
+          // Keep the readable fields, recover the rest from older keys, and never overwrite the stored record.
+          preventSave = true;
+          notice = 'Some saved settings could not be read and were reset or recovered from an older draft. Readable text has been kept. Automatic saving is paused; copy your current text before leaving.';
+        }
       } catch {
         preventSave = true;
         notice = 'The newer draft could not be read. An older draft is shown if available. Automatic saving is paused; copy your current text before leaving.';
       }
     }
-    if (legacy) {
+    if (legacy || unreadFields.length) {
       for (const [field, fallback] of Object.entries(defaults)) {
+        // Older selections are labels, not scoped IDs, so they are only restored for a fully legacy draft.
+        if (!legacy && (!unreadFields.includes(field) || field === 'selectedPoints')) continue;
         const raw = storage.getItem(`mait_ws_${legacyKeys[field] || field}`);
         if (raw === null) continue;
         if (field === 'selectedPoints') {
           try { values[field] = JSON.parse(raw); } catch { notice = 'Some saved topic selections could not be restored.'; }
         } else values[field] = typeof fallback === 'boolean' ? raw === 'true' ? true : raw === 'false' ? false : fallback : typeof fallback === 'number' ? Number(raw) : raw;
       }
-      if (storage.getItem('mait_ws_removeWatermark') === null && storage.getItem('mait_ws_showWatermark') !== null) values.removeWatermark = storage.getItem('mait_ws_showWatermark') !== 'true';
+      if ((legacy || unreadFields.includes('removeWatermark')) && storage.getItem('mait_ws_removeWatermark') === null && storage.getItem('mait_ws_showWatermark') !== null) values.removeWatermark = storage.getItem('mait_ws_showWatermark') !== 'true';
     }
   } catch {
     preventSave = true;

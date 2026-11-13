@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 import { chooseCourse, briefField } from './worksheet-support';
 
 const preview = page => page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true });
@@ -37,9 +38,13 @@ test('custom destination copies only the short request; any AI adds the instruct
   await expect(dialog.getByRole('status')).toHaveText('Prompt copied. Next: paste it into your AI, then send.');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(full);
 
-  const download = page.waitForEvent('download');
+  const downloadEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download instructions', exact: true }).click();
-  expect((await download).suggestedFilename()).toBe('SKILL.md');
+  const download = await downloadEvent;
+  expect(download.suggestedFilename()).toBe('SKILL.md');
+  const skill = await readFile(await download.path(), 'utf8');
+  expect(skill).toMatch(/^---\nname: mait-worksheet\n/);
+  expect(full.startsWith(skill.replace(/^---\n[\s\S]*?\n---\n+/, '').trim())).toBe(true);
 
   await page.getByRole('radio', { name: /Worksheet Gem or custom GPT/ }).check();
   await expect(field).toHaveValue(short);

@@ -98,6 +98,30 @@ describe('defensive versioned drafts', () => {
   });
 });
 
+describe('partly readable drafts', () => {
+  it('keeps a readable brief when another version-2 field is malformed, and still pauses saving', () => {
+    const store = storage();
+    saveWorksheetDraft({ ...readWorksheetDraft(store), rawQuestions: 'Readable synthetic brief', difficulty: 'Exam-Style' }, store);
+    const envelope = JSON.parse(store.getItem(DRAFT_KEY));
+    envelope.values.numQuestions = '10';
+    const unread = JSON.stringify(envelope);
+    store.setItem(DRAFT_KEY, unread);
+    const restored = readWorksheetDraft(store);
+    expect(restored).toMatchObject({ rawQuestions: 'Readable synthetic brief', difficulty: 'Exam-Style', numQuestions: 10, preventSave: true });
+    expect(restored.notice).toContain('paused');
+    expect(saveWorksheetDraft(restored, store).status).toBe('failed');
+    expect(store.getItem(DRAFT_KEY)).toBe(unread);
+  });
+  it('recovers only the malformed field from older keys', () => {
+    const store = storage({ mait_ws_rawQuestions: 'Older synthetic brief', mait_ws_numQuestions: '7' });
+    saveWorksheetDraft({ ...readWorksheetDraft(store), rawQuestions: 'Newer synthetic brief', numQuestions: 12 }, store);
+    const envelope = JSON.parse(store.getItem(DRAFT_KEY));
+    envelope.values.numQuestions = 'twelve';
+    store.setItem(DRAFT_KEY, JSON.stringify(envelope));
+    expect(readWorksheetDraft(store)).toMatchObject({ rawQuestions: 'Newer synthetic brief', numQuestions: 7 });
+  });
+});
+
 describe('stale tab protection', () => {
   const edit = (draft, changes) => ({ ...draft, ...changes });
   function twoTabs() {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import stages from '../../../../stage_subjects.json';
-import { resolveCourse, restorePoints, validateWorksheetSelection } from '../courseCatalogue';
+import { resolveCourse, restorePoints, topicLabel, validateWorksheetSelection } from '../courseCatalogue';
 import { buildSyllabusPacket } from '../buildSyllabusPacket';
 
 const pairs = Object.entries(stages).flatMap(([stage, subjects]) => [...Object.keys(subjects), 'Other'].map(subject => [stage, subject]));
@@ -53,5 +53,15 @@ describe('explicit course catalogue', () => {
   });
   it.each([0, 101, 1.5, NaN, Infinity, '10'])('rejects question count %s at the shared handoff boundary', numQuestions => {
     expect(validateWorksheetSelection({ selectedStage: 'Year 12', selectedSubject: 'English', rawQuestions: 'Synthetic brief', numQuestions, selectedPoints: [] })).toContain('between 1 and 100');
+  });
+});
+
+describe('topic labels for the canvas', () => {
+  it('shows a selected point by its label and keeps manual topics as typed', () => {
+    const course = resolveCourse('Stage 4 (Yr 7-8)', 'Mathematics');
+    const [record] = course.records;
+    expect(record.id).not.toBe(record.label);
+    expect(topicLabel(course, record.id)).toBe(record.label);
+    expect(topicLabel(course, 'Synthetic manual topic')).toBe('Synthetic manual topic');
   });
 });
