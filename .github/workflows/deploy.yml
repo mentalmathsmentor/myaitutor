@@ -47,9 +47,9 @@ jobs:
         working-directory: mait-mvp/frontend
         run: npm run build
 
-      - name: Copy 404.html for SPA support
+      - name: Write route pages and 404.html for SPA support
         working-directory: mait-mvp/frontend
-        run: cp dist/index.html dist/404.html
+        run: node scripts/spa-route-pages.mjs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

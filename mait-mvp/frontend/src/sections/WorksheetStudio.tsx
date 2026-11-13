@@ -26,6 +26,8 @@ import { renderPortablePrompt } from '../features/worksheet/utils/renderPortable
 import { resolveCourse, topicLabel, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
 import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
 import PromptHandoff from '../components/worksheet/PromptHandoff';
+import SendConfirmation from '../components/worksheet/SendConfirmation';
+import { destinations, openDestination } from '../features/worksheet/utils/destinations';
 // import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
 import { API_URL } from '@/config/api';
@@ -112,6 +114,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [textbooksProvided, setTextbooksProvided] = useState(false);
   const [previewPrompt, setPreviewPrompt] = useState('');
   const [handoffTarget, setHandoffTarget] = useState('custom');
+  const [sentTo, setSentTo] = useState(null);
   const [selectedStage, setSelectedStage] = useState(initialDraft.selectedStage);
   const [selectedSubject, setSelectedSubject] = useState(initialDraft.selectedSubject);
   const [customSubject, setCustomSubject] = useState(initialDraft.customSubject);
@@ -328,6 +331,42 @@ export default function WorksheetStudio({ setCurrentSection }) {
 
   const handoffPrompt = handoffTarget === 'any' ? renderPortablePrompt(previewPrompt) : previewPrompt;
 
+  // One click copies the right prompt for the destination, then opens it while the click still counts as the user's.
+  const sendTo = async (destination, event) => {
+    if (!validateSelection()) return;
+    const revision = ++handoffRevision.current;
+    handoffOrigin.current = event.currentTarget;
+    const request = generatePrompt();
+    setGenerationError('');
+    setGenerationSuccess('');
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(destination.full ? renderPortablePrompt(request) : request);
+    } catch {
+      if (revision !== handoffRevision.current) return;
+      // Fall back to the preview, where the text can be selected or downloaded.
+      setPreviewPrompt(request);
+      setHandoffTarget(destination.full ? 'any' : 'custom');
+      setIsCopied(false);
+      setGenerationError('Could not copy the worksheet prompt.');
+      setShowWarning(true);
+      return;
+    }
+    if (revision !== handoffRevision.current) return;
+    const opened = openDestination(destination);
+    setSentTo({ destination, blocked: !opened, request });
+    setGenerationSuccess(`Copied. Paste it into ${destination.label}, then send.`);
+  };
+
+  const previewSentPrompt = () => {
+    const { destination, request } = sentTo;
+    setSentTo(null);
+    setPreviewPrompt(request);
+    setHandoffTarget(destination.full ? 'any' : 'custom');
+    setIsCopied(false);
+    setShowWarning(true);
+  };
+
   const changeHandoffTarget = (target) => {
     handoffRevision.current += 1;
     setHandoffTarget(target);
@@ -472,6 +511,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
         </div>
       )}
 
+      {sentTo && <SendConfirmation destination={sentTo.destination} blocked={sentTo.blocked} onClose={() => setSentTo(null)}
+        onReturnFocus={() => handoffOrigin.current?.focus()} onPreview={previewSentPrompt} />}
       {showWarning && <PromptHandoff prompt={handoffPrompt} target={handoffTarget} onTargetChange={changeHandoffTarget} onClose={closeModal} onReturnFocus={() => handoffOrigin.current?.focus()} onCopy={copyToClipboard}
         copied={isCopied} error={generationError} firstTimeMode={firstTimeMode} includeCanvasSetup={includeCanvasSetup} />}
 
@@ -1140,14 +1181,29 @@ export default function WorksheetStudio({ setCurrentSection }) {
               <div className="mt-6 space-y-3">
                 <button
                   type="button"
-                  onClick={previewInstructions}
-                  className={`flex w-full items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-mait-cosmic'} px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]`}
+                  onClick={event => sendTo(destinations[0], event)}
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
                 >
                   <Copy className="h-4 w-4" />
-                  <span className="flex flex-col leading-tight">
-                    <span>Generate Instructions</span>
-                    <span>&amp; Preview Prompt</span>
-                  </span>
+                  <span>Copy &amp; open {destinations[0].label}</span>
+                </button>
+                <p className="text-center text-xs text-white/55">Or copy and open:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {destinations.slice(1).map(destination => (
+                    <button key={destination.id} type="button" onClick={event => sendTo(destination, event)}
+                      aria-label={`Copy & open ${destination.label}`}
+                      className="rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                      {destination.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={previewInstructions}
+                  className={`flex w-full items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-white/5'} border border-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01]`}
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>Preview the prompt</span>
                 </button>
               </div>
 

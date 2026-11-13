@@ -11,7 +11,7 @@ test('downloaded prompt matches the preview even when clipboard access is unavai
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
     document.execCommand = () => false;
   });
-  await page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview the prompt', exact: true }).click();
   const prompt = await page.getByLabel('Exact prompt').inputValue();
   const downloadEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download prompt', exact: true }).click();

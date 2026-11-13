@@ -27,7 +27,7 @@ export async function chooseCourse(page, stage, subject) {
 }
 export async function copyPrompt(page) {
   const count = await page.evaluate(() => window.__worksheetCopies.length);
-  await page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview the prompt', exact: true }).click();
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__worksheetCopies.length)).toBe(count + 1);
   const prompt = await page.evaluate(() => window.__worksheetCopies.at(-1));
