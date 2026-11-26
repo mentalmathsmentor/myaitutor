@@ -19,7 +19,7 @@ const ChatInterface = ({ onBack }) => {
             try {
                 // Detect mobile to prevent QuotaExceededError and use a smaller model
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                const targetModel = isMobile ? 'tiny' : 'large';
+                const targetModel = isMobile ? 'tiny' : 'quality';
 
                 if (isMobile) {
                     setStatusMsg("Clearing old caches...");

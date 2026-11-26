@@ -64,7 +64,13 @@ const ModelConsentGate = ({
         );
     }
 
-    const availableKeys = ['tiny', 'balanced', 'quality'];
+    const availableKeys = Object.keys(models).filter(key => !models[key]?.hidden);
+    const modelSizesGB = availableKeys
+        .map(key => models[key]?.estimatedSizeMB)
+        .filter(Boolean)
+        .map(size => size / 1000);
+    const minModelGB = modelSizesGB.length ? Math.min(...modelSizesGB).toFixed(1) : null;
+    const maxModelGB = modelSizesGB.length ? Math.max(...modelSizesGB).toFixed(1) : null;
 
     if (isMobile) {
         return (
@@ -73,8 +79,8 @@ const ModelConsentGate = ({
                     <AlertTriangle className="mx-auto h-10 w-10 text-amber-400" />
                     <h3 className="text-lg font-semibold text-white">Not available on mobile</h3>
                     <p className="text-sm text-white/60">
-                        Local AI requires a desktop browser with at least 4GB of free RAM.
-                        The models are 1.2–2.2 GB and need significant processing power.
+                        Local AI requires a desktop browser with enough free RAM for the selected model.
+                        The models are {minModelGB && maxModelGB ? `${minModelGB}–${maxModelGB}` : 'several'} GB and need significant processing power.
                     </p>
                     <button
                         onClick={onCancel}
@@ -106,20 +112,21 @@ const ModelConsentGate = ({
                 </div>
 
                 {/* Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {availableKeys.map(key => {
                         const model = models[key];
                         if (!model) return null;
                         const isCached = localCachedModels[key];
                         
                         let Icon = BrainCircuit;
+                        if (model.icon === 'zap') Icon = Zap;
+                        if (model.icon === 'flask') Icon = FlaskConical;
+
                         let glowClass = 'hover:border-primary/50 hover:shadow-primary/10 border-surface-2';
                         let btnClass = 'bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary-foreground';
                         let tagClass = 'border-primary/20 text-primary';
                         
-                        if (key === 'tiny') {
-                            Icon = Zap;
-                        } else if (key === 'balanced') {
+                        if (key === 'balanced') {
                             glowClass = 'hover:border-accent/50 hover:shadow-accent/10 border-surface-2';
                             btnClass = 'bg-accent/10 text-accent hover:bg-accent hover:text-accent-foreground';
                             tagClass = 'border-accent/20 text-accent';
@@ -142,7 +149,7 @@ const ModelConsentGate = ({
                                     <h3 className="text-lg font-display font-bold text-foreground mb-1">{model.displayName || model.name}</h3>
                                     <div className="flex gap-2 items-center flex-wrap">
                                         <span className={`text-[10px] uppercase tracking-wider font-display font-medium px-2 py-0.5 rounded-full border ${tagClass}`}>
-                                            {model.id.includes('SmolLM') ? 'Fastest' : model.id.includes('Llama') ? 'Balanced' : 'Deep Logic'}
+                                            {model.tag || 'Local Model'}
                                         </span>
                                         <span className="text-[10px] uppercase tracking-wider font-display opacity-60">
                                             {isCached ? "✨ Cached" : `~${(model.estimatedSizeMB/1000).toFixed(1)}GB`}

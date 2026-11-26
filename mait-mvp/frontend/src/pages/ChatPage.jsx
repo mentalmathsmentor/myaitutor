@@ -121,6 +121,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             setModelReady(true);
             setDownloadError(null);
         }).catch(err => {
+            if (err?.name === 'ModelInitializationCancelledError') return;
             console.error("Local Brain Init Error", err);
             setModelLoading("Local connection failed.");
             const errMsg = err.message || "Download failed. Please check your connection and try again.";
@@ -880,7 +881,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         {/* Local SLM Toggle - only in full mode */}
                         {!isDemoMode && (
                             <button
-                                onClick={() => { setShowLocalChat(true); startLocalBrain('large'); }}
+                                onClick={() => { setShowLocalChat(true); startLocalBrain('quality'); }}
                                 className="flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
                             >
                                 <Cpu size={13} />
@@ -984,10 +985,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                             <p className="text-xs text-muted-foreground leading-relaxed">
                                 Switching to{' '}
                                 <span className="text-foreground font-medium">
-                                    {showModelSwitchConfirm === 'small' ? 'Fast (Gemma 2 2B)' : 'Quality (Phi 3.5 Mini)'}
+                                    {modelService.constructor.getAvailableModels()[showModelSwitchConfirm]?.displayName || showModelSwitchConfirm}
                                 </span>
                                 {' '}requires downloading a new model
-                                (~{showModelSwitchConfirm === 'small' ? '1,400' : '2,200'} MB).
+                                (~{(modelService.constructor.getAvailableModels()[showModelSwitchConfirm]?.estimatedSizeMB || 0).toLocaleString()} MB).
                                 The current model will be unloaded.
                             </p>
                             <div className="flex gap-3 justify-center">
@@ -1217,13 +1218,13 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
                             <button
-                                onClick={() => { setLocalBrainChoice('local'); startLocalBrain('large'); }}
+                                onClick={() => { setLocalBrainChoice('local'); startLocalBrain('quality'); }}
                                 className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl bg-primary/10 border border-primary/30 hover:bg-primary/20 hover:border-primary/50 transition-all group"
                             >
                                 <Cpu size={36} className="text-primary group-hover:scale-110 transition-transform" />
                                 <div>
                                     <div className="font-display font-bold text-foreground">Download Local Brain</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Recommended (~2.2GB)</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Recommended (~{(modelService.constructor.getAvailableModels().quality.estimatedSizeMB / 1000).toFixed(1)}GB)</div>
                                 </div>
                             </button>
                             <button
