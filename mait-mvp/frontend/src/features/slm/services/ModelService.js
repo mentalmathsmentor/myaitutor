@@ -314,11 +314,18 @@ class ModelService {
             if (!isCurrent()) {
                 throw createCancellationError();
             }
-            if (this.engine) {
-                try { await this.engine.unload(); } catch (e) {
+            const failedEngine = this.engine;
+            if (failedEngine) {
+                try { await failedEngine.unload(); } catch (e) {
                     console.warn("Failed engine unload error (non-fatal):", e);
                 }
+                if (!isCurrent() || this.engine !== failedEngine) {
+                    throw createCancellationError();
+                }
                 this.engine = null;
+            }
+            if (!isCurrent()) {
+                throw createCancellationError();
             }
             console.error("Critical: Failed to load local model.", err);
             this.type = 'ERROR';

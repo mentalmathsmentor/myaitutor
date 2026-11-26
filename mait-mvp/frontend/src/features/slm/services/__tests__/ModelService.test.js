@@ -74,4 +74,39 @@ describe('ModelService WebLLM catalogue', () => {
     expect(engine.unload).toHaveBeenCalled();
     expect(modelService.getStatus()).toMatchObject({ status: 'IDLE', engine: false });
   });
+
+  it('does not let stale error cleanup clear a newer initialisation', async () => {
+    let finishFirstUnload;
+    const firstUnloadPromise = new Promise((resolve) => { finishFirstUnload = resolve; });
+    const firstEngine = {
+      reload: vi.fn(async () => { throw new Error('boom'); }),
+      unload: vi.fn(() => firstUnloadPromise),
+    };
+    mocks.engine = firstEngine;
+    vi.stubGlobal('navigator', { gpu: {} });
+
+    const firstInit = modelService.initialize(() => {}, 'tiny');
+    const firstExpectation = expect(firstInit).rejects.toMatchObject({
+      name: 'ModelInitializationCancelledError',
+    });
+
+    await vi.waitFor(() => {
+      expect(firstEngine.unload).toHaveBeenCalled();
+    });
+
+    const resetPromise = modelService.reset();
+    const secondEngine = {
+      reload: vi.fn(async () => {}),
+      unload: vi.fn(async () => {}),
+    };
+    mocks.engine = secondEngine;
+    const secondInit = modelService.initialize(() => {}, 'quality');
+
+    finishFirstUnload();
+    await resetPromise;
+    await firstExpectation;
+    await expect(secondInit).resolves.toBe('Phi 3.5 Mini');
+
+    expect(modelService.getStatus()).toMatchObject({ status: 'READY', engine: true, modelSize: 'quality' });
+  });
 });
