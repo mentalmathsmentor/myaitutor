@@ -40,11 +40,11 @@ function mount(stage='Year 11',subject='Mathematics Advanced',brief='') {
 }
 function next() { fireEvent.click(screen.getByRole('button',{name:'Continue',exact:true})); }
 async function copy() {
-  fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+  fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
   fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
   await waitFor(() => expect(clipboard).toHaveBeenCalled());
   const prompt=clipboard.mock.calls.at(-1)[0];
-  await waitFor(() => expect(screen.getByText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText('Prompt copied. Next: paste it into your AI, then send.')).toBeInTheDocument());
   fireEvent.keyDown(document,{key:'Escape'});
   return {prompt,request:buildWorksheetRequest.mock.results.at(-1).value};
 }
@@ -132,41 +132,41 @@ describe('state transitions and error boundaries',()=>{
   });
   it('closing the page before the launch delay prevents opening Gemini',async()=>{
     vi.useFakeTimers(); const view=mount('Year 11','Mathematics Advanced','Synthetic brief');
-    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));});
     view.unmount(); await act(async()=>{vi.advanceTimersByTime(3100);});
     expect(window.open).not.toHaveBeenCalled();
   });
   it('clipboard rejection displays an error and never launches',async()=>{
     clipboard.mockRejectedValue(new Error('Permission denied'));mount('Year 11','Mathematics Advanced','Synthetic brief');
-    fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+    fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
     fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not copy the worksheet prompt.');
     expect(screen.getByLabelText('Exact prompt').value).toContain('Synthetic brief');
     expect(window.open).not.toHaveBeenCalled();
   });
   it('empty worksheet does not write the clipboard',()=>{
-    mount();fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));expect(clipboard).not.toHaveBeenCalled();
+    mount();fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));expect(clipboard).not.toHaveBeenCalled();
   });
   it('custom subject survives a reload',()=>{
     const view=mount('Year 11','Mathematics Advanced','Synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:'Other (Custom)',exact:true}));
-    fireEvent.change(screen.getByPlaceholderText('Enter custom subject name...'),{target:{value:'Synthetic History'}});
+    fireEvent.change(screen.getByLabelText('Custom subject name'),{target:{value:'Synthetic History'}});
     view.unmount(); render(<WorksheetStudio setCurrentSection={()=>{}} />);
     expect(screen.queryByDisplayValue('Synthetic History')).toBeInTheDocument();
   });
   it('sidebar handoff rejects an unnamed custom subject',async()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:'Other (Custom)',exact:true}));
-    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));});
     fireEvent.keyDown(document,{key:'Escape'});
     expect(clipboard).not.toHaveBeenCalled();
   });
-  it('only the explicit Open worksheet Gem action launches once',async()=>{
+  it('only the explicit Copy and open Gemini action launches once',async()=>{
     vi.useFakeTimers();mount('Year 11','Mathematics Advanced','Synthetic brief');
-    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
-    fireEvent.click(screen.getByRole('button',{name:'Open worksheet Gem',exact:true}));
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Copy & open Gemini',exact:true}));});
     await act(async()=>{vi.advanceTimersByTime(3100);});
     expect(window.open).toHaveBeenCalledTimes(1);
+    expect(window.open).toHaveBeenCalledWith('https://gemini.google.com/app','_blank');
   });
   it('module-name search retains matching child topics',()=>{
     mount('Stage 4 (Yr 7-8)','Mathematics');next();
@@ -175,12 +175,12 @@ describe('state transitions and error boundaries',()=>{
   });
   it('context buttons expose selected state to assistive technology',()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief');next();next();
-    const search=screen.getByRole('button',{name:'Ask Gemini to search NESA'});fireEvent.click(search);
+    const search=screen.getByRole('button',{name:'Search NESA Website'});fireEvent.click(search);
     expect(search).toHaveAttribute('aria-pressed','true');
   });
   it('copy modal has dialog semantics',async()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief');
-    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));});
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));});
     const dialog=screen.queryByRole('dialog');fireEvent.keyDown(document,{key:'Escape'});
     expect(dialog).not.toBeNull();
   });
@@ -188,13 +188,13 @@ describe('state transitions and error boundaries',()=>{
     let finish;
     clipboard.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
     mount('Year 11','Mathematics Advanced','First synthetic brief');
-    fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+    fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
     fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
     fireEvent.keyDown(document,{key:'Escape'});
     next(); fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
-    fireEvent.click(screen.getByRole('button',{name:/Generate Instructions/}));
+    fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
     await act(async()=>{finish();});
-    expect(screen.queryByText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prompt copied. Next: paste it into your AI, then send.')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Exact prompt').value).toContain('Second synthetic brief');
   });
   it('worked solutions and answer-key controls remain consistent in both directions',()=>{

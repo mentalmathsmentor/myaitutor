@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-export const contextNames = { Off: 'AI general knowledge', Provide: "I'll upload the syllabus", Search: 'Ask Gemini to search NESA' };
+export const contextNames = { Off: 'AI general knowledge', Provide: "I'll upload the syllabus", Search: 'Search NESA Website' };
 export const briefField = page => page.getByLabel('Additional Brief / Custom Questions', { exact: true });
 export async function isolateWorksheet(page) {
   await page.route('**/*', route => {
@@ -21,13 +21,13 @@ export async function chooseCourse(page, stage, subject) {
   await page.getByRole('button', { name: 'Curriculum', exact: true }).click();
   await page.getByRole('button', { name: stage, exact: true }).click();
   await page.getByRole('button', { name: subject === 'Other' ? 'Other (Custom)' : subject, exact: true }).click();
-  if (subject === 'Other') await page.getByPlaceholder('Enter custom subject name...').fill('  Custom test subject α  ');
+  if (subject === 'Other') await page.getByLabel('Custom subject name').fill('  Custom test subject α  ');
   await page.getByRole('button', { name: 'Topics', exact: true }).click();
   await expect(briefField(page)).toBeVisible();
 }
 export async function copyPrompt(page) {
   const count = await page.evaluate(() => window.__worksheetCopies.length);
-  await page.getByRole('button', { name: 'Generate Instructions & Preview Prompt', exact: true }).click();
+  await page.getByRole('button', { name: 'Preview the prompt', exact: true }).click();
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__worksheetCopies.length)).toBe(count + 1);
   const prompt = await page.evaluate(() => window.__worksheetCopies.at(-1));

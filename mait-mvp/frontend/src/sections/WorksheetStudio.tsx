@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import MathInput from '../components/MathInput';
 import stageSubjects from '../stage_subjects.json';
-import modelSelectorHint from '../assets/gemini-model-selector-2026-09.jpg';
+import modelSelectorHint from '../assets/gemini-model-selector-2026-11.jpg';
 import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
@@ -26,6 +26,8 @@ import { renderPortablePrompt } from '../features/worksheet/utils/renderPortable
 import { resolveCourse, topicLabel, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
 import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
 import PromptHandoff from '../components/worksheet/PromptHandoff';
+import SendConfirmation from '../components/worksheet/SendConfirmation';
+import { CURRICULUM_REFERENCE_LINKS, destinations, openDestination } from '../features/worksheet/utils/destinations';
 // import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
 import { API_URL } from '@/config/api';
@@ -111,7 +113,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [syllabusContextMode, setSyllabusContextMode] = useState('Off');
   const [textbooksProvided, setTextbooksProvided] = useState(false);
   const [previewPrompt, setPreviewPrompt] = useState('');
-  const [handoffTarget, setHandoffTarget] = useState('custom');
+  const [handoffTarget, setHandoffTarget] = useState('any');
+  const [sentTo, setSentTo] = useState(null);
   const [selectedStage, setSelectedStage] = useState(initialDraft.selectedStage);
   const [selectedSubject, setSelectedSubject] = useState(initialDraft.selectedSubject);
   const [customSubject, setCustomSubject] = useState(initialDraft.customSubject);
@@ -328,6 +331,42 @@ export default function WorksheetStudio({ setCurrentSection }) {
 
   const handoffPrompt = handoffTarget === 'any' ? renderPortablePrompt(previewPrompt) : previewPrompt;
 
+  // One click copies the right prompt for the destination, then opens it while the click still counts as the user's.
+  const sendTo = async (destination, event) => {
+    if (!validateSelection()) return;
+    const revision = ++handoffRevision.current;
+    handoffOrigin.current = event.currentTarget;
+    const request = generatePrompt();
+    setGenerationError('');
+    setGenerationSuccess('');
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(destination.full ? renderPortablePrompt(request) : request);
+    } catch {
+      if (revision !== handoffRevision.current) return;
+      // Fall back to the preview, where the text can be selected or downloaded.
+      setPreviewPrompt(request);
+      setHandoffTarget(destination.full ? 'any' : 'custom');
+      setIsCopied(false);
+      setGenerationError('Could not copy the worksheet prompt.');
+      setShowWarning(true);
+      return;
+    }
+    if (revision !== handoffRevision.current) return;
+    const opened = openDestination(destination);
+    setSentTo({ destination, blocked: !opened, request });
+    setGenerationSuccess(`Copied. Paste it into ${destination.label}, then send.`);
+  };
+
+  const previewSentPrompt = () => {
+    const { destination, request } = sentTo;
+    setSentTo(null);
+    setPreviewPrompt(request);
+    setHandoffTarget(destination.full ? 'any' : 'custom');
+    setIsCopied(false);
+    setShowWarning(true);
+  };
+
   const changeHandoffTarget = (target) => {
     handoffRevision.current += 1;
     setHandoffTarget(target);
@@ -352,7 +391,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
       }
       if (revision !== handoffRevision.current) return;
       setIsCopied(true);
-      setGenerationSuccess(handoffTarget === 'any' ? 'Instructions copied. Paste them into your AI, then send.' : 'Instructions copied. Open your Gem or GPT, paste into its message box, then send.');
+      setGenerationSuccess(handoffTarget === 'any' ? 'Instructions copied. Paste them into your AI, then send.' : 'Instructions copied. Open the destination with saved instructions, paste into its message box, then send.');
     } catch {
       if (revision !== handoffRevision.current) return;
       setGenerationError('Could not copy the worksheet prompt.');
@@ -472,6 +511,8 @@ export default function WorksheetStudio({ setCurrentSection }) {
         </div>
       )}
 
+      {sentTo && <SendConfirmation destination={sentTo.destination} blocked={sentTo.blocked} onClose={() => setSentTo(null)}
+        onReturnFocus={() => handoffOrigin.current?.focus()} onPreview={previewSentPrompt} />}
       {showWarning && <PromptHandoff prompt={handoffPrompt} target={handoffTarget} onTargetChange={changeHandoffTarget} onClose={closeModal} onReturnFocus={() => handoffOrigin.current?.focus()} onCopy={copyToClipboard}
         copied={isCopied} error={generationError} firstTimeMode={firstTimeMode} includeCanvasSetup={includeCanvasSetup} />}
 
@@ -615,11 +656,12 @@ export default function WorksheetStudio({ setCurrentSection }) {
                           <input
                             type="text"
                             aria-label="Custom subject name"
-                            placeholder="Enter custom subject name..."
+                            placeholder="e.g. IB MYP Year 3 Mathematics or IB DP Mathematics AA HL"
                             value={customSubject}
                             onChange={(e) => setCustomSubject(e.target.value)}
                             className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-white/40 focus:border-mait-cyan focus:outline-none transition-colors"
                           />
+                          <p className="mt-2 text-xs leading-relaxed text-white/50">For IB, include the exact programme and level: MYP year 1-5 plus assessment-criteria year, or DP AA/AI plus SL/HL. MYP Years 1-3 share one framework column; standard/extended applies only where a school defines it for Years 4-5. School Year 8 alone is ambiguous because the IB does not prescribe a year-by-year content sequence.</p>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -841,13 +883,31 @@ export default function WorksheetStudio({ setCurrentSection }) {
                               : 'text-white/55 hover:bg-white/5 hover:text-white'
                           }`}
                         >
-                          {contextMode === 'Off' ? 'AI general knowledge' : contextMode === 'Provide' ? "I'll upload the syllabus" : 'Ask Gemini to search NESA'}
+                          {contextMode === 'Off' ? 'AI general knowledge' : contextMode === 'Provide' ? "I'll upload the syllabus" : 'Search NESA Website'}
                         </button>
                       ))}
                     </div>
 
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {CURRICULUM_REFERENCE_LINKS.map((link) => (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 transition hover:border-mait-cyan/35 hover:bg-mait-cyan/10"
+                        >
+                          <span>
+                            <span className="block text-sm font-semibold text-white group-hover:text-mait-cyan">{link.label}</span>
+                            <span className="mt-0.5 block text-xs text-white/45">{link.note}</span>
+                          </span>
+                          <ExternalLink className="h-4 w-4 shrink-0 text-white/35 transition group-hover:text-mait-cyan" />
+                        </a>
+                      ))}
+                    </div>
+
                     <p className="text-xs leading-relaxed text-white/55">
-                      This choice is included in your copied prompt. Search asks Gemini to consult official NESA sources; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in Gemini. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
+                      This choice is included in your copied prompt. Search tells the AI to retrieve official curriculum sources now and produce exact receipts before generating. NESA requests resolve by stage and course; IB requests need the exact MYP year or DP course/level rather than a generic “IB” label. MyAITutor does not retrieve or verify sources here. Upload any syllabus or textbooks in the destination AI. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
                     </p>
 
                     <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
@@ -1137,17 +1197,40 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-3 border-t border-white/10 pt-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-mait-cyan/70">Send to AI</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">Gemini, ChatGPT and Claude receive the full portable instructions with your request. If the mait-worksheet skill is already installed, use Preview the prompt and choose saved-instructions mode to copy only the worksheet details.</p>
+                  </div>
+                  <Sparkles className="h-4 w-4 shrink-0 text-mait-cyan/70" />
+                </div>
+                <button
+                  type="button"
+                  onClick={event => sendTo(destinations[0], event)}
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(124,58,237,0.25)] transition hover:brightness-110"
+                >
+                  <Copy className="h-4 w-4" />
+                  <span>Copy &amp; open {destinations[0].label}</span>
+                </button>
+                <p className="text-center text-xs text-white/55">Or copy and open:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {destinations.slice(1).map(destination => (
+                    <button key={destination.id} type="button" onClick={event => sendTo(destination, event)}
+                      aria-label={`Copy & open ${destination.label}`}
+                      className="rounded-xl border border-white/15 bg-white/5 px-3 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                      {destination.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-center text-[11px] leading-relaxed text-white/45">Nothing is sent automatically. MAIT copies first, opens the destination, then waits for you to paste and review.</p>
                 <button
                   type="button"
                   onClick={previewInstructions}
-                  className={`flex w-full items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-mait-cosmic'} px-5 py-4 text-sm font-semibold text-white transition hover:scale-[1.01]`}
+                  className={`flex w-full items-center justify-center gap-3 rounded-2xl ${isCopied ? 'bg-green-500' : 'bg-white/5'} border border-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01]`}
                 >
                   <Copy className="h-4 w-4" />
-                  <span className="flex flex-col leading-tight">
-                    <span>Generate Instructions</span>
-                    <span>&amp; Preview Prompt</span>
-                  </span>
+                  <span>Preview the prompt</span>
                 </button>
               </div>
 
@@ -1168,18 +1251,18 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   <ExternalLink className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white">Copy → Open Gemini → Paste → Send</h3>
+                  <h3 className="text-base font-semibold text-white">Copy → Open your AI → Paste → Send</h3>
                 </div>
               </div>
               <div className="grid gap-3 text-sm leading-relaxed text-white/75">
-                <p>Preview and copy your instructions, open Gemini, then <strong className="text-white">paste them into the message box and send</strong>. Opening Gemini does not transfer the prompt automatically.</p>
+                <p>Preview and copy your instructions, open Gemini, ChatGPT, Claude or another AI, then <strong className="text-white">paste them into the message box and send</strong>. Opening a destination never transfers the prompt automatically. Gemini custom Gems are being replaced by skills; use the downloadable SKILL.md where skills are available.</p>
                 <h4 className="font-semibold text-white">Choose a model in Gemini</h4>
-                <p>Click the model name inside the message box. Choose <strong className="text-white">Pro</strong> for complex maths and reasoning. <strong className="text-white">Extended thinking</strong>, where available, is a separate option for more thinking time.</p>
+                <p><strong className="text-white">Auto</strong> is a sound default because Gemini routes each prompt. For difficult maths or tricky LaTeX, manually choose <strong className="text-white">Gemini 4 Neon</strong> or <strong className="text-white">Gemini 4 Carbon</strong> where available, then raise the thinking level to <strong className="text-white">High</strong>. Model and thinking-level access vary by plan.</p>
                 <figure>
-                  <img src={modelSelectorHint} alt="Gemini’s message-box model menu, with Pro selected and Extended thinking listed separately below the models." width={140} height={155} className="mx-auto w-64 max-w-full rounded-2xl border border-white/10" />
-                  <figcaption className="mt-2 text-xs text-white/55">Desktop example checked 18/09/2026. Labels, layout and access can vary by account. Follow the controls shown in your Gemini account.</figcaption>
+                  <img src={modelSelectorHint} alt="Gemini model menu showing Auto, Gemini 4 Hydrogen, Gemini 4 Neon and Gemini 4 Carbon." width={510} height={596} className="mx-auto w-64 max-w-full rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.35)]" />
+                  <figcaption className="mt-2 text-xs text-white/55">Desktop example checked 27/11/2026. Labels, layout and access can vary by account. Follow the controls shown in your Gemini account.</figcaption>
                 </figure>
-                <a href="https://support.google.com/gemini/answer/14517446?hl=en" target="_blank" rel="noopener noreferrer" className="text-mait-cyan underline">Google’s current model-selection guide</a>
+                <a href="https://support.google.com/gemini/answer/18648722?hl=en#switch" target="_blank" rel="noopener noreferrer" className="text-mait-cyan underline">Google’s current Gemini model guide</a>
               </div>
             </div>
           </div>
@@ -1213,28 +1296,28 @@ export default function WorksheetStudio({ setCurrentSection }) {
             <div className="glass-card-strong rounded-3xl p-6">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
-              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
+              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the worksheet handoff workflow.</p>
 
             </div>
 
             <div className="space-y-4">
               <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
-                  <span>How does "Ask Gemini to search NESA" work?</span>
+                  <span>How does "Search NESA Website" work?</span>
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  It asks Gemini to proactively consult the published NESA site for alignment context. Treat it as experimental and always verify the resulting worksheet.
+                  It writes an instruction requiring the destination AI to retrieve official curriculum sources now and produce exact receipts before making questions. NESA requests use the selected stage and course. IB requests distinguish exact MYP year, assessment-criteria year and framework column from DP AA/AI plus SL/HL and exam session; a school year such as Year 8 is not automatically converted. MyAITutor does not retrieve or verify sources, so always check the receipts and finished worksheet.
                 </div>
               </details>
 
               <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
-                  <span>Why launch through Gemini instead of generating the PDF here?</span>
+                  <span>Why launch through an AI instead of generating the PDF here?</span>
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  Gemini Canvas makes it much easier to edit, regenerate, and selectively tweak worksheet sections after the initial instructions are produced.
+                  Gemini Canvas, ChatGPT and Claude make it easier to edit, regenerate and selectively tweak worksheet sections after the initial instructions are produced. The full portable instructions can be pasted into any capable AI.
                 </div>
               </details>
 
