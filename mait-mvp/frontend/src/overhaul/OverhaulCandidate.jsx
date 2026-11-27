@@ -24,6 +24,7 @@ function Candidate() {
   const [surface, setSurface] = useState('home');
   const [lessonOrder, setLessonOrder] = useState(LESSONS.map(lesson => lesson.id));
   const [selectedId, setSelectedId] = useState('maths');
+  const selectedIdRef = useRef(selectedId);
   const [statuses, setStatuses] = useState({ maths: 'To prepare', english: 'To prepare', science: 'To prepare' });
   const [notes, setNotes] = useState({ maths: '', english: '', science: '' });
   const [adaptations, setAdaptations] = useState({});
@@ -117,7 +118,7 @@ function Candidate() {
   const announce = message => setAnnouncement(message);
   const openModal = (type, event) => { returnFocusRef.current = event.currentTarget; setModal(type); };
   const closeModal = () => { setModal(null); window.requestAnimationFrame(() => returnFocusRef.current?.focus()); };
-  const selectLesson = id => { pauseTimer(); if (id !== selectedId) setStepIndex(0); setSelectedId(id); setTeaching(false); };
+  const selectLesson = id => { pauseTimer(); if (id !== selectedId) setStepIndex(0); selectedIdRef.current = id; setSelectedId(id); setTeaching(false); };
   const reorderLesson = (id, direction) => {
     setLessonOrder(current => {
       const next = [...current];
@@ -129,13 +130,26 @@ function Candidate() {
     });
     announce(`${LESSONS.find(item => item.id === id).subject} moved ${direction < 0 ? 'earlier' : 'later'} in the day outline. Sample start times remain reference times.`);
   };
-  const changeStatus = status => { setStatuses(current => ({ ...current, [selectedId]: status })); announce(`${lesson.subject}: ${status}.`); };
-  const startTeaching = () => changeView(() => { setTeaching(true); changeStatus('Teaching'); });
+  const changeStatus = (status, id) => {
+    const item = LESSONS.find(entry => entry.id === id);
+    setStatuses(current => ({ ...current, [id]: status }));
+    announce(`${item.subject}: ${status}.`);
+  };
+  const startTeaching = () => {
+    const id = selectedId;
+    changeView(() => {
+      if (selectedIdRef.current !== id) return;
+      setTeaching(true); changeStatus('Teaching', id);
+    });
+  };
   const exitTeaching = () => changeView(() => { pauseTimer(); setTeaching(false); });
-  const finishTeaching = () => changeView(() => {
-    pauseTimer(); setTeaching(false); changeStatus('Finished');
-    window.requestAnimationFrame(() => document.getElementById('handover-note')?.focus());
-  });
+  const finishTeaching = () => {
+    const id = selectedId;
+    changeView(() => {
+      pauseTimer(); setTeaching(false); changeStatus('Finished', id);
+      window.requestAnimationFrame(() => document.getElementById('handover-note')?.focus());
+    });
+  };
   const applyAdaptation = () => {
     setAdaptations(current => ({ ...current, [selectedId]: adaptationType }));
     setStatuses(current => ({ ...current, [selectedId]: 'To prepare' }));
@@ -236,12 +250,12 @@ function Candidate() {
               <div className="document-meta"><span>{lesson.subject.toUpperCase()} / {lesson.group.toUpperCase()}</span><span>{activeAdaptation === 'shorter' ? '25' : lesson.duration} MIN · {lesson.room.toUpperCase()}</span></div>
               <div className="lesson-title-row"><h2>{lesson.title}</h2><span className={`status-label ${STATUS_CLASS[currentStatus]}`}><span />{currentStatus}</span></div>
               <p className="lesson-purpose">{lesson.purpose}</p>
-              {activeAdaptation && <div className="applied-adaptation"><Icon as={CheckCheck} /><span>{activeAdaptation === 'shorter' ? 'Shorter lesson example applied' : 'Board-only example applied'}</span><button disabled={teaching} title={teaching ? 'Exit teaching view to restore the original plan' : undefined} onClick={() => { setAdaptations(current => ({ ...current, [selectedId]: null })); changeStatus('To prepare'); }}>Restore original</button></div>}
+              {activeAdaptation && <div className="applied-adaptation"><Icon as={CheckCheck} /><span>{activeAdaptation === 'shorter' ? 'Shorter lesson example applied' : 'Board-only example applied'}</span><button disabled={teaching} title={teaching ? 'Exit teaching view to restore the original plan' : undefined} onClick={() => { setAdaptations(current => ({ ...current, [selectedId]: null })); changeStatus('To prepare', selectedId); }}>Restore original</button></div>}
               {teaching ? <div className="teaching-content"><div className="teaching-context"><span className="tiny-label">CURRENT INSTRUCTION</span><span>{stepIndex + 1} / {lesson.steps.length}</span></div><h3 aria-live="polite">{lesson.steps[stepIndex].title}</h3><p>{activeAdaptation === 'shorter' && stepIndex === 2 ? 'Choose one example for pairs to work through. Ask them to explain a step rather than complete a longer set.' : lesson.steps[stepIndex].text}</p><div className="step-navigation"><button className="studio-button small" disabled={stepIndex === 0} onClick={() => setStepIndex(current => current - 1)}><Icon as={ArrowLeft} />Previous step</button><button className="studio-button primary small" disabled={stepIndex === lesson.steps.length - 1} onClick={() => setStepIndex(current => current + 1)}>Next step<Icon as={ArrowRight} /></button></div><div className="teaching-timer"><div><span className="tiny-label">LESSON TIMER · {running ? 'RUNNING' : 'PAUSED'}</span><strong role="timer" aria-label={`Elapsed lesson time ${formatTime(elapsed[selectedId])}`}>{formatTime(elapsed[selectedId])}</strong></div><div className="timer-actions"><button className="studio-button small" onClick={toggleTimer}><Icon as={running ? Pause : Play} />{running ? 'Pause' : 'Start'}</button><button className="icon-button" aria-label="Reset lesson timer" onClick={resetTimer}><Icon as={RotateCcw} /></button></div></div><p className="timer-note">You control the pace. The timer never advances the lesson.</p><button className="finish-button" onClick={finishTeaching}><Icon as={CheckCheck} />Finish this lesson</button></div> : <>
                 <div className="document-resources"><span className="tiny-label">HAVE TO HAND</span><div>{lesson.resources.map(resource => <span key={resource}><Icon as={Check} size={13} />{resource}</span>)}{activeAdaptation === 'no-projector' && <span><Icon as={MonitorOff} size={13} />No screen required</span>}</div></div>
                 <div className="opening-instruction"><span className="tiny-label">THE OPENING MOVE</span><p>{lesson.start}</p>{activeAdaptation === "no-projector" && <p className="board-only-note"><Icon as={MonitorOff} size={14} />Keep the prompt on the board. Give one spoken instruction at a time; learners work on paper.</p>}</div>
                 <ol className="teaching-steps">{lesson.steps.map((step, index) => <li key={step.title}><span className="instruction-number">{String(index + 1).padStart(2, '0')}</span><div><h3>{step.title}<small>{activeAdaptation === 'shorter' ? [3, 7, 10, 5][index] : step.minutes} min</small></h3><p>{activeAdaptation === 'shorter' && index === 2 ? 'Choose one example for pairs to work through. Ask them to explain a step rather than complete a longer set.' : step.text}</p></div></li>)}</ol>
-                <div className="document-bottom"><span><Icon as={ShieldCheck} />Check this example fits your class and school.</span><button className="studio-button primary small" onClick={() => changeStatus(currentStatus === 'Ready' ? 'To prepare' : 'Ready')}><Icon as={currentStatus === 'Ready' ? RotateCcw : Check} />{currentStatus === 'Ready' ? 'Reopen review' : 'Mark ready'}</button></div>
+                <div className="document-bottom"><span><Icon as={ShieldCheck} />Check this example fits your class and school.</span><button className="studio-button primary small" onClick={() => changeStatus(currentStatus === 'Ready' ? 'To prepare' : 'Ready', selectedId)}><Icon as={currentStatus === 'Ready' ? RotateCcw : Check} />{currentStatus === 'Ready' ? 'Reopen review' : 'Mark ready'}</button></div>
               </>}
             </article>
             <section className="handover-note"><div><Icon as={FileText} /><h3>A note for the next teacher.</h3><span>LOCAL DRAFT</span></div><label htmlFor="handover-note">{lesson.note}</label><textarea id="handover-note" value={notes[selectedId]} onChange={event => setNotes(current => ({ ...current, [selectedId]: event.target.value }))} placeholder="What did you cover? Where should the next lesson begin?" rows={3} /><p>Use fictional details in this preview. Export your draft before closing or reloading.</p></section>

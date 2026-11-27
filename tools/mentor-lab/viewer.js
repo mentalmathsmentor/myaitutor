@@ -41,6 +41,7 @@ async function createEngine() {
   canvas.setAttribute('aria-label', '3D character preview'); canvas.setAttribute('role', 'img');
   $('stage').append(canvas);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(28, 1, 0.01, 100);
+  const modelCentre = new THREE.Vector3(), modelSize = new THREE.Vector3();
   scene.add(new THREE.HemisphereLight(0xdce6ff, 0x454250, 2.2));
   const key = new THREE.DirectionalLight(0xffeddc, 2.8); key.position.set(2, 3, 4); scene.add(key);
   let model = null, vrm = null, mixer = null, frame = 0, last = 0, near = true, lost = false, disposed = false, renderCount = 0;
@@ -82,14 +83,25 @@ async function createEngine() {
     release(model); model = vrm = null;
     if (!disposed) renderer.clear();
   }
+  const fitCamera = () => {
+    if (!model) return;
+    const positionValues = [modelCentre.x, modelCentre.y, modelCentre.z, modelSize.x, modelSize.y, modelSize.z];
+    if (!positionValues.every(Number.isFinite)) return;
+    const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+    const distance = Math.max(modelSize.y, modelSize.x / camera.aspect) * 0.58 / Math.tan(halfFov);
+    camera.far = Math.max(100, distance * 4);
+    camera.position.set(modelCentre.x, modelCentre.y, modelCentre.z + Math.max(distance, 0.5));
+    camera.lookAt(modelCentre);
+    camera.updateProjectionMatrix();
+  };
   const resize = () => {
     const rect = $('stage').getBoundingClientRect();
-    if (rect.width && rect.height) { renderer.setSize(rect.width, rect.height, false); camera.aspect = rect.width / rect.height; camera.updateProjectionMatrix(); render(); }
+    if (rect.width && rect.height) { renderer.setSize(rect.width, rect.height, false); camera.aspect = rect.width / rect.height; camera.updateProjectionMatrix(); fitCamera(); render(); }
   };
   const observer = new ResizeObserver(resize); observer.observe($('stage'));
   const intersection = new IntersectionObserver(([entry]) => { near = entry.isIntersecting; refresh(); }); intersection.observe($('stage'));
   const onVisibility = () => refresh(); document.addEventListener('visibilitychange', onVisibility); reduced.addEventListener('change', onVisibility);
-  canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); lost = true; stop(); canvas.hidden = true; $('placeholder').hidden = false; status('The graphics context was lost. Reload this preview or open a model again.'); });
+  canvas.addEventListener('webglcontextlost', (event) => { if (disposed) return; event.preventDefault(); lost = true; stop(); canvas.hidden = true; $('placeholder').hidden = false; status('The graphics context was lost. Reload this preview or open a model again.'); });
   // Restoration is explicit: reloading recreates all GPU resources.
   async function load(buffer, isVRM) {
     if (disposed) throw new DOMException('Preview closed.', 'AbortError');
@@ -103,10 +115,10 @@ async function createEngine() {
     // VRM 0.x faces the opposite direction to VRM 1.0.
     if (vrm?.meta?.metaVersion === '0') model.rotation.y = Math.PI;
     scene.add(model); vrm?.update(0);
-    const bounds = new THREE.Box3().setFromObject(model), centre = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3());
-    const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
-    const distance = Math.max(size.y, size.x / camera.aspect) * 0.58 / Math.tan(halfFov);
-    camera.position.set(centre.x, centre.y, centre.z + Math.max(distance, 0.5)); camera.lookAt(centre); camera.updateProjectionMatrix();
+    const bounds = new THREE.Box3().setFromObject(model);
+    modelCentre.copy(bounds.getCenter(new THREE.Vector3()));
+    modelSize.copy(bounds.getSize(new THREE.Vector3()));
+    fitCamera();
     if (gltf.animations.length) { mixer = new THREE.AnimationMixer(model); mixer.clipAction(gltf.animations[0]).play(); }
     $('placeholder').hidden = true; resize(); refresh();
     return gltf.animations.length;
@@ -115,9 +127,10 @@ async function createEngine() {
     let available = false;
     if (vrm?.expressionManager) {
       const target = vrm.expressionManager.getExpression(name);
-      if (!target) return false;
+      if (!target && name !== 'neutral') return false;
       for (const key of ['happy', 'surprised', 'neutral']) vrm.expressionManager.setValue(key, 0);
-      vrm.expressionManager.setValue(name, 0.65); available = true;
+      if (target) vrm.expressionManager.setValue(name, 0.65);
+      available = true;
       vrm.expressionManager.update();
     } else if (model) {
       const groups = { neutral: [], happy: ['happy', 'mouthSmileLeft', 'mouthSmileRight', 'mouthSmile'], surprised: ['surprised', 'browInnerUp', 'jawOpen'] };
