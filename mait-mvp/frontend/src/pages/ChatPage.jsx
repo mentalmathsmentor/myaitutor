@@ -132,6 +132,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
                     setDownloadProgress(null);
                     setModelLoading(null);
                     setDownloadError(null);
+                    setShowOverlay(false);
                 }
                 return;
             }
