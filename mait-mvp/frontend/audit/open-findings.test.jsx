@@ -44,7 +44,7 @@ async function copy() {
   fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
   await waitFor(() => expect(clipboard).toHaveBeenCalled());
   const prompt=clipboard.mock.calls.at(-1)[0];
-  await waitFor(() => expect(screen.getByText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.')).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText('Prompt copied. Next: paste it into your AI, then send.')).toBeInTheDocument());
   fireEvent.keyDown(document,{key:'Escape'});
   return {prompt,request:buildWorksheetRequest.mock.results.at(-1).value};
 }
@@ -150,7 +150,7 @@ describe('state transitions and error boundaries',()=>{
   it('custom subject survives a reload',()=>{
     const view=mount('Year 11','Mathematics Advanced','Synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:'Other (Custom)',exact:true}));
-    fireEvent.change(screen.getByPlaceholderText('Enter custom subject name...'),{target:{value:'Synthetic History'}});
+    fireEvent.change(screen.getByLabelText('Custom subject name'),{target:{value:'Synthetic History'}});
     view.unmount(); render(<WorksheetStudio setCurrentSection={()=>{}} />);
     expect(screen.queryByDisplayValue('Synthetic History')).toBeInTheDocument();
   });
@@ -161,12 +161,12 @@ describe('state transitions and error boundaries',()=>{
     fireEvent.keyDown(document,{key:'Escape'});
     expect(clipboard).not.toHaveBeenCalled();
   });
-  it('only the explicit Open worksheet Gem action launches once',async()=>{
+  it('only the explicit Copy and open Gemini action launches once',async()=>{
     vi.useFakeTimers();mount('Year 11','Mathematics Advanced','Synthetic brief');
-    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));});
-    fireEvent.click(screen.getByRole('button',{name:'Open worksheet Gem',exact:true}));
+    await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Copy & open Gemini',exact:true}));});
     await act(async()=>{vi.advanceTimersByTime(3100);});
     expect(window.open).toHaveBeenCalledTimes(1);
+    expect(window.open).toHaveBeenCalledWith('https://gemini.google.com/app','_blank');
   });
   it('module-name search retains matching child topics',()=>{
     mount('Stage 4 (Yr 7-8)','Mathematics');next();
@@ -194,7 +194,7 @@ describe('state transitions and error boundaries',()=>{
     next(); fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
     fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
     await act(async()=>{finish();});
-    expect(screen.queryByText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Prompt copied. Next: paste it into your AI, then send.')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Exact prompt').value).toContain('Second synthetic brief');
   });
   it('worked solutions and answer-key controls remain consistent in both directions',()=>{

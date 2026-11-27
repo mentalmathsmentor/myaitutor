@@ -21,7 +21,7 @@ export async function chooseCourse(page, stage, subject) {
   await page.getByRole('button', { name: 'Curriculum', exact: true }).click();
   await page.getByRole('button', { name: stage, exact: true }).click();
   await page.getByRole('button', { name: subject === 'Other' ? 'Other (Custom)' : subject, exact: true }).click();
-  if (subject === 'Other') await page.getByPlaceholder('Enter custom subject name...').fill('  Custom test subject α  ');
+  if (subject === 'Other') await page.getByLabel('Custom subject name').fill('  Custom test subject α  ');
   await page.getByRole('button', { name: 'Topics', exact: true }).click();
   await expect(briefField(page)).toBeVisible();
 }

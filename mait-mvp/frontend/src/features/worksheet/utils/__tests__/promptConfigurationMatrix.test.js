@@ -32,8 +32,8 @@ describe('subject/context preservation across the offered course and context con
     expect(prompt.match(/Syllabus context: (Off|Provide|Search)\./g)).toEqual([`Syllabus context: ${changes.syllabusContextMode}.`]);
     expect(prompt.includes('I will upload textbooks/resources.')).toBe(changes.textbooksProvided);
     if (changes.syllabusContextMode === 'Search') {
-      expect(prompt).toContain(`Consult official NESA sources for ${changes.selectedStage} ${subject}`);
-      expect(prompt).toContain('ask for clarification');
+      expect(prompt).toContain(`official NSW Curriculum/NESA sources for ${changes.selectedStage} ${subject}`);
+      expect(prompt).toContain('exact receipts');
       expect(prompt).toContain('has not retrieved or verified');
     }
     if (changes.syllabusContextMode === 'Provide') expect(prompt).toContain(`upload the syllabus for ${changes.selectedStage} ${subject}`);

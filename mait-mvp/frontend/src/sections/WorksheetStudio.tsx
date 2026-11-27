@@ -113,7 +113,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const [syllabusContextMode, setSyllabusContextMode] = useState('Off');
   const [textbooksProvided, setTextbooksProvided] = useState(false);
   const [previewPrompt, setPreviewPrompt] = useState('');
-  const [handoffTarget, setHandoffTarget] = useState('custom');
+  const [handoffTarget, setHandoffTarget] = useState('any');
   const [sentTo, setSentTo] = useState(null);
   const [selectedStage, setSelectedStage] = useState(initialDraft.selectedStage);
   const [selectedSubject, setSelectedSubject] = useState(initialDraft.selectedSubject);
@@ -391,7 +391,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
       }
       if (revision !== handoffRevision.current) return;
       setIsCopied(true);
-      setGenerationSuccess(handoffTarget === 'any' ? 'Instructions copied. Paste them into your AI, then send.' : 'Instructions copied. Open your Gem or GPT, paste into its message box, then send.');
+      setGenerationSuccess(handoffTarget === 'any' ? 'Instructions copied. Paste them into your AI, then send.' : 'Instructions copied. Open the destination with saved instructions, paste into its message box, then send.');
     } catch {
       if (revision !== handoffRevision.current) return;
       setGenerationError('Could not copy the worksheet prompt.');
@@ -656,11 +656,12 @@ export default function WorksheetStudio({ setCurrentSection }) {
                           <input
                             type="text"
                             aria-label="Custom subject name"
-                            placeholder="Enter custom subject name..."
+                            placeholder="e.g. IB MYP Year 3 Mathematics or IB DP Mathematics AA HL"
                             value={customSubject}
                             onChange={(e) => setCustomSubject(e.target.value)}
                             className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-white/40 focus:border-mait-cyan focus:outline-none transition-colors"
                           />
+                          <p className="mt-2 text-xs leading-relaxed text-white/50">For IB, include the exact programme and level: MYP year 1-5 plus standard/extended, or DP AA/AI plus SL/HL. School Year 8 alone is ambiguous because the IB does not prescribe a year-by-year content sequence.</p>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -906,7 +907,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                     </div>
 
                     <p className="text-xs leading-relaxed text-white/55">
-                      This choice is included in your copied prompt. Search asks the AI to consult official NESA sources, or official IB sources when your custom subject names the International Baccalaureate; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in the destination AI. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
+                      This choice is included in your copied prompt. Search tells the AI to retrieve official curriculum sources now and produce exact receipts before generating. NESA requests resolve by stage and course; IB requests need the exact MYP year or DP course/level rather than a generic “IB” label. MyAITutor does not retrieve or verify sources here. Upload any syllabus or textbooks in the destination AI. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
                     </p>
 
                     <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
@@ -1200,7 +1201,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.25em] text-mait-cyan/70">Send to AI</p>
-                    <p className="mt-1 text-xs leading-relaxed text-white/50">The Gem uses saved instructions. ChatGPT and Claude receive the full portable instructions with your request.</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">Gemini, ChatGPT and Claude receive the full portable instructions with your request. If the mait-worksheet skill is already installed, use Preview the prompt and choose saved-instructions mode to copy only the worksheet details.</p>
                   </div>
                   <Sparkles className="h-4 w-4 shrink-0 text-mait-cyan/70" />
                 </div>
@@ -1254,7 +1255,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 </div>
               </div>
               <div className="grid gap-3 text-sm leading-relaxed text-white/75">
-                <p>Preview and copy your instructions, open the Gem, ChatGPT, Claude or another AI, then <strong className="text-white">paste them into the message box and send</strong>. Opening a destination never transfers the prompt automatically.</p>
+                <p>Preview and copy your instructions, open Gemini, ChatGPT, Claude or another AI, then <strong className="text-white">paste them into the message box and send</strong>. Opening a destination never transfers the prompt automatically. Gemini custom Gems are being replaced by skills; use the downloadable SKILL.md where skills are available.</p>
                 <h4 className="font-semibold text-white">Choose a model in Gemini</h4>
                 <p><strong className="text-white">Auto</strong> is a sound default because Gemini routes each prompt. For difficult maths or tricky LaTeX, manually choose <strong className="text-white">Gemini 4 Neon</strong> or <strong className="text-white">Gemini 4 Carbon</strong> where available, then raise the thinking level to <strong className="text-white">High</strong>. Model and thinking-level access vary by plan.</p>
                 <figure>
@@ -1306,7 +1307,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  It writes an instruction asking the destination AI to consult the official NESA curriculum for alignment context. If the custom subject names the International Baccalaureate, the prompt asks for official IB sources instead. MyAITutor does not retrieve or verify either source, so always check the cited edition and the finished worksheet.
+                  It writes an instruction requiring the destination AI to retrieve official curriculum sources now and produce exact receipts before making questions. NESA requests use the selected stage and course. IB requests distinguish MYP year 1-5 plus standard/extended from DP AA/AI plus SL/HL and assessment cohort; a school year such as Year 8 is not automatically converted. MyAITutor does not retrieve or verify sources, so always check the receipts and finished worksheet.
                 </div>
               </details>
 

@@ -37,7 +37,8 @@ for (const [stage, label, code, focusId] of cases) {
     const prompt = await copyPrompt(page);
     expect(prompt).toContain(`- **Course:** ${stage}`);
     expect(prompt).toContain('- **Subject:** Mathematics');
-    expect(prompt).toContain(`Consult official NESA sources for ${stage} Mathematics`);
+    expect(prompt).toContain(`official NSW Curriculum/NESA sources for ${stage} Mathematics`);
+    expect(prompt).toContain('exact receipts');
     expect(prompt).toContain(label);
     expect(prompt).toContain(code);
     expect(prompt).toContain(`/content/stage-${stage[6]}/${focusId}`);

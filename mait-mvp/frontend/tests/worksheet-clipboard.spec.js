@@ -15,38 +15,38 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/worksheets');
 });
 
-test('custom destination copies only the short request; any AI adds the instructions', async ({ page, context }) => {
+test('full instructions are the default; saved-instructions mode copies only the short request', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await chooseCourse(page, 'Year 12', 'English'); await briefField(page).fill('Synthetic reading task');
   await preview(page).click();
   const dialog = page.getByRole('dialog');
   const field = page.getByLabel('Exact prompt');
-  const short = await field.inputValue();
-  expect(short).toContain('Synthetic reading task');
-  expect(short).not.toContain('## LaTeX rules');
-  await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
-  await expect(dialog.getByRole('status')).toContainText('Prompt copied');
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(short);
-
-  await page.getByRole('radio', { name: /Any other AI/ }).check();
-  await expect(dialog.getByRole('status')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Open worksheet Gem', exact: true })).toHaveCount(0);
   const full = await field.inputValue();
+  expect(full).toContain('Synthetic reading task');
   expect(full).toContain('## LaTeX rules');
-  expect(full.endsWith(short)).toBe(true);
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
   await expect(dialog.getByRole('status')).toHaveText('Prompt copied. Next: paste it into your AI, then send.');
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(full);
 
   const downloadEvent = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Download instructions', exact: true }).click();
+  await page.getByRole('button', { name: 'Download SKILL.md', exact: true }).click();
   const download = await downloadEvent;
   expect(download.suggestedFilename()).toBe('SKILL.md');
   const skill = await readFile(await download.path(), 'utf8');
   expect(skill).toMatch(/^---\nname: mait-worksheet\n/);
   expect(full.startsWith(skill.replace(/^---\n[\s\S]*?\n---\n+/, '').trim())).toBe(true);
 
-  await page.getByRole('radio', { name: /Worksheet Gem or custom GPT/ }).check();
-  await expect(field).toHaveValue(short);
-  await expect(page.getByRole('button', { name: 'Open worksheet Gem', exact: true })).toBeVisible();
+  await page.getByRole('radio', { name: /Saved instructions installed/ }).check();
+  await expect(dialog.getByRole('status')).toHaveCount(0);
+  const short = await field.inputValue();
+  expect(short).toContain('Synthetic reading task');
+  expect(short).not.toContain('## LaTeX rules');
+  expect(full.endsWith(short)).toBe(true);
+  await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
+  await expect(dialog.getByRole('status')).toHaveText('Prompt copied. Next: open the destination with saved instructions, paste into its message box, then send.');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(short);
+
+  await page.getByRole('radio', { name: /Full instructions for any AI/ }).check();
+  await expect(field).toHaveValue(full);
+  await expect(page.getByRole('button', { name: 'Download SKILL.md', exact: true })).toBeVisible();
 });

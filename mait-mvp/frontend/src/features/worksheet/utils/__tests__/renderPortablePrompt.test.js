@@ -10,21 +10,29 @@ describe('portable worksheet prompt', () => {
     expect(portableInstructions.startsWith('# MyAITutor Worksheet')).toBe(true);
     expect(portableInstructions).not.toContain('description:');
   });
-  it('fits an 8,000 character custom instruction limit, header included', () => {
-    expect(skillFile.length).toBeLessThanOrEqual(8000);
+  it('stays inside documented portable skill limits', () => {
+    const frontmatter = skillFile.match(/^---\n([\s\S]*?)\n---\n/)[1];
+    const description = frontmatter.match(/^description: (.+)$/m)[1];
+    expect('mait-worksheet'.length).toBeLessThanOrEqual(64);
+    expect(description.length).toBeLessThanOrEqual(1024);
+    expect(skillFile.length).toBeLessThanOrEqual(20000);
+    expect(skillFile.split('\n').length).toBeLessThanOrEqual(500);
   });
   it('covers the settings the wizard sends', () => {
     for (const setting of ['MODE: PEDAGOGY', 'MODE: EXAM STRICT', 'WATERMARK: OFF', 'Spot the Error', 'Parameter Shift', 'Limit Case', '**Search**', '**Provide**', '**Off**']) {
       expect(portableInstructions).toContain(setting);
     }
   });
-  it('tells portable AIs to use official NESA or IB sources for the applicable course', () => {
-    expect(portableInstructions).toContain('NESA for NSW');
-    expect(portableInstructions).toContain('IB for International Baccalaureate');
+  it('tells portable AIs to retrieve official curriculum receipts before alignment', () => {
+    for (const phrase of ['exact curriculum receipts', 'MYP year 1-5', 'standard/extended', 'AA/AI', 'SL/HL', 'assessment cohort', 'topic -> receipt -> question-number mapping']) {
+      expect(portableInstructions).toContain(phrase);
+    }
   });
-  it('keeps the Gem base instructions exactly synchronised with the portable skill body', () => {
+  it('marks the legacy Gem base instructions as superseded by the skill package', () => {
     const gemBase = readFileSync('../Gem_Base_Instructions.md', 'utf8');
-    expect(gemBase).toBe(portableInstructions);
+    expect(gemBase).toContain('Deprecated');
+    expect(gemBase).toContain('mait-worksheet');
+    expect(gemBase).not.toBe(portableInstructions);
   });
   it('carries no private names or tool routing', () => {
     expect(skillFile).not.toMatch(/Darra|Mental Maths|Arthur|AGY|chatgpt\.com\/g\//);

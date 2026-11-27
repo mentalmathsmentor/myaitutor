@@ -26,19 +26,19 @@ describe('selected course and syllabus context reach the copied prompt', () => {
   it('Search requests official sources for the selected course without claiming retrieval', () => {
     const prompt = compile({ syllabusContextMode: 'Search' });
     expect(prompt).toContain('Syllabus context: Search');
-    expect(prompt).toContain('official NESA');
-    expect(prompt).toContain('Year 12 Mathematics Advanced');
-    expect(prompt).toContain('teaching cohort or syllabus edition');
-    expect(prompt).toContain('ask for clarification');
+    expect(prompt).toContain('official NSW Curriculum/NESA sources for Year 12 Mathematics Advanced');
+    expect(prompt).toContain('retrieve the official curriculum source now');
+    expect(prompt).toContain('exact receipts');
     expect(prompt).toContain('MyAITutor has not retrieved or verified these sources.');
     expect(prompt).not.toContain('SYLLABUS PACKET (NESA ALIGNED)');
   });
 
-  it('Search uses official IB sources when the custom subject is International Baccalaureate', () => {
+  it('Search resolves an exact IB DP course and demands official receipts', () => {
     const prompt = compile({ syllabusContextMode: 'Search', selectedSubject: 'Other', customSubject: 'IB Mathematics AA HL' });
-    expect(prompt).toContain('official IB sources for Year 12 IB Mathematics AA HL');
-    expect(prompt).toContain('course, level, teaching cohort or syllabus edition');
-    expect(prompt).not.toContain('official NESA sources for Year 12 IB Mathematics AA HL');
+    expect(prompt).toContain('analysis and approaches HL');
+    expect(prompt).toContain('assessment cohort');
+    expect(prompt).toContain('exact receipts');
+    expect(prompt).not.toContain('official NSW Curriculum/NESA sources for Year 12 IB Mathematics AA HL');
   });
 
   it('Off, Provide and Search produce distinct, non-accumulating instructions', () => {
@@ -53,9 +53,9 @@ describe('selected course and syllabus context reach the copied prompt', () => {
     expect(provide).toContain('upload the syllabus');
     expect(provide).not.toContain('Syllabus context: Search');
     expect(search).not.toContain('Syllabus context: Provide');
-    expect(off).not.toContain('Consult official NESA sources');
+    expect(off).not.toContain('official NSW Curriculum/NESA sources');
     expect(off).not.toContain('I will upload the syllabus');
-    expect(provide).not.toContain('Consult official NESA sources');
+    expect(provide).not.toContain('official NSW Curriculum/NESA sources');
     expect(search).not.toContain('I will upload the syllabus');
   });
 

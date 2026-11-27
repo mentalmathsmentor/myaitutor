@@ -14,7 +14,7 @@ test('preview is selectable, equals copied text, traps focus and never launches 
   await preview(page).click();
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('list', { name: 'Use your worksheet instructions' })).toContainText('Paste into its message box');
-  await expect(dialog).toContainText('Opening it does not paste or send the instructions for you.');
+  await expect(dialog).toContainText('Opening a destination does not paste or send the instructions for you.');
   expect(await page.evaluate(() => window.__worksheetCopies)).toEqual([]);
   const field = page.getByLabel('Exact prompt'); const prompt = await field.inputValue();
   await field.click(); await field.press('ControlOrMeta+a');
@@ -28,13 +28,13 @@ test('preview is selectable, equals copied text, traps focus and never launches 
     await page.keyboard.press('Tab');
     expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true);
   }
-  await page.getByRole('button', { name: 'Open worksheet Gem', exact: true }).click();
-  expect(await page.evaluate(() => window.__worksheetOpens.length)).toBe(1);
+  await expect(page.getByRole('button', { name: 'Download SKILL.md', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => window.__worksheetOpens.length)).toBe(0);
   await page.keyboard.press('Escape'); await expect(dialog).toBeHidden();
   await expect(preview(page)).toBeFocused();
   await briefField(page).fill('Changed synthetic brief');
   expect(await copyPrompt(page)).toContain('Changed synthetic brief');
-  expect(await page.evaluate(() => window.__worksheetOpens.length)).toBe(1);
+  expect(await page.evaluate(() => window.__worksheetOpens.length)).toBe(0);
 });
 
 for (const mode of ['denied', 'missing-success', 'missing-failure']) {
@@ -50,7 +50,7 @@ for (const mode of ['denied', 'missing-success', 'missing-failure']) {
     await preview(page).click(); const text = await page.getByLabel('Exact prompt').inputValue();
     await page.getByRole('button', { name: 'Copy prompt', exact: true }).click();
     if (mode === 'missing-success') {
-      await expect(page.getByRole('dialog').getByRole('status')).toHaveText('Prompt copied. Next: open your Gem or GPT, paste into its message box, then send.');
+      await expect(page.getByRole('dialog').getByRole('status')).toHaveText('Prompt copied. Next: paste it into your AI, then send.');
       expect(await page.evaluate(() => window.__fallbackText)).toBe(text);
     } else await expect(page.getByRole('alert')).toContainText('Could not copy');
     await expect(page.getByLabel('Exact prompt')).toHaveValue(text);
@@ -112,7 +112,7 @@ test('narrow prompt preview remains readable and controls fit', async ({ page },
   const dialog = page.getByRole('dialog'); await expect(dialog).toBeVisible();
   expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   await page.getByRole('button', { name: 'Copy prompt', exact: true }).scrollIntoViewIfNeeded();
-  await expect(page.getByRole('button', { name: 'Open worksheet Gem', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download SKILL.md', exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('prompt-preview-narrow.png') });
 });
 
@@ -136,7 +136,7 @@ test(`malformed new draft ${malformed} preserves the unread draft and allows cop
 }
 
 for (const [button, url, full] of [
-  ['Copy & open Worksheet Gem', 'https://gemini.google.com/gem/14I7EkTkmvun49uuifaHINSEv64BO_hbG?usp=sharing', false],
+  ['Copy & open Gemini', 'https://gemini.google.com/app', true],
   ['Copy & open ChatGPT', 'https://chatgpt.com/', true],
   ['Copy & open Claude', 'https://claude.ai/new', true],
 ]) {
