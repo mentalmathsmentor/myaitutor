@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -22,10 +22,12 @@ import { useChatStore } from '../stores/chatStore'
 import { useModelStore } from '../stores/modelStore'
 import { useTimerStore } from '../stores/timerStore'
 
+let localBrainAttemptCounter = 0
+
 export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode }) {
     const { showLocalChat, setShowLocalChat, showMobileSyllabus, setShowMobileSyllabus, showKeystrokePanel, setShowKeystrokePanel, showOverlay, setShowOverlay, showAutoSavePrompt, setShowAutoSavePrompt, showQueueConfirm, setShowQueueConfirm, autoSaveEnabled, setAutoSaveEnabled, isIdle, setIsIdle } = useUIStore();
     const { messages, setMessages, input, setInput, loading, setLoading, context, setContext, messageQueue, setMessageQueue, enqueue, dequeue, pendingQueue, setPendingQueue, clearHistory } = useChatStore();
-    const { isModelReady, setModelReady, modelLoading, setModelLoading, downloadProgress, setDownloadProgress, demoModelSize, setDemoModelSize, localBrainChoice, setLocalBrainChoice, loadedModelName, setLoadedModelName, downloadError, setDownloadError, webGPUError, setWebGPUError, showModelSwitchConfirm, setShowModelSwitchConfirm, cachedModels, setCachedModels } = useModelStore();
+    const { isModelReady, setModelReady, modelLoading, setModelLoading, downloadProgress, setDownloadProgress, demoModelSize, setDemoModelSize, localBrainChoice, setLocalBrainChoice, loadedModelName, setLoadedModelName, downloadError, setDownloadError, webGPUError, setWebGPUError, showModelSwitchConfirm, setShowModelSwitchConfirm, cachedModels, setCachedModels, reset: resetModelStore } = useModelStore();
     const { currentTime, tick, studyTimerRunning, setStudyTimerRunning, studyTimerSeconds, setStudyTimerSeconds, startTimer, stopTimer, resetTimer, incrementTimer } = useTimerStore();
 
     const [userProfile, setUserProfile] = useState(() => {
@@ -35,6 +37,10 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     
     const endOfMsgRef = useRef(null)
     const autoSavePromptShown = useRef(false)
+
+    const syncModelServiceReady = useCallback(() => {
+        setModelReady(modelService.getStatus().status === 'READY');
+    }, [setModelReady]);
 
     // Inactivity Tracker State
     const idleTimeoutRef = useRef(null)
@@ -84,6 +90,8 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             return;
         }
 
+        const attemptToken = ++localBrainAttemptCounter;
+
         setDownloadError(null);
         setWebGPUError(null);
         setModelReady(false);
@@ -102,6 +110,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
         setShowOverlay(true);
 
         modelService.initialize((report) => {
+            if (attemptToken !== localBrainAttemptCounter) return;
             setDownloadProgress({
                 text: report.text,
                 progress: report.progress || null,
@@ -111,16 +120,28 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             });
             setModelLoading(report.text);
         }, effectiveModelSize).then((modelName) => {
+            if (attemptToken !== localBrainAttemptCounter) return;
             setModelLoading(null);
             setLoadedModelName(modelName);
             setDownloadProgress({ text: "Ready!", progress: 100, estimatedMB, speedMBps: null, fetchedMB: estimatedMB });
             setTimeout(() => {
+                if (attemptToken !== localBrainAttemptCounter) return;
                 setDownloadProgress(null);
                 setShowOverlay(false);
             }, 2000);
             setModelReady(true);
             setDownloadError(null);
         }).catch(err => {
+            if (err?.name === 'ModelInitializationCancelledError') {
+                if (attemptToken === localBrainAttemptCounter) {
+                    setDownloadProgress(null);
+                    setModelLoading(null);
+                    setDownloadError(null);
+                    setShowOverlay(false);
+                }
+                return;
+            }
+            if (attemptToken !== localBrainAttemptCounter) return;
             console.error("Local Brain Init Error", err);
             setModelLoading("Local connection failed.");
             const errMsg = err.message || "Download failed. Please check your connection and try again.";
@@ -133,8 +154,10 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
         setDownloadError(null);
         setDownloadProgress(null);
         setShowOverlay(false);
+        const currentModelSize = modelService.getModelInfo().size;
+        const retryModelSize = isDemoMode ? demoModelSize : (currentModelSize === 'none' ? 'quality' : currentModelSize);
         setTimeout(() => {
-            startLocalBrain(isDemoMode ? demoModelSize : 'balanced');
+            startLocalBrain(retryModelSize);
         }, 100);
     };
 
@@ -387,16 +410,21 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     };
 
     useEffect(() => {
-        if (isModelReady && messageQueue.length > 0 && !loading) {
+        if (loading) return;
+
+        if (isModelReady && messageQueue.length > 0) {
             const nextMsg = messageQueue[0];
             setMessageQueue(prev => prev.slice(1));
+            setMessages(prev => prev.map(m =>
+                m.source === 'queued' && m.text === nextMsg
+                    ? { ...m, source: undefined }
+                    : m
+            ));
             processUserMessage(nextMsg);
+            return;
         }
-    }, [isModelReady, messageQueue, loading]);
 
-    // Process pending queue when response finishes
-    useEffect(() => {
-        if (!loading && pendingQueue.length > 0) {
+        if (pendingQueue.length > 0) {
             const nextMsg = pendingQueue[0];
             setPendingQueue(prev => prev.slice(1));
             setMessages(prev => prev.map(m =>
@@ -406,7 +434,11 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             ));
             processUserMessage(nextMsg);
         }
-    }, [loading, pendingQueue]);
+    }, [isModelReady, messageQueue, pendingQueue, loading]);
+
+    useEffect(() => {
+        syncModelServiceReady();
+    }, [syncModelServiceReady]);
 
     // Sync cached models state and handle teardown for demo mode
     useEffect(() => {
@@ -430,6 +462,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             window.addEventListener('beforeunload', handleBeforeUnload);
             return () => {
                 window.removeEventListener('beforeunload', handleBeforeUnload);
+                resetModelStore();
                 const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
                 modelService.unloadModel(keepCached);
             };
@@ -437,8 +470,17 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     }, [isDemoMode]);
 
     const processUserMessage = async (userText) => {
-        if (!isModelReady && downloadProgress) {
-            setMessages(prev => [...prev, { role: 'user', text: userText, source: 'queued' }]);
+        if (localBrainChoice !== 'cloud' && !isModelReady && downloadProgress) {
+            setMessages(prev => {
+                const next = [...prev];
+                for (let i = next.length - 1; i >= 0; i -= 1) {
+                    if (next[i].role === 'user' && next[i].text === userText) {
+                        next[i] = { ...next[i], source: 'queued' };
+                        return next;
+                    }
+                }
+                return [...next, { role: 'user', text: userText, source: 'queued' }];
+            });
             setMessageQueue(prev => [...prev, userText]);
             return;
         }
@@ -607,8 +649,17 @@ CONVERSATION RULES:
 
 Use LaTeX: $$block formulas$$ and $inline math$`;
 
+            let skippedQueuedUserMessage = false;
+            const conversationHistory = messages.filter(m => {
+                if (!skippedQueuedUserMessage && m.source === 'queued' && m.text === userText) {
+                    skippedQueuedUserMessage = true;
+                    return false;
+                }
+                return true;
+            });
+
             await modelService.streamChat(
-                messages.concat({ role: 'user', text: streamingUserText }).map(m => ({
+                conversationHistory.concat({ role: 'user', text: streamingUserText }).map(m => ({
                     role: m.role === 'bot' ? 'assistant' : 'user',
                     content: m.text
                 })),
@@ -731,7 +782,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (showLocalChat) {
         return (
             <div className="relative z-50 min-h-screen bg-cosmic noise-overlay">
-                <ChatInterface onBack={() => setShowLocalChat(false)} />
+                <ChatInterface
+                    onBack={() => { setShowLocalChat(false); syncModelServiceReady(); }}
+                    onReady={syncModelServiceReady}
+                />
             </div>
         );
     }
@@ -880,7 +934,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         {/* Local SLM Toggle - only in full mode */}
                         {!isDemoMode && (
                             <button
-                                onClick={() => { setShowLocalChat(true); startLocalBrain('large'); }}
+                                onClick={() => { setShowLocalChat(true); startLocalBrain('quality'); }}
                                 className="flex items-center gap-1.5 px-2 py-1.5 bg-surface-1 border border-surface-3 hover:border-primary/30 text-muted-foreground hover:text-primary rounded-lg transition-all text-xs font-display tracking-wide"
                             >
                                 <Cpu size={13} />
@@ -984,10 +1038,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                             <p className="text-xs text-muted-foreground leading-relaxed">
                                 Switching to{' '}
                                 <span className="text-foreground font-medium">
-                                    {showModelSwitchConfirm === 'small' ? 'Fast (Gemma 2 2B)' : 'Quality (Phi 3.5 Mini)'}
+                                    {modelService.constructor.getAvailableModels()[showModelSwitchConfirm]?.displayName || showModelSwitchConfirm}
                                 </span>
                                 {' '}requires downloading a new model
-                                (~{showModelSwitchConfirm === 'small' ? '1,400' : '2,200'} MB).
+                                (~{(modelService.constructor.getAvailableModels()[showModelSwitchConfirm]?.estimatedSizeMB || 0).toLocaleString()} MB).
                                 The current model will be unloaded.
                             </p>
                             <div className="flex gap-3 justify-center">
@@ -1217,13 +1271,13 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 relative z-10">
                             <button
-                                onClick={() => { setLocalBrainChoice('local'); startLocalBrain('large'); }}
+                                onClick={() => { setLocalBrainChoice('local'); startLocalBrain('quality'); }}
                                 className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl bg-primary/10 border border-primary/30 hover:bg-primary/20 hover:border-primary/50 transition-all group"
                             >
                                 <Cpu size={36} className="text-primary group-hover:scale-110 transition-transform" />
                                 <div>
                                     <div className="font-display font-bold text-foreground">Download Local Brain</div>
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Recommended (~2.2GB)</div>
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Recommended (~{(modelService.constructor.getAvailableModels().quality.estimatedSizeMB / 1000).toFixed(1)}GB)</div>
                                 </div>
                             </button>
                             <button

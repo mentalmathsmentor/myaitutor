@@ -1,7 +1,7 @@
 // Dynamic import for web-llm to speed up initial page load
-// import { CreateMLCEngine } from "@mlc-ai/web-llm";
+// import { MLCEngine } from "@mlc-ai/web-llm";
 
-// Model options - small for demo (fast download), large for full quality
+// Model options for browser-local inference, ordered from lightest to heaviest
 const MODELS = {
     tiny: {
         id: "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
@@ -9,7 +9,8 @@ const MODELS = {
         displayName: "Tiny (Qwen2.5 1.5B)",
         estimatedSizeMB: 1200,
         description: "Ultra-fast loading, for low-end devices",
-        icon: "zap"
+        icon: "zap",
+        tag: "Fastest"
     },
     balanced: {
         id: "Llama-3.2-3B-Instruct-q4f16_1-MLC",
@@ -17,15 +18,35 @@ const MODELS = {
         displayName: "Balanced (Llama 3.2 3B)",
         estimatedSizeMB: 2000,
         description: "Strongest general maths tutoring",
-        icon: "brain"
+        icon: "brain",
+        tag: "Balanced"
     },
     quality: {
         id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
         name: "Phi 3.5 Mini",
         displayName: "Quality (Phi 3.5)",
         estimatedSizeMB: 2200,
-        description: "Highest logical reasoning capability",
-        icon: "flask"
+        description: "Strong logical reasoning capability",
+        icon: "flask",
+        tag: "Deep Logic"
+    },
+    gemma4: {
+        id: "gemma-4-E2B-it-q4f16_1-MLC",
+        name: "Gemma 4 E2B",
+        displayName: "Gemma 4 (E2B)",
+        estimatedSizeMB: 3400,
+        description: "Newest Gemma instruct model for richer local tutoring",
+        icon: "brain",
+        tag: "New Gemma"
+    },
+    phi4: {
+        id: "Phi-4-mini-instruct-q4f16_1-MLC",
+        name: "Phi 4 Mini",
+        displayName: "Phi 4 Mini",
+        estimatedSizeMB: 3400,
+        description: "Latest compact reasoning model for deeper explanations",
+        icon: "flask",
+        tag: "New Logic"
     },
     legacy: {
         id: "gemma-2-2b-it-q4f16_1-MLC",
@@ -36,6 +57,12 @@ const MODELS = {
         icon: "archive",
         hidden: true
     }
+};
+
+const createCancellationError = () => {
+    const error = new Error('Model initialization cancelled.');
+    error.name = 'ModelInitializationCancelledError';
+    return error;
 };
 
 const SYSTEM_INSTRUCTION = `You are "Mate" - a friendly Australian AI tutor for NSW HSC Mathematics.
@@ -76,7 +103,8 @@ class ModelService {
         this.status = 'IDLE'; // 'IDLE' | 'INITIALIZING' | 'READY' | 'ERROR'
         this.session = null; // for window.ai
         this.initPromise = null; // Singleton promise for in-flight init
-        this.currentModelSize = null; // 'tiny' | 'balanced' | 'quality' | 'legacy'
+        this.initGeneration = 0; // Invalidates superseded in-flight initialisation
+        this.currentModelSize = null; // key of MODELS
         this.currentModelInfo = null; // { id, name, displayName, estimatedSizeMB }
         this.downloadStartTime = null;
         this.lastProgressBytes = 0;
@@ -134,9 +162,13 @@ class ModelService {
     /**
      * Initialize the model engine
      * @param {Function} onProgress - Callback for progress updates: (report: { text, progress, fetchedMB, totalMB, speedMBps }) => void
-     * @param {string} modelSize - 'tiny', 'balanced', 'quality', 'legacy' (default: 'balanced')
+     * @param {string} modelSize - 'tiny', 'balanced', 'quality', 'gemma4', 'phi4', or 'legacy' (default: 'balanced')
      */
     async initialize(onProgress, modelSize = 'balanced') {
+        if (!MODELS[modelSize]) {
+            throw new Error(`Unknown model size: ${modelSize}`);
+        }
+
         // If already ready with the SAME model, just return
         if (this.status === 'READY' && this.currentModelSize === modelSize) {
             onProgress({ text: "Model already loaded.", progress: 100 });
@@ -169,14 +201,15 @@ class ModelService {
 
         this.status = 'INITIALIZING';
         this.currentModelSize = modelSize;
-        this.currentModelInfo = MODELS[modelSize] || MODELS.balanced;
+        this.currentModelInfo = MODELS[modelSize];
         this.downloadStartTime = Date.now();
         this.lastProgressTime = Date.now();
         this.lastProgressBytes = 0;
         this.downloadSpeedMBps = null;
 
         // Wrap the actual work in a promise to store it
-        this.initPromise = this._doInitialize(onProgress);
+        const generation = ++this.initGeneration;
+        this.initPromise = this._doInitialize(onProgress, generation);
         return this.initPromise;
     }
 
@@ -184,14 +217,9 @@ class ModelService {
      * Reset the engine so a new model can be loaded
      */
     async reset() {
-        if (this.engine) {
-            try {
-                await this.engine.unload();
-            } catch (e) {
-                console.warn("Engine unload error (non-fatal):", e);
-            }
-            this.engine = null;
-        }
+        this.initGeneration += 1;
+        const engine = this.engine;
+        this.engine = null;
         this.session = null;
         this.type = 'NONE';
         this.status = 'IDLE';
@@ -200,9 +228,17 @@ class ModelService {
         this.currentModelInfo = null;
         this.downloadStartTime = null;
         this.downloadSpeedMBps = null;
+
+        if (engine) {
+            try {
+                await engine.unload();
+            } catch (e) {
+                console.warn("Engine unload error (non-fatal):", e);
+            }
+        }
     }
 
-    async _doInitialize(onProgress) {
+    async _doInitialize(onProgress, generation) {
         const modelConfig = this.currentModelInfo;
         const estimatedMB = modelConfig.estimatedSizeMB;
 
@@ -220,48 +256,77 @@ class ModelService {
 
         // WebLLM initialization
         wrapProgress(`Initializing WebLLM (${modelConfig.name})...`);
+        const isCurrent = () => generation === this.initGeneration;
+
         try {
-            const { CreateMLCEngine } = await import("@mlc-ai/web-llm");
-            this.engine = await CreateMLCEngine(
-                modelConfig.id,
-                {
-                    initProgressCallback: (report) => {
-                        // Parse progress percentage from report
-                        const percentMatch = report.text.match(/(\d+(?:\.\d+)?)\s*%/);
-                        let progressNum = null;
-                        if (percentMatch) {
-                            progressNum = parseFloat(percentMatch[1]);
-                        }
+            const { MLCEngine } = await import("@mlc-ai/web-llm");
+            if (!isCurrent()) throw createCancellationError();
 
-                        // Estimate download speed from progress
-                        if (progressNum !== null && progressNum > 0) {
-                            const now = Date.now();
-                            const fetchedMB = (progressNum / 100) * estimatedMB;
-                            const elapsed = (now - this.downloadStartTime) / 1000; // seconds
-                            if (elapsed > 1) {
-                                this.downloadSpeedMBps = fetchedMB / elapsed;
-                            }
-                        }
+            const engine = new MLCEngine({
+                initProgressCallback: (report) => {
+                    if (!isCurrent()) return;
 
-                        // Build user-friendly text
-                        let friendlyText = report.text;
-                        if (progressNum !== null) {
-                            const fetchedMB_display = ((progressNum / 100) * estimatedMB).toFixed(0);
-                            friendlyText = `Downloading model weights (${fetchedMB_display} MB / ${estimatedMB} MB)`;
-                        }
-
-                        wrapProgress(friendlyText, progressNum, {
-                            fetchedMB: progressNum !== null ? ((progressNum / 100) * estimatedMB) : null,
-                        });
+                    // Parse progress percentage from report
+                    const percentMatch = report.text.match(/(\d+(?:\.\d+)?)\s*%/);
+                    let progressNum = null;
+                    if (percentMatch) {
+                        progressNum = parseFloat(percentMatch[1]);
                     }
+
+                    // Estimate download speed from progress
+                    if (progressNum !== null && progressNum > 0) {
+                        const now = Date.now();
+                        const fetchedMB = (progressNum / 100) * estimatedMB;
+                        const elapsed = (now - this.downloadStartTime) / 1000; // seconds
+                        if (elapsed > 1) {
+                            this.downloadSpeedMBps = fetchedMB / elapsed;
+                        }
+                    }
+
+                    // Build user-friendly text
+                    let friendlyText = report.text;
+                    if (progressNum !== null) {
+                        const fetchedMB_display = ((progressNum / 100) * estimatedMB).toFixed(0);
+                        friendlyText = `Downloading model weights (${fetchedMB_display} MB / ${estimatedMB} MB)`;
+                    }
+
+                    wrapProgress(friendlyText, progressNum, {
+                        fetchedMB: progressNum !== null ? ((progressNum / 100) * estimatedMB) : null,
+                    });
                 }
-            );
+            });
+            this.engine = engine;
+            await engine.reload(modelConfig.id);
+
+            if (!isCurrent() || this.engine !== engine) {
+                try { await engine.unload(); } catch (e) {
+                    console.warn("Cancelled engine unload error (non-fatal):", e);
+                }
+                throw createCancellationError();
+            }
+
             this.type = 'WEB_LLM';
             wrapProgress(`Ready (${modelConfig.name})`, 100);
             this.status = 'READY';
             this.initPromise = null; // Clear so future calls can re-init if needed
             return modelConfig.name;
         } catch (err) {
+            if (!isCurrent()) {
+                throw createCancellationError();
+            }
+            const failedEngine = this.engine;
+            if (failedEngine) {
+                try { await failedEngine.unload(); } catch (e) {
+                    console.warn("Failed engine unload error (non-fatal):", e);
+                }
+                if (!isCurrent() || this.engine !== failedEngine) {
+                    throw createCancellationError();
+                }
+                this.engine = null;
+            }
+            if (!isCurrent()) {
+                throw createCancellationError();
+            }
             console.error("Critical: Failed to load local model.", err);
             this.type = 'ERROR';
             this.status = 'ERROR';
@@ -340,20 +405,13 @@ class ModelService {
      * @param {boolean} shouldCache - If false, deletes all webllm/model caches
      */
     async unloadModel(shouldCache = false) {
-        if (this.engine) {
-            try {
-                await this.engine.unload();
-            } catch (e) {
-                console.warn("Engine unload error:", e);
-            }
-            this.engine = null;
-            // Additional dispose to clear GPU memory as per user request
-            if (this.engine && typeof this.engine.dispose === 'function') {
-                try { this.engine.dispose(); } catch (e) {}
-            }
-        }
-        
+        const engine = this.engine;
         await this.reset();
+
+        // Additional dispose to clear GPU memory as per user request
+        if (engine && typeof engine.dispose === 'function') {
+            try { engine.dispose(); } catch (e) {}
+        }
 
         if (!shouldCache && typeof caches !== 'undefined') {
             try {
