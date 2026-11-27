@@ -190,6 +190,7 @@ describe('state transitions and error boundaries',()=>{
     mount('Year 11','Mathematics Advanced','First synthetic brief');
     fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
     fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
+    await waitFor(() => expect(clipboard).toHaveBeenCalled());
     fireEvent.keyDown(document,{key:'Escape'});
     next(); fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
     fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));

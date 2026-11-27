@@ -26,6 +26,16 @@ describe('curriculum profile resolution', () => {
     expect(instruction).toContain('before generating');
   });
 
+  it('preserves non-mathematics DP subjects instead of forcing a mathematics course', () => {
+    const profile = resolveCurriculumProfile('Year 12', 'IB DP Physics HL');
+    expect(profile).toMatchObject({ authority: 'IB', programme: 'dp', level: 'HL', dpMathematics: false, specificity: 'exact' });
+    const instruction = buildCurriculumSearchInstruction('Year 12', 'IB DP Physics HL');
+    expect(instruction).toContain('IB DP Physics HL in the IB Diploma Programme');
+    expect(instruction).toContain('Preserve that subject');
+    expect(instruction).toContain('do not convert it into mathematics');
+    expect(instruction).not.toContain('analysis and approaches or applications and interpretation');
+  });
+
   it('uses the common MYP Years 1-3 column without imposing standard or extended', () => {
     const profile = resolveCurriculumProfile('Stage 4 (Yr 7-8)', 'IB MYP Year 3 Mathematics');
     expect(profile).toMatchObject({ authority: 'IB', programme: 'myp', mypYear: 3, frameworkColumn: 'myp-1-3', specificity: 'exact' });
@@ -43,6 +53,15 @@ describe('curriculum profile resolution', () => {
     expect(missing).toContain('do not equate them with DP SL/HL');
     const extended = resolveCurriculumProfile('Stage 5 (Yr 9-10)', 'IB MYP Year 5 Extended Mathematics');
     expect(extended).toMatchObject({ frameworkColumn: 'myp-4-5-extended', courseLevel: 'extended', specificity: 'exact' });
+  });
+
+  it('recognises the full Middle Years Programme name without mistaking a school year for an MYP year', () => {
+    const profile = resolveCurriculumProfile('Stage 4 (Yr 7-8)', 'IB Middle Years Programme Year 3 Mathematics');
+    expect(profile).toMatchObject({ programme: 'myp', mypYear: 3, frameworkColumn: 'myp-1-3', specificity: 'exact' });
+    const schoolOnly = resolveCurriculumProfile('Stage 4 (Yr 7-8)', 'IB Middle Years Programme school Year 8 Mathematics');
+    expect(schoolOnly.mypYear).toBeNull();
+    expect(schoolOnly.schoolYear).toBe(8);
+    expect(buildCurriculumSearchInstruction('Stage 4 (Yr 7-8)', 'IB Middle Years Programme school Year 8 Mathematics')).toContain('Do not convert school Year 8 automatically');
   });
 
   it('does not convert a school Year 8 automatically into an IB MYP year', () => {

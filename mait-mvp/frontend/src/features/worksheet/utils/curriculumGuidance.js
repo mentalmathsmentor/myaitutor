@@ -13,7 +13,7 @@ const schoolYearMatch = subject => {
 };
 
 const mypYearMatch = subject => {
-  const match = compact(subject).match(/\bmyp\s*(?:year\s*)?([1-5])\b/i);
+  const match = compact(subject).match(/\b(?:myp|middle\s+years\s+programme)\s*(?:year\s*)?([1-5])\b/i);
   return match ? Number(match[1]) : null;
 };
 
@@ -58,11 +58,18 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
   const explicitMyp = /\b(?:myp|middle\s+years\s+programme)\b/i.test(combined);
   const explicitDp = /\b(?:dp|diploma\s+programme)\b/i.test(combined);
   const programme = explicitMyp ? 'myp' : (explicitDp || course || level ? 'dp' : 'ib-unknown');
+  const dpMathematics = /\b(?:math|maths|mathematics)\b/i.test(subject) || Boolean(course);
+  let specificity = 'needs-clarification';
+  if (programme === 'dp') {
+    specificity = dpMathematics ? (course && level ? 'exact' : 'needs-clarification') : (level ? 'exact' : 'needs-clarification');
+  } else if (programme === 'myp' && mypYear && (mypYear <= 3 || courseLevel)) {
+    specificity = 'exact';
+  }
 
   return {
     authority: 'IB',
     programme,
-    specificity: programme === 'dp' ? (course && level ? 'exact' : 'needs-clarification') : (programme === 'myp' && mypYear && (mypYear <= 3 || courseLevel) ? 'exact' : 'needs-clarification'),
+    specificity,
     frameworkColumn: programme === 'myp' && mypYear ? (mypYear <= 3 ? 'myp-1-3' : `myp-4-5-${courseLevel || 'unresolved'}`) : null,
     courseLevel,
     stage,
@@ -70,6 +77,7 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
     course,
     level,
     mypYear,
+    dpMathematics,
     schoolYear: year
   };
 }
@@ -77,6 +85,13 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
 const profileInstruction = ({ stage, subject }, profile) => {
   if (profile.authority === 'NESA') {
     return `Use the official NSW Curriculum/NESA sources for ${stage} ${subject}; confirm the exact course and current syllabus version before aligning questions.`;
+  }
+
+  if (profile.programme === 'dp' && !profile.dpMathematics) {
+    if (profile.level) {
+      return `The request appears to be ${subject} in the IB Diploma Programme. Preserve that subject; do not convert it into mathematics. Use official IB DP sources for the exact subject, ${profile.level} level where that course uses SL/HL, syllabus version and assessment cohort before aligning questions.`;
+    }
+    return `The request appears to be ${subject} in the IB Diploma Programme, but the level is incomplete. Preserve that subject; do not convert it into mathematics. Ask whether SL or HL applies before generating.`;
   }
 
   if (profile.programme === 'dp' && profile.specificity === 'exact') {

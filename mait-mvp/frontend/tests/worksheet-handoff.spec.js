@@ -159,6 +159,39 @@ for (const [button, url, full] of [
   });
 }
 
+test('one-click clipboard writes are serialised so a superseded prompt cannot finish last', async ({ page }) => {
+  await chooseCourse(page, 'Year 12', 'English'); await briefField(page).fill('First synthetic brief');
+  await page.evaluate(() => {
+    window.__clipboardResolvers = [];
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: text => new Promise(resolve => {
+          window.__clipboardResolvers.push(() => resolve(window.__worksheetCopies.push(text)));
+        })
+      }
+    });
+  });
+  await page.getByRole('button', { name: 'Copy & open Gemini', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.__clipboardResolvers.length)).toBe(1);
+  await briefField(page).fill('Second synthetic brief');
+  await expect(briefField(page)).toHaveValue('Second synthetic brief');
+  await page.getByRole('button', { name: 'Copy & open ChatGPT', exact: true }).click();
+  await page.waitForTimeout(100);
+  expect(await page.evaluate(() => window.__clipboardResolvers.length)).toBe(1);
+  await page.evaluate(() => window.__clipboardResolvers[0]());
+  await expect.poll(() => page.evaluate(() => window.__clipboardResolvers.length)).toBe(2);
+  await page.evaluate(() => window.__clipboardResolvers[1]());
+  await expect.poll(() => page.evaluate(() => window.__worksheetCopies.length)).toBe(2);
+  const copies = await page.evaluate(() => window.__worksheetCopies);
+  expect(copies[0]).toContain('First synthetic brief');
+  expect(copies[0]).not.toContain('Second synthetic brief');
+  expect(copies[1]).toContain('Second synthetic brief');
+  expect(copies[1]).not.toContain('First synthetic brief');
+  expect(copies.at(-1)).toBe(copies[1]);
+  await expect(page.getByRole('heading', { name: 'Copied! Now paste it into ChatGPT', exact: true })).toBeVisible();
+});
+
 test('a failed one-click copy shows the prompt instead of opening anything', async ({ page }) => {
   await chooseCourse(page, 'Year 12', 'English'); await briefField(page).fill('Synthetic denied brief');
   await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Permission denied'); } } }));
