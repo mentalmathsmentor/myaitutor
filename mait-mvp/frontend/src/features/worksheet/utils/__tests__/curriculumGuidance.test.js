@@ -39,6 +39,23 @@ describe('curriculum profile resolution', () => {
     expect(instruction).not.toContain('analysis and approaches or applications and interpretation');
   });
 
+  it('does not impose SL/HL on DP core Theory of Knowledge', () => {
+    const profile = resolveCurriculumProfile('Year 12', 'IB DP Theory of Knowledge');
+    expect(profile).toMatchObject({ programme: 'dp', mathematicsSubject: false, usesSlHl: false, specificity: 'exact' });
+    const instruction = buildCurriculumSearchInstruction('Year 12', 'IB DP Theory of Knowledge');
+    expect(instruction).toContain('The request appears to be IB DP Theory of Knowledge.');
+    expect(instruction).toContain('do not impose SL/HL because this DP core component does not use those levels');
+    expect(instruction).not.toContain('ask whether SL or HL');
+  });
+
+  it('keeps level clarification for non-mathematics DP subjects that may use SL/HL', () => {
+    const profile = resolveCurriculumProfile('Year 12', 'IB DP Physics');
+    expect(profile).toMatchObject({ programme: 'dp', usesSlHl: true, specificity: 'needs-clarification' });
+    const instruction = buildCurriculumSearchInstruction('Year 12', 'IB DP Physics');
+    expect(instruction).toContain('Verify whether the official course uses SL/HL');
+    expect(instruction).toContain('ask whether SL or HL before generating');
+  });
+
   it('preserves non-mathematics MYP subjects without applying mathematics framework rules', () => {
     const profile = resolveCurriculumProfile('Stage 4 (Yr 7-8)', 'IB Middle Years Programme Year 3 Sciences');
     expect(profile).toMatchObject({ programme: 'myp', mypYear: 3, mathematicsSubject: false, frameworkColumn: null, specificity: 'exact' });

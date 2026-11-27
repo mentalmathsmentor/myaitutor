@@ -34,6 +34,16 @@ const dpCourse = subject => {
   return null;
 };
 
+const dpCoreWithoutSlHl = subject => {
+  const canonicalSubject = compact(subject)
+    .replace(/\binternational\s+baccalaureate\b/gi, ' ')
+    .replace(/\bdiploma\s+programme\b/gi, ' ')
+    .replace(/\b(?:ib|dp)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return /^(?:core\s+)?(?:theory\s+of\s+knowledge|tok|extended\s+essay|creativity\s*,?\s*activity\s*,?\s*service|cas)$/i.test(canonicalSubject);
+};
+
 export function resolveCurriculumProfile(selectedStage, displaySubject) {
   const stage = compact(selectedStage);
   const subject = compact(displaySubject);
@@ -59,9 +69,10 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
   const explicitDp = /\b(?:dp|diploma\s+programme)\b/i.test(combined);
   const programme = explicitMyp ? 'myp' : (explicitDp || course || level ? 'dp' : 'ib-unknown');
   const mathematicsSubject = /\b(?:math|maths|mathematics)\b/i.test(subject) || Boolean(course);
+  const usesSlHl = programme === 'dp' && !dpCoreWithoutSlHl(subject);
   let specificity = 'needs-clarification';
   if (programme === 'dp') {
-    specificity = mathematicsSubject ? (course && level ? 'exact' : 'needs-clarification') : (level ? 'exact' : 'needs-clarification');
+    specificity = mathematicsSubject ? (course && level ? 'exact' : 'needs-clarification') : (level || !usesSlHl ? 'exact' : 'needs-clarification');
   } else if (programme === 'myp' && mypYear && (!mathematicsSubject || mypYear <= 3 || courseLevel)) {
     specificity = 'exact';
   }
@@ -78,6 +89,7 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
     level,
     mypYear,
     mathematicsSubject,
+    usesSlHl,
     schoolYear: year
   };
 }
@@ -91,7 +103,10 @@ const profileInstruction = ({ stage, subject }, profile) => {
     if (profile.level) {
       return `The request appears to be ${subject}. Preserve that subject; do not convert it into mathematics. Use official IB DP sources for the exact subject, ${profile.level} level where that course uses SL/HL, syllabus version and assessment cohort before aligning questions.`;
     }
-    return `The request appears to be ${subject}, but the level is incomplete. Preserve that subject; do not convert it into mathematics. Ask whether SL or HL applies before generating.`;
+    if (!profile.usesSlHl) {
+      return `The request appears to be ${subject}. Preserve that subject; do not convert it into mathematics. Use official IB DP sources for the exact subject, syllabus version and assessment cohort before aligning questions; do not impose SL/HL because this DP core component does not use those levels.`;
+    }
+    return `The request appears to be ${subject}, but its level requirements are unresolved. Preserve that subject; do not convert it into mathematics. Verify whether the official course uses SL/HL; if it does, ask whether SL or HL before generating.`;
   }
 
   if (profile.programme === 'dp' && profile.specificity === 'exact') {
