@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -37,6 +37,10 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     
     const endOfMsgRef = useRef(null)
     const autoSavePromptShown = useRef(false)
+
+    const syncModelServiceReady = useCallback(() => {
+        setModelReady(modelService.getStatus().status === 'READY');
+    }, [setModelReady]);
 
     // Inactivity Tracker State
     const idleTimeoutRef = useRef(null)
@@ -406,7 +410,9 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     };
 
     useEffect(() => {
-        if (isModelReady && messageQueue.length > 0 && !loading) {
+        if (loading) return;
+
+        if (isModelReady && messageQueue.length > 0) {
             const nextMsg = messageQueue[0];
             setMessageQueue(prev => prev.slice(1));
             setMessages(prev => prev.map(m =>
@@ -415,12 +421,10 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
                     : m
             ));
             processUserMessage(nextMsg);
+            return;
         }
-    }, [isModelReady, messageQueue, loading]);
 
-    // Process pending queue when response finishes
-    useEffect(() => {
-        if (!loading && pendingQueue.length > 0 && messageQueue.length === 0) {
+        if (pendingQueue.length > 0) {
             const nextMsg = pendingQueue[0];
             setPendingQueue(prev => prev.slice(1));
             setMessages(prev => prev.map(m =>
@@ -430,11 +434,11 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             ));
             processUserMessage(nextMsg);
         }
-    }, [loading, pendingQueue, messageQueue]);
+    }, [isModelReady, messageQueue, pendingQueue, loading]);
 
     useEffect(() => {
-        setModelReady(modelService.getStatus().status === 'READY');
-    }, [setModelReady]);
+        syncModelServiceReady();
+    }, [syncModelServiceReady]);
 
     // Sync cached models state and handle teardown for demo mode
     useEffect(() => {
@@ -470,7 +474,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             setMessages(prev => {
                 const next = [...prev];
                 for (let i = next.length - 1; i >= 0; i -= 1) {
-                    if (next[i].role === 'user' && next[i].text === userText && next[i].source !== 'queued') {
+                    if (next[i].role === 'user' && next[i].text === userText) {
                         next[i] = { ...next[i], source: 'queued' };
                         return next;
                     }
@@ -778,7 +782,10 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (showLocalChat) {
         return (
             <div className="relative z-50 min-h-screen bg-cosmic noise-overlay">
-                <ChatInterface onBack={() => { setShowLocalChat(false); setModelReady(modelService.getStatus().status === 'READY'); }} />
+                <ChatInterface
+                    onBack={() => { setShowLocalChat(false); syncModelServiceReady(); }}
+                    onReady={syncModelServiceReady}
+                />
             </div>
         );
     }

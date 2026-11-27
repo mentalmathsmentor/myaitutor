@@ -3,7 +3,7 @@ import { Send, Sparkles, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { modelService } from '../services/ModelService';
 import MessageBubble from './MessageBubble';
 
-const ChatInterface = ({ onBack }) => {
+const ChatInterface = ({ onBack, onReady }) => {
     const [status, setStatus] = useState("initializing"); // initializing | ready | error
     const [statusMsg, setStatusMsg] = useState("Booting neural engine...");
     const [messages, setMessages] = useState([
@@ -32,15 +32,17 @@ const ChatInterface = ({ onBack }) => {
                     const text = typeof report === 'string' ? report : (report.text || "Loading...");
                     setStatusMsg(text);
                 }, targetModel);
+                if (modelService.getStatus().status === 'READY') onReady?.();
                 setStatus("ready");
                 setStatusMsg(`Active: ${modelName}`);
             } catch (e) {
+                if (e?.name === 'ModelInitializationCancelledError') return;
                 setStatus("error");
                 setStatusMsg(e.message || "Failed to load local model.");
             }
         };
         init();
-    }, []);
+    }, [onReady]);
 
     const scrollToBottom = () => {
         window.scrollTo({

@@ -2,6 +2,35 @@ const $ = (id) => document.getElementById(id);
 let mode = 'still', sequence = 0, engine = null, pending = null, loading = Promise.resolve();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const status = (text) => { $('status').textContent = text; };
+const MAX_MODEL_BYTES = 64 * 1024 * 1024;
+const modelSizeError = () => new Error('This preview accepts models up to 64 MiB.');
+
+async function readBoundedArrayBuffer(response) {
+  const contentLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_MODEL_BYTES) throw modelSizeError();
+  if (!response.body?.getReader) {
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > MAX_MODEL_BYTES) throw modelSizeError();
+    return buffer;
+  }
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_MODEL_BYTES) {
+      try { await reader.cancel(); } catch (error) {}
+      throw modelSizeError();
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return bytes.buffer;
+}
 
 function inspect(buffer) {
   const view = new DataView(buffer);
@@ -155,7 +184,7 @@ async function createEngine() {
 
 async function open(buffer, name, ownSequence) {
   if (ownSequence !== sequence) return;
-  if (buffer.byteLength > 64 * 1024 * 1024) throw new Error('This preview accepts models up to 64 MiB.');
+  if (buffer.byteLength > MAX_MODEL_BYTES) throw modelSizeError();
   const info = inspect(buffer), isVRM = !!(info.data.extensions?.VRMC_vrm || info.data.extensions?.VRM);
   status('Loading the optional 3D runtime…');
   if (!engine) {
@@ -166,7 +195,7 @@ async function open(buffer, name, ownSequence) {
   if (ownSequence !== sequence) return;
   const active = engine;
   const clips = await active.load(buffer, isVRM);
-  if (ownSequence !== sequence) { active.clear(); return; }
+  if (ownSequence !== sequence) { active.clear(); $('placeholder').hidden = false; return; }
   showMetrics([['Model file', `${(buffer.byteLength / 1e6).toFixed(2)} MB`], ['Indexed geometry estimate', `${info.triangles.toLocaleString()} triangles`], ['Materials / primitives', `${info.data.materials?.length || 0} / ${info.primitives}`], ['Animation clips / max morphs', `${clips} / ${info.morphs}`]]);
   status(`${name} loaded. ${clips ? 'Quiet motion can play the first embedded clip.' : 'No body animation clips are embedded; quiet motion adds VRM blinking only.'}`);
 }
@@ -174,10 +203,11 @@ async function open(buffer, name, ownSequence) {
 async function requestModel(source) {
   const id = ++sequence; pending?.abort(); pending = new AbortController();
   if (engine?.isLost()) { engine.dispose(); engine = null; }
-  engine?.clear(); $('placeholder').hidden = false;
+  engine?.clear(); $('placeholder').hidden = false; showMetrics([]);
   status('Reading model…');
   try {
-    const buffer = source instanceof File ? await source.arrayBuffer() : await fetch('/sample-model', { signal: pending.signal }).then((response) => { if (!response.ok) throw new Error('The existing sample is unavailable.'); return response.arrayBuffer(); });
+    if (source instanceof File && source.size > MAX_MODEL_BYTES) throw modelSizeError();
+    const buffer = source instanceof File ? await source.arrayBuffer() : await fetch('/sample-model', { signal: pending.signal }).then((response) => { if (!response.ok) throw new Error('The existing sample is unavailable.'); return readBoundedArrayBuffer(response); });
     loading = loading.catch(() => {}).then(() => open(buffer, source instanceof File ? source.name : 'Seed-san · existing sample', id));
     await loading;
   } catch (error) { if (id === sequence && error.name !== 'AbortError') { status(error.message); $('placeholder').hidden = false; } }
