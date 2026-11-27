@@ -109,4 +109,25 @@ describe('ModelService WebLLM catalogue', () => {
 
     expect(modelService.getStatus()).toMatchObject({ status: 'READY', engine: true, modelSize: 'quality' });
   });
+
+  it('clears service state synchronously when unloadModel starts', async () => {
+    let finishUnload;
+    const pendingUnload = new Promise((resolve) => { finishUnload = resolve; });
+    const engine = {
+      reload: vi.fn(async () => {}),
+      unload: vi.fn(() => pendingUnload),
+      dispose: vi.fn(),
+    };
+    mocks.engine = engine;
+    vi.stubGlobal('navigator', { gpu: {} });
+
+    await modelService.initialize(() => {}, 'tiny');
+    const unloadPromise = modelService.unloadModel(true);
+
+    expect(modelService.getStatus()).toMatchObject({ status: 'IDLE', engine: false });
+
+    finishUnload();
+    await unloadPromise;
+    expect(engine.dispose).toHaveBeenCalled();
+  });
 });

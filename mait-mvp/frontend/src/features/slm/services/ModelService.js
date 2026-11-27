@@ -405,21 +405,13 @@ class ModelService {
      * @param {boolean} shouldCache - If false, deletes all webllm/model caches
      */
     async unloadModel(shouldCache = false) {
-        if (this.engine) {
-            const engine = this.engine;
-            try {
-                await engine.unload();
-            } catch (e) {
-                console.warn("Engine unload error:", e);
-            }
-            this.engine = null;
-            // Additional dispose to clear GPU memory as per user request
-            if (typeof engine.dispose === 'function') {
-                try { engine.dispose(); } catch (e) {}
-            }
-        }
-        
+        const engine = this.engine;
         await this.reset();
+
+        // Additional dispose to clear GPU memory as per user request
+        if (engine && typeof engine.dispose === 'function') {
+            try { engine.dispose(); } catch (e) {}
+        }
 
         if (!shouldCache && typeof caches !== 'undefined') {
             try {

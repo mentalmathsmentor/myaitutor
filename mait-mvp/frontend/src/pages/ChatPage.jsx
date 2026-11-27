@@ -27,7 +27,7 @@ let localBrainAttemptCounter = 0
 export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode }) {
     const { showLocalChat, setShowLocalChat, showMobileSyllabus, setShowMobileSyllabus, showKeystrokePanel, setShowKeystrokePanel, showOverlay, setShowOverlay, showAutoSavePrompt, setShowAutoSavePrompt, showQueueConfirm, setShowQueueConfirm, autoSaveEnabled, setAutoSaveEnabled, isIdle, setIsIdle } = useUIStore();
     const { messages, setMessages, input, setInput, loading, setLoading, context, setContext, messageQueue, setMessageQueue, enqueue, dequeue, pendingQueue, setPendingQueue, clearHistory } = useChatStore();
-    const { isModelReady, setModelReady, modelLoading, setModelLoading, downloadProgress, setDownloadProgress, demoModelSize, setDemoModelSize, localBrainChoice, setLocalBrainChoice, loadedModelName, setLoadedModelName, downloadError, setDownloadError, webGPUError, setWebGPUError, showModelSwitchConfirm, setShowModelSwitchConfirm, cachedModels, setCachedModels } = useModelStore();
+    const { isModelReady, setModelReady, modelLoading, setModelLoading, downloadProgress, setDownloadProgress, demoModelSize, setDemoModelSize, localBrainChoice, setLocalBrainChoice, loadedModelName, setLoadedModelName, downloadError, setDownloadError, webGPUError, setWebGPUError, showModelSwitchConfirm, setShowModelSwitchConfirm, cachedModels, setCachedModels, reset: resetModelStore } = useModelStore();
     const { currentTime, tick, studyTimerRunning, setStudyTimerRunning, studyTimerSeconds, setStudyTimerSeconds, startTimer, stopTimer, resetTimer, incrementTimer } = useTimerStore();
 
     const [userProfile, setUserProfile] = useState(() => {
@@ -409,13 +409,18 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
         if (isModelReady && messageQueue.length > 0 && !loading) {
             const nextMsg = messageQueue[0];
             setMessageQueue(prev => prev.slice(1));
+            setMessages(prev => prev.map(m =>
+                m.source === 'queued' && m.text === nextMsg
+                    ? { ...m, source: undefined }
+                    : m
+            ));
             processUserMessage(nextMsg);
         }
     }, [isModelReady, messageQueue, loading]);
 
     // Process pending queue when response finishes
     useEffect(() => {
-        if (!loading && pendingQueue.length > 0) {
+        if (!loading && pendingQueue.length > 0 && messageQueue.length === 0) {
             const nextMsg = pendingQueue[0];
             setPendingQueue(prev => prev.slice(1));
             setMessages(prev => prev.map(m =>
@@ -425,7 +430,11 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             ));
             processUserMessage(nextMsg);
         }
-    }, [loading, pendingQueue]);
+    }, [loading, pendingQueue, messageQueue]);
+
+    useEffect(() => {
+        setModelReady(modelService.getStatus().status === 'READY');
+    }, [setModelReady]);
 
     // Sync cached models state and handle teardown for demo mode
     useEffect(() => {
@@ -449,6 +458,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             window.addEventListener('beforeunload', handleBeforeUnload);
             return () => {
                 window.removeEventListener('beforeunload', handleBeforeUnload);
+                resetModelStore();
                 const keepCached = localStorage.getItem('mait_webllm_cache_preference') === 'true';
                 modelService.unloadModel(keepCached);
             };
@@ -457,7 +467,16 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
 
     const processUserMessage = async (userText) => {
         if (localBrainChoice !== 'cloud' && !isModelReady && downloadProgress) {
-            setMessages(prev => [...prev, { role: 'user', text: userText, source: 'queued' }]);
+            setMessages(prev => {
+                const next = [...prev];
+                for (let i = next.length - 1; i >= 0; i -= 1) {
+                    if (next[i].role === 'user' && next[i].text === userText && next[i].source !== 'queued') {
+                        next[i] = { ...next[i], source: 'queued' };
+                        return next;
+                    }
+                }
+                return [...next, { role: 'user', text: userText, source: 'queued' }];
+            });
             setMessageQueue(prev => [...prev, userText]);
             return;
         }
@@ -626,8 +645,17 @@ CONVERSATION RULES:
 
 Use LaTeX: $$block formulas$$ and $inline math$`;
 
+            let skippedQueuedUserMessage = false;
+            const conversationHistory = messages.filter(m => {
+                if (!skippedQueuedUserMessage && m.source === 'queued' && m.text === userText) {
+                    skippedQueuedUserMessage = true;
+                    return false;
+                }
+                return true;
+            });
+
             await modelService.streamChat(
-                messages.concat({ role: 'user', text: streamingUserText }).map(m => ({
+                conversationHistory.concat({ role: 'user', text: streamingUserText }).map(m => ({
                     role: m.role === 'bot' ? 'assistant' : 'user',
                     content: m.text
                 })),
@@ -750,7 +778,7 @@ Use LaTeX: $$block formulas$$ and $inline math$`;
     if (showLocalChat) {
         return (
             <div className="relative z-50 min-h-screen bg-cosmic noise-overlay">
-                <ChatInterface onBack={() => setShowLocalChat(false)} />
+                <ChatInterface onBack={() => { setShowLocalChat(false); setModelReady(modelService.getStatus().status === 'READY'); }} />
             </div>
         );
     }
