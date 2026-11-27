@@ -169,6 +169,7 @@ test('official curriculum references and the current Gemini model hint are visib
   await page.getByRole('button', { name: 'Pedagogy', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Search NESA Website', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: /Official NESA curriculum/ })).toHaveAttribute('href', 'https://curriculum.nsw.edu.au/');
+  await expect(page.getByRole('link', { name: /IB MYP Mathematics/ })).toHaveAttribute('href', 'https://www.ibo.org/programmes/middle-years-programme/curriculum/mathematics/');
   await expect(page.getByRole('link', { name: /IB DP Mathematics/ })).toHaveAttribute('href', 'https://www.ibo.org/programmes/diploma-programme/curriculum/mathematics/');
   await expect(page.getByAltText(/Gemini model menu showing Auto, Gemini 4 Hydrogen, Gemini 4 Neon and Gemini 4 Carbon/)).toBeVisible();
   await expect(page.getByText(/Desktop example checked 27\/11\/2026/)).toBeVisible();
@@ -193,6 +194,9 @@ for (const [mode, button] of [['Off', 'AI general knowledge'], ['Provide', "I'll
     const copied = await page.evaluate(() => window.__copiedPrompt);
     expect(copied).toContain('- **Subject:** Mathematics Advanced');
     expect(copied).toContain('- **Course:** Year 12');
-    if (mode === 'Search') expect(copied).toContain('Consult official NESA sources for Year 12 Mathematics Advanced');
+    if (mode === 'Search') {
+      expect(copied).toContain('official NSW Curriculum/NESA sources for Year 12 Mathematics Advanced');
+      expect(copied).toContain('exact receipts');
+    }
   });
 }
