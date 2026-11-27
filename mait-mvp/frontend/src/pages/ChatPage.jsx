@@ -22,6 +22,8 @@ import { useChatStore } from '../stores/chatStore'
 import { useModelStore } from '../stores/modelStore'
 import { useTimerStore } from '../stores/timerStore'
 
+let localBrainAttemptCounter = 0
+
 export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode }) {
     const { showLocalChat, setShowLocalChat, showMobileSyllabus, setShowMobileSyllabus, showKeystrokePanel, setShowKeystrokePanel, showOverlay, setShowOverlay, showAutoSavePrompt, setShowAutoSavePrompt, showQueueConfirm, setShowQueueConfirm, autoSaveEnabled, setAutoSaveEnabled, isIdle, setIsIdle } = useUIStore();
     const { messages, setMessages, input, setInput, loading, setLoading, context, setContext, messageQueue, setMessageQueue, enqueue, dequeue, pendingQueue, setPendingQueue, clearHistory } = useChatStore();
@@ -35,7 +37,6 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     
     const endOfMsgRef = useRef(null)
     const autoSavePromptShown = useRef(false)
-    const localBrainAttemptRef = useRef(0)
 
     // Inactivity Tracker State
     const idleTimeoutRef = useRef(null)
@@ -85,7 +86,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             return;
         }
 
-        const attemptToken = ++localBrainAttemptRef.current;
+        const attemptToken = ++localBrainAttemptCounter;
 
         setDownloadError(null);
         setWebGPUError(null);
@@ -105,7 +106,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
         setShowOverlay(true);
 
         modelService.initialize((report) => {
-            if (attemptToken !== localBrainAttemptRef.current) return;
+            if (attemptToken !== localBrainAttemptCounter) return;
             setDownloadProgress({
                 text: report.text,
                 progress: report.progress || null,
@@ -115,12 +116,12 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             });
             setModelLoading(report.text);
         }, effectiveModelSize).then((modelName) => {
-            if (attemptToken !== localBrainAttemptRef.current) return;
+            if (attemptToken !== localBrainAttemptCounter) return;
             setModelLoading(null);
             setLoadedModelName(modelName);
             setDownloadProgress({ text: "Ready!", progress: 100, estimatedMB, speedMBps: null, fetchedMB: estimatedMB });
             setTimeout(() => {
-                if (attemptToken !== localBrainAttemptRef.current) return;
+                if (attemptToken !== localBrainAttemptCounter) return;
                 setDownloadProgress(null);
                 setShowOverlay(false);
             }, 2000);
@@ -128,7 +129,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
             setDownloadError(null);
         }).catch(err => {
             if (err?.name === 'ModelInitializationCancelledError') {
-                if (attemptToken === localBrainAttemptRef.current) {
+                if (attemptToken === localBrainAttemptCounter) {
                     setDownloadProgress(null);
                     setModelLoading(null);
                     setDownloadError(null);
@@ -136,7 +137,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
                 }
                 return;
             }
-            if (attemptToken !== localBrainAttemptRef.current) return;
+            if (attemptToken !== localBrainAttemptCounter) return;
             console.error("Local Brain Init Error", err);
             setModelLoading("Local connection failed.");
             const errMsg = err.message || "Download failed. Please check your connection and try again.";
