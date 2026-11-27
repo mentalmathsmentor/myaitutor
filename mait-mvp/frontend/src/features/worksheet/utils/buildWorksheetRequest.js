@@ -1,4 +1,5 @@
 import { buildSyllabusPacket } from './buildSyllabusPacket';
+import { buildCurriculumSearchInstruction } from './curriculumGuidance';
 
 export function buildWorksheetRequest(params) {
   const {
@@ -58,7 +59,7 @@ export function buildWorksheetRequest(params) {
 
   let customInstructions = '';
   if (syllabusContextMode === 'Search') {
-    customInstructions += `Syllabus context: Search. Consult official NESA sources for ${selectedStage} ${displaySubject} and the selected topics. Use any teacher-supplied teaching cohort or syllabus edition; if applicability is unclear, ask for clarification or a syllabus upload before generating. Identify the source URL and edition used before claiming alignment; do not assume the latest syllabus applies. MyAITutor has not retrieved or verified these sources. `;
+    customInstructions += `${buildCurriculumSearchInstruction(selectedStage, displaySubject)} `;
   } else if (syllabusContextMode === 'Provide') {
     customInstructions += `Syllabus context: Provide. I will upload the syllabus for ${selectedStage} ${displaySubject}. If it is missing or its applicability is unclear, ask for the upload or clarification before generating; do not claim to have read an unavailable attachment. `;
   } else {
