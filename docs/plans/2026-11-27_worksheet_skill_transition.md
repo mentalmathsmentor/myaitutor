@@ -25,11 +25,15 @@ Status: implemented in the worksheet handoff branch; live account upload still r
 The copied prompt must not say merely “use IB”. It must resolve and preserve the exact curriculum identity:
 
 - NSW/NESA: exact stage, subject/course and syllabus version.
-- IB MYP: exact MYP year 1-5 and whether standard or extended mathematics applies. The official MYP mathematics page describes number, algebra, geometry/trigonometry and statistics/probability, and standard versus extended challenge levels. An official IB research summary states that the IB approach does not provide specific or suggested year-by-year content; schools structure it themselves. Therefore a school year such as Year 8 must never be converted automatically into an MYP year. If the school confirms Year 8 = MYP Year 3, the prompt may use that confirmed mapping.
+- IB MYP: exact MYP year 1-5, school-confirmed assessment-criteria year 1/3/5, exact branch and exact topic/skill row. MYP Years 1-3 use one common framework column; standard/extended is structurally a Years 4-5, school-defined distinction and must not be imposed on Year 3 or equated with DP SL/HL. The IB does not provide a universal year-by-year content sequence or grade conversion, so a school year such as Year 8 must never be converted automatically. Many Australian schools treat Year 8 as MYP Year 3 or use Year 3 criteria, but that is implementation-specific; if the school confirms the mapping, the prompt may use it.
   - https://www.ibo.org/programmes/middle-years-programme/curriculum/mathematics/
   - https://www.ibo.org/globalassets/new-structure/research/pdfs/myp-math-skills-framework-summary-en.pdf
 - IB DP: exact course (`analysis and approaches` or `applications and interpretation`), exact level (`SL` or `HL`), assessment cohort, and whether the current or incoming curriculum applies. The official DP page lists AA SL/HL and AI SL/HL, says students can study only one DP mathematics course, and distinguishes the current courses from the new curriculum taught from 2027 with first assessment in 2029.
   - https://www.ibo.org/programmes/diploma-programme/curriculum/mathematics/
+
+## Licensing caution
+
+IB publication copyright language expressly restricts commercial use by operators of curriculum-mapping or teacher-resource digital platforms without written licence. Keep IB guide text out of the local packet, require short receipt quotations only where lawful/permitted, and obtain licensing advice before productising stored or substantial verbatim IB content.
 
 ## Receipt contract now embedded in Search prompts
 

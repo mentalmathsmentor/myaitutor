@@ -24,7 +24,7 @@ describe('portable worksheet prompt', () => {
     }
   });
   it('tells portable AIs to retrieve official curriculum receipts before alignment', () => {
-    for (const phrase of ['exact curriculum receipts', 'MYP year 1-5', 'standard/extended', 'AA/AI', 'SL/HL', 'assessment cohort', 'topic -> receipt -> question-number mapping']) {
+    for (const phrase of ['exact curriculum receipts', 'MYP year 1-5', 'assessment-criteria year 1/3/5', 'one common column', 'AA/AI', 'SL/HL', 'exam session', 'topic -> receipt -> question-number mapping']) {
       expect(portableInstructions).toContain(phrase);
     }
   });

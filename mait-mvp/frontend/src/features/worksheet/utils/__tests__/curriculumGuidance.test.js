@@ -15,6 +15,8 @@ describe('curriculum profile resolution', () => {
     expect(instruction).toContain('analysis and approaches HL');
     expect(instruction).toContain('assessment cohort');
     expect(instruction).toContain('current or incoming curriculum');
+    expect(instruction).toContain('through November 2028');
+    expect(instruction).toContain('May 2029 onward');
   });
 
   it('asks for missing IB DP course or level instead of guessing', () => {
@@ -24,19 +26,30 @@ describe('curriculum profile resolution', () => {
     expect(instruction).toContain('before generating');
   });
 
-  it('uses an exact IB MYP year while requiring standard or extended confirmation', () => {
+  it('uses the common MYP Years 1-3 column without imposing standard or extended', () => {
     const profile = resolveCurriculumProfile('Stage 4 (Yr 7-8)', 'IB MYP Year 3 Mathematics');
-    expect(profile).toMatchObject({ authority: 'IB', programme: 'myp', mypYear: 3, specificity: 'exact' });
+    expect(profile).toMatchObject({ authority: 'IB', programme: 'myp', mypYear: 3, frameworkColumn: 'myp-1-3', specificity: 'exact' });
     const instruction = buildCurriculumSearchInstruction('Stage 4 (Yr 7-8)', 'IB MYP Year 3 Mathematics');
     expect(instruction).toContain('MYP Year 3');
-    expect(instruction).toContain('standard or extended');
+    expect(instruction).toContain('one common topic/skill column');
+    expect(instruction).toContain('do not impose standard/extended');
+    expect(instruction).toContain('assessment-criteria year (1, 3 or 5)');
     expect(instruction).toContain('does not prescribe a year-by-year content sequence');
+  });
+
+  it('requires the school-defined standard or extended column for MYP Years 4-5', () => {
+    const missing = buildCurriculumSearchInstruction('Stage 5 (Yr 9-10)', 'IB MYP Year 5 Mathematics');
+    expect(missing).toContain('standard or extended');
+    expect(missing).toContain('do not equate them with DP SL/HL');
+    const extended = resolveCurriculumProfile('Stage 5 (Yr 9-10)', 'IB MYP Year 5 Extended Mathematics');
+    expect(extended).toMatchObject({ frameworkColumn: 'myp-4-5-extended', courseLevel: 'extended', specificity: 'exact' });
   });
 
   it('does not convert a school Year 8 automatically into an IB MYP year', () => {
     const instruction = buildCurriculumSearchInstruction('Stage 4 (Yr 7-8)', 'IB Year 8 Mathematics');
     expect(instruction).toContain('Do not convert school Year 8 automatically');
     expect(instruction).toContain('exact MYP year (1-5)');
+    expect(instruction).toContain('assessment-criteria year (1, 3 or 5)');
     expect(instruction).toContain('If the teacher or school confirms Year 8 = MYP Year 3');
   });
 

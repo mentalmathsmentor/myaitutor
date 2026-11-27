@@ -661,7 +661,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                             onChange={(e) => setCustomSubject(e.target.value)}
                             className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-white/40 focus:border-mait-cyan focus:outline-none transition-colors"
                           />
-                          <p className="mt-2 text-xs leading-relaxed text-white/50">For IB, include the exact programme and level: MYP year 1-5 plus standard/extended, or DP AA/AI plus SL/HL. School Year 8 alone is ambiguous because the IB does not prescribe a year-by-year content sequence.</p>
+                          <p className="mt-2 text-xs leading-relaxed text-white/50">For IB, include the exact programme and level: MYP year 1-5 plus assessment-criteria year, or DP AA/AI plus SL/HL. MYP Years 1-3 share one framework column; standard/extended applies only where a school defines it for Years 4-5. School Year 8 alone is ambiguous because the IB does not prescribe a year-by-year content sequence.</p>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -1307,7 +1307,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  It writes an instruction requiring the destination AI to retrieve official curriculum sources now and produce exact receipts before making questions. NESA requests use the selected stage and course. IB requests distinguish MYP year 1-5 plus standard/extended from DP AA/AI plus SL/HL and assessment cohort; a school year such as Year 8 is not automatically converted. MyAITutor does not retrieve or verify sources, so always check the receipts and finished worksheet.
+                  It writes an instruction requiring the destination AI to retrieve official curriculum sources now and produce exact receipts before making questions. NESA requests use the selected stage and course. IB requests distinguish exact MYP year, assessment-criteria year and framework column from DP AA/AI plus SL/HL and exam session; a school year such as Year 8 is not automatically converted. MyAITutor does not retrieve or verify sources, so always check the receipts and finished worksheet.
                 </div>
               </details>
 
