@@ -33,7 +33,7 @@ for (const [stage, label, code, focusId] of cases) {
     await page.getByRole('textbox', { name: 'Find a topic or syllabus point' }).fill(label);
     await page.getByRole('checkbox', { name: label, exact: true }).first().check();
     await page.getByRole('button', { name: 'Pedagogy', exact: true }).click();
-    await page.getByRole('button', { name: 'Ask Gemini to search NESA', exact: true }).click();
+    await page.getByRole('button', { name: 'Search NESA Website', exact: true }).click();
     const prompt = await copyPrompt(page);
     expect(prompt).toContain(`- **Course:** ${stage}`);
     expect(prompt).toContain('- **Subject:** Mathematics');

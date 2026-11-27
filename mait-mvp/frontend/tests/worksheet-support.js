@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-export const contextNames = { Off: 'AI general knowledge', Provide: "I'll upload the syllabus", Search: 'Ask Gemini to search NESA' };
+export const contextNames = { Off: 'AI general knowledge', Provide: "I'll upload the syllabus", Search: 'Search NESA Website' };
 export const briefField = page => page.getByLabel('Additional Brief / Custom Questions', { exact: true });
 export async function isolateWorksheet(page) {
   await page.route('**/*', route => {

@@ -25,7 +25,7 @@ export default function PromptHandoff({ prompt, target, onTargetChange, onClose,
         <Dialog.Content onCloseAutoFocus={event => { event.preventDefault(); onReturnFocus(); }} className="fixed left-1/2 top-1/2 z-[121] max-h-[90vh] w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-3xl border border-white/20 bg-[#1A1028] p-5 text-white shadow-2xl sm:p-8">
           <Dialog.Title className="pr-10 text-2xl font-bold">Instructions ready</Dialog.Title>
           <Dialog.Description className="mt-2 text-sm text-white/65">
-            {anyAi ? 'Copy the full instructions and your worksheet details, then paste them into your AI and send.' : 'Copy your worksheet details, open the worksheet Gem or your custom GPT, then paste them into its message box and send.'}
+            {anyAi ? 'Copy the full instructions and your worksheet details, then paste them into ChatGPT, Claude, Gemini, or another capable AI and send.' : 'Copy your worksheet details, open the worksheet Gem or your custom GPT, then paste them into its message box and send.'}
           </Dialog.Description>
           <Dialog.Close aria-label="Close prompt preview" className="absolute right-4 top-4 rounded-lg p-2 hover:bg-white/10"><X size={20} /></Dialog.Close>
           <fieldset className="mt-4">
@@ -34,12 +34,12 @@ export default function PromptHandoff({ prompt, target, onTargetChange, onClose,
               <label className={`cursor-pointer rounded-xl border p-3 text-sm ${anyAi ? 'border-white/20' : 'border-cyan-400 bg-cyan-400/10'}`}>
                 <input type="radio" name="worksheet-destination" className="mr-2" checked={!anyAi} onChange={() => onTargetChange('custom')} />
                 <strong>Worksheet Gem or custom GPT</strong>
-                <span className="mt-1 block text-white/65">Copies only your worksheet details.</span>
+                <span className="mt-1 block text-white/65">Copies only your worksheet details because the destination already has saved instructions.</span>
               </label>
               <label className={`cursor-pointer rounded-xl border p-3 text-sm ${anyAi ? 'border-cyan-400 bg-cyan-400/10' : 'border-white/20'}`}>
                 <input type="radio" name="worksheet-destination" className="mr-2" checked={anyAi} onChange={() => onTargetChange('any')} />
                 <strong>Any other AI</strong>
-                <span className="mt-1 block text-white/65">Copies the full instructions too.</span>
+                <span className="mt-1 block text-white/65">Copies the complete SKILL instructions plus your worksheet details for ChatGPT, Claude, or any other AI.</span>
               </label>
             </div>
           </fieldset>

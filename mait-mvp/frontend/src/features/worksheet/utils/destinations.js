@@ -2,6 +2,21 @@ export const WORKSHEET_GEM_URL = 'https://gemini.google.com/gem/14I7EkTkmvun49uu
 // Set this once a shareable custom GPT exists; its button stays hidden until then.
 export const WORKSHEET_GPT_URL = '';
 
+export const CURRICULUM_REFERENCE_LINKS = [
+  {
+    id: 'nesa',
+    label: 'Official NESA curriculum',
+    url: 'https://curriculum.nsw.edu.au/',
+    note: 'NSW syllabuses by stage and learning area',
+  },
+  {
+    id: 'ib-maths',
+    label: 'IB DP Mathematics',
+    url: 'https://www.ibo.org/programmes/diploma-programme/curriculum/mathematics/',
+    note: 'Official IB courses and subject briefs',
+  },
+];
+
 // `full` destinations have no worksheet setup of their own, so they receive the instructions with the request.
 export const destinations = [
   { id: 'gem', label: 'Worksheet Gem', url: WORKSHEET_GEM_URL, full: false, note: 'The Gem needs a Google sign-in. If you land on a sign-in page or plain Gemini, use ChatGPT or Claude instead.' },

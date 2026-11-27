@@ -175,7 +175,7 @@ describe('state transitions and error boundaries',()=>{
   });
   it('context buttons expose selected state to assistive technology',()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief');next();next();
-    const search=screen.getByRole('button',{name:'Ask Gemini to search NESA'});fireEvent.click(search);
+    const search=screen.getByRole('button',{name:'Search NESA Website'});fireEvent.click(search);
     expect(search).toHaveAttribute('aria-pressed','true');
   });
   it('copy modal has dialog semantics',async()=>{

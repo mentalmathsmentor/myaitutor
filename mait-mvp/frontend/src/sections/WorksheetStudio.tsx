@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import MathInput from '../components/MathInput';
 import stageSubjects from '../stage_subjects.json';
-import modelSelectorHint from '../assets/gemini-model-selector-2026-09.jpg';
+import modelSelectorHint from '../assets/gemini-model-selector-2026-11.jpg';
 import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
@@ -27,7 +27,7 @@ import { resolveCourse, topicLabel, validateWorksheetSelection } from '../featur
 import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
 import PromptHandoff from '../components/worksheet/PromptHandoff';
 import SendConfirmation from '../components/worksheet/SendConfirmation';
-import { destinations, openDestination } from '../features/worksheet/utils/destinations';
+import { CURRICULUM_REFERENCE_LINKS, destinations, openDestination } from '../features/worksheet/utils/destinations';
 // import { InlineCanvas } from '../components/canvas/InlineCanvas';
 
 import { API_URL } from '@/config/api';
@@ -882,13 +882,31 @@ export default function WorksheetStudio({ setCurrentSection }) {
                               : 'text-white/55 hover:bg-white/5 hover:text-white'
                           }`}
                         >
-                          {contextMode === 'Off' ? 'AI general knowledge' : contextMode === 'Provide' ? "I'll upload the syllabus" : 'Ask Gemini to search NESA'}
+                          {contextMode === 'Off' ? 'AI general knowledge' : contextMode === 'Provide' ? "I'll upload the syllabus" : 'Search NESA Website'}
                         </button>
                       ))}
                     </div>
 
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {CURRICULUM_REFERENCE_LINKS.map((link) => (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 transition hover:border-mait-cyan/35 hover:bg-mait-cyan/10"
+                        >
+                          <span>
+                            <span className="block text-sm font-semibold text-white group-hover:text-mait-cyan">{link.label}</span>
+                            <span className="mt-0.5 block text-xs text-white/45">{link.note}</span>
+                          </span>
+                          <ExternalLink className="h-4 w-4 shrink-0 text-white/35 transition group-hover:text-mait-cyan" />
+                        </a>
+                      ))}
+                    </div>
+
                     <p className="text-xs leading-relaxed text-white/55">
-                      This choice is included in your copied prompt. Search asks Gemini to consult official NESA sources; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in Gemini. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
+                      This choice is included in your copied prompt. Search asks the AI to consult official NESA sources, or official IB sources when your custom subject names the International Baccalaureate; MyAITutor does not retrieve or verify them here. Upload any syllabus or textbooks in the destination AI. After a reload, context resets to Off and upload declarations reset; reselect them for this session.
                     </p>
 
                     <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/75">
@@ -1178,11 +1196,18 @@ export default function WorksheetStudio({ setCurrentSection }) {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-3 border-t border-white/10 pt-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.25em] text-mait-cyan/70">Send to AI</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">The Gem uses saved instructions. ChatGPT and Claude receive the full portable instructions with your request.</p>
+                  </div>
+                  <Sparkles className="h-4 w-4 shrink-0 text-mait-cyan/70" />
+                </div>
                 <button
                   type="button"
                   onClick={event => sendTo(destinations[0], event)}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-mait-cosmic px-5 py-4 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(124,58,237,0.25)] transition hover:brightness-110"
                 >
                   <Copy className="h-4 w-4" />
                   <span>Copy &amp; open {destinations[0].label}</span>
@@ -1197,6 +1222,7 @@ export default function WorksheetStudio({ setCurrentSection }) {
                     </button>
                   ))}
                 </div>
+                <p className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-center text-[11px] leading-relaxed text-white/45">Nothing is sent automatically. MAIT copies first, opens the destination, then waits for you to paste and review.</p>
                 <button
                   type="button"
                   onClick={previewInstructions}
@@ -1224,18 +1250,18 @@ export default function WorksheetStudio({ setCurrentSection }) {
                   <ExternalLink className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white">Copy → Open Gemini → Paste → Send</h3>
+                  <h3 className="text-base font-semibold text-white">Copy → Open your AI → Paste → Send</h3>
                 </div>
               </div>
               <div className="grid gap-3 text-sm leading-relaxed text-white/75">
-                <p>Preview and copy your instructions, open Gemini, then <strong className="text-white">paste them into the message box and send</strong>. Opening Gemini does not transfer the prompt automatically.</p>
+                <p>Preview and copy your instructions, open the Gem, ChatGPT, Claude or another AI, then <strong className="text-white">paste them into the message box and send</strong>. Opening a destination never transfers the prompt automatically.</p>
                 <h4 className="font-semibold text-white">Choose a model in Gemini</h4>
-                <p>Click the model name inside the message box. Choose <strong className="text-white">Pro</strong> for complex maths and reasoning. <strong className="text-white">Extended thinking</strong>, where available, is a separate option for more thinking time.</p>
+                <p><strong className="text-white">Auto</strong> is a sound default because Gemini routes each prompt. For difficult maths or tricky LaTeX, manually choose <strong className="text-white">Gemini 4 Neon</strong> or <strong className="text-white">Gemini 4 Carbon</strong> where available, then raise the thinking level to <strong className="text-white">High</strong>. Model and thinking-level access vary by plan.</p>
                 <figure>
-                  <img src={modelSelectorHint} alt="Gemini’s message-box model menu, with Pro selected and Extended thinking listed separately below the models." width={140} height={155} className="mx-auto w-64 max-w-full rounded-2xl border border-white/10" />
-                  <figcaption className="mt-2 text-xs text-white/55">Desktop example checked 18/09/2026. Labels, layout and access can vary by account. Follow the controls shown in your Gemini account.</figcaption>
+                  <img src={modelSelectorHint} alt="Gemini model menu showing Auto, Gemini 4 Hydrogen, Gemini 4 Neon and Gemini 4 Carbon." width={510} height={596} className="mx-auto w-64 max-w-full rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.35)]" />
+                  <figcaption className="mt-2 text-xs text-white/55">Desktop example checked 27/11/2026. Labels, layout and access can vary by account. Follow the controls shown in your Gemini account.</figcaption>
                 </figure>
-                <a href="https://support.google.com/gemini/answer/14517446?hl=en" target="_blank" rel="noopener noreferrer" className="text-mait-cyan underline">Google’s current model-selection guide</a>
+                <a href="https://support.google.com/gemini/answer/18648722?hl=en#switch" target="_blank" rel="noopener noreferrer" className="text-mait-cyan underline">Google’s current Gemini model guide</a>
               </div>
             </div>
           </div>
@@ -1269,28 +1295,28 @@ export default function WorksheetStudio({ setCurrentSection }) {
             <div className="glass-card-strong rounded-3xl p-6">
               <div className="mb-6">
                 <h3 className="text-xl font-semibold text-white">FAQ and Tips &amp; Tricks</h3>
-              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the Gemini Canvas workflow.</p>
+              <p className="mt-1 text-sm text-white/50">A few reminders for teachers using the worksheet handoff workflow.</p>
 
             </div>
 
             <div className="space-y-4">
               <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
-                  <span>How does "Ask Gemini to search NESA" work?</span>
+                  <span>How does "Search NESA Website" work?</span>
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  It asks Gemini to proactively consult the published NESA site for alignment context. Treat it as experimental and always verify the resulting worksheet.
+                  It writes an instruction asking the destination AI to consult the official NESA curriculum for alignment context. If the custom subject names the International Baccalaureate, the prompt asks for official IB sources instead. MyAITutor does not retrieve or verify either source, so always check the cited edition and the finished worksheet.
                 </div>
               </details>
 
               <details className="group rounded-2xl border border-white/10 bg-white/5 open:bg-white/[0.06]">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-medium text-white">
-                  <span>Why launch through Gemini instead of generating the PDF here?</span>
+                  <span>Why launch through an AI instead of generating the PDF here?</span>
                   <ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" />
                 </summary>
                 <div className="border-t border-white/10 px-5 py-4 text-sm leading-relaxed text-white/60">
-                  Gemini Canvas makes it much easier to edit, regenerate, and selectively tweak worksheet sections after the initial instructions are produced.
+                  Gemini Canvas, ChatGPT and Claude make it easier to edit, regenerate and selectively tweak worksheet sections after the initial instructions are produced. The full portable instructions can be pasted into any capable AI.
                 </div>
               </details>
 

@@ -34,6 +34,13 @@ describe('selected course and syllabus context reach the copied prompt', () => {
     expect(prompt).not.toContain('SYLLABUS PACKET (NESA ALIGNED)');
   });
 
+  it('Search uses official IB sources when the custom subject is International Baccalaureate', () => {
+    const prompt = compile({ syllabusContextMode: 'Search', selectedSubject: 'Other', customSubject: 'IB Mathematics AA HL' });
+    expect(prompt).toContain('official IB sources for Year 12 IB Mathematics AA HL');
+    expect(prompt).toContain('course, level, teaching cohort or syllabus edition');
+    expect(prompt).not.toContain('official NESA sources for Year 12 IB Mathematics AA HL');
+  });
+
   it('Off, Provide and Search produce distinct, non-accumulating instructions', () => {
     const off = compile({});
     const provide = compile({ syllabusContextMode: 'Provide' });

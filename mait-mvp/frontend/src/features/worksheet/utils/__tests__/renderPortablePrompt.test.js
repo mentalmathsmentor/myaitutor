@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
 import { portableInstructions, renderPortablePrompt, skillFile } from '../renderPortablePrompt';
 
@@ -16,6 +17,14 @@ describe('portable worksheet prompt', () => {
     for (const setting of ['MODE: PEDAGOGY', 'MODE: EXAM STRICT', 'WATERMARK: OFF', 'Spot the Error', 'Parameter Shift', 'Limit Case', '**Search**', '**Provide**', '**Off**']) {
       expect(portableInstructions).toContain(setting);
     }
+  });
+  it('tells portable AIs to use official NESA or IB sources for the applicable course', () => {
+    expect(portableInstructions).toContain('NESA for NSW');
+    expect(portableInstructions).toContain('IB for International Baccalaureate');
+  });
+  it('keeps the Gem base instructions exactly synchronised with the portable skill body', () => {
+    const gemBase = readFileSync('../Gem_Base_Instructions.md', 'utf8');
+    expect(gemBase).toBe(portableInstructions);
   });
   it('carries no private names or tool routing', () => {
     expect(skillFile).not.toMatch(/Darra|Mental Maths|Arthur|AGY|chatgpt\.com\/g\//);

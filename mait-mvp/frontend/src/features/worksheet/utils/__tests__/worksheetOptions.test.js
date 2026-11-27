@@ -29,3 +29,13 @@ it.each(Array.from({ length: 64 }, (_, mask) => mask))('renders exactly the sele
     expect(prompt.includes(directive)).toBe(Boolean(mask & (1 << i)));
   }
 });
+
+
+it('keeps first-time help and Canvas setup as preview-only controls outside the copied request', () => {
+  const withoutPreviewHelp = buildWorksheetRequest({ ...base, includeMarks: true, generateAnswerKey: true, includeWorkedSolutions: true, includeName: true, includeDate: true, removeWatermark: true, schoolName: 'Synthetic class' });
+  const withPreviewHelp = buildWorksheetRequest({ ...base, includeMarks: true, generateAnswerKey: true, includeWorkedSolutions: true, includeName: true, includeDate: true, removeWatermark: true, schoolName: 'Synthetic class', firstTimeMode: true, includeCanvasSetup: true });
+  expect(withPreviewHelp).toEqual(withoutPreviewHelp);
+  const prompt = renderGemHandoffPrompt(withPreviewHelp);
+  expect(prompt).not.toContain('Canvas setup');
+  expect(prompt).not.toContain('First time mode');
+});
