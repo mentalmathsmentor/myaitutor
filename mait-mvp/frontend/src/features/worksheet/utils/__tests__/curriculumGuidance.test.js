@@ -6,6 +6,9 @@ describe('curriculum profile resolution', () => {
     expect(resolveCurriculumProfile('Year 12', 'Mathematics Advanced')).toMatchObject({ authority: 'NESA', programme: 'nsw', specificity: 'exact' });
     const instruction = buildCurriculumSearchInstruction('Year 12', 'Mathematics Advanced');
     expect(instruction).toContain('official NSW Curriculum/NESA sources for Year 12 Mathematics Advanced');
+    expect(instruction).toContain('teacher-supplied teaching cohort or syllabus edition as the controlling version');
+    expect(instruction).toContain('ask for clarification or a syllabus upload');
+    expect(instruction).toContain('verify the applicable edition from official receipts rather than assuming the latest syllabus applies');
   });
 
   it('resolves an exact IB DP course and level without inventing the version', () => {
@@ -28,12 +31,26 @@ describe('curriculum profile resolution', () => {
 
   it('preserves non-mathematics DP subjects instead of forcing a mathematics course', () => {
     const profile = resolveCurriculumProfile('Year 12', 'IB DP Physics HL');
-    expect(profile).toMatchObject({ authority: 'IB', programme: 'dp', level: 'HL', dpMathematics: false, specificity: 'exact' });
+    expect(profile).toMatchObject({ authority: 'IB', programme: 'dp', level: 'HL', mathematicsSubject: false, specificity: 'exact' });
     const instruction = buildCurriculumSearchInstruction('Year 12', 'IB DP Physics HL');
-    expect(instruction).toContain('IB DP Physics HL in the IB Diploma Programme');
+    expect(instruction).toContain('The request appears to be IB DP Physics HL.');
     expect(instruction).toContain('Preserve that subject');
     expect(instruction).toContain('do not convert it into mathematics');
     expect(instruction).not.toContain('analysis and approaches or applications and interpretation');
+  });
+
+  it('preserves non-mathematics MYP subjects without applying mathematics framework rules', () => {
+    const profile = resolveCurriculumProfile('Stage 4 (Yr 7-8)', 'IB Middle Years Programme Year 3 Sciences');
+    expect(profile).toMatchObject({ programme: 'myp', mypYear: 3, mathematicsSubject: false, frameworkColumn: null, specificity: 'exact' });
+    const instruction = buildCurriculumSearchInstruction('Stage 4 (Yr 7-8)', 'IB Middle Years Programme Year 3 Sciences');
+    expect(instruction).toContain('The request appears to be IB Middle Years Programme Year 3 Sciences, MYP Year 3.');
+    expect(instruction).toContain('Preserve that subject');
+    expect(instruction).toContain('exact subject-group objectives and assessment criteria');
+    expect(instruction).not.toContain('IB Middle Years Programme mathematics');
+    expect(instruction).not.toContain('one common topic/skill column');
+    const yearFive = resolveCurriculumProfile('Stage 5 (Yr 9-10)', 'IB MYP Year 5 Sciences');
+    expect(yearFive).toMatchObject({ frameworkColumn: null, specificity: 'exact' });
+    expect(buildCurriculumSearchInstruction('Stage 5 (Yr 9-10)', 'IB MYP Year 5 Sciences')).not.toContain('school-defined course level is missing');
   });
 
   it('uses the common MYP Years 1-3 column without imposing standard or extended', () => {

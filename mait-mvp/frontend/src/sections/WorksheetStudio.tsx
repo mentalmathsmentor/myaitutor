@@ -23,6 +23,7 @@ import { FeedbackBox } from '../components/canvas/FeedbackBox';
 import { buildWorksheetRequest } from '../features/worksheet/utils/buildWorksheetRequest';
 import { renderGemHandoffPrompt } from '../features/worksheet/utils/renderGemHandoffPrompt';
 import { renderPortablePrompt } from '../features/worksheet/utils/renderPortablePrompt';
+import { queueClipboardWrite } from '../features/worksheet/utils/clipboardQueue';
 import { resolveCourse, topicLabel, validateWorksheetSelection } from '../features/worksheet/utils/courseCatalogue';
 import { readWorksheetDraft, saveWorksheetDraft, SPACING_OPTIONS, DIFFICULTY_OPTIONS } from '../features/worksheet/utils/worksheetDraft';
 import PromptHandoff from '../components/worksheet/PromptHandoff';
@@ -145,7 +146,6 @@ export default function WorksheetStudio({ setCurrentSection }) {
   const draftSaveState = useRef({ revision: initialDraft.revision, paused: initialDraft.preventSave });
   const handoffOrigin = useRef(null);
   const handoffRevision = useRef(0);
-  const clipboardWriteQueue = useRef(Promise.resolve());
   useEffect(() => () => { handoffRevision.current += 1; }, []);
 
   const steps = [
@@ -331,12 +331,6 @@ export default function WorksheetStudio({ setCurrentSection }) {
   };
 
   const handoffPrompt = handoffTarget === 'any' ? renderPortablePrompt(previewPrompt) : previewPrompt;
-
-  const queueClipboardWrite = (text) => {
-    const write = clipboardWriteQueue.current.then(() => navigator.clipboard.writeText(text));
-    clipboardWriteQueue.current = write.catch(() => undefined);
-    return write;
-  };
 
   // One click copies the right prompt for the destination, then opens it while the click still counts as the user's.
   const sendTo = async (destination, event) => {

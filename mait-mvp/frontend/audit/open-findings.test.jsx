@@ -198,6 +198,28 @@ describe('state transitions and error boundaries',()=>{
     expect(screen.queryByText('Prompt copied. Next: paste it into your AI, then send.')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Exact prompt').value).toContain('Second synthetic brief');
   });
+  it('shares the clipboard queue across a remount so the newer copy finishes last',async()=>{
+    let finishFirst;
+    clipboard.mockImplementationOnce(() => new Promise(resolve => { finishFirst = resolve; }));
+    const firstView=mount('Year 11','Mathematics Advanced','First synthetic brief');
+    fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
+    fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
+    await waitFor(() => expect(clipboard).toHaveBeenCalledTimes(1));
+    firstView.unmount();
+
+    render(<WorksheetStudio setCurrentSection={()=>{}} />);
+    next();
+    fireEvent.change(screen.getByLabelText('Additional Brief / Custom Questions'),{target:{value:'Second synthetic brief'}});
+    fireEvent.click(screen.getByRole('button',{name:'Preview the prompt',exact:true}));
+    fireEvent.click(screen.getByRole('button',{name:'Copy prompt',exact:true}));
+    await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20));});
+    expect(clipboard).toHaveBeenCalledTimes(1);
+
+    await act(async()=>{finishFirst();});
+    await waitFor(() => expect(clipboard).toHaveBeenCalledTimes(2));
+    expect(clipboard.mock.calls[0][0]).toContain('First synthetic brief');
+    expect(clipboard.mock.calls[1][0]).toContain('Second synthetic brief');
+  });
   it('worked solutions and answer-key controls remain consistent in both directions',()=>{
     mount('Year 11','Mathematics Advanced','Synthetic brief'); next(); next(); next();
     const worked=screen.getByRole('checkbox',{name:/Full Worked Solutions/});

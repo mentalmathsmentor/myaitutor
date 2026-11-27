@@ -58,11 +58,11 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
   const explicitMyp = /\b(?:myp|middle\s+years\s+programme)\b/i.test(combined);
   const explicitDp = /\b(?:dp|diploma\s+programme)\b/i.test(combined);
   const programme = explicitMyp ? 'myp' : (explicitDp || course || level ? 'dp' : 'ib-unknown');
-  const dpMathematics = /\b(?:math|maths|mathematics)\b/i.test(subject) || Boolean(course);
+  const mathematicsSubject = /\b(?:math|maths|mathematics)\b/i.test(subject) || Boolean(course);
   let specificity = 'needs-clarification';
   if (programme === 'dp') {
-    specificity = dpMathematics ? (course && level ? 'exact' : 'needs-clarification') : (level ? 'exact' : 'needs-clarification');
-  } else if (programme === 'myp' && mypYear && (mypYear <= 3 || courseLevel)) {
+    specificity = mathematicsSubject ? (course && level ? 'exact' : 'needs-clarification') : (level ? 'exact' : 'needs-clarification');
+  } else if (programme === 'myp' && mypYear && (!mathematicsSubject || mypYear <= 3 || courseLevel)) {
     specificity = 'exact';
   }
 
@@ -70,28 +70,28 @@ export function resolveCurriculumProfile(selectedStage, displaySubject) {
     authority: 'IB',
     programme,
     specificity,
-    frameworkColumn: programme === 'myp' && mypYear ? (mypYear <= 3 ? 'myp-1-3' : `myp-4-5-${courseLevel || 'unresolved'}`) : null,
+    frameworkColumn: programme === 'myp' && mypYear && mathematicsSubject ? (mypYear <= 3 ? 'myp-1-3' : `myp-4-5-${courseLevel || 'unresolved'}`) : null,
     courseLevel,
     stage,
     subject,
     course,
     level,
     mypYear,
-    dpMathematics,
+    mathematicsSubject,
     schoolYear: year
   };
 }
 
 const profileInstruction = ({ stage, subject }, profile) => {
   if (profile.authority === 'NESA') {
-    return `Use the official NSW Curriculum/NESA sources for ${stage} ${subject}; confirm the exact course and current syllabus version before aligning questions.`;
+    return `Use the official NSW Curriculum/NESA sources for ${stage} ${subject}; confirm the exact course. Use any teacher-supplied teaching cohort or syllabus edition as the controlling version; if its applicability is unclear, ask for clarification or a syllabus upload before generating. If no edition is supplied, verify the applicable edition from official receipts rather than assuming the latest syllabus applies.`;
   }
 
-  if (profile.programme === 'dp' && !profile.dpMathematics) {
+  if (profile.programme === 'dp' && !profile.mathematicsSubject) {
     if (profile.level) {
-      return `The request appears to be ${subject} in the IB Diploma Programme. Preserve that subject; do not convert it into mathematics. Use official IB DP sources for the exact subject, ${profile.level} level where that course uses SL/HL, syllabus version and assessment cohort before aligning questions.`;
+      return `The request appears to be ${subject}. Preserve that subject; do not convert it into mathematics. Use official IB DP sources for the exact subject, ${profile.level} level where that course uses SL/HL, syllabus version and assessment cohort before aligning questions.`;
     }
-    return `The request appears to be ${subject} in the IB Diploma Programme, but the level is incomplete. Preserve that subject; do not convert it into mathematics. Ask whether SL or HL applies before generating.`;
+    return `The request appears to be ${subject}, but the level is incomplete. Preserve that subject; do not convert it into mathematics. Ask whether SL or HL applies before generating.`;
   }
 
   if (profile.programme === 'dp' && profile.specificity === 'exact') {
@@ -100,6 +100,10 @@ const profileInstruction = ({ stage, subject }, profile) => {
 
   if (profile.programme === 'dp') {
     return 'The request appears to be IB Diploma Programme mathematics, but the course and/or level is incomplete. Ask whether it is analysis and approaches or applications and interpretation, and SL or HL, before generating.';
+  }
+
+  if (profile.programme === 'myp' && profile.mypYear && !profile.mathematicsSubject) {
+    return `The request appears to be ${subject}, MYP Year ${profile.mypYear}. Preserve that subject; do not convert it into mathematics. Use official IB MYP sources for the exact subject-group objectives and assessment criteria, confirm the school-confirmed assessment-criteria year (1, 3 or 5), and use the teacher's unit scope and sequence. Do not impose mathematics standard/extended requirements; the IB does not prescribe a year-by-year content sequence.`;
   }
 
   if (profile.programme === 'myp' && profile.mypYear) {
