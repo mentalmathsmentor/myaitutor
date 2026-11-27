@@ -88,7 +88,7 @@ async function createEngine() {
     const positionValues = [modelCentre.x, modelCentre.y, modelCentre.z, modelSize.x, modelSize.y, modelSize.z];
     if (!positionValues.every(Number.isFinite)) return;
     const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
-    const distance = Math.max(modelSize.y, modelSize.x / camera.aspect) * 0.58 / Math.tan(halfFov);
+    const distance = modelSize.z / 2 + Math.max(modelSize.y, modelSize.x / camera.aspect) * 0.58 / Math.tan(halfFov);
     camera.far = Math.max(100, distance * 4);
     camera.position.set(modelCentre.x, modelCentre.y, modelCentre.z + Math.max(distance, 0.5));
     camera.lookAt(modelCentre);

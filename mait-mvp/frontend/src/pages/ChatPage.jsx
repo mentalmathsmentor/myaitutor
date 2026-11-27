@@ -150,8 +150,10 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
         setDownloadError(null);
         setDownloadProgress(null);
         setShowOverlay(false);
+        const currentModelSize = modelService.getModelInfo().size;
+        const retryModelSize = isDemoMode ? demoModelSize : (currentModelSize === 'none' ? 'quality' : currentModelSize);
         setTimeout(() => {
-            startLocalBrain(isDemoMode ? demoModelSize : 'balanced');
+            startLocalBrain(retryModelSize);
         }, 100);
     };
 
@@ -454,7 +456,7 @@ export default function ChatPage({ studentId, authUser, handleLogout, isDemoMode
     }, [isDemoMode]);
 
     const processUserMessage = async (userText) => {
-        if (!isModelReady && downloadProgress) {
+        if (localBrainChoice !== 'cloud' && !isModelReady && downloadProgress) {
             setMessages(prev => [...prev, { role: 'user', text: userText, source: 'queued' }]);
             setMessageQueue(prev => [...prev, userText]);
             return;
